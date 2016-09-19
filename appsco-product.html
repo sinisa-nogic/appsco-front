@@ -1,0 +1,203 @@
+<link rel="import" href="../polymer/polymer.html">
+<link rel="import" href="../paper-item/paper-item.html">
+<link rel="import" href="../paper-listbox/paper-listbox.html">
+
+<link rel="import" href="../paper-button/paper-button.html">
+<link rel="import" href="../iron-icons/iron-icons.html">
+<link rel="import" href="../paper-ripple/paper-ripple.html">
+
+<link rel="import" href="appsco-product-dropdown.html">
+
+<!--
+`appsco-product`
+This component displays AppsCo product. If there is only one product it is displayed as text.
+Otherwise, it is displayed as dropdown from which user can choose AppsCo Product: AppsCo or AppsCo Partner.
+
+Example:
+
+    <body>
+      <appsco-product partner></appsco-product>
+
+
+### Styling
+
+`<appsco-product>` provides the following custom mixins for styling:
+
+Custom property | Description | Default
+----------------|-------------|----------
+`--appsco-product` | Mixin applied to root appsco-product element. | `{}`
+`--appsco-product-dropdown` | Mixin applied to inner appsco-product-dropdown element. | `{}`
+
+@demo demo/appsco-product.html
+-->
+
+<dom-module id="appsco-product">
+    <template>
+        <style is="custom-style">
+            :host {
+                display: inline-block;
+                padding: 10px;
+                color: #8398b1;
+
+                --paper-button: {
+                    padding: 0;
+                    margin: 0;
+                    text-transform: none;
+                 };
+
+                --paper-button-flat-keyboard-focus: {
+                    font-weight: normal;
+                 };
+
+                --paper-item-selected: {
+                    font-weight: normal;
+                     background: #f5f8fa;
+                 };
+                --paper-item-focused: {
+                     background: #f5f8fa;
+                 };
+
+                --paper-item-focused-before: {
+                    background: #f5f8fa;
+                 };
+
+                @apply(--appsco-product);
+            }
+            :host appsco-product-dropdown {
+                width: 100%;
+                max-width: 200px;
+                @apply(--appsco-product-dropdown);
+            }
+            :host paper-listbox {
+                padding: 0;
+            }
+            :host paper-listbox paper-item:first-child {
+                margin-bottom: 1px;
+            }
+            :host paper-item {
+                color: #8398b1;
+                cursor: pointer;
+            }
+            :host paper-item:hover {
+                background: #f5f8fa;
+            }
+        </style>
+
+        <template is="dom-if" if="{{ partner }}">
+
+            <paper-button
+                    type="button"
+                    id="triggerDropdown"
+                    on-tap="__toggleProductDropdown">
+                [[ _selectedProductLabel ]]
+                <iron-icon icon="arrow-drop-down"></iron-icon>
+            </paper-button>
+
+            <appsco-product-dropdown open="{{ _pressed }}" trigger="[[ _triggerDropdown ]]">
+
+                <paper-listbox id="productList" selected="[[ _selectedProductIndex ]]" on-iron-select="__onItemSelect">
+                    <paper-item label="appsco-product">
+                        AppsCo
+                        <paper-ripple></paper-ripple>
+                    </paper-item>
+                    <paper-item label="appsco-partner-product">
+                        AppsCo Partner
+                        <paper-ripple></paper-ripple>
+                    </paper-item>
+                </paper-listbox>
+
+            </appsco-product-dropdown>
+
+
+        </template>
+
+        <template is="dom-if" if="{{ !partner }}">
+
+            <span>
+                [[ _selectedProductLabel ]]
+            </span>
+
+        </template>
+
+    </template>
+
+    <script>
+        Polymer({
+
+            is: 'appsco-product',
+
+            properties: {
+
+                /** Indicates if user has access to Appsco Partner product. */
+                partner: {
+                    type: Boolean,
+                    value: false
+                },
+
+                /** Index of selected product.*/
+                _selectedProductIndex: {
+                    type: Number,
+                    value: 0
+                },
+
+                /** Label of selected product to dipsplay.*/
+                _selectedProductLabel: {
+                    type: String,
+                    value: 'AppsCo'
+                },
+
+                /**
+                 * Indicates if user clicked on element or not.
+                 */
+                _pressed: {
+                    type: Boolean,
+                    value: false,
+                    notify: true
+                },
+
+                /**
+                 * DOM element which triggers the dropdown.
+                 */
+                _triggerDropdown: {
+                    type: Object,
+                    notify: true
+                }
+
+            },
+
+            attached: function() {
+                this._triggerDropdown = this.$$('#triggerDropdown');
+            },
+
+            /**
+             * Listens to iron-select event of paper-listbox.
+             * It sets label of selected product to display.
+             * It fires event that product is changed: appsco-product-changed.
+             * At last, it closes the products dropdown.
+             *
+             * @private
+             */
+            __onItemSelect: function() {
+                var item = this.$$('#productList').selectedItem;
+
+                this._selectedProductLabel = item.textContent.trim();
+
+                this.fire('appsco-product-changed', {
+                    product: item.getAttribute('label')
+                });
+
+                this._pressed = false;
+            },
+
+            /**
+             * Toggles dropdown with product list.
+             *
+             * @private
+             */
+            __toggleProductDropdown: function() {
+                this._pressed = !this._pressed;
+            }
+
+        });
+    </script>
+</dom-module>

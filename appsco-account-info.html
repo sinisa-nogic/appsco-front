@@ -1,0 +1,439 @@
+<link rel="import" href="../polymer/polymer.html">
+<link rel="import" href="../iron-flex-layout/iron-flex-layout-classes.html">
+
+<link rel="import" href="../iron-icons/iron-icons.html">
+<link rel="import" href="../paper-button/paper-button.html">
+<link rel="import" href="../paper-ripple/paper-ripple.html">
+<link rel="import" href="appsco-account-info-dropdown.html">
+
+<link rel="import" href="../iron-localstorage/iron-localstorage.html">
+
+<!--
+`appsco-account-info`
+Representation of user identity
+
+Example:
+
+    <body>
+        <appsco-account-info></appsco-account-info>
+        <appsco-account-info display-name></appsco-account-info>
+        <appsco-account-info account="{{ account }}" display-short></appsco-account-info>
+
+Custom property | Description | Default
+----------------|-------------|----------
+`--text-color` | Default text color for element | `#7e97b2`
+`--active-account-background` | Background color for active account | `#ffffff`
+`--inactive-account-background` | Background color for additional accounts | `#f5f5f5`
+`--inactive-account-background-hover` | Hover for additional accounts | `#f9f7f7`
+`--border-color` | Default border color for element | `#d5d8d8`
+`--divider-color` | Default color for divider | `#eaeaea`
+`--info-background-color` | Background color for info inside element | `#edf9ff`
+`--round-element` | Mixin for round elements | `border-radius: 50%`
+`--appsco-account-info` | Mixin applied to root appsco-account-info element | `{}`
+`--appsco-account-info-user-holder` | Mixin applied to user container within root element | `{}`
+`--appsco-account-info-dropdown` | Mixin applied to inner appsco-account-info-dropdown element | `{}`
+
+@demo demo/appsco-account-info.html
+-->
+
+<dom-module id="appsco-account-info">
+    <template>
+        <style include="iron-flex iron-flex-alignment">
+            :host {
+                color: var(--text-color);
+                font-size: 14px;
+                position: relative;
+                cursor: pointer;
+                display: inline-block;
+
+                --paper-button: {
+                    max-width: 110px;
+                     margin: 0;
+                     color: var(--text-color);
+                     font-size: 90%;
+                 };
+
+                --iron-icon-height: 34px;
+
+                @apply(--appsco-account-info);
+            }
+            :host .divider {
+                width: 100%;
+                height: 1px;
+                background-color: var(--divider-color);
+            }
+            :host .pull-left {
+                float: left;
+            }
+            :host .clearfix:before, :host .clearfix:after {
+                content: " ";
+                display: table;
+            }
+            :host .clearfix:after {
+                clear: both;
+            }
+            :host img {
+                max-width: 100%;
+            }
+            :host .account-holder:after {
+                clear: both;
+            }
+            :host .user-holder {
+                height: 34px;
+                line-height: 34px;
+                font-size: 16px;
+                @apply(--appsco-account-info-user-holder);
+            }
+            :host .account-img {
+                width: 32px;
+                height: 32px;
+                @apply(--round-element);
+            }
+            :host .account-info {
+                margin: 0 0 0 10px;
+                overflow: hidden;
+            }
+            :host appsco-account-info-dropdown {
+                position: absolute;
+                right: -5px;
+                top: 35px;
+                width: 350px;
+                z-index: 999;
+                padding: 0;
+                margin: 0;
+                @apply(--appsco-account-info-dropdown);
+            }
+            :host appsco-account-info-dropdown:focus {
+                outline: none;
+            }
+            :host appsco-account-info-dropdown .info {
+                background-color: var(--info-background-color);
+            }
+            :host appsco-account-info-dropdown .additional-account, :host appsco-account-info-dropdown .actions {
+                background-color: var(--inactive-account-background);
+            }
+            :host appsco-account-info-dropdown .info {
+                font-size: 11px;
+            }
+            :host appsco-account-info-dropdown .account, :host appsco-account-info-dropdown .actions, :host appsco-account-info-dropdown .info {
+                padding: 10px 20px;
+            }
+            :host appsco-account-info-dropdown .account-img {
+                width: 48px;
+                height: 48px;
+            }
+            :host appsco-account-info-dropdown .account .info-lead {
+                font-size: 120%;
+                margin: 0;
+                display: block;
+            }
+            :host appsco-account-info-dropdown .account .info-additional {
+                font-size: 90%;
+                margin: 0;
+                padding: 0;
+            }
+            :host appsco-account-info-dropdown .active-account {
+                padding: 20px;
+                background-color: var(--active-account-background);
+                border-top-left-radius: 4px;
+                border-top-right-radius: 4px;
+            }
+            :host appsco-account-info-dropdown .active-account .account-img {
+                width: 96px;
+                height: 96px;
+                @apply(--round-element);
+            }
+            :host appsco-account-info-dropdown .active-account .account-info {
+                margin-top: 10px;
+            }
+            :host appsco-account-info-dropdown .additional-account {
+                position: relative;
+            }
+            :host appsco-account-info-dropdown .additional-account:hover {
+                background-color: var(--inactive-account-background-hover);
+            }
+            :host appsco-account-info-dropdown .additional-account .account-info {
+                margin-top: 6px;
+            }
+            :host .btn-primary {
+                @apply(--btn-primary);
+            }
+            :host .btn-default {
+                @apply(--btn-default);
+            }
+            :host .hidden {
+                display: none;
+            }
+            :host[display-name] .account-info.hidden {
+                display: inline;
+            }
+            :host[display-name] iron-icon.hidden {
+                display: inline-flex;
+            }
+            :host[display-name] appsco-account-info-dropdown {
+                top: 30px;
+                right: -9px;
+            }
+            .end-justified {
+                @apply(--layout-end-justified);
+            }
+        </style>
+
+        <div class="account-holder" hidden$="[[ _checkIfExists(account) ]]">
+            <div id="triggerDropdown" class="user-holder clearfix" on-tap="_toggleDropdownAction">
+
+                <img src="[[ account.picture_url ]]" class="account-img pull-left">
+
+                <template is="dom-if" if="[[ account.first_name ]]">
+                    <span class="account-info hidden">[[ account.first_name ]] [[ account.last_name ]]</span>
+                </template>
+
+                <iron-icon icon="arrow-drop-down" class="hidden"></iron-icon>
+
+                <paper-ripple></paper-ripple>
+            </div>
+
+            <appsco-account-info-dropdown
+                    open="{{ _pressed }}"
+                    trigger="[[ _triggerDropdown ]]"
+                    data-info$="[[ info ]]">
+
+                <template is="dom-if" if="[[ info ]]">
+                    <div class="info">
+                        [[ info ]]
+                    </div>
+                </template>
+
+                <div class="account-holder layout vertical">
+                    <div class="active-account account layout horizontal">
+                        <img src="[[ account.picture_url ]]" class="account-img">
+
+                        <div class="account-info layout vertical">
+
+                            <template is="dom-if" if="[[ account.first_name ]]">
+                                <span class="info-lead truncate">[[ account.first_name ]] [[ account.last_name ]]</span>
+                            </template>
+
+                            <span class="info-additional truncate">[[ account.email ]]</span>
+
+                            <div class="layout vertical end-justified flex">
+                                <paper-button
+                                        class="btn-primary action-my-account"
+                                        on-tap="_accountSettingsAction">
+                                    My Account
+                                </paper-button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="account-holder layout vertical">
+
+                    <template is="dom-repeat" items="{{ accounts }}">
+
+                        <div class="divider"></div>
+                        <div
+                            class="account additional-account layout horizontal"
+                            on-tap="_switchAccountAction">
+
+                            <img src="[[ item.picture_url ]]" class="account-img">
+                            <div class="account-info">
+                                <span class="info-lead truncate">[[ item.first_name ]] [[ item.last_name ]]</span>
+                                <span class="info-additional truncate">[[ item.email ]]</span>
+                            </div>
+
+                            <paper-ripple></paper-ripple>
+                        </div>
+
+                    </template>
+
+                </div>
+
+                <div class="divider"></div>
+                <div class="actions layout horizontal">
+                    <div class="flex">
+                        <paper-button
+                                class="btn-default"
+                                on-tap="_addAccountAction">
+                            Add Account
+                        </paper-button>
+                    </div>
+
+                    <div>
+                        <paper-button
+                                on-tap="_logoutAccountAction">
+                            Logout
+                        </paper-button>
+                    </div>
+                </div>
+            </appsco-account-info-dropdown>
+        </div>
+
+        <iron-localstorage
+                id="localStorageAccounts"
+                name="appsco-login-accounts"
+                value="{{ accounts }}">
+        </iron-localstorage>
+
+    </template>
+
+    <script>
+
+        Polymer({
+
+            is: 'appsco-account-info',
+
+            properties: {
+
+                /**
+                 * Active account from AppsCo dashboard.
+                 */
+                account: {
+                    type: Object,
+                    value: {},
+                    notify: true
+                },
+
+                /**
+                 * Additional accounts from AppsCo dashboard - currently inactive.
+                 */
+                accounts: {
+                    type: Array,
+                    value: []
+                },
+
+                /**
+                 * Info related to active account.
+                 */
+                info: {
+                    type: String
+                },
+
+                /**
+                 * If attribute is set account display will contain account display name.
+                 * Otherwise, account display will contain account picture_url only.
+                 */
+                displayName: {
+                    type: Boolean,
+                    value: false,
+                    reflectToAttribute: true
+                },
+
+                /**
+                 * Indicates if user clicked on element or not.
+                 */
+                _pressed: {
+                    type: Boolean,
+                    value: false,
+                    notify: true
+                },
+
+                /**
+                 * DOM element which triggers the dropdown.
+                 */
+                _triggerDropdown: {
+                    type: Object,
+                    notify: true
+                }
+            },
+
+            attached: function() {
+                this._triggerDropdown = this.$$('#triggerDropdown');
+            },
+
+            /**
+             * Checks if account property is present or not.
+             * @private
+             */
+            _checkIfExists: function(account) {
+
+                for (var key in account) {
+                    return false;
+                }
+
+                return true;
+            },
+
+            /**
+             * Toggles account dropdown property.
+             *
+             * @private
+             */
+            _toggleDropdownAction: function() {
+                this._pressed = !this._pressed;
+            },
+
+            /**
+             * Fires event on account switch.
+             * @param {Object} event Event from on-tap listener.
+             * @private
+             */
+            _accountSettingsAction: function() {
+
+                /**
+                 * Fired when user taps on account settings action.
+                 *
+                 * @event account-settings
+                 *
+                 * @private
+                 */
+                this.fire('account-settings', {
+                    account: this.account.id
+                });
+
+            },
+
+            /**
+             * Fires event on account switch.
+             * @param {Object} event Event from on-tap listener.
+             *
+             * @private
+             */
+            _switchAccountAction: function(event) {
+
+                /**
+                 * Fired when user switches account.
+                 *
+                 * @event account-switch
+                 * @param {number} account Id of account to switch to.
+                 */
+                this.fire('account-switch', {
+                    account: event.model.item.id
+                });
+
+            },
+
+            /**
+             * Fires event on add account.
+             * @private
+             */
+            _addAccountAction: function() {
+
+                /**
+                 * Fired when tapped on add new account action.
+                 *
+                 * @event account-add
+                 */
+                this.fire('account-add');
+
+            },
+
+            /**
+             * Fires event on account logout.
+             * @private
+             */
+            _logoutAccountAction: function() {
+
+                /**
+                 * Fired when tapped on add account logout action.
+                 *
+                 * @event account-logout
+                 */
+                this.fire('account-logout', {
+                    account: this.account.id
+                });
+
+            }
+        });
+    </script>
+</dom-module>

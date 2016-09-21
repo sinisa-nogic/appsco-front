@@ -1,0 +1,175 @@
+<link rel="import" href="../polymer/polymer.html">
+
+<link rel="import" href="../iron-flex-layout/iron-flex-layout.html">
+<link rel="import" href="../neon-animation/neon-animation-runner-behavior.html">
+<link rel="import" href="../neon-animation/neon-animations.html">
+
+<!--
+`appsco-content`
+
+It defines layouts for content. The layout is horizontal and contains three sections:
+- resource section,
+- content section
+- info section.
+
+Content section is always present while resource and info sections are configurable.
+
+    <appsco-content>
+        <div resource></div>
+        <div content></div>
+        <div info></div>
+    </appsco-content>
+
+### Styling
+
+`<appsco-content>` provides the following custom properties and mixins for styling:
+
+Custom property | Description | Default
+----------------|-------------|----------
+`--resource-width` | Width applied to the resource section | `25%`
+`--resource-background-color` | Background color applied to the resource section | `transparent`
+`--resource-color` | Color applied to the resource section | `#000`
+`--content-background-color` | Background color applied to the content section | `transparent`
+`--content-color` | Color applied to the content section | `#000`
+`--info-width` | Width applied to the info section | `25%`
+`--info-background-color` | Background color applied to the info section | `transparent`
+`--info-color` | Color applied to the info section | `#000`
+`--appsco-content-sections` | Mixin applied to resource, content and info sections | `{ padding: 5px; }`
+
+@demo demo/appsco-content.html
+-->
+
+<dom-module id="appsco-content">
+    <template>
+        <style is="custom-style">
+            :host {
+                --appsco-content-sections: {
+                    padding: 5px;
+                };
+            }
+            :host {
+                display: block;
+                position: relative;
+                height: 100%;
+                width: 100%;
+                overflow: hidden;
+            }
+            :host .flex-horizontal {
+                @apply(--layout-horizontal);
+                height: 100%;
+            }
+            :host .resource,
+            :host .content,
+            :host .info
+            {
+                height: 100%;
+                overflow: auto;
+                position: relative;
+                box-sizing: border-box;
+                @apply(--appsco-content-sections);
+            }
+            :host .resource {
+                width: var(--resource-width, 25%);
+                background-color: var(--resource-background-color, transparent);
+                color: var(--resource-color, #000);
+            }
+            :host .content {
+                @apply(--layout-flex);
+                background-color: var(--content-background-color, transparent);
+                color: var(--content-color, #000);
+            }
+            :host .info {
+                width: var(--info-width, 25%);
+                background-color: var(--info-background-color, transparent);
+                color: var(--info-color, #000);
+
+                border-left: 1px solid #777;
+                display: none;
+            }
+        </style>
+
+        <div class="container flex-horizontal">
+            <div id="resource" class="resource" ><content select="[resource]"></content></div>
+            <div id="content"  class="content"  ><content select="[content]"></content></div>
+            <div id="info"     class="info"     ><content select="[info]"></content></div>
+        </div>
+    </template>
+
+    <script>
+        Polymer({
+
+            is: 'appsco-content',
+
+            behaviors: [Polymer.NeonAnimationRunnerBehavior],
+
+            properties: {
+
+                /**
+                 * Animation config used for the info section.
+                 *
+                 * @type Object
+                 */
+                animationConfig: {
+                    type: Object,
+                    value: function() {
+                        return {
+                            'entry': [{
+                                name: 'slide-from-right-animation',
+                                node: this.$.info,
+                                timing: {
+                                    "duration": 100
+                                }
+                            }],
+                            'exit': [{
+                                name: 'slide-right-animation',
+                                node: this.$.info,
+                                timing: {
+                                    "duration": 100
+                                }
+                            }]
+                        }
+                    }
+                },
+
+                _infoActive: {
+                    type: Boolean,
+                    value: false
+                }
+            },
+            ready: function() {
+                if (0 == this.$.resource.childNodes.length) {
+                   this.$.resource.hidden = true;
+                }
+            },
+            listeners: {
+                'neon-animation-finish': '_onAnimationFinish'
+            },
+            /**
+             * Is info present in content
+             *
+             * @returns {boolean}
+             */
+            hasInfo: function() {
+                return 0 != this.$.resource.childNodes.length;
+            },
+            _onAnimationFinish: function() {
+                this.$.info.style.display = this._infoActive ? 'block' : 'none';
+                this.fire('animation-finished', {});
+            },
+
+            _showInfo: function() {
+                this.$.info.style.display = 'inline-block';
+                this.playAnimation('entry');
+            },
+
+            _hideInfo: function() {
+                this.playAnimation('exit');
+            },
+            toggleInfo: function() {
+                this._infoActive = !this._infoActive;
+                this._infoActive ? this._showInfo() : this._hideInfo();
+            }
+
+        });
+    </script>
+</dom-module>

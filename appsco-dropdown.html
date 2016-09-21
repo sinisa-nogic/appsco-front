@@ -1,35 +1,48 @@
 <link rel="import" href="../polymer/polymer.html">
 
 <link rel="import" href="../neon-animation/animations/scale-up-animation.html">
+<link rel="import" href="../neon-animation/animations/slide-from-bottom-animation.html">
+<link rel="import" href="../neon-animation/animations/slide-down-animation.html">
 <link rel="import" href="../neon-animation/animations/fade-out-animation.html">
 <link rel="import" href="../neon-animation/neon-animation-runner-behavior.html">
 
 <!--
-`appsco-account-info-dropdown` represents dropdown element for appsco-account-info element.
+`appsco-dropdown` represents dropdown component.
+It displays dropdown with given content. On click outside content it closes dropdown.
 
 Example:
 
     <body>
-        <appsco-account-info-dropdown open="{{ pressed }}" tabindex="-1"></appsco-account-info-dropdown>
+        <appsco-dropdown open></appsco-dropdown>
 
-@demo demo/appsco-account-info-dropdown.html
+@demo demo/appsco-dropdown.html
 -->
 
-<dom-module id="appsco-account-info-dropdown">
+<dom-module id="appsco-dropdown">
     <template>
         <style>
             :host {
                 display: none;
                 background: transparent;
+                position: absolute;
+                right: 0;
+                top: 30px;
+                width: 350px;
+                z-index: 999;
+                padding: 0;
+                margin: 0;
+                @apply(--appsco-dropdown);
             }
             :host .content {
                 background-color: #ffffff;
                 @apply(--shadow-elevation-2dp);
+                @apply(--appsco-dropdown-content);
             }
             :host .caret {
                 height: 10px;
                 position: relative;
                 overflow: hidden;
+                @apply(--appsco-dropdown-caret);
             }
             :host .caret > div:first-child {
                 width: 0;
@@ -60,12 +73,13 @@ Example:
         </div>
 
         <div class="content"><content></content></div>
+
     </template>
 
     <script>
 
         Polymer({
-            is: 'appsco-account-info-dropdown',
+            is: 'appsco-dropdown',
 
             behaviors: [
                 Polymer.NeonAnimationRunnerBehavior
@@ -121,18 +135,20 @@ Example:
             },
 
             listeners: {
-                'neon-animation-finish': '_onAnimationFinish',
-                'open-changed': '_openChanged'
+                'neon-animation-finish': '__onAnimationFinish',
+                'open-changed': '__openChanged'
             },
 
             ready: function() {
 
-                Polymer.Gestures.add(document, 'tap', this._handleDocumentClick.bind(this));
+                this.__openChanged();
+
+                Polymer.Gestures.add(document, 'tap', this.__handleDocumentClick.bind(this));
 
             },
 
             /**
-             * Evaluates if element is in given path.
+             * Evaluates if item is in given path.
              *
              * @param {HTMLElement} element The element to be evaluated.
              * @param {Array<HTMLElements>=} path Elements in path to be checked against item element.
@@ -140,7 +156,7 @@ Example:
              *
              * @private
              */
-            _isInPath: function(path, element) {
+            __isInPath: function(path, element) {
                 path = path || [];
 
                 for (var i = 0; i < path.length; i++) {
@@ -159,10 +175,10 @@ Example:
              * Listens for click outside of dropdown in order to close it.
              * @private
              */
-            _handleDocumentClick: function(e) {
+            __handleDocumentClick: function(e) {
                 var path = Polymer.dom(e).path;
 
-                if (!this._isInPath(path, this) && !this._isInPath(path, this.trigger)) {
+                if (this.trigger && !this.__isInPath(path, this) && !this.__isInPath(path, this.trigger)) {
                     this.open = false;
                 }
 
@@ -172,7 +188,7 @@ Example:
              * It is called after dropdown animation is finished.
              * @private
              */
-            _onAnimationFinish: function() {
+            __onAnimationFinish: function() {
 
                 if (!this.open) {
                     this.style.display = 'none';
@@ -186,7 +202,7 @@ Example:
              * If it is false it hides the dropdown.
              * @private
              */
-            _openChanged: function() {
+            __openChanged: function() {
 
                 if (this.open) {
                     this.style.display = 'block';

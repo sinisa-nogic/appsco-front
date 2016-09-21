@@ -1,0 +1,387 @@
+<link rel="import" href="../polymer/polymer.html">
+<link rel="import" href="../iron-flex-layout/iron-flex-layout-classes.html">
+<link rel="import" href="../paper-icon-button/paper-icon-button.html">
+<link rel="import" href="../iron-icons/communication-icons.html">
+<link rel="import" href="../paper-card/paper-card.html">
+<link rel="import" href="../iron-form/iron-form.html">
+<link rel="import" href="../paper-input/paper-input.html">
+
+<link rel="import" href="appsco-dropdown.html">
+
+<!--
+`appsco-account-chat`
+Is used to present account chat action.
+
+Example:
+
+    <body>
+      <appsco-account-chat
+            chat={}>
+     </appsco-account-chat>
+
+ Custom property | Description | Default
+----------------|-------------|----------
+`--text-color` | Default text color for element | `#7e97b2`
+`--divider-color` | Default color for divider | `#eaeaea`
+`--appsco-account-chat-message-color` | Background color for message | `#eaeaea`
+`--appsco-account-chat-incoming-message-color` | Background color for incoming message | `#eaeaea`
+`--appsco-account-chat` | Mixin applied to root appsco-account-chat element | `{}`
+`--appsco-account-chat-dropdown` | Mixin applied to inner appsco-dropdown within root element | `{}`
+`--appsco-account-chat-message` | Mixin applied to message within chat | `{}`
+`--appsco-account-chat-incoming-message` | Mixin applied to incoming message within chat | `{}`
+`--appsco-account-chat-message-time` | Mixin applied to message time within chat | `{}`
+`--appsco-account-chat-message-arrow-before` | Mixin applied to message arrow :before pseudo element | `{}`
+`--appsco-account-chat-message-arrow-after` | Mixin applied to message arrow :after pseudo element | `{}`
+
+@demo demo/appsco-account-chat.html
+-->
+
+<dom-module id="appsco-account-chat">
+    <template>
+        <style include="iron-flex iron-flex-alignment">
+            :host {
+                display: inline-block;
+                color: var(--text-color, #8398b1);
+                position: relative;
+
+                --appsco-dropdown: {
+                     position: fixed;
+                     top: initial;
+                     bottom: 0;
+                     right: 100px;
+                 };
+
+                --paper-card: {
+                     width: 100%;
+                 };
+                --paper-card-header: {
+                     height: 60px;
+                     box-shadow: 0 50px 30px -5px rgba(255, 255, 255, 0.8);
+                     z-index: 4;
+                 };
+                --paper-card-actions: {
+                     height: 50px;
+                     border-top-color: var(--divider-color);
+                     box-sizing: border-box;
+                 };
+
+                --paper-card-header-color: var(--text-color);
+
+                --paper-input-container-color: #cde2f5;
+
+                --paper-input-container-input: {
+                     font-size: 14px;
+                     color: var(--text-color);
+                 };
+                --paper-input-container-focus-color: var(--text-color);
+                --paper-input-container-input-color: var(--text-color);
+
+                --paper-input-container-underline: {
+                     background: #cde2f5;
+                 };
+                --paper-input-container-underline-focus: {
+                     height: 1px;
+                     background: var(--text-color);
+                 };
+
+                @apply(--appsco-account-chat);
+            }
+            :host[_pressed] .chat-icon {
+                @apply(--shadow-elevation-2dp);
+                border-radius: 50%;
+            }
+            :host .close-icon {
+                position: absolute;
+                top: 0;
+                right: 0;
+                z-index: 5;
+            }
+            :host appsco-dropdown {
+                height: 60vh;
+                --appsco-dropdown-caret: {
+                     display: none;
+                 };
+                --appsco-dropdown-content: {
+                     box-shadow: none;
+                     height: 100%;
+                 };
+
+                @apply(--appsco-account-chat-dropdown);
+            }
+            :host appsco-dropdown .messages-container {
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                box-sizing: border-box;
+                padding: 16px;
+                overflow-x: hidden;
+                overflow-y: auto;
+            }
+            :host appsco-dropdown paper-card {
+                height: 100%;
+            }
+            :host appsco-dropdown paper-card .card-content {
+                height: calc(100% - 60px - 51px - 32px);
+            }
+            :host .pull-left {
+                float: left;
+            }
+            :host .pull-right {
+                float: right;
+            }
+            :host .text-center {
+                text-align: center;
+            }
+            :host .clearfix:before, :host .clearfix:after {
+                content: " ";
+                display: table;
+            }
+            :host .clearfix:after {
+                clear: both;
+            }
+            .user-profile-img {
+                width: 34px;
+                height: 34px;
+                margin-top: 0;
+                margin-right: 0;
+            }
+            .message-container {
+                width: 78%;
+            }
+            .message {
+                background-color: var(--appsco-account-chat-message-color, #f5f8fa);
+                min-height: 34px;
+                padding: 5px 10px;
+                margin-left: 10px;
+                @apply(--shadow-elevation-2dp);
+                @apply(--appsco-account-chat-message);
+            }
+            .message.message-incoming {
+                background-color: var(--appsco-account-chat-incoming-message-color, #cde2f5);
+                margin-left: 0;
+                margin-right: 10px;
+                @apply(--appsco-account-chat-incoming-message);
+            }
+            .time{
+                margin-top: 5px;
+                margin-bottom: 20px;
+                font-size: 11px;
+                color: var(--appsco-account-chat-incoming-message-color, #cde2f5);
+                @apply(--appsco-account-chat-message-time);
+            }
+            .arrow-box {
+                position: relative;
+            }
+            .arrow-box:after, .arrow-box:before {
+                right: 100%;
+                top: 50%;
+                border: solid transparent;
+                content: " ";
+                height: 0;
+                width: 0;
+                position: absolute;
+                pointer-events: none;
+            }
+            .arrow-box:after {
+                border-right-color: var(--appsco-account-chat-message-color, #f5f8fa);
+                border-width: 6px;
+                margin-top: -6px;
+            }
+            .arrow-box:before {
+                border-right-color: var(--appsco-account-chat-message-color, #f5f8fa);
+                border-width: 7px;
+                margin-top: -7px;
+            }
+            .arrow-box-right:after, .arrow-box-right:before {
+                right: auto;
+                left: 100%;
+            }
+            .arrow-box-right:after {
+                border-right: none;
+            }
+            .arrow-box-right:before {
+                border-right: none;
+            }
+            .message-incoming.arrow-box-right:after {
+                 border-left-color: var(--appsco-account-chat-incoming-message-color, #cde2f5);
+            }
+            .message-incoming.arrow-box-right:before {
+                 border-left-color: var(--appsco-account-chat-incoming-message-color, #cde2f5);
+            }
+            .message:after, .message:before {
+                top: 17px;
+            }
+            .message:after {
+                top: 17px;
+                @apply(--appsco-account-chat-message-arrow-after);
+            }
+            .message:before {
+                top: 17px;
+                @apply(--appsco-account-chat-message-arrow-before);
+            }
+        </style>
+
+        <paper-icon-button
+                id="trigger"
+                class="chat-icon"
+                icon="communication:forum"
+                title="Chat"
+                on-tap="_toggleDropdownAction">
+        </paper-icon-button>
+
+        <appsco-dropdown
+                id="chatContainer"
+                open="{{ _pressed }}"
+                trigger="[[ _triggerDropdown ]]">
+
+            <paper-card heading="John Doe">
+                <paper-icon-button
+                        class="close-icon"
+                        icon="close"
+                        title="Close"
+                        on-tap="_toggleDropdownAction">
+                </paper-icon-button>
+
+                <div class="card-content layout vertical">
+
+                    <div id="chatMessages" class="messages-container">
+                        <div class="layout horizontal justified">
+                            <div>
+                                <img src="http://appsco.loc/bundles/appscodashboardapproot/img/profile-avatar.png" class="user-profile-img">
+                            </div>
+                            <div class="message-container flex">
+                                <div class="message arrow-box">Message text 1....</div>
+                                <div class="time text-center">21/9/2016</div>
+                            </div>
+                        </div>
+
+                        <div class="layout horizontal">
+                            <div class="message-container flex">
+                                <div class="message message-incoming arrow-box arrow-box-right">Message text 2....</div>
+                                <div class="time text-center">21/9/2016</div>
+                            </div>
+                            <div>
+                                <img src="http://appsco.loc/bundles/appscodashboardapproot/img/profile-avatar.png" class="user-profile-img">
+                            </div>
+                        </div>
+
+                        <div class="layout horizontal">
+                            <div class="message-container flex">
+                                <div class="message message-incoming arrow-box arrow-box-right">New incoming message with really long text....</div>
+                                <div class="time text-center">21/9/2016</div>
+                            </div>
+                            <div>
+                                <img src="http://appsco.loc/bundles/appscodashboardapproot/img/profile-avatar.png" class="user-profile-img">
+                            </div>
+                        </div>
+
+                        <div class="layout horizontal justified">
+                            <div>
+                                <img src="http://appsco.loc/bundles/appscodashboardapproot/img/profile-avatar.png" class="user-profile-img">
+                            </div>
+                            <div class="message-container flex">
+                                <div class="message arrow-box">Message text 1....</div>
+                                <div class="time text-center">21/9/2016</div>
+                            </div>
+                        </div>
+
+                        <div class="layout horizontal justified">
+                            <div>
+                                <img src="http://appsco.loc/bundles/appscodashboardapproot/img/profile-avatar.png" class="user-profile-img">
+                            </div>
+                            <div class="message-container flex">
+                                <div class="message arrow-box">Message text 1....</div>
+                                <div class="time text-center">21/9/2016</div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <div class="card-actions">
+
+                    <form is="iron-form" action="/" method="post">
+                        <paper-input
+                                id="inputMessage"
+                                name="chat-message"
+                                placeholder="type message"
+                                no-label-float>
+                        </paper-input>
+                    </form>
+                </div>
+            </paper-card>
+
+        </appsco-dropdown>
+
+    </template>
+
+    <script>
+        Polymer({
+
+            is: 'appsco-account-chat',
+
+            properties: {
+
+                /** Chat object with connect data. */
+                chat: {
+                    type: Object,
+                    value: {}
+                },
+
+                /**
+                 * Indicates if user clicked on element or not.
+                 */
+                _pressed: {
+                    type: Boolean,
+                    value: false,
+                    notify: true,
+                    reflectToAttribute: true
+                },
+
+                /**
+                 * DOM element which triggers the dropdown.
+                 */
+                _triggerDropdown: {
+                    type: Object,
+                    notify: true
+                }
+            },
+
+            ready: function() {
+                this.$.chatContainer.animationConfig.entry.name = 'slide-from-bottom-animation';
+                this.$.chatContainer.animationConfig.exit.name = 'slide-down-animation';
+            },
+
+            attached: function() {
+                this._triggerDropdown = this.$$('#trigger');
+
+                this._scrollToLastMessage();
+            },
+
+            /**
+             * Toggles chat dropdown.
+             *
+             * @private
+             */
+            _toggleDropdownAction: function() {
+                this._pressed = !this._pressed;
+
+                this.$.inputMessage.focus();
+            },
+
+            /**
+             * Scrolles down to last message in list.
+             *
+             * @private
+             */
+            _scrollToLastMessage: function() {
+                var chatMessages = this.$.chatMessages;
+
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            }
+
+        });
+    </script>
+</dom-module>

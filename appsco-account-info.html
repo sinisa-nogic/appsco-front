@@ -4,7 +4,7 @@
 <link rel="import" href="../iron-icons/iron-icons.html">
 <link rel="import" href="../paper-button/paper-button.html">
 <link rel="import" href="../paper-ripple/paper-ripple.html">
-<link rel="import" href="appsco-account-info-dropdown.html">
+<link rel="import" href="appsco-dropdown.html">
 
 <link rel="import" href="../iron-localstorage/iron-localstorage.html">
 
@@ -93,66 +93,65 @@ Custom property | Description | Default
                 margin: 0 0 0 10px;
                 overflow: hidden;
             }
-            :host appsco-account-info-dropdown {
-                position: absolute;
-                right: -5px;
+            :host .user-holder paper-ripple.circle {
+                width: 150%;
+                height: 150%;
+                left: -25%;
+                top: -25%;
+            }
+            :host appsco-dropdown {
                 top: 35px;
-                width: 350px;
-                z-index: 999;
-                padding: 0;
-                margin: 0;
+                right: -5px;
+
                 @apply(--appsco-account-info-dropdown);
             }
-            :host appsco-account-info-dropdown:focus {
-                outline: none;
-            }
-            :host appsco-account-info-dropdown .info {
+            :host appsco-dropdown .info {
                 background-color: var(--info-background-color);
             }
-            :host appsco-account-info-dropdown .additional-account, :host appsco-account-info-dropdown .actions {
+            :host appsco-dropdown .additional-account, :host appsco-dropdown .actions {
                 background-color: var(--inactive-account-background);
             }
-            :host appsco-account-info-dropdown .info {
+            :host appsco-dropdown .info {
                 font-size: 11px;
             }
-            :host appsco-account-info-dropdown .account, :host appsco-account-info-dropdown .actions, :host appsco-account-info-dropdown .info {
+            :host appsco-dropdown .account, :host appsco-dropdown .actions, :host appsco-dropdown .info {
                 padding: 10px 20px;
             }
-            :host appsco-account-info-dropdown .account-img {
+            :host appsco-dropdown .account-img {
                 width: 48px;
                 height: 48px;
             }
-            :host appsco-account-info-dropdown .account .info-lead {
+            :host appsco-dropdown .account .info-lead {
                 font-size: 120%;
                 margin: 0;
                 display: block;
             }
-            :host appsco-account-info-dropdown .account .info-additional {
+            :host appsco-dropdown .account .info-additional {
                 font-size: 90%;
                 margin: 0;
                 padding: 0;
             }
-            :host appsco-account-info-dropdown .active-account {
+            :host appsco-dropdown .active-account {
                 padding: 20px;
                 background-color: var(--active-account-background);
                 border-top-left-radius: 4px;
                 border-top-right-radius: 4px;
             }
-            :host appsco-account-info-dropdown .active-account .account-img {
+            :host appsco-dropdown .active-account .account-img {
                 width: 96px;
                 height: 96px;
                 @apply(--round-element);
             }
-            :host appsco-account-info-dropdown .active-account .account-info {
+            :host appsco-dropdown .active-account .account-info {
                 margin-top: 10px;
             }
-            :host appsco-account-info-dropdown .additional-account {
+            :host appsco-dropdown .additional-account {
                 position: relative;
             }
-            :host appsco-account-info-dropdown .additional-account:hover {
+            :host appsco-dropdown .additional-account:hover {
                 background-color: var(--inactive-account-background-hover);
             }
-            :host appsco-account-info-dropdown .additional-account .account-info {
+            :host appsco-dropdown .additional-account .account-info {
                 margin-top: 6px;
             }
             :host .btn-primary {
@@ -170,16 +169,22 @@ Custom property | Description | Default
             :host[display-name] iron-icon.hidden {
                 display: inline-flex;
             }
-            :host[display-name] appsco-account-info-dropdown {
+            :host[display-name] appsco-dropdown {
                 top: 30px;
                 right: -9px;
             }
             .end-justified {
                 @apply(--layout-end-justified);
             }
+            .user-holder-placeholder {
+                width: 100px;
+                height: 30px;
+                background-color: #f5f8fa;
+            }
         </style>
 
-        <div class="account-holder" hidden$="[[ _checkIfExists(account) ]]">
+        <div class="account-holder" hidden$="[[ !_accountExists }}">
+
             <div id="triggerDropdown" class="user-holder clearfix" on-tap="_toggleDropdownAction">
 
                 <img src="[[ account.picture_url ]]" class="account-img pull-left">
@@ -190,10 +195,16 @@ Custom property | Description | Default
 
                 <iron-icon icon="arrow-drop-down" class="hidden"></iron-icon>
 
-                <paper-ripple></paper-ripple>
+                <template is="dom-if" if="{{ displayName }}">
+                    <paper-ripple></paper-ripple>
+                </template>
+
+                <template is="dom-if" if="{{ !displayName }}">
+                    <paper-ripple class="circle" center></paper-ripple>
+                </template>
             </div>
 
-            <appsco-account-info-dropdown
+            <appsco-dropdown
                     open="{{ _pressed }}"
                     trigger="[[ _triggerDropdown ]]"
                     data-info$="[[ info ]]">
@@ -266,7 +277,7 @@ Custom property | Description | Default
                         </paper-button>
                     </div>
                 </div>
-            </appsco-account-info-dropdown>
+            </appsco-dropdown>
         </div>
 
         <iron-localstorage
@@ -290,7 +301,6 @@ Custom property | Description | Default
                  */
                 account: {
                     type: Object,
-                    value: {},
                     notify: true
                 },
 
@@ -334,24 +344,53 @@ Custom property | Description | Default
                 _triggerDropdown: {
                     type: Object,
                     notify: true
+                },
+
+                _accountExists: {
+                    type: Boolean,
+                    value: false
                 }
+            },
+
+            listeners: {
+                'account-changed': '_accountChanged'
             },
 
             attached: function() {
                 this._triggerDropdown = this.$$('#triggerDropdown');
+
+                this._checkIfAccountExists();
             },
 
             /**
-             * Checks if account property is present or not.
+             * Checks if account exists or not.
+             * It sets _accountExists property value.
              * @private
              */
-            _checkIfExists: function(account) {
+            _checkIfAccountExists: function() {
+                var account = this.account;
 
-                for (var key in account) {
-                    return false;
+                if (account) {
+
+                    for (var key in account) {
+                        this._accountExists = true;
+
+                        break;
+                    }
+
                 }
+                else {
+                    this._accountExists = false;
+                }
+            },
 
-                return true;
+            /**
+             * Listens for account change event.
+             *
+             * @private
+             */
+            _accountChanged: function() {
+                this._checkIfAccountExists();
             },
 
             /**
@@ -365,7 +404,7 @@ Custom property | Description | Default
 
             /**
              * Fires event on account switch.
-             * @param {Object} event Event from on-tap listener.
+             *
              * @private
              */
             _accountSettingsAction: function() {
@@ -374,8 +413,6 @@ Custom property | Description | Default
                  * Fired when user taps on account settings action.
                  *
                  * @event account-settings
-                 *
-                 * @private
                  */
                 this.fire('account-settings', {
                     account: this.account.id

@@ -1,9 +1,10 @@
 <link rel="import" href="../polymer/polymer.html">
 <link rel="import" href="../iron-flex-layout/iron-flex-layout-classes.html">
+<link rel="import" href="../iron-ajax/iron-ajax.html">
 
 <link rel="import" href="appsco-brand.html">
 <link rel="import" href="appsco-product.html">
-<link rel="import" href="appsco-copy.html">
+<link rel="import" href="appsco-account-actions.html">
 <link rel="import" href="appsco-account-info.html">
 
 <!--
@@ -19,17 +20,33 @@ appsco-header is used to represent overall info about branding, current appsco p
             :host {
                 display: block;
 
-                --appsco-brand: {
-                     margin-right: 10px;
-                 };
                 --appsco-brand-logo: {
                      margin-right: 10px;
                  };
+
                 --appsco-product: {
                     font-size: 18px;
                  };
             }
+            .vertical-divider {
+                width: 2px;
+                height: 32px;
+                background-color: var(--divider-color);
+                margin-left: 10px;
+                margin-right: 10px;
+            }
+            .mr-10 {
+                margin-right: 10px;
+            }
         </style>
+
+        <iron-ajax
+                id="ironAjaxAccount"
+                auto
+                url="http://appsco.loc/app_dev.php/api/v2/me"
+                handle-as="json"
+                last-response="{{ accountResponse }}">
+        </iron-ajax>
 
         <div class="layout horizontal center justified">
 
@@ -42,29 +59,33 @@ appsco-header is used to represent overall info about branding, current appsco p
 
                 </appsco-brand>
 
+                <div class="vertical-divider"></div>
+
                 <appsco-product partner></appsco-product>
             </div>
 
-            <appsco-account-info
-                    account='{
-                                "id": "1",
-                                "email": "john.doe@exampleemail.com",
-                                "first_name": "John",
-                                "last_name": "Doe",
-                                "locale": "Europe/Serbia",
-                                "gender": "m",
-                                "country": "RS",
-                                "phone": "null",
-                                "picture_url": "http://app-layout-assets.appspot.com/assets/PharrellWilliams.jpg",
-                                "info": "This account is managed by boutsourcing.com."
-                            }'
-                    info="Info related to account"
-                    display-name
-                    on-account-settings="_handleAccountSettingsAction"
-                    on-account-switch="_handleAccountSwitchAction"
-                    on-account-add="_handleAccountAddAction"
-                    on-account-logout="_handleAccountLogoutAction">
-            </appsco-account-info>
+            <div class="layout horizontal center">
+                <appsco-account-actions
+                        class="mr-10"
+                        chat='{
+                            "auth": "auth code",
+                            "room": "room number",
+                            "service": "https://www.xxx.com",
+                            "active": "false"
+                          }'
+                        intranet="http://www.rts.rs/">
+                </appsco-account-actions>
+
+                <appsco-account-info
+                        account="{{ accountResponse.account }}"
+                        info="Info related to account"
+                        display-name
+                        on-account-settings="_handleAccountSettingsAction"
+                        on-account-switch="_handleAccountSwitchAction"
+                        on-account-add="_handleAccountAddAction"
+                        on-account-logout="_handleAccountLogoutAction">
+                </appsco-account-info>
+            </div>
 
         </div>
 
@@ -76,6 +97,12 @@ appsco-header is used to represent overall info about branding, current appsco p
             is: 'appsco-header',
 
             properties: {
+
+            },
+
+            ready: function() {
+                var basic = btoa('nikola@free.com' + ':' + 'Nikola.Appscov2');
+                this.$.ironAjaxAccount.headers.authorization = "Basic " + basic;
 
             },
 

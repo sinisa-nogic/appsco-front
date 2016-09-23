@@ -1,6 +1,5 @@
 <link rel="import" href="../polymer/polymer.html">
 <link rel="import" href="../iron-flex-layout/iron-flex-layout-classes.html">
-<link rel="import" href="../iron-ajax/iron-ajax.html">
 
 <link rel="import" href="appsco-brand.html">
 <link rel="import" href="appsco-product.html">
@@ -11,6 +10,22 @@
 `appsco-header`
 appsco-header is used to represent overall info about branding, current appsco product, global actions and user info. It is top section within appsco page.
 
+Example:
+
+    <body>
+      <appsco-header></appsco-header>
+
+
+### Styling
+
+`<appsco-header>` provides the following custom mixins for styling:
+
+Custom property | Description | Default
+----------------|-------------|----------
+`--text-color` | Default text color for element | `#7e97b2`
+`--divider-color` | Default color for divider | `#eaeaea`
+`--appsco-header` | Mixin applied to root appsco-header element. | `{}`
+
 @demo demo/index.html
 -->
 
@@ -19,6 +34,7 @@ appsco-header is used to represent overall info about branding, current appsco p
         <style include="iron-flex iron-flex-alignment">
             :host {
                 display: block;
+                color: var(--text-color, #7e97b2);
 
                 --appsco-brand-logo: {
                      margin-right: 10px;
@@ -27,28 +43,26 @@ appsco-header is used to represent overall info about branding, current appsco p
                 --appsco-product: {
                     font-size: 18px;
                  };
+
+                --appsco-account-actions: {
+                     margin-right: 10px;
+                 };
+
+                @apply(--appsco-header);
             }
-            .vertical-divider {
+            :host .appsco-header-container {
+                height: 100%;
+            }
+            :host .vertical-divider {
                 width: 2px;
                 height: 32px;
-                background-color: var(--divider-color);
+                background-color: var(--divider-color, #eaeaea);
                 margin-left: 10px;
-                margin-right: 10px;
-            }
-            .mr-10 {
                 margin-right: 10px;
             }
         </style>
 
-        <iron-ajax
-                id="ironAjaxAccount"
-                auto
-                url="http://appsco.loc/app_dev.php/api/v2/me"
-                handle-as="json"
-                last-response="{{ accountResponse }}">
-        </iron-ajax>
-
-        <div class="layout horizontal center justified">
+        <div class="appsco-header-container layout horizontal center justified">
 
             <div class="layout horizontal center">
                 <appsco-brand
@@ -77,7 +91,18 @@ appsco-header is used to represent overall info about branding, current appsco p
                 </appsco-account-actions>
 
                 <appsco-account-info
-                        account="{{ accountResponse.account }}"
+                        account='{
+                                    "id": "1",
+                                    "email": "john.doe@exampleemail.com",
+                                    "first_name": "John",
+                                    "last_name": "Doe",
+                                    "locale": "Europe/Serbia",
+                                    "gender": "m",
+                                    "country": "RS",
+                                    "phone": "null",
+                                    "picture_url": "http://app-layout-assets.appspot.com/assets/PharrellWilliams.jpg",
+                                    "info": "This account is managed by boutsourcing.com."
+                                }'
                         info="Info related to account"
                         display-name
                         on-account-settings="_handleAccountSettingsAction"
@@ -97,12 +122,6 @@ appsco-header is used to represent overall info about branding, current appsco p
             is: 'appsco-header',
 
             properties: {
-
-            },
-
-            ready: function() {
-                var basic = btoa('nikola@free.com' + ':' + 'Nikola.Appscov2');
-                this.$.ironAjaxAccount.headers.authorization = "Basic " + basic;
 
             },
 

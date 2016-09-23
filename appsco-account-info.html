@@ -4,9 +4,9 @@
 <link rel="import" href="../iron-icons/iron-icons.html">
 <link rel="import" href="../paper-button/paper-button.html">
 <link rel="import" href="../paper-ripple/paper-ripple.html">
-<link rel="import" href="appsco-dropdown.html">
-
 <link rel="import" href="../iron-localstorage/iron-localstorage.html">
+
+<link rel="import" href="appsco-dropdown.html">
 
 <!--
 `appsco-account-info`
@@ -28,6 +28,7 @@ Custom property | Description | Default
 `--border-color` | Default border color for element | `#d5d8d8`
 `--divider-color` | Default color for divider | `#eaeaea`
 `--info-background-color` | Background color for info inside element | `#edf9ff`
+`--appsco-account-info-box` | Mixin for info box | `{}`
 `--round-element` | Mixin for round elements | `border-radius: 50%`
 `--appsco-account-info` | Mixin applied to root appsco-account-info element | `{}`
 `--appsco-account-info-user-holder` | Mixin applied to user container within root element | `{}`
@@ -52,8 +53,6 @@ Custom property | Description | Default
                      color: var(--text-color);
                      font-size: 90%;
                  };
-
-                --iron-icon-height: 34px;
 
                 @apply(--appsco-account-info);
             }
@@ -90,7 +89,7 @@ Custom property | Description | Default
                 @apply(--round-element);
             }
             :host .account-info {
-                margin: 0 0 0 10px;
+                margin: 0 0 0 5px;
                 overflow: hidden;
             }
             :host .user-holder paper-ripple.circle {
@@ -106,13 +105,12 @@ Custom property | Description | Default
                 @apply(--appsco-account-info-dropdown);
             }
             :host appsco-dropdown .info {
+                font-size: 11px;
                 background-color: var(--info-background-color);
+                @apply(--appsco-account-info-box);
             }
             :host appsco-dropdown .additional-account, :host appsco-dropdown .actions {
                 background-color: var(--inactive-account-background);
-            }
-            :host appsco-dropdown .info {
-                font-size: 11px;
             }
             :host appsco-dropdown .account, :host appsco-dropdown .actions, :host appsco-dropdown .info {
                 padding: 10px 20px;
@@ -173,10 +171,10 @@ Custom property | Description | Default
                 top: 30px;
                 right: -9px;
             }
-            .end-justified {
+            :host .end-justified {
                 @apply(--layout-end-justified);
             }
-            .user-holder-placeholder {
+            :host .user-holder-placeholder {
                 width: 100px;
                 height: 30px;
                 background-color: #f5f8fa;
@@ -205,6 +203,7 @@ Custom property | Description | Default
             </div>
 
             <appsco-dropdown
+                    id="accountInfoDropdown"
                     open="{{ _pressed }}"
                     trigger="[[ _triggerDropdown ]]"
                     data-info$="[[ info ]]">
@@ -358,6 +357,11 @@ Custom property | Description | Default
 
             attached: function() {
                 this._triggerDropdown = this.$$('#triggerDropdown');
+
+                if (this.info && this.info.trim() != '') {
+                    this.$.accountInfoDropdown.customStyle['--caret-color'] = 'var(--info-background-color)';
+                    this.$.accountInfoDropdown.updateStyles();
+                }
 
                 this._checkIfAccountExists();
             },

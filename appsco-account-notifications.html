@@ -1,0 +1,356 @@
+<link rel="import" href="../polymer/polymer.html">
+<link rel="import" href="../iron-flex-layout/iron-flex-layout-classes.html">
+<link rel="import" href="../paper-icon-button/paper-icon-button.html">
+<link rel="import" href="../iron-icons/social-icons.html">
+<link rel="import" href="../paper-card/paper-card.html">
+<link rel="import" href="../paper-button/paper-button.html">
+<link rel="import" href="../iron-ajax/iron-ajax.html">
+
+<link rel="import" href="appsco-dropdown.html">
+<link rel="import" href="appsco-account-notification.html">
+<link rel="import" href="appsco-loader.html">
+
+<!--
+`appsco-account-notifications`
+Is used to present notifications action.
+
+Example:
+
+    <body>
+      <appsco-account-notifications>
+     </appsco-account-notifications>
+
+ Custom property | Description | Default
+----------------|-------------|----------
+`--text-color` | Default text color for element | `#7e97b2`
+`--action-color` | Color for icon-button action | `Based on --text-color`
+`--divider-color` | Default color for divider | `#eaeaea`
+`--appsco-account-notifications-color` | Default text color root element | `Based on --text-color`
+`--appsco-account-notifications` | Mixin applied to root appsco-account-notifications element | `{}`
+`--appsco-account-notifications-dropdown` | Mixin applied to inner appsco-dropdown within root element | `{}`
+`--appsco-account-active-action` | Mixin applied to action in active state | `{}`
+
+@demo demo/appsco-account-notifications.html
+-->
+
+<dom-module id="appsco-account-notifications">
+    <template>
+        <style include="iron-flex iron-flex-alignment">
+            :host {
+                display: inline-block;
+                color: var(--appsco-account-notifications-color, --text-color);
+                position: relative;
+
+                @apply(--appsco-account-notifications);
+            }
+            :host .action-icon {
+                color: var(--action-color, --text-color);
+                --paper-icon-button-ink-color: var(--action-color, --text-color);
+            }
+            :host[_pressed] .action-icon {
+                @apply(--shadow-elevation-2dp);
+                @apply(--round-element);
+
+                @apply(--appsco-account-active-action);
+            }
+            :host .divider {
+                width: 100%;
+                height: 1px;
+                background-color: var(--divider-color, #eaeaea);
+            }
+            :host appsco-dropdown {
+                top: 45px;
+                min-height: 300px;
+
+                @apply(--appsco-account-notifications-dropdown);
+            }
+            :host paper-card {
+                width: 100%;
+                min-height: 300px;
+
+                --paper-card-header-color: var(--appsco-account-notifications-color, --text-color);;
+
+                --paper-card-header-text: {
+                     font-size: 20px;
+                 };
+                --paper-card-actions: {
+                     padding: 0;
+                 };
+            }
+            :host paper-card .card-content-notifications {
+                padding: 0;
+            }
+            :host paper-button {
+                color: var(--appsco-account-notifications-color, --text-color);
+            }
+            :host .see-all-btn {
+                width: 100%;
+                padding: 16px;
+                font-size: 12px;
+                text-align: center;
+                background: var(--appsco-light-gray-color, #f5f8fa);
+                border-radius: 0;
+            }
+        </style>
+
+        <paper-icon-button
+                id="trigger"
+                class="action-icon"
+                icon="social:notifications"
+                title="Notifications"
+                on-tap="_toggleDropdownAction">
+        </paper-icon-button>
+
+        <appsco-dropdown
+                open="{{ _pressed }}"
+                trigger="[[ _triggerDropdown ]]">
+
+                <paper-card heading="Notifications">
+
+                    <appsco-loader active="[[ _loader ]]" loader-alt="Loading notifications" multi-color></appsco-loader>
+
+                    <div class="card-content card-content-notifications layout vertical">
+
+                        <iron-ajax
+                            id="ironAjaxNotifications"
+                            url="http://appsco.loc/app_dev.php/api/v2/me/notifications"
+                            handle-as="json"
+                            on-error="_handleError"
+                            on-response="_handleResponse">
+                        </iron-ajax>
+
+                        <template is="dom-repeat" items="[[ _notifications ]]">
+
+                            <div class="divider"></div>
+
+                            <appsco-account-notification
+                                    notification="[[ item ]]">
+                            </appsco-account-notification>
+
+                        </template>
+
+                    </div>
+
+                    <template is="dom-if" if="[[ _message ]]">
+                        <div class="card-content layout horizontal center">
+                            <p>
+                                [[ _message ]]
+                            </p>
+                        </div>
+                    </template>
+
+                    <div class="card-actions layout vertical center" hidden$="[[ !_notificationsExists }}">
+                        <paper-button id="seeAllNotifications" class="see-all-btn">See all notifications</paper-button>
+                    </div>
+
+                </paper-card>
+
+        </appsco-dropdown>
+
+    </template>
+
+    <script>
+        Polymer({
+
+            is: 'appsco-account-notifications',
+
+            properties: {
+
+                /**
+                 * Notifications for account.
+                 * Get from Appsco API within iron-ajax.
+                 *
+                 * @type Notification[]
+                 */
+                _notifications: {
+                    type: Array,
+                    notify: true
+                },
+
+                /**
+                 * Message to display instead of notifications.
+                 */
+                _message: {
+                    type: String
+                },
+
+                /**
+                 * Indicates if user clicked on element or not.
+                 */
+                _pressed: {
+                    type: Boolean,
+                    value: false,
+                    notify: true,
+                    reflectToAttribute: true
+                },
+
+                /**
+                 * DOM element which triggers the dropdown.
+                 */
+                _triggerDropdown: {
+                    type: Object,
+                    notify: true
+                },
+
+                /**
+                 * Indicates if appsco-loader is shown or hidden.
+                 */
+                _loader: {
+                    type: Boolean,
+                    value: true
+                },
+
+                /**
+                 * Indicates if notifications are loaded or not.
+                 */
+                _notificationsExists: {
+                    type: Boolean,
+                    value: false
+                }
+            },
+
+            listeners: {
+                'seeAllNotifications.tap': '_seeAllNotificationsAction',
+                '_notifications-changed': '_onNotificationsChange'
+            },
+
+            ready: function() {
+                var basic = btoa('nikola@free.com' + ':' + 'Nikola.Appscov2');
+
+                this.$.ironAjaxNotifications.headers.authorization = "Basic " + basic;
+            },
+
+            attached: function() {
+                this._triggerDropdown = this.$$('#trigger');
+
+                this._checkIfNotificationsExists();
+            },
+
+            /**
+             * Checks if there are notifications.
+             *
+             * @private
+             */
+            _checkIfNotificationsExists: function() {
+
+                if (this._notifications && this._notifications.length > 0) {
+                    this._notificationsExists = true;
+                }
+                else {
+                    this._notificationsExists = false;
+                }
+
+            },
+
+            /**
+             * On notification change event handler.
+             *
+             * @private
+             */
+            _onNotificationsChange: function() {
+                this._checkIfNotificationsExists();
+            },
+
+            /**
+             * Toggles chat dropdown.
+             *
+             * @private
+             */
+            _toggleDropdownAction: function() {
+                this._pressed = !this._pressed;
+
+                if (this._pressed) {
+                    this._loadNotifications();
+                }
+            },
+
+            /**
+             * Fires event on see all notifications action.
+             *
+             * @private
+             */
+            _seeAllNotificationsAction: function() {
+
+                /**
+                 * Fired when user taps on see all notifications action.
+                 *
+                 * @event all-notifications
+                 */
+                this.fire('all-notifications');
+            },
+
+            /**
+             * Triggers ajax request in order to get notifications.
+             *
+             * @private
+             */
+            _loadNotifications: function() {
+                this._loader = true;
+                this.$.ironAjaxNotifications.generateRequest();
+            },
+
+            /**
+             * Handles error on get notifications API request.
+             * @param {Object} event Event from error response.
+             *
+             * @private
+             */
+            _handleError: function(event) {
+
+//                this._message = 'We couldn\'t load notifications at the moment. Please try again in a minute. If error continues contact us.';
+
+                this._notifications = [
+                    {
+                        image: 'https://apps.appsco.com/icon/199.png',
+                        message: 'Appsco Apptest assigned you Telenor Avansert Sentralbord on Telecom Test Dash',
+                        date: '22/9/2016'
+                    },
+                    {
+                        image: 'https://apps.appsco.com/icon/199.png',
+                        message: 'You have been added to Telecom Test Dash',
+                        date: '22/9/2016'
+                    },
+                    {
+                        image: 'https://apps.appsco.com/icon/199.png',
+                        message: 'Appsco Apptest assigned you Telenor Mine Sider on Telecom Test Dash',
+                        date: '22/9/2016'
+                    },
+                    {
+                        image: 'https://apps.appsco.com/icon/199.png',
+                        message: 'You have been added to Telecom Test Dash',
+                        date: '22/9/2016'
+                    },
+                    {
+                        image: 'https://apps.appsco.com/icon/199.png',
+                        message: 'Appsco Apptest assigned you Telenor Mine Sider on Telecom Test Dash',
+                        date: '22/9/2016'
+                    }
+
+                ];
+
+                this._loader = false;
+            },
+
+            /**
+             * Handles response on get notifications API request.
+             * @param {Object} event Event from response.
+             *
+             * @private
+             */
+            _handleResponse: function(event) {
+                var response = event.detail.response;
+
+                if (response.notifications.length > 0) {
+                    this._notifications = response.notifications;
+                }
+                else {
+                    this._message = 'You don\'t have notifications.';
+                }
+
+                this._loader = false;
+
+            }
+
+        });
+    </script>
+</dom-module>

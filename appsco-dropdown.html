@@ -1,33 +1,86 @@
 <link rel="import" href="../polymer/polymer.html">
-
 <link rel="import" href="../neon-animation/animations/scale-up-animation.html">
+<link rel="import" href="../neon-animation/animations/slide-from-bottom-animation.html">
+<link rel="import" href="../neon-animation/animations/slide-down-animation.html">
 <link rel="import" href="../neon-animation/animations/fade-out-animation.html">
 <link rel="import" href="../neon-animation/neon-animation-runner-behavior.html">
 
 <!--
-`appsco-dropdown` represents dropdown element.
-This component displays dropdown with given content. On click outside content it closes dropdown.
+`appsco-dropdown` represents dropdown component.
+It displays dropdown with given content. On click outside content it closes dropdown.
 
 Example:
 
     <body>
         <appsco-dropdown open></appsco-dropdown>
 
-@demo demo/appsco-product-dropdown.html
+### Styling
+
+`<appsco-dropdown>` provides the following custom mixins for styling:
+
+Custom property | Description | Default
+----------------|-------------|----------
+`--caret-color` | Color for caret of dropdown element. | `#ffffff`
+`--appsco-dropdown` | Mixin applied to root appsco-dropdown element. | `{}`
+`--appsco-dropdown-content` | Mixin applied to the content container. | `{}`
+`--appsco-dropdown-caret` | Mixin applied to the caret of root element. Use it to hide it where needed. | `{}`
+
+@demo demo/appsco-dropdown.html
 -->
 
-<dom-module id="appsco-product-dropdown">
+<dom-module id="appsco-dropdown">
     <template>
         <style>
             :host {
                 display: none;
-                background-color: #ffffff;
+                background: transparent;
                 position: absolute;
-                z-index: 1000;
+                right: 0;
+                top: 30px;
+                width: 350px;
+                z-index: 999;
+                padding: 0;
+                margin: 0;
+
+                @apply(--appsco-dropdown);
+            }
+            :host .content {
+                background-color: #ffffff;
 
                 @apply(--shadow-elevation-2dp);
+                @apply(--appsco-dropdown-content);
+            }
+            :host .caret {
+                height: 10px;
+                position: relative;
+                overflow: hidden;
+                z-index: 100;
+                @apply(--appsco-dropdown-caret);
+            }
+            :host .caret > div:first-child {
+                width: 0;
+                height: 0;
+                border-left: 11px solid transparent;
+                border-right: 11px solid transparent;
+                border-bottom: 11px solid rgba(0,0,0, 0.2);
+                position: absolute;
+                right: 10px;
+            }
+            :host .caret > div:last-child {
+                width: 0;
+                height: 0;
+                border-left: 10px solid transparent;
+                border-right: 10px solid transparent;
+                border-bottom: 10px solid var(--caret-color, #ffffff);
+                position: absolute;
+                right: 11px;
             }
         </style>
+
+        <div class="caret">
+            <div></div>
+            <div></div>
+        </div>
 
         <div class="content"><content></content></div>
 
@@ -36,7 +89,7 @@ Example:
     <script>
 
         Polymer({
-            is: 'appsco-product-dropdown',
+            is: 'appsco-dropdown',
 
             behaviors: [
                 Polymer.NeonAnimationRunnerBehavior
@@ -78,8 +131,7 @@ Example:
                 open: {
                     type: Boolean,
                     value: false,
-                    notify: true,
-                    reflectToAttribute: true
+                    notify: true
                 },
 
                 /**
@@ -108,18 +160,18 @@ Example:
             /**
              * Evaluates if item is in given path.
              *
-             * @param {HTMLElement} item The element to be evaluated.
+             * @param {HTMLElement} element The element to be evaluated.
              * @param {Array<HTMLElements>=} path Elements in path to be checked against item element.
              * @return {Boolean}
              *
              * @private
              */
-            __isInPath: function(path, item) {
+            __isInPath: function(path, element) {
                 path = path || [];
 
                 for (var i = 0; i < path.length; i++) {
 
-                    if (path[i] == item) {
+                    if (path[i] == element) {
                         return true;
 
                         break;

@@ -1,8 +1,6 @@
 <link rel="import" href="../polymer/polymer.html">
 <link rel="import" href="../paper-item/paper-item.html">
 <link rel="import" href="../paper-listbox/paper-listbox.html">
-
-<link rel="import" href="../paper-button/paper-button.html">
 <link rel="import" href="../iron-icons/iron-icons.html">
 <link rel="import" href="../paper-ripple/paper-ripple.html">
 
@@ -25,7 +23,7 @@ Example:
 
 Custom property | Description | Default
 ----------------|-------------|----------
-`--text-color` | Color for text in element. | Based on text-color from appsco theme.
+`--primary-text-color` | Color for text in element. | Based on text-color from appsco theme.
 `--appsco-product-active-color` | Color for active product. | Based on text-color from appsco theme.
 `--appsco-product` | Mixin applied to root appsco-product element. | `{}`
 `--appsco-product-dropdown` | Mixin applied to inner appsco-dropdown element. | `{}`
@@ -39,16 +37,18 @@ Custom property | Description | Default
             :host {
                 display: inline-block;
                 font-size: 16px;
-                color: var(--text-color, #8398b1);
+                color: var(--primary-text-color, #8398b1);
                 position: relative;
 
-                --paper-button: {
-                     padding: 0;
-                     margin: 0;
-                     text-transform: none;
+                --paper-item: {
+                     cursor: pointer;
                  };
 
                 @apply(--appsco-product);
+            }
+            :host .product-list-action {
+                line-height: 1.6;
+                cursor: pointer;
             }
             :host appsco-dropdown {
                 min-width: 200px;
@@ -57,23 +57,28 @@ Custom property | Description | Default
 
                 @apply(--appsco-product-dropdown);
             }
+            :host paper-listbox {
+                padding: 0;
+            }
             :host paper-listbox paper-item:first-child {
-                border-bottom: 1px solid var(--appsco-light-gray-color);
+                border-bottom: 1px solid var(--appsco-light-gray-color, #f5f8fa);
             }
         </style>
 
         <template is="dom-if" if="{{ partner }}">
 
-            <paper-button
-                    type="button"
+            <div
                     id="triggerDropdown"
-                    class="product-active"
+                    class="product-active product-list-action"
                     on-tap="__toggleProductDropdown">
                 [[ _selectedProductLabel ]]
                 <iron-icon icon="arrow-drop-down"></iron-icon>
-            </paper-button>
+            </div>
 
-            <appsco-dropdown open="{{ _pressed }}" trigger="[[ _triggerDropdown ]]">
+            <appsco-dropdown
+                    open="{{ _pressed }}"
+                    trigger="[[ _triggerDropdown ]]"
+                    close-outside>
 
                 <paper-listbox id="productList" selected="[[ _selectedProductIndex ]]" on-iron-select="__onItemSelect">
                     <paper-item label="appsco-product">

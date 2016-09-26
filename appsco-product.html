@@ -37,12 +37,8 @@ Custom property | Description | Default
             :host {
                 display: inline-block;
                 font-size: 16px;
-                color: var(--primary-text-color, #8398b1);
                 position: relative;
-
-                --paper-item: {
-                     cursor: pointer;
-                 };
+                color: var(--primary-text-color);
 
                 @apply(--appsco-product);
             }
@@ -51,7 +47,7 @@ Custom property | Description | Default
                 cursor: pointer;
             }
             :host appsco-dropdown {
-                min-width: 200px;
+                min-width: 160px;
                 width: auto;
                 right: -8px;
 
@@ -59,6 +55,11 @@ Custom property | Description | Default
             }
             :host paper-listbox {
                 padding: 0;
+            }
+            :host paper-listbox paper-item {
+                cursor: pointer;
+                height: 36px;
+                font-size: 14px;
             }
             :host paper-listbox paper-item:first-child {
                 border-bottom: 1px solid var(--appsco-light-gray-color, #f5f8fa);
@@ -80,15 +81,15 @@ Custom property | Description | Default
                     trigger="[[ _triggerDropdown ]]"
                     close-outside>
 
-                <paper-listbox id="productList" selected="[[ _selectedProductIndex ]]" on-iron-select="__onItemSelect">
-                    <paper-item label="appsco-product">
-                        AppsCo
-                        <paper-ripple></paper-ripple>
-                    </paper-item>
-                    <paper-item label="appsco-partner-product">
-                        AppsCo Partner
-                        <paper-ripple></paper-ripple>
-                    </paper-item>
+                <paper-listbox id="productList" selected="appsco-product" attr-for-selected="value" on-iron-select="_onItemSelect">
+
+                    <template is="dom-repeat" items="[[ _products ]]">
+                        <paper-item value="[[ item.value ]]" label="[[ item.label ]]">
+                            [[ item.label ]]
+                            <paper-ripple></paper-ripple>
+                        </paper-item>
+                    </template>
+
                 </paper-listbox>
 
             </appsco-dropdown>
@@ -119,13 +120,20 @@ Custom property | Description | Default
                     value: false
                 },
 
-                /** Index of selected product.*/
-                _selectedProductIndex: {
-                    type: Number,
-                    value: 0
+                /** Appsco products. */
+                _products: {
+                    type: Array,
+                    value: [{
+                        label: 'AppsCo',
+                        value: 'appsco-product'
+                    },
+                    {
+                        label: 'AppsCo Partner',
+                        value: 'appsco-partner-product'
+                    }]
                 },
 
-                /** Label of selected product to dipsplay.*/
+                /** Label of selected product to display.*/
                 _selectedProductLabel: {
                     type: String,
                     value: 'AppsCo'
@@ -158,17 +166,16 @@ Custom property | Description | Default
              * Listens to iron-select event of paper-listbox.
              * It sets label of selected product to display.
              * It fires event that product is changed: appsco-product-changed.
-             * At last, it closes the products dropdown.
              *
              * @private
              */
-            __onItemSelect: function() {
+            _onItemSelect: function() {
                 var item = this.$$('#productList').selectedItem;
 
-                this._selectedProductLabel = item.textContent.trim();
+                this._selectedProductLabel = item.label;
 
                 this.fire('appsco-product-changed', {
-                    product: item.getAttribute('label')
+                    product: item.value
                 });
 
                 this._pressed = false;

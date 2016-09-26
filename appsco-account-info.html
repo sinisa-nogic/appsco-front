@@ -4,6 +4,7 @@
 <link rel="import" href="../iron-icons/iron-icons.html">
 <link rel="import" href="../paper-button/paper-button.html">
 <link rel="import" href="../iron-localstorage/iron-localstorage.html">
+<link rel="import" href="../iron-media-query/iron-media-query.html">
 
 <link rel="import" href="appsco-dropdown.html">
 
@@ -42,22 +43,36 @@ Custom property | Description | Default
     <template>
         <style include="iron-flex iron-flex-alignment">
             :host {
-                color: var(--primary-text-color);
                 font-size: 14px;
                 position: relative;
                 cursor: pointer;
                 display: inline-block;
-
-                --primary-text-color: #8398b1;
-
-                --paper-button: {
-                    max-width: 110px;
-                     margin: 0;
-                     color: var(--primary-text-color);
-                     font-size: 90%;
-                 };
+                color: var(--primary-text-color);
 
                 @apply(--appsco-account-info);
+            }
+            :host[display-name] .account-info.hidden {
+                display: inline;
+            }
+            :host[display-name] iron-icon.hidden {
+                display: inline-flex;
+            }
+            :host[display-name] appsco-dropdown {
+                top: 30px;
+                right: -9px;
+            }
+            :host paper-button {
+                @apply(--paper-font-button);
+
+                max-width: 110px;
+                margin: 0;
+                font-size: 90%;
+                line-height: normal;
+                text-align: center;
+                display: block;
+            }
+            :host .hidden {
+                display: none;
             }
             :host .divider {
                 width: 100%;
@@ -74,8 +89,9 @@ Custom property | Description | Default
             :host .clearfix:after {
                 clear: both;
             }
-            :host img {
-                max-width: 100%;
+            :host .truncate {
+                @apply(--paper-font-common-nowrap);
+                display: block;
             }
             :host .account-holder:after {
                 clear: both;
@@ -97,6 +113,10 @@ Custom property | Description | Default
             :host .account-info {
                 margin: 0 0 0 10px;
                 overflow: hidden;
+            }
+            :host .user-holder .account-info {
+                float: left;
+                max-width: 200px;
             }
             :host appsco-dropdown {
                 top: 35px;
@@ -164,23 +184,20 @@ Custom property | Description | Default
 
                @apply(--btn-default);
             }
-            :host .hidden {
-                display: none;
-            }
-            :host[display-name] .account-info.hidden {
-                display: inline;
-            }
-            :host[display-name] iron-icon.hidden {
-                display: inline-flex;
-            }
-            :host[display-name] appsco-dropdown {
-                top: 30px;
-                right: -9px;
-            }
             :host .end-justified {
                 @apply(--layout-end-justified);
             }
+            :host[mobile] appsco-dropdown {
+                top: 35px;
+                right: -5px;
+            }
+            :host[mobile] .account-info.hidden,
+            :host[mobile] iron-icon.hidden {
+                display: none;
+            }
         </style>
+
+        <iron-media-query query="(max-width: 600px)" query-matches="{{ mobile }}"></iron-media-query>
 
         <div class="account-holder" hidden$="[[ !_accountExists }}">
 
@@ -188,9 +205,7 @@ Custom property | Description | Default
 
                 <img src="[[ account.picture_url ]]" class="account-img pull-left">
 
-                <template is="dom-if" if="[[ account.first_name ]]">
-                    <span class="account-info hidden">[[ account.first_name ]] [[ account.last_name ]]</span>
-                </template>
+                <span class="account-info truncate hidden">[[ _accountDisplay ]]</span>
 
                 <iron-icon icon="arrow-drop-down" class="hidden"></iron-icon>
             </div>
@@ -290,11 +305,37 @@ Custom property | Description | Default
             properties: {
 
                 /**
+                 * Indicates if it is mobile view.
+                 * It uses iron-media-query.
+                 */
+                mobile: {
+                    type: Boolean,
+                    value: false,
+                    reflectToAttribute: true
+                },
+
+                /**
                  * Active account from AppsCo dashboard.
                  */
                 account: {
                     type: Object,
                     notify: true
+                },
+
+                /**
+                 * Display for account.
+                 */
+                _accountDisplay: {
+                    type: String,
+                    computed: '_setAccountDisplay(account)'
+                },
+
+                /**
+                 * Indicates if account exists or not.
+                 */
+                _accountExists: {
+                    type: Boolean,
+                    value: false
                 },
 
                 /**
@@ -337,11 +378,6 @@ Custom property | Description | Default
                 _triggerDropdown: {
                     type: Object,
                     notify: true
-                },
-
-                _accountExists: {
-                    type: Boolean,
-                    value: false
                 }
             },
 
@@ -360,6 +396,7 @@ Custom property | Description | Default
             /**
              * Checks if account exists or not.
              * It sets _accountExists property value.
+             *
              * @private
              */
             _checkIfAccountExists: function() {
@@ -380,6 +417,30 @@ Custom property | Description | Default
             },
 
             /**
+             * Returns display name for account.
+             * @param {Object} account.
+             *
+             * @private
+             */
+            _setAccountDisplay: function(account) {
+                var displayName = '';
+
+                if (account.first_name != '') {
+                    displayName = account.first_name + ' ';
+                }
+
+                if (account.last_name != '') {
+                    displayName += account.last_name;
+                }
+
+                if (account.first_name == '' && account.last_name == '') {
+                    displayName = account.email;
+                }
+
+                return displayName;
+            },
+
+            /**
              * Checks if info exists and sets appropriate style.
              *
              * @private
@@ -388,7 +449,7 @@ Custom property | Description | Default
                 var accountInfoDropdown = this.$.accountInfoDropdown;
 
                 if (this.info && this.info.trim() != '') {
-                    accountInfoDropdown.customStyle['--caret-color'] = 'var(--info-background-color, #edf9ff)';
+                    accountInfoDropdown.customStyle['--dropdown-caret-background-color'] = 'var(--info-background-color, #edf9ff)';
                     accountInfoDropdown.updateStyles();
                 }
 

@@ -7,6 +7,7 @@
 <link rel="import" href="../iron-form/iron-form.html">
 <link rel="import" href="../paper-input/paper-input.html">
 <link rel="import" href="../iron-a11y-keys/iron-a11y-keys.html">
+<link rel="import" href="../iron-media-query/iron-media-query.html">
 
 <link rel="import" href="appsco-dropdown.html">
 
@@ -45,10 +46,8 @@ Example:
         <style include="iron-flex iron-flex-alignment">
             :host {
                 display: inline-block;
-                color: var(--primary-text-color);
                 position: relative;
-
-                --primary-text-color: #8398b1;
+                color: var(--primary-text-color);
 
                 --appsco-dropdown: {
                      position: fixed;
@@ -77,8 +76,8 @@ Example:
                 @apply(--appsco-account-chat);
             }
             :host .action-icon {
-                color: var(--appsco-account-action-color, #8398b1);
-                --paper-icon-button-ink-color: var(--appsco-account-action-color, #8398b1);
+                color: var(--appsco-account-action-color, --primary-text-color);
+                --paper-icon-button-ink-color: var(--appsco-account-action-color, --primary-text-color);
             }
             :host[_pressed] .action-icon {
                 border-radius: 50%;
@@ -87,17 +86,48 @@ Example:
                 @apply(--appsco-account-active-action);
             }
             :host paper-card {
-                 width: 100%;
+                width: 100%;
+                height: 100%;
+                position: relative;
 
                 --paper-card-header: {
+                     width: 100%;
                      height: 60px;
-                     box-shadow: 0 20px 20px -5px rgba(255, 255, 255, 0.8);
-                     z-index: 4;
+                     background: #ffffff;
+                     position: absolute;
+                     top: 0;
+                     left: 0;
+                     border-bottom: 1px solid var(--divider-color);
+                     z-index: 5;
                  };
+
+                --paper-card-header-text: {
+                     overflow: hidden;
+                     text-overflow: ellipsis;
+                     white-space: nowrap;
+                     display: block;
+                     padding-right: 40px;
+                 };
+
+                --paper-card-content: {
+                     width: 100%;
+                     height: 100%;
+                     position: absolute;
+                     top: 0;
+                     left: 0;
+                     box-sizing: border-box;
+                     z-index: 1;
+                 };
+
                 --paper-card-actions: {
+                     width: 100%;
                      height: 50px;
                      border-top-color: var(--divider-color);
                      box-sizing: border-box;
+                     background: #ffffff;
+                     position: absolute;
+                     bottom: 0;
+                     z-index: 5;
                  };
 
                 --paper-card-header-color: var(--primary-text-color, #8398b1);
@@ -110,15 +140,15 @@ Example:
             }
             :host appsco-dropdown {
                 height: 60vh;
+
                 --appsco-dropdown-caret: {
                      display: none;
                  };
-                --appsco-dropdown-content: {
-                     box-shadow: none;
-                     height: 100%;
-                 };
 
                 @apply(--appsco-account-chat-dropdown);
+            }
+            :host appsco-dropdown paper-card {
+                @apply(--shadow-elevation-4dp);
             }
             :host appsco-dropdown .messages-container {
                 position: absolute;
@@ -127,15 +157,9 @@ Example:
                 width: 100%;
                 height: 100%;
                 box-sizing: border-box;
-                padding: 16px;
+                padding: 80px 16px 40px;
                 overflow-x: hidden;
                 overflow-y: auto;
-            }
-            :host appsco-dropdown paper-card {
-                height: 100%;
-            }
-            :host appsco-dropdown paper-card .card-content {
-                height: calc(100% - 60px - 51px - 32px);
             }
             :host .user-profile-img {
                 width: 34px;
@@ -151,7 +175,6 @@ Example:
                 min-height: 34px;
                 padding: 5px 10px;
                 margin-left: 10px;
-                @apply(--shadow-elevation-2dp);
                 @apply(--appsco-account-chat-message);
             }
             :host .message.message-incoming {
@@ -184,13 +207,13 @@ Example:
             }
             :host .arrow-box:after {
                 border-right-color: var(--appsco-account-chat-message-color, #f5f8fa);
-                border-width: 8px;
-                margin-top: -8px;
+                border-width: 6px;
+                margin-top: -6px;
             }
             :host .arrow-box:before {
                 border-right-color: var(--appsco-account-chat-message-color, rgba(0, 0, 0, 0.08));
-                border-width: 9px;
-                margin-top: -9px;
+                border-width: 7px;
+                margin-top: -7px;
             }
             :host .arrow-box-right:after,
             :host .arrow-box-right:before {
@@ -214,14 +237,21 @@ Example:
                 top: 17px;
             }
             :host .message:after {
-                top: 17px;
                 @apply(--appsco-account-chat-message-arrow-after);
             }
             :host .message:before {
-                top: 17px;
                 @apply(--appsco-account-chat-message-arrow-before);
             }
+            :host[mobile] appsco-dropdown {
+                width: 100vw;
+                height: 100vh;
+                top: 0;
+                right: 0;
+                left: 0;
+            }
         </style>
+
+        <iron-media-query query="(max-width: 600px)" query-matches="{{ mobile }}"></iron-media-query>
 
         <paper-icon-button
                 id="trigger"
@@ -235,7 +265,7 @@ Example:
                 open="{{ _pressed }}"
                 trigger="[[ _triggerDropdown ]]">
 
-            <paper-card heading="John Doe">
+            <paper-card heading="[[ _accountDisplay ]]">
                 <paper-icon-button
                         class="close-icon"
                         icon="close"
@@ -310,6 +340,32 @@ Example:
                                 <div class="time">21/9/2016</div>
                             </div>
                         </div>
+
+                        <div class="layout horizontal">
+                            <div class="message-container flex">
+                                <div class="message message-incoming arrow-box arrow-box-right">Message text 2....</div>
+                                <div class="time text-center">21/9/2016</div>
+                            </div>
+
+                            <iron-image
+                                    src="http://appsco.loc/bundles/appscodashboardapproot/img/profile-avatar.png"
+                                    sizing="contain"
+                                    class="user-profile-img">
+                            </iron-image>
+                        </div>
+
+                        <div class="layout horizontal">
+                            <div class="message-container flex">
+                                <div class="message message-incoming arrow-box arrow-box-right">New incoming message with really long text....</div>
+                                <div class="time">21/9/2016</div>
+                            </div>
+
+                            <iron-image
+                                    src="http://appsco.loc/bundles/appscodashboardapproot/img/profile-avatar.png"
+                                    sizing="contain"
+                                    class="user-profile-img">
+                            </iron-image>
+                        </div>
                     </div>
 
                 </div>
@@ -343,6 +399,31 @@ Example:
             is: 'appsco-account-chat',
 
             properties: {
+
+                /**
+                 * Indicates if it is mobile view.
+                 * It uses iron-media-query.
+                 */
+                mobile: {
+                    type: Boolean,
+                    value: false,
+                    reflectToAttribute: true
+                },
+
+                /**
+                 * Active account from AppsCo dashboard.
+                 */
+                account: {
+                    type: Object
+                },
+
+                /**
+                 * Display for account.
+                 */
+                _accountDisplay: {
+                    type: String,
+                    computed: '_setAccountDisplay(account)'
+                },
 
                 /** Chat object with connect data. */
                 chat: {
@@ -382,6 +463,30 @@ Example:
                 this._triggerDropdown = this.$$('#trigger');
 
                 this._scrollToLastMessage();
+            },
+
+            /**
+             * Returns display name for account.
+             * @param {Object} account.
+             *
+             * @private
+             */
+            _setAccountDisplay: function(account) {
+                var displayName = '';
+
+                if (account.first_name != '') {
+                    displayName = account.first_name + ' ';
+                }
+
+                if (account.last_name != '') {
+                    displayName += account.last_name;
+                }
+
+                if (account.first_name == '' && account.last_name == '') {
+                    displayName = account.email;
+                }
+
+                return displayName;
             },
 
             /**

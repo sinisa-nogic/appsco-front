@@ -1,0 +1,247 @@
+<link rel="import" href="../polymer/polymer.html">
+
+<link rel="import" href="../iron-image/iron-image.html">
+<link rel="import" href="../iron-flex-layout/iron-flex-layout.html">
+<link rel="import" href="../paper-styles/typography.html">
+<link rel="import" href="../paper-styles/shadow.html">
+<link rel="import" href="../iron-ajax/iron-ajax.html">
+<link rel="import" href="../paper-button/paper-button.html">
+<link rel="import" href="../paper-progress/paper-progress.html">
+
+<link rel="import" href="../neon-animation/animations/fade-in-animation.html">
+<link rel="import" href="../neon-animation/neon-animation-runner-behavior.html">
+
+<!--
+`appsco-application-log`
+Used to present application log. Each log message is presented in a new row.
+
+    <appsco-application-log>
+    </appsco-application-log>
+
+### Styling
+
+`<appsco-application-log>` provides the following custom properties and mixins for styling:
+
+Custom property | Description | Default
+----------------|-------------|----------
+`--appsco-application-log` | Mixin for the root element | `{}`
+
+@demo demo/appsco-application-log.html
+-->
+
+<dom-module id="appsco-application-log">
+    <template>
+        <style>
+            :host {
+                display: block;
+                @apply(--appsco-application-log);
+            }
+            :host .flex {
+                @apply(--layout-flex);
+            }
+            :host .messages {
+                @apply(--layout-vertical);
+            }
+
+            :host .message {
+                @apply(--layout-vertical);
+
+                @apply(--paper-font-caption);
+                @apply(--shadow-elevation-2dp);
+                margin: 4px;
+                padding: 5px 5px 0 5px;
+                background-color: #f5f5f5;
+                opacity: 0;
+                transition: opacity 0.4s ease-in-out;
+            }
+            :host .message.active {
+                opacity: 1;
+            }
+            :host .end {
+                @apply(--layout-end);
+                text-align: end;
+                opacity: 0.6;
+            }
+            :host .message-content {
+                @apply(--layout-horizontal);
+                @apply(--layout-center);
+            }
+            :host iron-image {
+                width: 48px;
+                height: 48px;
+                margin-right: 15px;
+            }
+            :host span[msg] {
+                @apply(--paper-font-body1);
+            }
+            :host paper-progress {
+                width: 100%;
+                --paper-progress-active-color: #7baaf7;
+            }
+            :host .progress {
+                height: 6px;
+            }
+        </style>
+
+        <iron-ajax
+                on-request="_loading"
+                auto
+                url="[[ _currentUrl ]]"
+                on-response="_handleResponse"
+                on-error="_handleError"
+                headers="{{ _computedHeaders }}"
+                debounce-duration="300">
+        </iron-ajax>
+
+        <div class="messages">
+            <div class="progress">
+                <paper-progress id="progress" indeterminate></paper-progress>
+            </div>
+            <template is="dom-repeat" items="[[ _logMessages ]]" id="message" index-as="current">
+                <div class="message" >
+                    <div class="message-content">
+                        <div class="user-image">
+                            <iron-image placeholder="data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiIHN0YW5kYWxvbmU9Im5vIj8+PHN2ZyB3aWR0aD0iMjhweCIgaGVpZ2h0PSIyOHB4IiB2aWV3Qm94PSIwIDAgMjggMjgiIHZlcnNpb249IjEuMSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiB4bWxuczp4bGluaz0iaHR0cDovL3d3dy53My5vcmcvMTk5OS94bGluayI+ICAgICAgICA8dGl0bGU+QXBwc0NvLWxvZ288L3RpdGxlPiAgICA8ZGVzYz5DcmVhdGVkIHdpdGggU2tldGNoLjwvZGVzYz4gICAgPGRlZnM+PC9kZWZzPiAgICA8ZyBpZD0iUGFnZS0xIiBzdHJva2U9Im5vbmUiIHN0cm9rZS13aWR0aD0iMSIgZmlsbD0ibm9uZSIgZmlsbC1ydWxlPSJldmVub2RkIj4gICAgICAgIDxnIGlkPSJBcHBzQ28tbG9nbyI+ICAgICAgICAgICAgPGcgaWQ9Ikdyb3VwIj4gICAgICAgICAgICAgICAgPHJlY3QgaWQ9IlJlY3RhbmdsZS0yIiBmaWxsPSIjMjA5QkMzIiB4PSIwIiB5PSIxNSIgd2lkdGg9IjEzIiBoZWlnaHQ9IjEzIj48L3JlY3Q+ICAgICAgICAgICAgICAgIDxyZWN0IGlkPSJSZWN0YW5nbGUtMi1Db3B5IiBmaWxsPSIjODhCOTU1IiB4PSIxNSIgeT0iMCIgd2lkdGg9IjEzIiBoZWlnaHQ9IjEzIj48L3JlY3Q+ICAgICAgICAgICAgICAgIDxyZWN0IGlkPSJSZWN0YW5nbGUtMi1Db3B5LTIiIGZpbGw9IiNFNkQwMjUiIHg9IjE1IiB5PSIxNSIgd2lkdGg9IjEwIiBoZWlnaHQ9IjEwIj48L3JlY3Q+ICAgICAgICAgICAgICAgIDxyZWN0IGlkPSJSZWN0YW5nbGUtMi1Db3B5LTMiIGZpbGw9IiNEODNEODIiIHg9IjMiIHk9IjMiIHdpZHRoPSIxMCIgaGVpZ2h0PSIxMCI+PC9yZWN0PiAgICAgICAgICAgIDwvZz4gICAgICAgIDwvZz4gICAgPC9nPjwvc3ZnPg=="
+                                    sizing="cover" preload fade src="[[ item.account.image ]]"></iron-image>
+                        </div>
+                        <div class="flex log-message">
+                            <template is="dom-if" if="{{_if(item.type, 'application_shared')}}">
+                                <span msg>Application shared to [[ item.account.display_name ]]</span>
+                            </template>
+                            <template is="dom-if" if="{{_if(item.type, 'modified')}}">
+                                <span msg>Modified application by [[ item.account.display_name ]]</span>
+                            </template>
+                            <template is="dom-if" if="{{_if(item.type, 'logged_in')}}">
+                                <span msg>[[ item.account.display_name ]] logged in.</span>
+                            </template>
+                            <template is="dom-if" if="{{_if(item.type, 'claims_changed')}}">
+                                <span msg>[[ item.account.display_name ]] changed application claims</span>
+                            </template>
+                            <template is="dom-if" if="{{_if(item.type, 'deleted')}}">
+                                <span msg>[[ item.account.display_name ]] removed application</span>
+                            </template>
+
+                            <div class="flex end">
+                                <span>[[ _date(item.created_at.date) ]]</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <script defer>
+                    setTimeout(function() {
+                        document.querySelectorAll('.message')['{{ current }}'].classList.add('active');
+                    }, 50);
+                </script>
+            </template>
+            <paper-button on-tap="loadMoreLogs" id="loadMore" hidden="[[ !loadMore ]]">Load More</paper-button>
+        </div>
+
+    </template>
+
+    <script>
+        Polymer({
+
+            is: 'appsco-application-log',
+
+            _if: function (a, b) {
+                return a == b;
+            },
+            _date: function(date) {
+                var options = {
+                    weekday: "long", year: "numeric", month: "short",
+                    day: "numeric", hour: "2-digit", minute: "2-digit"
+                };
+                return (new Date(date)).toLocaleDateString('en', options);
+            },
+            /**
+             * Link to load next page
+             */
+            _next: "",
+
+            properties: {
+                /**
+                 * [ApplicationLog]() that is to be rendered
+                 */
+                _logMessages: {
+                    type: Array,
+                    value: []
+                },
+                /**
+                 * Number of log items to load and present
+                 */
+                size: {
+                    type: Number,
+                    value: 5
+                },
+                /**
+                 * Show load more button
+                 */
+                loadMore: {
+                    type: Boolean,
+                    value: false,
+                    reflectToAttribute: true
+                },
+                authorizationToken: {
+                    type: String,
+                    value: ''
+                },
+                /**
+                 * [Application](https://developers.appsco.com/api/dashboard/id/icons/id/log) that log is to be rendered for
+                 */
+                application: {
+                    type: Object,
+                    value: {}
+                },
+                _currentUrl: {
+                    type: String,
+                    notify: true
+                },
+                _computedHeaders: {
+                    type: Object,
+                    computed: "_computeHeaders(authorizationToken)"
+                }
+            },
+            listeners: {
+                'application-changed': "_init",
+                'on-request': "_loading"
+            },
+            _init: function() {
+                this._next = this.application.self + "/log?page=1&limit=" + this.size;
+                this._currentUrl = this._next;
+            },
+            _computeHeaders: function (authorizationToken) {
+                return {
+                    "Authorization": "token " + authorizationToken
+                }
+            },
+            _handleResponse: function (e) {
+                var me = this;
+                console.log(e.detail.response);
+                e.detail.response.log.forEach(function(el, index){
+                    setTimeout(function() {
+                        me.push('_logMessages', el);
+                    }, (index * 100));
+                });
+
+                this._next = e.detail.response.meta.next+"&limit="+this.size;
+                // Wait for a bit longer so that loading looks nice
+                setTimeout(function() {
+                    me.$.progress.hidden = true;
+                    if(parseInt(e.detail.response.meta.page) == parseInt(e.detail.response.meta.pages))
+                    {
+                        me.$.loadMore.disabled = true;
+                    }
+                }, 600 + (e.detail.response.log.length * 100))
+            },
+            _handleError: function() {
+                this.$.progress.hidden = true;
+            },
+            loadMoreLogs: function () {
+                this._currentUrl = this._next;
+            },
+            _loading: function() {
+                this.$.progress.hidden = false;
+            }
+        });
+    </script>
+</dom-module>

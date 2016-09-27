@@ -4,8 +4,6 @@
 <link rel="import" href="appsco-account-chat.html">
 <link rel="import" href="appsco-account-notifications.html">
 
-<link rel="import" href="appsco-theme-basic.html">
-
 <!--
 `appsco-account-actions`
 Is used to present account related actions.
@@ -15,7 +13,7 @@ Example:
     <body>
       <appsco-account-actions
             chat={}
-            intranet="64">
+            intranet="url_to_website">
      </appsco-account-actions>
 
 
@@ -25,7 +23,7 @@ Example:
 
 Custom property | Description | Default
 ----------------|-------------|----------
-`--action-color` | Color for icon-button action | `Based on --text-color`
+`--action-color` | Color for icon-button action | `Based on --primary-text-color`
 `--appsco-account-actions` | Mixin applied to root appsco-account-actions element. | `{}`
 @demo demo/appsco-account-actions.html
 -->
@@ -35,30 +33,38 @@ Custom property | Description | Default
         <style>
             :host {
                 display: inline-block;
+                color: var(--primary-text-color);
 
                 @apply(--appsco-account-actions);
             }
             :host a {
                 text-decoration: none;
             }
-            :host paper-icon-button,
-            :host a paper-icon-button,
-            :host a:active paper-icon-button,
-            :host a:visited paper-icon-button {
-                color: var(--action-color, --text-color);
+            :host .action-icon,
+            :host a .action-icon,
+            :host a:active .action-icon,
+            :host a:visited .action-icon {
+                color: var(--appsco-account-action-color, --primary-text-color);
+                --paper-icon-button-ink-color: var(--appsco-account-action-color, --primary-text-color);
             }
         </style>
 
         <div class="account-actions">
 
-            <template is="dom-if" if="{{ intranet }}">
-                <a href="[[ intranet ]]" target="_blank" tabindex="-1">
-                    <paper-icon-button icon="language" title="Intranet"></paper-icon-button>
+            <template is="dom-if" if="[[ account.intranet ]]">
+                <a href="[[ account.intranet ]]" target="_blank" tabindex="-1">
+                    <paper-icon-button
+                            class="action-icon"
+                            icon="language"
+                            title="Intranet"></paper-icon-button>
                 </a>
             </template>
 
             <template is="dom-if" if="[[ chat ]]">
-                <appsco-account-chat chat="[[ chat ]]"></appsco-account-chat>
+                <appsco-account-chat
+                        account="[[ account ]]"
+                        chat="[[ chat ]]">
+                </appsco-account-chat>
             </template>
 
             <appsco-account-notifications></appsco-account-notifications>
@@ -74,18 +80,17 @@ Custom property | Description | Default
 
             properties: {
 
-                /** Chat object with connect data. */
-                chat: {
+                /**
+                 * Active account from AppsCo dashboard.
+                 */
+                account: {
                     type: Object
                 },
 
-                /** Intranet website url. */
-                intranet: {
-                    type: String
+                /** Chat object with connect data. */
+                chat: {
+                    type: Object
                 }
-            },
-
-            ready: function() {
             }
 
         });

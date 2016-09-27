@@ -22,10 +22,11 @@ Example:
 
  Custom property | Description | Default
 ----------------|-------------|----------
-`--text-color` | Default text color for element | `#7e97b2`
-`--action-color` | Color for icon-button action | `Based on --text-color`
+`--primary-text-color` | Default text color for element | `#7e97b2`
+`--appsco-account-action-color` | Color for icon-button action | `Based on --primary-text-color`
+`--appsco-account-new-notifications-color` | Color for icon-button action when there are new notifications | `Based on --primary-text-color`
 `--divider-color` | Default color for divider | `#eaeaea`
-`--appsco-account-notifications-color` | Default text color root element | `Based on --text-color`
+`--appsco-account-notifications-color` | Default text color root element | `Based on --primary-text-color`
 `--appsco-account-notifications` | Mixin applied to root appsco-account-notifications element | `{}`
 `--appsco-account-notifications-dropdown` | Mixin applied to inner appsco-dropdown within root element | `{}`
 `--appsco-account-active-action` | Mixin applied to action in active state | `{}`
@@ -38,25 +39,32 @@ Example:
         <style include="iron-flex iron-flex-alignment">
             :host {
                 display: inline-block;
-                color: var(--appsco-account-notifications-color, --text-color);
                 position: relative;
+                color: var(--primary-text-color);
 
                 @apply(--appsco-account-notifications);
             }
             :host .action-icon {
-                color: var(--action-color, --text-color);
-                --paper-icon-button-ink-color: var(--action-color, --text-color);
+                color: var(--appsco-account-action-color, --primary-text-color);
+                --paper-icon-button-ink-color: var(--appsco-account-action-color, --primary-text-color);
             }
             :host[_pressed] .action-icon {
-                @apply(--shadow-elevation-2dp);
-                @apply(--round-element);
+                border-radius: 50%;
 
+                @apply(--shadow-elevation-2dp);
                 @apply(--appsco-account-active-action);
+            }
+            :host .new-notifications-icon {
+                color: var(--appsco-account-new-notifications-color, --primary-color);
+                --paper-icon-button-ink-color: var(--appsco-account-new-notifications-color, --primary-color);
             }
             :host .divider {
                 width: 100%;
                 height: 1px;
                 background-color: var(--divider-color, #eaeaea);
+            }
+            :host appsco-account-notification {
+                color: var(--primary-text-color, #8398b1);
             }
             :host appsco-dropdown {
                 top: 45px;
@@ -68,7 +76,7 @@ Example:
                 width: 100%;
                 min-height: 300px;
 
-                --paper-card-header-color: var(--appsco-account-notifications-color, --text-color);;
+                --paper-card-header-color: var(--primary-text-color, #8398b1);
 
                 --paper-card-header-text: {
                      font-size: 20px;
@@ -81,7 +89,9 @@ Example:
                 padding: 0;
             }
             :host paper-button {
-                color: var(--appsco-account-notifications-color, --text-color);
+                @apply(--paper-font-button);
+
+                line-height: normal;
             }
             :host .see-all-btn {
                 width: 100%;
@@ -93,17 +103,30 @@ Example:
             }
         </style>
 
-        <paper-icon-button
-                id="trigger"
-                class="action-icon"
-                icon="social:notifications"
-                title="Notifications"
-                on-tap="_toggleDropdownAction">
-        </paper-icon-button>
+        <template is="dom-if" if="[[ _newNotifications ]]">
+            <paper-icon-button
+                    id="newNotificationsAction"
+                    class="action-icon new-notifications-icon"
+                    icon="social:notifications-active"
+                    title="Notifications"
+                    on-tap="_onNewNotificationsAction">
+            </paper-icon-button>
+        </template>
+
+        <template is="dom-if" if="[[ !_newNotifications ]]">
+            <paper-icon-button
+                    id="notificationsAction"
+                    class="action-icon"
+                    icon="social:notifications"
+                    title="Notifications"
+                    on-tap="_onNotificationsAction">
+            </paper-icon-button>
+        </template>
 
         <appsco-dropdown
                 open="{{ _pressed }}"
-                trigger="[[ _triggerDropdown ]]">
+                trigger="[[ _triggerDropdown ]]"
+                close-outside>
 
                 <paper-card heading="Notifications">
 
@@ -168,6 +191,22 @@ Example:
                 },
 
                 /**
+                 * Indicates if notifications are loaded or not.
+                 */
+                _notificationsExists: {
+                    type: Boolean,
+                    value: false
+                },
+
+                /**
+                 * Indicates if there are new notifications.
+                 */
+                _newNotifications: {
+                    type: Boolean,
+                    value: false
+                },
+
+                /**
                  * Message to display instead of notifications.
                  */
                 _message: {
@@ -180,7 +219,6 @@ Example:
                 _pressed: {
                     type: Boolean,
                     value: false,
-                    notify: true,
                     reflectToAttribute: true
                 },
 
@@ -198,14 +236,6 @@ Example:
                 _loader: {
                     type: Boolean,
                     value: true
-                },
-
-                /**
-                 * Indicates if notifications are loaded or not.
-                 */
-                _notificationsExists: {
-                    type: Boolean,
-                    value: false
                 }
             },
 
@@ -216,12 +246,20 @@ Example:
 
             ready: function() {
                 var basic = btoa('nikola@free.com' + ':' + 'Nikola.Appscov2');
-
                 this.$.ironAjaxNotifications.headers.authorization = "Basic " + basic;
+
+                // This is set just to see how it works.
+                // Should be removed after implementation of 'new notifications' scenario.
+                // We should see how to check if there are new notifications.
+                setTimeout(function() {
+
+                    this._newNotifications = true;
+
+                }.bind(this), 3000);
             },
 
             attached: function() {
-                this._triggerDropdown = this.$$('#trigger');
+                this._triggerDropdown = this.$$('#notificationsAction');
 
                 this._checkIfNotificationsExists();
             },
@@ -340,7 +378,7 @@ Example:
             _handleResponse: function(event) {
                 var response = event.detail.response;
 
-                if (response.notifications.length > 0) {
+                if (response.notifications && response.notifications.length > 0) {
                     this._notifications = response.notifications;
                 }
                 else {
@@ -349,6 +387,27 @@ Example:
 
                 this._loader = false;
 
+            },
+
+            /**
+             * Handles notifications action.
+             *
+             * @private
+             */
+            _onNotificationsAction: function() {
+                this._triggerDropdown = this.$$('#notificationsAction');
+                this._toggleDropdownAction();
+            },
+
+            /**
+             * Handles notifications action when there are new notifications.
+             *
+             * @private
+             */
+            _onNewNotificationsAction: function() {
+                this._triggerDropdown = this.$$('#newNotificationsAction');
+                this._newNotifications = false;
+                this._toggleDropdownAction();
             }
 
         });

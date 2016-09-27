@@ -1,5 +1,6 @@
 <link rel="import" href="../polymer/polymer.html">
 <link rel="import" href="../iron-flex-layout/iron-flex-layout-classes.html">
+<link rel="import" href="../iron-media-query/iron-media-query.html">
 
 <!--
 `appsco-brand`
@@ -27,7 +28,7 @@ Example:
 
 Custom property | Description | Default
 ----------------|-------------|----------
-`--text-color` | Color for text in element. | Based on text-color from appsco theme.
+`--primary-text-color` | Color for text in element. | Based on text-color from appsco theme.
 `--appsco-brand` | Mixin applied to root appsco-brand element. | `{}`
 `--appsco-brand-logo` | Mixin applied to the logo image element. | `{}`
 `--appsco-brand-info` | Mixin applied to the info content container. | `{}`
@@ -40,7 +41,8 @@ Custom property | Description | Default
         <style include="iron-flex iron-flex-alignment">
             :host {
                 display: inline-block;
-                color: var(--text-color, #8398b1);
+                color: var(--primary-text-color);
+
                 @apply(--appsco-brand);
             }
             :host .logo {
@@ -51,13 +53,18 @@ Custom property | Description | Default
             :host .brand-info {
                 @apply(--appsco-brand-info);
             }
+            :host[mobile] .title {
+                display: none;
+            }
         </style>
+
+        <iron-media-query query="(max-width: 600px)" query-matches="{{ mobile }}"></iron-media-query>
 
         <div class="layout vertical">
 
             <div id="brand" class="brand">
                 <img src="[[ logo ]]" alt="[[ title ]]" width="[[ logoWidth ]]" height="[[ logoHeight ]]" class="logo">
-                [[ brandTitle ]]
+                <span id="title" class="title">[[ brandTitle ]]</span>
             </div>
 
             <div class="brand-info">
@@ -74,6 +81,16 @@ Custom property | Description | Default
             is: 'appsco-brand',
 
             properties: {
+
+                /**
+                 * Indicates if it is mobile view.
+                 * It uses iron-media-query.
+                 */
+                mobile: {
+                    type: Boolean,
+                    value: false,
+                    reflectToAttribute: true
+                },
 
                 /** Source to image which represents brand logo. */
                 logo: {
@@ -112,8 +129,8 @@ Custom property | Description | Default
                 var size = this.logoHeight;
 
                 if (size && size != 0 && size != '') {
-                    this.$.brand.style.fontSize = (size / 1.6) + 'px';
-                    this.$.brand.style.lineHeight = size + 'px';
+                    this.$.title.style.fontSize = (size / 1.6) + 'px';
+                    this.$.title.style.lineHeight = size + 'px';
                 }
 
             }

@@ -3,8 +3,8 @@
 
 <link rel="import" href="../iron-icons/iron-icons.html">
 <link rel="import" href="../paper-button/paper-button.html">
-<link rel="import" href="../paper-ripple/paper-ripple.html">
 <link rel="import" href="../iron-localstorage/iron-localstorage.html">
+<link rel="import" href="../iron-media-query/iron-media-query.html">
 
 <link rel="import" href="appsco-dropdown.html">
 
@@ -21,18 +21,20 @@ Example:
 
 Custom property | Description | Default
 ----------------|-------------|----------
-`--text-color` | Default text color for element | `#7e97b2`
-`--active-account-background` | Background color for active account | `#ffffff`
-`--inactive-account-background` | Background color for additional accounts | `#f5f5f5`
+`--primary-text-color` | Default text color for element | `#7e97b2`
+`--active-account-background-color` | Background color for active account | `#ffffff`
+`--inactive-account-background-color` | Background color for additional accounts | `#f5f5f5`
 `--inactive-account-background-hover` | Hover for additional accounts | `#f9f7f7`
 `--border-color` | Default border color for element | `#d5d8d8`
 `--divider-color` | Default color for divider | `#eaeaea`
 `--info-background-color` | Background color for info inside element | `#edf9ff`
 `--appsco-account-info-box` | Mixin for info box | `{}`
-`--round-element` | Mixin for round elements | `border-radius: 50%`
 `--appsco-account-info` | Mixin applied to root appsco-account-info element | `{}`
 `--appsco-account-info-user-holder` | Mixin applied to user container within root element | `{}`
+`--appsco-account-info-account-img` | Mixin applied to account image | `{}`
 `--appsco-account-info-dropdown` | Mixin applied to inner appsco-account-info-dropdown element | `{}`
+`--btn-default` | Mixin applied to paper-button with class .btn-default | `{}`
+`--btn-primary` | Mixin applied to paper-button with class .btn-primary | `{}`
 
 @demo demo/appsco-account-info.html
 -->
@@ -41,25 +43,41 @@ Custom property | Description | Default
     <template>
         <style include="iron-flex iron-flex-alignment">
             :host {
-                color: var(--text-color);
                 font-size: 14px;
                 position: relative;
                 cursor: pointer;
                 display: inline-block;
-
-                --paper-button: {
-                    max-width: 110px;
-                     margin: 0;
-                     color: var(--text-color);
-                     font-size: 90%;
-                 };
+                color: var(--primary-text-color);
 
                 @apply(--appsco-account-info);
+            }
+            :host[display-name] .account-info.hidden {
+                display: inline;
+            }
+            :host[display-name] iron-icon.hidden {
+                display: inline-flex;
+            }
+            :host[display-name] appsco-dropdown {
+                top: 30px;
+                right: -9px;
+            }
+            :host paper-button {
+                @apply(--paper-font-button);
+
+                max-width: 110px;
+                margin: 0;
+                font-size: 90%;
+                line-height: normal;
+                text-align: center;
+                display: block;
+            }
+            :host .hidden {
+                display: none;
             }
             :host .divider {
                 width: 100%;
                 height: 1px;
-                background-color: var(--divider-color);
+                background-color: var(--divider-color, #eaeaea);
             }
             :host .pull-left {
                 float: left;
@@ -71,8 +89,9 @@ Custom property | Description | Default
             :host .clearfix:after {
                 clear: both;
             }
-            :host img {
-                max-width: 100%;
+            :host .truncate {
+                @apply(--paper-font-common-nowrap);
+                display: block;
             }
             :host .account-holder:after {
                 clear: both;
@@ -81,22 +100,23 @@ Custom property | Description | Default
                 height: 34px;
                 line-height: 34px;
                 font-size: 16px;
+
                 @apply(--appsco-account-info-user-holder);
             }
             :host .account-img {
                 width: 32px;
                 height: 32px;
-                @apply(--round-element);
+                border-radius: 50%;
+
+                @apply(--appsco-account-info-account-img);
             }
             :host .account-info {
-                margin: 0 0 0 5px;
+                margin: 0 0 0 10px;
                 overflow: hidden;
             }
-            :host .user-holder paper-ripple.circle {
-                width: 150%;
-                height: 150%;
-                left: -25%;
-                top: -25%;
+            :host .user-holder .account-info {
+                float: left;
+                max-width: 200px;
             }
             :host appsco-dropdown {
                 top: 35px;
@@ -106,11 +126,12 @@ Custom property | Description | Default
             }
             :host appsco-dropdown .info {
                 font-size: 11px;
-                background-color: var(--info-background-color);
+                background-color: var(--account-info-background-color, #edf9ff);
+
                 @apply(--appsco-account-info-box);
             }
             :host appsco-dropdown .additional-account, :host appsco-dropdown .actions {
-                background-color: var(--inactive-account-background);
+                background-color: var(--inactive-account-background-color, #f5f5f5);
             }
             :host appsco-dropdown .account, :host appsco-dropdown .actions, :host appsco-dropdown .info {
                 padding: 10px 20px;
@@ -131,14 +152,13 @@ Custom property | Description | Default
             }
             :host appsco-dropdown .active-account {
                 padding: 20px;
-                background-color: var(--active-account-background);
+                background-color: var(--active-account-background-color, #ffffff);
                 border-top-left-radius: 4px;
                 border-top-right-radius: 4px;
             }
             :host appsco-dropdown .active-account .account-img {
                 width: 96px;
                 height: 96px;
-                @apply(--round-element);
             }
             :host appsco-dropdown .active-account .account-info {
                 margin-top: 10px;
@@ -147,39 +167,37 @@ Custom property | Description | Default
                 position: relative;
             }
             :host appsco-dropdown .additional-account:hover {
-                background-color: var(--inactive-account-background-hover);
+                background-color: var(--inactive-account-background-hover, #f9f7f7);
             }
             :host appsco-dropdown .additional-account .account-info {
                 margin-top: 6px;
             }
             :host .btn-primary {
+                color: #ffffff;
+                background-color: var(--appsco-primary-color, #03BCFF);
+
                 @apply(--btn-primary);
             }
             :host .btn-default {
-                @apply(--btn-default);
-            }
-            :host .hidden {
-                display: none;
-            }
-            :host[display-name] .account-info.hidden {
-                display: inline;
-            }
-            :host[display-name] iron-icon.hidden {
-                display: inline-flex;
-            }
-            :host[display-name] appsco-dropdown {
-                top: 30px;
-                right: -9px;
+                color: var(--primary-text-color);
+                border: 1px solid var(--border-color, #d5d8d8);
+
+               @apply(--btn-default);
             }
             :host .end-justified {
                 @apply(--layout-end-justified);
             }
-            :host .user-holder-placeholder {
-                width: 100px;
-                height: 30px;
-                background-color: #f5f8fa;
+            :host[mobile] appsco-dropdown {
+                top: 35px;
+                right: -5px;
+            }
+            :host[mobile] .account-info.hidden,
+            :host[mobile] iron-icon.hidden {
+                display: none;
             }
         </style>
+
+        <iron-media-query query="(max-width: 600px)" query-matches="{{ mobile }}"></iron-media-query>
 
         <div class="account-holder" hidden$="[[ !_accountExists }}">
 
@@ -187,26 +205,17 @@ Custom property | Description | Default
 
                 <img src="[[ account.picture_url ]]" class="account-img pull-left">
 
-                <template is="dom-if" if="[[ account.first_name ]]">
-                    <span class="account-info hidden">[[ account.first_name ]] [[ account.last_name ]]</span>
-                </template>
+                <span class="account-info truncate hidden">[[ _accountDisplay ]]</span>
 
                 <iron-icon icon="arrow-drop-down" class="hidden"></iron-icon>
-
-                <template is="dom-if" if="{{ displayName }}">
-                    <paper-ripple></paper-ripple>
-                </template>
-
-                <template is="dom-if" if="{{ !displayName }}">
-                    <paper-ripple class="circle" center></paper-ripple>
-                </template>
             </div>
 
             <appsco-dropdown
                     id="accountInfoDropdown"
                     open="{{ _pressed }}"
                     trigger="[[ _triggerDropdown ]]"
-                    data-info$="[[ info ]]">
+                    data-info$="[[ info ]]"
+                    close-outside>
 
                 <template is="dom-if" if="[[ info ]]">
                     <div class="info">
@@ -296,11 +305,37 @@ Custom property | Description | Default
             properties: {
 
                 /**
+                 * Indicates if it is mobile view.
+                 * It uses iron-media-query.
+                 */
+                mobile: {
+                    type: Boolean,
+                    value: false,
+                    reflectToAttribute: true
+                },
+
+                /**
                  * Active account from AppsCo dashboard.
                  */
                 account: {
                     type: Object,
                     notify: true
+                },
+
+                /**
+                 * Display for account.
+                 */
+                _accountDisplay: {
+                    type: String,
+                    computed: '_setAccountDisplay(account)'
+                },
+
+                /**
+                 * Indicates if account exists or not.
+                 */
+                _accountExists: {
+                    type: Boolean,
+                    value: false
                 },
 
                 /**
@@ -343,11 +378,6 @@ Custom property | Description | Default
                 _triggerDropdown: {
                     type: Object,
                     notify: true
-                },
-
-                _accountExists: {
-                    type: Boolean,
-                    value: false
                 }
             },
 
@@ -358,10 +388,7 @@ Custom property | Description | Default
             attached: function() {
                 this._triggerDropdown = this.$$('#triggerDropdown');
 
-                if (this.info && this.info.trim() != '') {
-                    this.$.accountInfoDropdown.customStyle['--caret-color'] = 'var(--info-background-color)';
-                    this.$.accountInfoDropdown.updateStyles();
-                }
+                this._checkAccountInfo();
 
                 this._checkIfAccountExists();
             },
@@ -369,6 +396,7 @@ Custom property | Description | Default
             /**
              * Checks if account exists or not.
              * It sets _accountExists property value.
+             *
              * @private
              */
             _checkIfAccountExists: function() {
@@ -386,6 +414,45 @@ Custom property | Description | Default
                 else {
                     this._accountExists = false;
                 }
+            },
+
+            /**
+             * Returns display name for account.
+             * @param {Object} account.
+             *
+             * @private
+             */
+            _setAccountDisplay: function(account) {
+                var displayName = '';
+
+                if (account.first_name != '') {
+                    displayName = account.first_name + ' ';
+                }
+
+                if (account.last_name != '') {
+                    displayName += account.last_name;
+                }
+
+                if (account.first_name == '' && account.last_name == '') {
+                    displayName = account.email;
+                }
+
+                return displayName;
+            },
+
+            /**
+             * Checks if info exists and sets appropriate style.
+             *
+             * @private
+             */
+            _checkAccountInfo: function() {
+                var accountInfoDropdown = this.$.accountInfoDropdown;
+
+                if (this.info && this.info.trim() != '') {
+                    accountInfoDropdown.customStyle['--dropdown-caret-background-color'] = 'var(--info-background-color, #edf9ff)';
+                    accountInfoDropdown.updateStyles();
+                }
+
             },
 
             /**

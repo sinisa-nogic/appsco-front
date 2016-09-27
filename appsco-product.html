@@ -1,8 +1,6 @@
 <link rel="import" href="../polymer/polymer.html">
 <link rel="import" href="../paper-item/paper-item.html">
 <link rel="import" href="../paper-listbox/paper-listbox.html">
-
-<link rel="import" href="../paper-button/paper-button.html">
 <link rel="import" href="../iron-icons/iron-icons.html">
 <link rel="import" href="../paper-ripple/paper-ripple.html">
 
@@ -25,7 +23,7 @@ Example:
 
 Custom property | Description | Default
 ----------------|-------------|----------
-`--text-color` | Color for text in element. | Based on text-color from appsco theme.
+`--primary-text-color` | Color for text in element. | Based on text-color from appsco theme.
 `--appsco-product-active-color` | Color for active product. | Based on text-color from appsco theme.
 `--appsco-product` | Mixin applied to root appsco-product element. | `{}`
 `--appsco-product-dropdown` | Mixin applied to inner appsco-dropdown element. | `{}`
@@ -39,51 +37,59 @@ Custom property | Description | Default
             :host {
                 display: inline-block;
                 font-size: 16px;
-                color: var(--text-color, #8398b1);
                 position: relative;
-
-                --paper-button: {
-                     padding: 0;
-                     margin: 0;
-                     text-transform: none;
-                 };
+                color: var(--primary-text-color);
 
                 @apply(--appsco-product);
             }
+            :host .product-list-action {
+                line-height: 1.6;
+                cursor: pointer;
+            }
             :host appsco-dropdown {
-                min-width: 200px;
+                min-width: 160px;
                 width: auto;
                 right: -8px;
 
                 @apply(--appsco-product-dropdown);
             }
+            :host paper-listbox {
+                padding: 0;
+            }
+            :host paper-listbox paper-item {
+                cursor: pointer;
+                height: 36px;
+                font-size: 14px;
+            }
             :host paper-listbox paper-item:first-child {
-                border-bottom: 1px solid var(--appsco-light-gray-color);
+                border-bottom: 1px solid var(--appsco-light-gray-color, #f5f8fa);
             }
         </style>
 
         <template is="dom-if" if="{{ partner }}">
 
-            <paper-button
-                    type="button"
+            <div
                     id="triggerDropdown"
-                    class="product-active"
+                    class="product-active product-list-action"
                     on-tap="__toggleProductDropdown">
                 [[ _selectedProductLabel ]]
                 <iron-icon icon="arrow-drop-down"></iron-icon>
-            </paper-button>
+            </div>
 
-            <appsco-dropdown open="{{ _pressed }}" trigger="[[ _triggerDropdown ]]">
+            <appsco-dropdown
+                    open="{{ _pressed }}"
+                    trigger="[[ _triggerDropdown ]]"
+                    close-outside>
 
-                <paper-listbox id="productList" selected="[[ _selectedProductIndex ]]" on-iron-select="__onItemSelect">
-                    <paper-item label="appsco-product">
-                        AppsCo
-                        <paper-ripple></paper-ripple>
-                    </paper-item>
-                    <paper-item label="appsco-partner-product">
-                        AppsCo Partner
-                        <paper-ripple></paper-ripple>
-                    </paper-item>
+                <paper-listbox id="productList" selected="appsco-product" attr-for-selected="value" on-iron-select="_onItemSelect">
+
+                    <template is="dom-repeat" items="[[ _products ]]">
+                        <paper-item value="[[ item.value ]]" label="[[ item.label ]]">
+                            [[ item.label ]]
+                            <paper-ripple></paper-ripple>
+                        </paper-item>
+                    </template>
+
                 </paper-listbox>
 
             </appsco-dropdown>
@@ -114,13 +120,20 @@ Custom property | Description | Default
                     value: false
                 },
 
-                /** Index of selected product.*/
-                _selectedProductIndex: {
-                    type: Number,
-                    value: 0
+                /** Appsco products. */
+                _products: {
+                    type: Array,
+                    value: [{
+                        label: 'AppsCo',
+                        value: 'appsco-product'
+                    },
+                    {
+                        label: 'AppsCo Partner',
+                        value: 'appsco-partner-product'
+                    }]
                 },
 
-                /** Label of selected product to dipsplay.*/
+                /** Label of selected product to display.*/
                 _selectedProductLabel: {
                     type: String,
                     value: 'AppsCo'
@@ -153,17 +166,16 @@ Custom property | Description | Default
              * Listens to iron-select event of paper-listbox.
              * It sets label of selected product to display.
              * It fires event that product is changed: appsco-product-changed.
-             * At last, it closes the products dropdown.
              *
              * @private
              */
-            __onItemSelect: function() {
+            _onItemSelect: function() {
                 var item = this.$$('#productList').selectedItem;
 
-                this._selectedProductLabel = item.textContent.trim();
+                this._selectedProductLabel = item.label;
 
                 this.fire('appsco-product-changed', {
-                    product: item.getAttribute('label')
+                    product: item.value
                 });
 
                 this._pressed = false;

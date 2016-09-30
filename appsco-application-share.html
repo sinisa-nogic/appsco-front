@@ -1,0 +1,296 @@
+<link rel="import" href="../polymer/polymer.html">
+
+<link rel="import" href="../paper-styles/typography.html">
+<link rel="import" href="../paper-styles/shadow.html">
+<link rel="import" href="../paper-button/paper-button.html">
+<link rel="import" href="../iron-icon/iron-icon.html">
+<link rel="import" href="../iron-icons/iron-icons.html">
+<link rel="import" href="../paper-input/paper-textarea.html">
+<link rel="import" href="../iron-image/iron-image.html">
+<link rel="import" href="../iron-ajax/iron-request.html">
+
+<link rel="import" href="../paper-dialog/paper-dialog.html">
+<link rel="import" href="../neon-animation/neon-animation-runner-behavior.html">
+<link rel="import" href="../neon-animation/animations/fade-out-animation.html">
+<link rel="import" href="../neon-animation/animations/fade-in-animation.html">
+<link rel="import" href="../neon-animation/animations/scale-up-animation.html">
+
+
+<!--
+`appsco-application-share`
+Provides share functionality.
+
+    <appsco-application-share>
+    </appsco-application-share>
+
+### Styling
+
+`<appsco-application-share>` provides the following custom properties and mixins for styling:
+
+Custom property | Description | Default
+----------------|-------------|----------
+`--appsco-application-share` | Mixin for the root element | `{}`
+
+@demo demo/appsco-application-share.html
+-->
+
+<dom-module id="appsco-application-share">
+    <template>
+        <style>
+            :host {
+                display: block;
+                position: relative;
+                @apply(--appsco-application-share);
+            }
+            :host paper-dialog {
+                width: 670px;
+            }
+            :host .usercard {
+                display: inline-block;
+                margin: 2px;
+            }
+            :host span[user] {
+                @apply(--paper-font-body1);
+            }
+            :host span[email] {
+                display: inline-block;
+                @apply(--paper-font-caption);
+                @apply(--paper-font-nowrap);
+                width: 100px;
+            }
+            :host paper-icon-button {
+                --paper-icon-button: {
+                    --iron-icon-width: 14px;
+                    --iron-icon-height: 14px;
+                }
+            }
+            :host paper-textarea {
+                margin-top:0;
+            }
+            :host iron-image {
+                width: 22px;
+                height: 22px;
+                margin-right: 4px;
+            }
+            :host paper-button.user {
+                font-size: 13px;
+            }
+            :host paper-button span[name] {
+                @apply(--paper-font-common-nowrap);
+                width: 100px;
+            }
+            :host .none {
+                display: none;
+            }
+        </style>
+        <paper-button on-tap="_openShareDialog">Share</paper-button>
+        <paper-dialog
+                id="shareDialog"
+                with-backdrop
+                entry-animation="scale-up-animation"
+                exit-animation="fade-out-animation"
+        >
+            <h2>Share application [[ application.icon.title ]]</h2>
+            <div>
+                <template is="dom-repeat" items="[[ _accounts ]]">
+                    <div class="usercard none" id="accountItem_{{ index }}">
+                        <paper-button raised class="user" on-tap="_removeFromAccounts">
+                            <iron-image placeholder="data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiIHN0YW5kYWxvbmU9Im5vIj8+PHN2ZyB3aWR0aD0iMjhweCIgaGVpZ2h0PSIyOHB4IiB2aWV3Qm94PSIwIDAgMjggMjgiIHZlcnNpb249IjEuMSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiB4bWxuczp4bGluaz0iaHR0cDovL3d3dy53My5vcmcvMTk5OS94bGluayI+ICAgICAgICA8dGl0bGU+QXBwc0NvLWxvZ288L3RpdGxlPiAgICA8ZGVzYz5DcmVhdGVkIHdpdGggU2tldGNoLjwvZGVzYz4gICAgPGRlZnM+PC9kZWZzPiAgICA8ZyBpZD0iUGFnZS0xIiBzdHJva2U9Im5vbmUiIHN0cm9rZS13aWR0aD0iMSIgZmlsbD0ibm9uZSIgZmlsbC1ydWxlPSJldmVub2RkIj4gICAgICAgIDxnIGlkPSJBcHBzQ28tbG9nbyI+ICAgICAgICAgICAgPGcgaWQ9Ikdyb3VwIj4gICAgICAgICAgICAgICAgPHJlY3QgaWQ9IlJlY3RhbmdsZS0yIiBmaWxsPSIjMjA5QkMzIiB4PSIwIiB5PSIxNSIgd2lkdGg9IjEzIiBoZWlnaHQ9IjEzIj48L3JlY3Q+ICAgICAgICAgICAgICAgIDxyZWN0IGlkPSJSZWN0YW5nbGUtMi1Db3B5IiBmaWxsPSIjODhCOTU1IiB4PSIxNSIgeT0iMCIgd2lkdGg9IjEzIiBoZWlnaHQ9IjEzIj48L3JlY3Q+ICAgICAgICAgICAgICAgIDxyZWN0IGlkPSJSZWN0YW5nbGUtMi1Db3B5LTIiIGZpbGw9IiNFNkQwMjUiIHg9IjE1IiB5PSIxNSIgd2lkdGg9IjEwIiBoZWlnaHQ9IjEwIj48L3JlY3Q+ICAgICAgICAgICAgICAgIDxyZWN0IGlkPSJSZWN0YW5nbGUtMi1Db3B5LTMiIGZpbGw9IiNEODNEODIiIHg9IjMiIHk9IjMiIHdpZHRoPSIxMCIgaGVpZ2h0PSIxMCI+PC9yZWN0PiAgICAgICAgICAgIDwvZz4gICAgICAgIDwvZz4gICAgPC9nPjwvc3ZnPg=="
+                                        sizing="cover" preload fade src="[[ item.picture_url ]]"></iron-image>
+                            <span name>[[ item.name ]]</span>
+                            <iron-icon icon="icons:clear" ></iron-icon>
+                        </paper-button>
+                    </div>
+                </template>
+            </div>
+            <paper-textarea label="Share to others" id="search" on-keyup="_search"></paper-textarea>
+            <div>
+                <template is="dom-repeat" items="[[ _searchList ]]">
+                    <div class="usercard" id="searchItem_{{ index }}">
+                        <paper-button raised on-tap="_share" class="user">
+
+                            <iron-image placeholder="data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiIHN0YW5kYWxvbmU9Im5vIj8+PHN2ZyB3aWR0aD0iMjhweCIgaGVpZ2h0PSIyOHB4IiB2aWV3Qm94PSIwIDAgMjggMjgiIHZlcnNpb249IjEuMSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiB4bWxuczp4bGluaz0iaHR0cDovL3d3dy53My5vcmcvMTk5OS94bGluayI+ICAgICAgICA8dGl0bGU+QXBwc0NvLWxvZ288L3RpdGxlPiAgICA8ZGVzYz5DcmVhdGVkIHdpdGggU2tldGNoLjwvZGVzYz4gICAgPGRlZnM+PC9kZWZzPiAgICA8ZyBpZD0iUGFnZS0xIiBzdHJva2U9Im5vbmUiIHN0cm9rZS13aWR0aD0iMSIgZmlsbD0ibm9uZSIgZmlsbC1ydWxlPSJldmVub2RkIj4gICAgICAgIDxnIGlkPSJBcHBzQ28tbG9nbyI+ICAgICAgICAgICAgPGcgaWQ9Ikdyb3VwIj4gICAgICAgICAgICAgICAgPHJlY3QgaWQ9IlJlY3RhbmdsZS0yIiBmaWxsPSIjMjA5QkMzIiB4PSIwIiB5PSIxNSIgd2lkdGg9IjEzIiBoZWlnaHQ9IjEzIj48L3JlY3Q+ICAgICAgICAgICAgICAgIDxyZWN0IGlkPSJSZWN0YW5nbGUtMi1Db3B5IiBmaWxsPSIjODhCOTU1IiB4PSIxNSIgeT0iMCIgd2lkdGg9IjEzIiBoZWlnaHQ9IjEzIj48L3JlY3Q+ICAgICAgICAgICAgICAgIDxyZWN0IGlkPSJSZWN0YW5nbGUtMi1Db3B5LTIiIGZpbGw9IiNFNkQwMjUiIHg9IjE1IiB5PSIxNSIgd2lkdGg9IjEwIiBoZWlnaHQ9IjEwIj48L3JlY3Q+ICAgICAgICAgICAgICAgIDxyZWN0IGlkPSJSZWN0YW5nbGUtMi1Db3B5LTMiIGZpbGw9IiNEODNEODIiIHg9IjMiIHk9IjMiIHdpZHRoPSIxMCIgaGVpZ2h0PSIxMCI+PC9yZWN0PiAgICAgICAgICAgIDwvZz4gICAgICAgIDwvZz4gICAgPC9nPjwvc3ZnPg=="
+                                        sizing="cover" preload fade src="[[ item.picture_url ]]"></iron-image>
+
+                            <span name>[[ item.name ]]</span>
+                            </paper-button>
+                    </div>
+                </template>
+            </div>
+
+            <div class="buttons">
+                <paper-button dialog-dismiss>Cancel</paper-button>
+                <paper-button autofocus on-tap="_shareApplication">Share</paper-button>
+            </div>
+        </paper-dialog>
+
+    </template>
+    <script>
+        Polymer({
+
+            is: 'appsco-application-share',
+
+            behaviors: [
+                    Polymer.NeonAnimationRunnerBehavior
+            ],
+            _removeFromAccounts: function(e) {
+                this.animationConfig.exit.node = this.$$("#accountItem_"+e.model.index);
+                this.playAnimation('exit', {
+                    account: e.model,
+                    remove: true,
+                    removeFrom: "_accounts"
+                });
+            },
+            _share: function(e) {
+                this.animationConfig.exit.node = this.$$("#searchItem_"+e.model.index);
+                this.playAnimation('exit', {
+                    account: e.model,
+                    id: "#searchItem_"+e.model.index,
+                    remove: true,
+                    removeFrom: "_searchList",
+                    entry: true
+                });
+                this.animationConfig.exit.node = this.$$("#searchItem_"+e.model.index);
+                this.push('_accounts', e.model.item);
+            },
+            properties: {
+                animationConfig: {
+                    type: Object,
+                    value: function () {
+                        return {
+                            "entry": {
+                                name: "fade-in-animation",
+                                timing: {
+                                    duration: 200
+                                }
+                            },
+                            "exit": {
+                                name: "fade-out-animation",
+                                timing: {
+                                    duration: 200
+                                }
+                            }
+                        }
+                    }
+                },
+                /**
+                 * Number of accounts to load and present
+                 */
+                size: {
+                    type: Number,
+                    value: 8
+                },
+                authorizationToken: {
+                    type: String,
+                    value: ''
+                },
+                /**
+                 * [Application](https://developers.appsco.com/api/dashboard/id/icons/id) that is to be rendered
+                 */
+                application: {
+                    type: Object,
+                    value: {},
+                    notify: true
+                },
+                _computedHeaders: {
+                    type: Object,
+                    computed: "_computeHeaders(authorizationToken)"
+                },
+                _accounts: {
+                    type: Array,
+                    value: []
+                },
+                _searchList: {
+                    type: Array,
+                    value: []
+                },
+                /**
+                 * Accounts API link
+                 */
+                accountsApi: {
+                    type: String
+                }
+            },
+            listeners: {
+                'on-request': "_loading",
+                'neon-animation-finish': "_animationFinish"
+            },
+            _shareToUser: function(account) {
+                var appRequest = document.createElement('iron-request'),
+                    me = this;
+                appRequest.send({
+                    url: account.self+"/share",
+                    method: "POST",
+                    handleAs: 'json',
+                    body: "icon="+encodeURIComponent(this.application.icon.self),
+                    headers: {
+                        "Authorization": "token " + me.authorizationToken,
+                        "Content-Type": "application/x-www-form-urlencoded"
+                    }
+                });
+
+                return appRequest;
+            },
+            _shareApplication: function() {
+                var me = this;
+                this._accounts.forEach(function(item){
+                    me._shareToUser(item);
+                });
+                this.set('_accounts', []);
+
+                this.$.shareDialog.close();
+            },
+            _animationFinish: function(e) {
+                if("remove" in e.detail) {
+                    this.splice(e.detail.removeFrom, e.detail.account.index, 1);
+                    if("entry" in e.detail) {
+                        var domAccountItem = this.$$("#accountItem_" + (this._accounts.length - 1));
+                        domAccountItem.style.display = "inline-block";
+                        this.animationConfig.entry.node = domAccountItem;
+                        this.playAnimation('entry');
+                    }
+                }
+            },
+            _openShareDialog: function () {
+                this.$.shareDialog.open();
+            },
+            _computeHeaders: function (authorizationToken) {
+                return {
+                    "Authorization": "token " + authorizationToken
+                }
+            },
+            _search: function(e) {
+                var regexpBackspace = /^Backspace$/i,
+                    regexpAlphanumeric = /^\w$/,
+                    me = this
+                ;
+                if(
+                    this.$.search.value.length < 3 ||
+                    !(regexpAlphanumeric.test(e.key) || regexpBackspace.test(e.key))
+                ) {
+                    return;
+                }
+                var request = document.createElement('iron-request'),
+                    me = this
+                    url = this.accountsApi + "?extended=1&limit="+this.size
+                ;
+                url += '&term=' + this.$.search.value;
+                var options = {
+                    url: url,
+                    method: "GET",
+                    handleAs: 'json',
+                    headers: {
+                        "Authorization": "token " + this.authorizationToken
+                    }
+                };
+
+                request.send(options).then(function(){
+                    me.set('_searchList', []);
+                    request.response.accounts.forEach(function(el, index){
+                            me.push('_searchList', el);
+                    });
+                });
+            }
+        });
+    </script>
+</dom-module>

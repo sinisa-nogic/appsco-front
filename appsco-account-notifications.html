@@ -22,11 +22,11 @@ Example:
 
  Custom property | Description | Default
 ----------------|-------------|----------
-`--primary-text-color` | Default text color for element | `#7e97b2`
+`--primary-text-color` | Default text color for element | `Based on default theme --primary-text-color`
+`--border-color` | Default border color | `Based on default theme --border-color`
+`--divider-color` | Color for divider used for border of root element | `Based on default theme --divider-color`
 `--appsco-account-action-color` | Color for icon-button action | `Based on --primary-text-color`
 `--appsco-account-new-notifications-color` | Color for icon-button action when there are new notifications | `Based on --primary-text-color`
-`--divider-color` | Default color for divider | `#eaeaea`
-`--appsco-account-notifications-color` | Default text color root element | `Based on --primary-text-color`
 `--appsco-account-notifications` | Mixin applied to root appsco-account-notifications element | `{}`
 `--appsco-account-notifications-dropdown` | Mixin applied to inner appsco-dropdown within root element | `{}`
 `--appsco-account-active-action` | Mixin applied to action in active state | `{}`
@@ -61,7 +61,7 @@ Example:
             :host .divider {
                 width: 100%;
                 height: 1px;
-                background-color: var(--divider-color, #eaeaea);
+                background-color: var(--divider-color);
             }
             :host appsco-account-notification {
                 color: var(--primary-text-color, #8398b1);
@@ -93,13 +93,20 @@ Example:
 
                 line-height: normal;
             }
-            :host .see-all-btn {
+            :host .default-btn {
+                background-color: transparent;
+                color: var(--primary-text-color);
+                border: 1px solid var(--border-color);
+            }
+            :host .link-btn {
                 width: 100%;
                 padding: 16px;
-                font-size: 12px;
-                text-align: center;
-                background: var(--appsco-light-gray-color, #f5f8fa);
-                border-radius: 0;
+                background-color: transparent;
+                border: none;
+            }
+            :host .message {
+                font-style: italic;
+                line-height: 1.6;
             }
         </style>
 
@@ -142,7 +149,7 @@ Example:
                             on-response="_handleResponse">
                         </iron-ajax>
 
-                        <template is="dom-repeat" items="[[ _notifications ]]">
+                        <template is="dom-repeat" items="{{ _notifications }}">
 
                             <div class="divider"></div>
 
@@ -156,14 +163,14 @@ Example:
 
                     <template is="dom-if" if="[[ _message ]]">
                         <div class="card-content layout horizontal center">
-                            <p>
+                            <p class="message">
                                 [[ _message ]]
                             </p>
                         </div>
                     </template>
 
                     <div class="card-actions layout vertical center" hidden$="[[ !_notificationsExists }}">
-                        <paper-button id="seeAllNotifications" class="see-all-btn">See all notifications</paper-button>
+                        <paper-button id="seeAllNotifications" class="default-btn link-btn">See all notifications</paper-button>
                     </div>
 
                 </paper-card>
@@ -240,8 +247,7 @@ Example:
             },
 
             listeners: {
-                'seeAllNotifications.tap': '_seeAllNotificationsAction',
-                '_notifications-changed': '_onNotificationsChange'
+                'seeAllNotifications.tap': '_seeAllNotificationsAction'
             },
 
             ready: function() {
@@ -260,33 +266,6 @@ Example:
 
             attached: function() {
                 this._triggerDropdown = this.$$('#notificationsAction');
-
-                this._checkIfNotificationsExists();
-            },
-
-            /**
-             * Checks if there are notifications.
-             *
-             * @private
-             */
-            _checkIfNotificationsExists: function() {
-
-                if (this._notifications && this._notifications.length > 0) {
-                    this._notificationsExists = true;
-                }
-                else {
-                    this._notificationsExists = false;
-                }
-
-            },
-
-            /**
-             * On notification change event handler.
-             *
-             * @private
-             */
-            _onNotificationsChange: function() {
-                this._checkIfNotificationsExists();
             },
 
             /**
@@ -324,6 +303,8 @@ Example:
              */
             _loadNotifications: function() {
                 this._loader = true;
+                this._notifications = [];
+                this._notificationsExists = false;
                 this.$.ironAjaxNotifications.generateRequest();
             },
 
@@ -337,7 +318,8 @@ Example:
 
 //                this._message = 'We couldn\'t load notifications at the moment. Please try again in a minute. If error continues contact us.';
 
-                this._notifications = [
+
+                var notifications = [
                     {
                         image: 'https://apps.appsco.com/icon/199.png',
                         message: 'Appsco Apptest assigned you Telenor Avansert Sentralbord on Telecom Test Dash',
@@ -366,6 +348,31 @@ Example:
 
                 ];
 
+                if (notifications && notifications.length > 0) {
+
+                    notifications.forEach(function(notification, i) {
+
+                        setTimeout( function() {
+
+                            this.push('_notifications', notifications[i]);
+
+                            if (i === (notifications.length - 1)) {
+                                this._notificationsExists = true;
+                            }
+
+                        }.bind(this), (i + 1) * 50 );
+
+                    }.bind(this));
+
+                }
+                else if (notifications && notifications.length === 0) {
+                    this._message = 'You don\'t have notifications.';
+                }
+                else {
+                    this._message = 'We couldn\'t load notifications at the moment.';
+                }
+
+
                 this._loader = false;
             },
 
@@ -376,13 +383,30 @@ Example:
              * @private
              */
             _handleResponse: function(event) {
-                var response = event.detail.response;
+                var notifications = event.detail.response.notifications;
 
-                if (response.notifications && response.notifications.length > 0) {
-                    this._notifications = response.notifications;
+                if (notifications && notifications.length > 0) {
+
+                    notifications.forEach(function(notification, i) {
+
+                        setTimeout( function() {
+
+                            this.push('_notifications', notifications[i]);
+
+                            if (i === (notifications.length - 1)) {
+                                this._notificationsExists = true;
+                            }
+
+                        }.bind(this), (i + 1) * 50 );
+
+                    }.bind(this));
+
+                }
+                else if (notifications.length === 0) {
+                    this._message = 'You don\'t have notifications.';
                 }
                 else {
-                    this._message = 'You don\'t have notifications.';
+                    this._message = 'We couldn\'t load notifications at the moment.';
                 }
 
                 this._loader = false;

@@ -32,8 +32,8 @@ Custom property | Description | Default
                 position: relative;
                 @apply(--appsco-application-subscribers);
             }
-            :host img
-            {
+
+            :host img {
                 position: relative;
                 overflow: hidden;
                 width: 28px;
@@ -48,16 +48,20 @@ Custom property | Description | Default
                 opacity: 0;
                 transition: opacity 0.4s ease-in-out;
             }
+
             :host .account.active {
                 opacity: 1;
             }
+
             :host paper-progress {
                 width: 100%;
                 --paper-progress-active-color: #7baaf7;
             }
+
             :host .progress {
                 height: 6px;
             }
+
             :host .total {
                 @apply(--paper-font-caption);
                 opacity: 0.6;
@@ -78,7 +82,7 @@ Custom property | Description | Default
                 <paper-progress id="progress" indeterminate></paper-progress>
             </div>
             <template is="dom-repeat" items="[[ _accounts ]]" id="message" index-as="current">
-                <div class="account" >
+                <div class="account">
                     <template is="dom-if" if="[[ item.picture_url ]]">
                         <img src="[[ item.picture_url ]]"
                              class="user-image"
@@ -92,7 +96,7 @@ Custom property | Description | Default
                         >
                     </template>
 
-                    <paper-tooltip >[[ item.name ]]<br/>[[ item.email ]]</paper-tooltip>
+                    <paper-tooltip>[[ item.name ]]<br/>[[ item.email ]]</paper-tooltip>
                 </div>
             </template>
         </div>
@@ -117,7 +121,9 @@ Custom property | Description | Default
                  */
                 _accounts: {
                     type: Array,
-                    value: function() { return []; }
+                    value: function () {
+                        return [];
+                    }
                 },
                 /**
                  * Number of accounts to load and present
@@ -156,8 +162,8 @@ Custom property | Description | Default
                 'application-changed': "_init",
                 'on-request': "_loading"
             },
-            _init: function() {
-                if("meta" in this.application) {
+            _init: function () {
+                if ("meta" in this.application) {
                     this._next = this.application.meta.subscribers + "?page=1&extended=1&limit=" + this.size;
                     this._currentUrl = this._next;
                 }
@@ -169,30 +175,30 @@ Custom property | Description | Default
             },
             _handleResponse: function (e) {
                 var me = this;
-                if(null == e.detail.response) {
+                if (null == e.detail.response) {
                     return;
                 }
                 this._totalSubscribers = e.detail.response.meta.total;
-                e.detail.response.accounts.forEach(function(el, index){
-                    setTimeout(function() {
+                e.detail.response.accounts.forEach(function (el, index) {
+                    setTimeout(function () {
                         me.push('_accounts', el);
                         var currentElement = me._accounts.length - 1;
-                        setTimeout(function() {
+                        setTimeout(function () {
                             Polymer.dom(me.root).querySelectorAll('.account')[currentElement].classList.add('active');
                         }, 50);
                     }, (index * 100));
                 });
 
-                this._next = e.detail.response.meta.next+"&limit="+this.size;
+                this._next = e.detail.response.meta.next + "&limit=" + this.size;
                 // Wait for a bit longer so that loading looks nice
-                setTimeout(function() {
+                setTimeout(function () {
                     me.$.progress.hidden = true;
                 }, 600 + (e.detail.response.accounts.length * 100))
             },
-            _handleError: function() {
+            _handleError: function () {
                 this.$.progress.hidden = true;
             },
-            _loading: function() {
+            _loading: function () {
                 this.$.progress.hidden = false;
             }
         });

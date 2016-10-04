@@ -27,39 +27,39 @@
     <demo-snippet>
         <appsco-application-remove-demo id="removeDemo"></appsco-application-remove-demo>
         <template>
-            <appsco-application-remove ></appsco-application-remove>
+            <appsco-application-remove></appsco-application-remove>
         </template>
 
     </demo-snippet>
 </div>
 <dom-module id="appsco-application-remove-demo">
     <template>
+        <iron-ajax
+                id="iconsRequest"
+                url="https://my-dev.appsco.com/api/v2/dashboards/483/icons"
+                last-response="{{ajaxResponse}}"
+                headers="{{ _computedHeaders }}"
+                debounce-duration="300">
+        </iron-ajax>
+        <template is="dom-repeat" items="{{ ajaxResponse.icons }}" as="icon" id="icons">
+
             <iron-ajax
-                    id="iconsRequest"
-                    url="https://my-dev.appsco.com/api/v2/dashboards/483/icons"
-                    last-response="{{ajaxResponse}}"
+                    auto
+                    url="{{ icon }}"
+                    last-response="{{ applicationResponse }}"
+                    on-response="handleIconResponse"
                     headers="{{ _computedHeaders }}"
                     debounce-duration="300">
             </iron-ajax>
-            <template is="dom-repeat" items="{{ ajaxResponse.icons }}" as="icon" id="icons">
+            <appsco-application-info id="appInfo_{{index}}"></appsco-application-info>
+            <appsco-application-remove
+                    id="removeMe_{{ index}}"
+                    authorization-token="1o833krv0s68osk4skckkwsgws844o480ko48wsco0k4o4kook4wnkgimtqyo0g0ko0g8wok4go40kgwgksw84wcs808wwcgg44"
+                    on-application-removed="reset"
+            ></appsco-application-remove>
+            <paper-button id="removeMeBtn_{{ index}}" remove>Remove</paper-button>
 
-                <iron-ajax
-                        auto
-                        url="{{ icon }}"
-                        last-response="{{ applicationResponse }}"
-                        on-response="handleIconResponse"
-                        headers="{{ _computedHeaders }}"
-                        debounce-duration="300">
-                </iron-ajax>
-                <appsco-application-info id="appInfo_{{index}}"></appsco-application-info>
-                <appsco-application-remove
-                        id="removeMe_{{ index}}"
-                        authorization-token="1o833krv0s68osk4skckkwsgws844o480ko48wsco0k4o4kook4wnkgimtqyo0g0ko0g8wok4go40kgwgksw84wcs808wwcgg44"
-                        on-application-removed="reset"
-                ></appsco-application-remove>
-                <paper-button id="removeMeBtn_{{ index}}" remove >Remove</paper-button>
-
-            </template>
+        </template>
     </template>
     <script>
         Polymer({
@@ -79,7 +79,7 @@
             attached: function () {
                 this.$.iconsRequest.generateRequest();
             },
-            reset: function() {
+            reset: function () {
                 this.$.iconsRequest.generateRequest();
             },
             _computeHeaders: function (authorizationToken) {
@@ -87,11 +87,11 @@
                     "Authorization": "token " + authorizationToken
                 }
             },
-            handleIconResponse: function(e) {
-                var appRemove = this.$$("#removeMe_"+e.model.index);
-                this.$$("#appInfo_"+e.model.index).application = e.detail.response.icon;
-                this.$$("#removeMe_"+e.model.index).application = e.detail.response;
-                this.$$("#removeMeBtn_"+e.model.index).addEventListener('tap', function(){
+            handleIconResponse: function (e) {
+                var appRemove = this.$$("#removeMe_" + e.model.index);
+                this.$$("#appInfo_" + e.model.index).application = e.detail.response.icon;
+                this.$$("#removeMe_" + e.model.index).application = e.detail.response;
+                this.$$("#removeMeBtn_" + e.model.index).addEventListener('tap', function () {
                     appRemove.open();
                 })
             }

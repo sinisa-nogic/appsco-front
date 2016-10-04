@@ -1,0 +1,164 @@
+<link rel="import" href="../polymer/polymer.html">
+
+<link rel="import" href="../iron-ajax/iron-ajax.html">
+<link rel="import" href="../iron-flex-layout/iron-flex-layout.html">
+
+<link rel="import" href="../paper-button/paper-button.html">
+<link rel="import" href="appsco-application-item.html">
+
+<!--
+`appsco-applications`
+Contains application list and Load More action (if there are more applications then presented).
+Applications are loaded inside component through iron-ajax.
+Component listens for events which have influence on result and changes query in order to retrieve appropriate applications.
+
+
+    <appsco-applications>
+    </appsco-applications>
+
+### Styling
+
+`<appsco-applications>` provides the following custom properties and mixins for styling:
+
+Custom property | Description | Default
+----------------|-------------|----------
+`--appsco-applications-item` | Mixin for item style | `{}`
+`--appsco-applications` | Mixin for the root element | `{}`
+
+@demo demo/appsco-applications.html
+-->
+
+<dom-module id="appsco-applications">
+    <template>
+        <style>
+            :host {
+                display: inline-block;
+                position: relative;
+                @apply(--appsco-applications);
+                @apply(--layout-vertical);
+                @apply(--layout-center);
+                --appsco-applications-item: {
+                    margin: 0 10px 10px 0;
+                };
+            }
+
+            :host div[applications] {
+                @apply(--layout-horizontal);
+                @apply(--layout-wrap);
+                width: 100%;
+            }
+
+            :host appsco-application-item {
+                @apply(--appsco-applications-item);
+            }
+
+            :host .applicationitem {
+                opacity: 0;
+                transition: opacity 0.4s ease-in-out;
+            }
+
+            :host .applicationitem.active {
+                opacity: 1;
+            }
+        </style>
+        <div>
+            <iron-ajax
+                    auto
+                    id="applicationsApiRequest"
+                    url="{{ _currentUrl }}"
+                    on-response="_handleResponse"
+                    headers="{{ _computedHeaders }}"
+                    debounce-duration="300"
+            ></iron-ajax>
+            <div applications>
+                <template is="dom-repeat" items="{{ _applications }}">
+                    <appsco-application-item class="applicationitem"
+                                             application="{{ item }}"
+                    ></appsco-application-item>
+                </template>
+            </div>
+        </div>
+        <div>
+            <paper-button on-tap="_loadMoreApps" id="loadMore" hidden="[[ !loadMore ]]">Load More</paper-button>
+        </div>
+    </template>
+
+    <script>
+        Polymer({
+
+            is: 'appsco-applications',
+
+            properties: {
+                authorizationToken: {
+                    type: String,
+                    value: ''
+                },
+                /**
+                 * Route to retrieve applications for current user
+                 */
+                applicationsApi: {
+                    type: String,
+                    value: '',
+                    reflectToAttribute: true
+                },
+                /**
+                 * Number of application items to load and present
+                 */
+                size: {
+                    type: Number,
+                    value: 10
+                },
+                /**
+                 * Show load more button
+                 */
+                loadMore: {
+                    type: Boolean,
+                    value: false,
+                    reflectToAttribute: true
+                },
+                _computedHeaders: {
+                    type: Object,
+                    computed: "_computeHeaders(authorizationToken)"
+                },
+                _applications: {
+                    type: Array,
+                    value: function () {
+                        return [];
+                    }
+                },
+                _currentUrl: {
+                    type: String,
+                    notify: true
+                },
+                _next: {
+                    type: String
+                }
+            },
+            ready: function () {
+                this._currentUrl = this.applicationsApi + "?page=1&extended=1&limit=" + this.size;
+            },
+            _loadMoreApps: function () {
+                this._currentUrl = this._next;
+            },
+            _handleResponse: function (e) {
+                var me = this;
+                this._next = e.detail.response.meta.next + "&limit=" + this.size;
+                e.detail.response.icons.forEach(function (el, index) {
+                    setTimeout(function () {
+                        me.push("_applications", el);
+                        var currentElement = me._applications.length - 1;
+                        setTimeout(function () {
+                            Polymer.dom(me.root).querySelectorAll('.applicationitem')[currentElement].classList.add('active');
+                        }, 100);
+                    }, (index * 10));
+
+                });
+            },
+            _computeHeaders: function (authorizationToken) {
+                return {
+                    "Authorization": "token " + authorizationToken
+                }
+            }
+        });
+    </script>
+</dom-module>

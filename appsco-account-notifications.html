@@ -1,18 +1,15 @@
 <link rel="import" href="../polymer/polymer.html">
 <link rel="import" href="../iron-flex-layout/iron-flex-layout-classes.html">
-<link rel="import" href="../paper-icon-button/paper-icon-button.html">
-<link rel="import" href="../iron-icons/social-icons.html">
 <link rel="import" href="../paper-card/paper-card.html">
 <link rel="import" href="../paper-button/paper-button.html">
 <link rel="import" href="../iron-ajax/iron-ajax.html">
 
-<link rel="import" href="appsco-dropdown.html">
 <link rel="import" href="appsco-account-notification.html">
 <link rel="import" href="appsco-loader.html">
 
 <!--
 `appsco-account-notifications`
-Is used to present notifications action.
+Is used to present notifications.
 
 Example:
 
@@ -25,11 +22,6 @@ Example:
 `--primary-text-color` | Default text color for element | `Based on default theme --primary-text-color`
 `--border-color` | Default border color | `Based on default theme --border-color`
 `--divider-color` | Color for divider used for border of root element | `Based on default theme --divider-color`
-`--appsco-account-action-color` | Color for icon-button action | `Based on --primary-text-color`
-`--appsco-account-new-notifications-color` | Color for icon-button action when there are new notifications | `Based on --primary-text-color`
-`--appsco-account-notifications` | Mixin applied to root appsco-account-notifications element | `{}`
-`--appsco-account-notifications-dropdown` | Mixin applied to inner appsco-dropdown within root element | `{}`
-`--appsco-account-active-action` | Mixin applied to action in active state | `{}`
 
 @demo demo/appsco-account-notifications.html
 -->
@@ -38,25 +30,12 @@ Example:
     <template>
         <style include="iron-flex iron-flex-alignment">
             :host {
-                display: inline-block;
+                display: block;
                 position: relative;
+                width: 100%;
                 color: var(--primary-text-color);
 
                 @apply(--appsco-account-notifications);
-            }
-            :host .action-icon {
-                color: var(--appsco-account-action-color, --primary-text-color);
-                --paper-icon-button-ink-color: var(--appsco-account-action-color, --primary-text-color);
-            }
-            :host[_pressed] .action-icon {
-                border-radius: 50%;
-
-                @apply(--shadow-elevation-2dp);
-                @apply(--appsco-account-active-action);
-            }
-            :host .new-notifications-icon {
-                color: var(--appsco-account-new-notifications-color, --primary-color);
-                --paper-icon-button-ink-color: var(--appsco-account-new-notifications-color, --primary-color);
             }
             :host .divider {
                 width: 100%;
@@ -65,11 +44,6 @@ Example:
             }
             :host appsco-account-notification {
                 color: var(--primary-text-color, #8398b1);
-            }
-            :host appsco-dropdown {
-                top: 45px;
-
-                @apply(--appsco-account-notifications-dropdown);
             }
             :host paper-card {
                 width: 100%;
@@ -108,74 +82,47 @@ Example:
             }
         </style>
 
-        <template is="dom-if" if="[[ _newNotifications ]]">
-            <paper-icon-button
-                    id="newNotificationsAction"
-                    class="action-icon new-notifications-icon"
-                    icon="social:notifications-active"
-                    title="Notifications"
-                    on-tap="_onNewNotificationsAction">
-            </paper-icon-button>
-        </template>
+        <paper-card heading="Notifications" class="layout vertical">
 
-        <template is="dom-if" if="[[ !_newNotifications ]]">
-            <paper-icon-button
-                    id="notificationsAction"
-                    class="action-icon"
-                    icon="social:notifications"
-                    title="Notifications"
-                    on-tap="_onNotificationsAction">
-            </paper-icon-button>
-        </template>
+            <appsco-loader active="[[ _loader ]]" loader-alt="Loading notifications" multi-color></appsco-loader>
 
-        <appsco-dropdown
-                open="{{ _pressed }}"
-                trigger="[[ _triggerDropdown ]]"
-                close-outside>
+            <div class="card-content card-content-notifications layout vertical">
 
-                <paper-card heading="Notifications" class="layout vertical">
+                <iron-ajax
+                    id="ironAjaxNotifications"
+                    url="{{ _computedUrl }}"
+                    method="GET"
+                    headers="{{ _computedHeaders }}"
+                    handle-as="json"
+                    on-error="_handleError"
+                    on-response="_handleResponse">
+                </iron-ajax>
 
-                    <appsco-loader active="[[ _loader ]]" loader-alt="Loading notifications" multi-color></appsco-loader>
+                <template is="dom-repeat" items="{{ _notifications }}">
 
-                    <div class="card-content card-content-notifications layout vertical">
+                    <div class="divider"></div>
 
-                        <iron-ajax
-                            id="ironAjaxNotifications"
-                            url="{{ _computedUrl }}"
-                            method="GET"
-                            headers="{{ _computedHeaders }}"
-                            handle-as="json"
-                            on-error="_handleError"
-                            on-response="_handleResponse">
-                        </iron-ajax>
+                    <appsco-account-notification
+                            notification="[[ item ]]">
+                    </appsco-account-notification>
 
-                        <template is="dom-repeat" items="{{ _notifications }}">
+                </template>
 
-                            <div class="divider"></div>
+            </div>
 
-                            <appsco-account-notification
-                                    notification="[[ item ]]">
-                            </appsco-account-notification>
+            <template is="dom-if" if="[[ _message ]]">
+                <div class="card-content layout horizontal center">
+                    <p class="message">
+                        [[ _message ]]
+                    </p>
+                </div>
+            </template>
 
-                        </template>
+            <div class="card-actions" hidden$="[[ !_notificationsExists }}">
+                <paper-button id="seeAllNotifications" class="default-btn link-btn">See all notifications</paper-button>
+            </div>
 
-                    </div>
-
-                    <template is="dom-if" if="[[ _message ]]">
-                        <div class="card-content layout horizontal center">
-                            <p class="message">
-                                [[ _message ]]
-                            </p>
-                        </div>
-                    </template>
-
-                    <div class="card-actions" hidden$="[[ !_notificationsExists }}">
-                        <paper-button id="seeAllNotifications" class="default-btn link-btn">See all notifications</paper-button>
-                    </div>
-
-                </paper-card>
-
-        </appsco-dropdown>
+        </paper-card>
 
     </template>
 
@@ -246,14 +193,6 @@ Example:
                 },
 
                 /**
-                 * Indicates if there are new notifications.
-                 */
-                _newNotifications: {
-                    type: Boolean,
-                    value: false
-                },
-
-                /**
                  * Message to display instead of notifications.
                  */
                 _message: {
@@ -261,28 +200,11 @@ Example:
                 },
 
                 /**
-                 * Indicates if user clicked on element or not.
-                 */
-                _pressed: {
-                    type: Boolean,
-                    value: false,
-                    reflectToAttribute: true
-                },
-
-                /**
-                 * DOM element which triggers the dropdown.
-                 */
-                _triggerDropdown: {
-                    type: Object,
-                    notify: true
-                },
-
-                /**
                  * Indicates if appsco-loader is shown or hidden.
                  */
                 _loader: {
                     type: Boolean,
-                    value: true
+                    value: false
                 }
             },
 
@@ -297,13 +219,14 @@ Example:
                 // We should see how to check if there are new notifications.
                 setTimeout(function() {
 
-                    this._newNotifications = true;
+                    /**
+                     * Fired when there are new notifications.
+                     *
+                     * @event new-notifications
+                     */
+                    this.fire('new-notifications');
 
                 }.bind(this), 3000);
-            },
-
-            attached: function() {
-                this._triggerDropdown = this.$$('#notificationsAction');
             },
 
             /**
@@ -330,19 +253,6 @@ Example:
             },
 
             /**
-             * Toggles chat dropdown.
-             *
-             * @private
-             */
-            _toggleDropdownAction: function() {
-                this._pressed = !this._pressed;
-
-                if (this._pressed) {
-                    this._loadNotifications();
-                }
-            },
-
-            /**
              * Fires event on see all notifications action.
              *
              * @private
@@ -359,10 +269,8 @@ Example:
 
             /**
              * Triggers ajax request in order to get notifications.
-             *
-             * @private
              */
-            _loadNotifications: function() {
+            loadNotifications: function() {
                 this._loader = true;
                 this._notifications = [];
                 this._notificationsExists = false;
@@ -415,27 +323,6 @@ Example:
 
                 this._loader = false;
 
-            },
-
-            /**
-             * Handles notifications action.
-             *
-             * @private
-             */
-            _onNotificationsAction: function() {
-                this._triggerDropdown = this.$$('#notificationsAction');
-                this._toggleDropdownAction();
-            },
-
-            /**
-             * Handles notifications action when there are new notifications.
-             *
-             * @private
-             */
-            _onNewNotificationsAction: function() {
-                this._triggerDropdown = this.$$('#newNotificationsAction');
-                this._newNotifications = false;
-                this._toggleDropdownAction();
             }
 
         });

@@ -68,13 +68,11 @@ Example:
             }
             :host appsco-dropdown {
                 top: 45px;
-                min-height: 300px;
 
                 @apply(--appsco-account-notifications-dropdown);
             }
             :host paper-card {
                 width: 100%;
-                min-height: 300px;
 
                 --paper-card-header-color: var(--primary-text-color, #8398b1);
 
@@ -135,7 +133,7 @@ Example:
                 trigger="[[ _triggerDropdown ]]"
                 close-outside>
 
-                <paper-card heading="Notifications">
+                <paper-card heading="Notifications" class="layout vertical">
 
                     <appsco-loader active="[[ _loader ]]" loader-alt="Loading notifications" multi-color></appsco-loader>
 
@@ -143,7 +141,9 @@ Example:
 
                         <iron-ajax
                             id="ironAjaxNotifications"
-                            url="http://appsco.loc/app_dev.php/api/v2/me/notifications"
+                            url="{{ _computedUrl }}"
+                            method="GET"
+                            headers="{{ _computedHeaders }}"
                             handle-as="json"
                             on-error="_handleError"
                             on-response="_handleResponse">
@@ -169,7 +169,7 @@ Example:
                         </div>
                     </template>
 
-                    <div class="card-actions layout vertical center" hidden$="[[ !_notificationsExists }}">
+                    <div class="card-actions" hidden$="[[ !_notificationsExists }}">
                         <paper-button id="seeAllNotifications" class="default-btn link-btn">See all notifications</paper-button>
                     </div>
 
@@ -185,6 +185,46 @@ Example:
             is: 'appsco-account-notifications',
 
             properties: {
+
+                /**
+                 * Authorization token
+                 */
+                authorizationToken: {
+                    type: String
+                },
+
+                /**
+                 * Notifications API link.
+                 */
+                notificationsApi: {
+                    type: String
+                },
+
+                /**
+                 * Number of notifications to load.
+                 */
+                size: {
+                    type: Number,
+                    value: 5
+                },
+
+                /**
+                 * Computed headers.
+                 * It contains authorization token.
+                 */
+                _computedUrl: {
+                    type: String,
+                    computed: "_computeUrl(notificationsApi)"
+                },
+
+                /**
+                 * Computed headers.
+                 * It contains authorization token.
+                 */
+                _computedHeaders: {
+                    type: Object,
+                    computed: "_computeHeaders(authorizationToken)"
+                },
 
                 /**
                  * Notifications for account.
@@ -251,8 +291,6 @@ Example:
             },
 
             ready: function() {
-                var basic = btoa('nikola@free.com' + ':' + 'Nikola.Appscov2');
-                this.$.ironAjaxNotifications.headers.authorization = "Basic " + basic;
 
                 // This is set just to see how it works.
                 // Should be removed after implementation of 'new notifications' scenario.
@@ -266,6 +304,29 @@ Example:
 
             attached: function() {
                 this._triggerDropdown = this.$$('#notificationsAction');
+            },
+
+            /**
+             * Computes iron-ajax url.
+             *
+             * @param {String} notificationsApi
+             * @private
+             */
+            _computeUrl: function (notificationsApi) {
+                return notificationsApi + '?page=1&limit=' + this.size;
+            },
+
+            /**
+             * Computes authorization headers.
+             *
+             * @param {Object} authorizationToken
+             * @returns {{ Authorization: string }}
+             * @private
+             */
+            _computeHeaders: function (authorizationToken) {
+                return {
+                    'Authorization': 'token ' + authorizationToken
+                }
             },
 
             /**
@@ -315,64 +376,7 @@ Example:
              * @private
              */
             _handleError: function(event) {
-
-//                this._message = 'We couldn\'t load notifications at the moment. Please try again in a minute. If error continues contact us.';
-
-
-                var notifications = [
-                    {
-                        image: 'https://apps.appsco.com/icon/199.png',
-                        message: 'Appsco Apptest assigned you Telenor Avansert Sentralbord on Telecom Test Dash',
-                        date: '22/9/2016'
-                    },
-                    {
-                        image: 'https://apps.appsco.com/icon/199.png',
-                        message: 'You have been added to Telecom Test Dash',
-                        date: '22/9/2016'
-                    },
-                    {
-                        image: 'https://apps.appsco.com/icon/199.png',
-                        message: 'Appsco Apptest assigned you Telenor Mine Sider on Telecom Test Dash',
-                        date: '22/9/2016'
-                    },
-                    {
-                        image: 'https://apps.appsco.com/icon/199.png',
-                        message: 'You have been added to Telecom Test Dash',
-                        date: '22/9/2016'
-                    },
-                    {
-                        image: 'https://apps.appsco.com/icon/199.png',
-                        message: 'Appsco Apptest assigned you Telenor Mine Sider on Telecom Test Dash',
-                        date: '22/9/2016'
-                    }
-
-                ];
-
-                if (notifications && notifications.length > 0) {
-
-                    notifications.forEach(function(notification, i) {
-
-                        setTimeout( function() {
-
-                            this.push('_notifications', notifications[i]);
-
-                            if (i === (notifications.length - 1)) {
-                                this._notificationsExists = true;
-                            }
-
-                        }.bind(this), (i + 1) * 50 );
-
-                    }.bind(this));
-
-                }
-                else if (notifications && notifications.length === 0) {
-                    this._message = 'You don\'t have notifications.';
-                }
-                else {
-                    this._message = 'We couldn\'t load notifications at the moment.';
-                }
-
-
+                this._message = 'We couldn\'t load notifications at the moment. Please try again in a minute. If error continues contact us.';
                 this._loader = false;
             },
 
@@ -383,7 +387,7 @@ Example:
              * @private
              */
             _handleResponse: function(event) {
-                var notifications = event.detail.response.notifications;
+                var notifications = event.detail.response;
 
                 if (notifications && notifications.length > 0) {
 

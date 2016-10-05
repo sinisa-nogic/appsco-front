@@ -22,11 +22,11 @@ Example:
 
  Custom property | Description | Default
 ----------------|-------------|----------
-`--primary-text-color` | Default text color for element | `#7e97b2`
+`--primary-text-color` | Default text color for element | `Based on default theme --primary-text-color`
+`--border-color` | Default border color | `Based on default theme --border-color`
+`--divider-color` | Color for divider used for border of root element | `Based on default theme --divider-color`
 `--appsco-account-action-color` | Color for icon-button action | `Based on --primary-text-color`
 `--appsco-account-new-notifications-color` | Color for icon-button action when there are new notifications | `Based on --primary-text-color`
-`--divider-color` | Default color for divider | `#eaeaea`
-`--appsco-account-notifications-color` | Default text color root element | `Based on --primary-text-color`
 `--appsco-account-notifications` | Mixin applied to root appsco-account-notifications element | `{}`
 `--appsco-account-notifications-dropdown` | Mixin applied to inner appsco-dropdown within root element | `{}`
 `--appsco-account-active-action` | Mixin applied to action in active state | `{}`
@@ -61,20 +61,18 @@ Example:
             :host .divider {
                 width: 100%;
                 height: 1px;
-                background-color: var(--divider-color, #eaeaea);
+                background-color: var(--divider-color);
             }
             :host appsco-account-notification {
                 color: var(--primary-text-color, #8398b1);
             }
             :host appsco-dropdown {
                 top: 45px;
-                min-height: 300px;
 
                 @apply(--appsco-account-notifications-dropdown);
             }
             :host paper-card {
                 width: 100%;
-                min-height: 300px;
 
                 --paper-card-header-color: var(--primary-text-color, #8398b1);
 
@@ -93,13 +91,20 @@ Example:
 
                 line-height: normal;
             }
-            :host .see-all-btn {
+            :host .default-btn {
+                background-color: transparent;
+                color: var(--primary-text-color);
+                border: 1px solid var(--border-color);
+            }
+            :host .link-btn {
                 width: 100%;
                 padding: 16px;
-                font-size: 12px;
-                text-align: center;
-                background: var(--appsco-light-gray-color, #f5f8fa);
-                border-radius: 0;
+                background-color: transparent;
+                border: none;
+            }
+            :host .message {
+                font-style: italic;
+                line-height: 1.6;
             }
         </style>
 
@@ -128,7 +133,7 @@ Example:
                 trigger="[[ _triggerDropdown ]]"
                 close-outside>
 
-                <paper-card heading="Notifications">
+                <paper-card heading="Notifications" class="layout vertical">
 
                     <appsco-loader active="[[ _loader ]]" loader-alt="Loading notifications" multi-color></appsco-loader>
 
@@ -136,13 +141,15 @@ Example:
 
                         <iron-ajax
                             id="ironAjaxNotifications"
-                            url="http://appsco.loc/app_dev.php/api/v2/me/notifications"
+                            url="{{ _computedUrl }}"
+                            method="GET"
+                            headers="{{ _computedHeaders }}"
                             handle-as="json"
                             on-error="_handleError"
                             on-response="_handleResponse">
                         </iron-ajax>
 
-                        <template is="dom-repeat" items="[[ _notifications ]]">
+                        <template is="dom-repeat" items="{{ _notifications }}">
 
                             <div class="divider"></div>
 
@@ -156,14 +163,14 @@ Example:
 
                     <template is="dom-if" if="[[ _message ]]">
                         <div class="card-content layout horizontal center">
-                            <p>
+                            <p class="message">
                                 [[ _message ]]
                             </p>
                         </div>
                     </template>
 
-                    <div class="card-actions layout vertical center" hidden$="[[ !_notificationsExists }}">
-                        <paper-button id="seeAllNotifications" class="see-all-btn">See all notifications</paper-button>
+                    <div class="card-actions" hidden$="[[ !_notificationsExists }}">
+                        <paper-button id="seeAllNotifications" class="default-btn link-btn">See all notifications</paper-button>
                     </div>
 
                 </paper-card>
@@ -178,6 +185,46 @@ Example:
             is: 'appsco-account-notifications',
 
             properties: {
+
+                /**
+                 * Authorization token
+                 */
+                authorizationToken: {
+                    type: String
+                },
+
+                /**
+                 * Notifications API link.
+                 */
+                notificationsApi: {
+                    type: String
+                },
+
+                /**
+                 * Number of notifications to load.
+                 */
+                size: {
+                    type: Number,
+                    value: 5
+                },
+
+                /**
+                 * Computed headers.
+                 * It contains authorization token.
+                 */
+                _computedUrl: {
+                    type: String,
+                    computed: "_computeUrl(notificationsApi)"
+                },
+
+                /**
+                 * Computed headers.
+                 * It contains authorization token.
+                 */
+                _computedHeaders: {
+                    type: Object,
+                    computed: "_computeHeaders(authorizationToken)"
+                },
 
                 /**
                  * Notifications for account.
@@ -240,13 +287,10 @@ Example:
             },
 
             listeners: {
-                'seeAllNotifications.tap': '_seeAllNotificationsAction',
-                '_notifications-changed': '_onNotificationsChange'
+                'seeAllNotifications.tap': '_seeAllNotificationsAction'
             },
 
             ready: function() {
-                var basic = btoa('nikola@free.com' + ':' + 'Nikola.Appscov2');
-                this.$.ironAjaxNotifications.headers.authorization = "Basic " + basic;
 
                 // This is set just to see how it works.
                 // Should be removed after implementation of 'new notifications' scenario.
@@ -260,33 +304,29 @@ Example:
 
             attached: function() {
                 this._triggerDropdown = this.$$('#notificationsAction');
-
-                this._checkIfNotificationsExists();
             },
 
             /**
-             * Checks if there are notifications.
+             * Computes iron-ajax url.
              *
+             * @param {String} notificationsApi
              * @private
              */
-            _checkIfNotificationsExists: function() {
-
-                if (this._notifications && this._notifications.length > 0) {
-                    this._notificationsExists = true;
-                }
-                else {
-                    this._notificationsExists = false;
-                }
-
+            _computeUrl: function (notificationsApi) {
+                return notificationsApi + '?page=1&limit=' + this.size;
             },
 
             /**
-             * On notification change event handler.
+             * Computes authorization headers.
              *
+             * @param {Object} authorizationToken
+             * @returns {{ Authorization: string }}
              * @private
              */
-            _onNotificationsChange: function() {
-                this._checkIfNotificationsExists();
+            _computeHeaders: function (authorizationToken) {
+                return {
+                    'Authorization': 'token ' + authorizationToken
+                }
             },
 
             /**
@@ -324,6 +364,8 @@ Example:
              */
             _loadNotifications: function() {
                 this._loader = true;
+                this._notifications = [];
+                this._notificationsExists = false;
                 this.$.ironAjaxNotifications.generateRequest();
             },
 
@@ -334,38 +376,7 @@ Example:
              * @private
              */
             _handleError: function(event) {
-
-//                this._message = 'We couldn\'t load notifications at the moment. Please try again in a minute. If error continues contact us.';
-
-                this._notifications = [
-                    {
-                        image: 'https://apps.appsco.com/icon/199.png',
-                        message: 'Appsco Apptest assigned you Telenor Avansert Sentralbord on Telecom Test Dash',
-                        date: '22/9/2016'
-                    },
-                    {
-                        image: 'https://apps.appsco.com/icon/199.png',
-                        message: 'You have been added to Telecom Test Dash',
-                        date: '22/9/2016'
-                    },
-                    {
-                        image: 'https://apps.appsco.com/icon/199.png',
-                        message: 'Appsco Apptest assigned you Telenor Mine Sider on Telecom Test Dash',
-                        date: '22/9/2016'
-                    },
-                    {
-                        image: 'https://apps.appsco.com/icon/199.png',
-                        message: 'You have been added to Telecom Test Dash',
-                        date: '22/9/2016'
-                    },
-                    {
-                        image: 'https://apps.appsco.com/icon/199.png',
-                        message: 'Appsco Apptest assigned you Telenor Mine Sider on Telecom Test Dash',
-                        date: '22/9/2016'
-                    }
-
-                ];
-
+                this._message = 'We couldn\'t load notifications at the moment. Please try again in a minute. If error continues contact us.';
                 this._loader = false;
             },
 
@@ -376,13 +387,30 @@ Example:
              * @private
              */
             _handleResponse: function(event) {
-                var response = event.detail.response;
+                var notifications = event.detail.response;
 
-                if (response.notifications && response.notifications.length > 0) {
-                    this._notifications = response.notifications;
+                if (notifications && notifications.length > 0) {
+
+                    notifications.forEach(function(notification, i) {
+
+                        setTimeout( function() {
+
+                            this.push('_notifications', notifications[i]);
+
+                            if (i === (notifications.length - 1)) {
+                                this._notificationsExists = true;
+                            }
+
+                        }.bind(this), (i + 1) * 50 );
+
+                    }.bind(this));
+
+                }
+                else if (notifications.length === 0) {
+                    this._message = 'You don\'t have notifications.';
                 }
                 else {
-                    this._message = 'You don\'t have notifications.';
+                    this._message = 'We couldn\'t load notifications at the moment.';
                 }
 
                 this._loader = false;

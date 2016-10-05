@@ -7,6 +7,7 @@
 <link rel="import" href="../iron-media-query/iron-media-query.html">
 
 <link rel="import" href="appsco-dropdown.html">
+<link rel="import" href="appsco-account-info-account.html">
 
 <!--
 `appsco-account-info`
@@ -21,20 +22,15 @@ Example:
 
 Custom property | Description | Default
 ----------------|-------------|----------
-`--primary-text-color` | Default text color for element | `#7e97b2`
-`--active-account-background-color` | Background color for active account | `#ffffff`
-`--inactive-account-background-color` | Background color for additional accounts | `#f5f5f5`
-`--inactive-account-background-hover` | Hover for additional accounts | `#f9f7f7`
-`--border-color` | Default border color for element | `#d5d8d8`
-`--divider-color` | Default color for divider | `#eaeaea`
+`--primary-text-color` | Default text color for element | `Based on default theme --primary-text-color`
+`--light-background-color` | Background color for additional accounts | `#f5f5f5`
+`--hover-background-color` | Hover for additional accounts | `#f9f7f7`
 `--info-background-color` | Background color for info inside element | `#edf9ff`
 `--appsco-account-info-box` | Mixin for info box | `{}`
 `--appsco-account-info` | Mixin applied to root appsco-account-info element | `{}`
 `--appsco-account-info-user-holder` | Mixin applied to user container within root element | `{}`
 `--appsco-account-info-account-img` | Mixin applied to account image | `{}`
 `--appsco-account-info-dropdown` | Mixin applied to inner appsco-account-info-dropdown element | `{}`
-`--btn-default` | Mixin applied to paper-button with class .btn-default | `{}`
-`--btn-primary` | Mixin applied to paper-button with class .btn-primary | `{}`
 
 @demo demo/appsco-account-info.html
 -->
@@ -59,7 +55,7 @@ Custom property | Description | Default
             }
             :host[display-name] appsco-dropdown {
                 top: 30px;
-                right: -9px;
+                right: -10px;
             }
             :host paper-button {
                 @apply(--paper-font-button);
@@ -70,14 +66,6 @@ Custom property | Description | Default
                 line-height: normal;
                 text-align: center;
                 display: block;
-            }
-            :host .hidden {
-                display: none;
-            }
-            :host .divider {
-                width: 100%;
-                height: 1px;
-                background-color: var(--divider-color, #eaeaea);
             }
             :host .pull-left {
                 float: left;
@@ -130,8 +118,8 @@ Custom property | Description | Default
 
                 @apply(--appsco-account-info-box);
             }
-            :host appsco-dropdown .additional-account, :host appsco-dropdown .actions {
-                background-color: var(--inactive-account-background-color, #f5f5f5);
+            :host appsco-dropdown .actions {
+                background-color: var(--light-background-color, #f5f5f5);
             }
             :host appsco-dropdown .account, :host appsco-dropdown .actions, :host appsco-dropdown .info {
                 padding: 10px 20px;
@@ -152,7 +140,7 @@ Custom property | Description | Default
             }
             :host appsco-dropdown .active-account {
                 padding: 20px;
-                background-color: var(--active-account-background-color, #ffffff);
+                background-color: var(--hover-background-color, #ffffff);
                 border-top-left-radius: 4px;
                 border-top-right-radius: 4px;
             }
@@ -160,29 +148,8 @@ Custom property | Description | Default
                 width: 96px;
                 height: 96px;
             }
-            :host appsco-dropdown .active-account .account-info {
+            :host .active-account .account-info {
                 margin-top: 10px;
-            }
-            :host appsco-dropdown .additional-account {
-                position: relative;
-            }
-            :host appsco-dropdown .additional-account:hover {
-                background-color: var(--inactive-account-background-hover, #f9f7f7);
-            }
-            :host appsco-dropdown .additional-account .account-info {
-                margin-top: 6px;
-            }
-            :host .btn-primary {
-                color: #ffffff;
-                background-color: var(--appsco-primary-color, #03BCFF);
-
-                @apply(--btn-primary);
-            }
-            :host .btn-default {
-                color: var(--primary-text-color);
-                border: 1px solid var(--border-color, #d5d8d8);
-
-               @apply(--btn-default);
             }
             :host .end-justified {
                 @apply(--layout-end-justified);
@@ -191,8 +158,7 @@ Custom property | Description | Default
                 top: 35px;
                 right: -5px;
             }
-            :host[mobile] .account-info.hidden,
-            :host[mobile] iron-icon.hidden {
+            :host[mobile] .hidden-xs {
                 display: none;
             }
         </style>
@@ -205,9 +171,9 @@ Custom property | Description | Default
 
                 <img src="[[ account.picture_url ]]" class="account-img pull-left">
 
-                <span class="account-info truncate hidden">[[ _accountDisplay ]]</span>
+                <span class="account-info truncate hidden-xs" hidden$="{{ !displayName }}">[[ _accountDisplay ]]</span>
 
-                <iron-icon icon="arrow-drop-down" class="hidden"></iron-icon>
+                <iron-icon icon="arrow-drop-down" class="hidden-xs" hidden$="{{ !displayName }}" ></iron-icon>
             </div>
 
             <appsco-dropdown
@@ -230,14 +196,14 @@ Custom property | Description | Default
                         <div class="account-info layout vertical">
 
                             <template is="dom-if" if="[[ account.first_name ]]">
-                                <span class="info-lead truncate">[[ account.first_name ]] [[ account.last_name ]]</span>
+                                <span class="info-lead truncate">[[ _accountDisplay ]]</span>
                             </template>
 
                             <span class="info-additional truncate">[[ account.email ]]</span>
 
                             <div class="layout vertical end-justified flex">
                                 <paper-button
-                                        class="btn-primary action-my-account"
+                                        class="primary-btn"
                                         on-tap="_accountSettingsAction">
                                     My Account
                                 </paper-button>
@@ -250,29 +216,18 @@ Custom property | Description | Default
 
                     <template is="dom-repeat" items="{{ accounts }}">
 
-                        <div class="divider"></div>
-                        <div
-                            class="account additional-account layout horizontal"
-                            on-tap="_switchAccountAction">
-
-                            <img src="[[ item.picture_url ]]" class="account-img">
-                            <div class="account-info">
-                                <span class="info-lead truncate">[[ item.first_name ]] [[ item.last_name ]]</span>
-                                <span class="info-additional truncate">[[ item.email ]]</span>
-                            </div>
-
-                            <paper-ripple></paper-ripple>
-                        </div>
+                        <appsco-account-info-account
+                                account="{{ item }}"
+                                on-account-selected="_switchAccountAction">
+                        </appsco-account-info-account>
 
                     </template>
 
                 </div>
-
-                <div class="divider"></div>
                 <div class="actions layout horizontal">
                     <div class="flex">
                         <paper-button
-                                class="btn-default"
+                                class="default-btn"
                                 on-tap="_addAccountAction">
                             Add Account
                         </paper-button>
@@ -280,6 +235,7 @@ Custom property | Description | Default
 
                     <div>
                         <paper-button
+                                class="link-btn"
                                 on-tap="_logoutAccountAction">
                             Logout
                         </paper-button>
@@ -323,7 +279,8 @@ Custom property | Description | Default
                 },
 
                 /**
-                 * Display for account.
+                 * If attribute is set account display will contain account display name.
+                 * Otherwise, account display will contain account picture_url only.
                  */
                 _accountDisplay: {
                     type: String,
@@ -354,8 +311,7 @@ Custom property | Description | Default
                 },
 
                 /**
-                 * If attribute is set account display will contain account display name.
-                 * Otherwise, account display will contain account picture_url only.
+                 * Indicates if account info should display _accountDisplay or not.
                  */
                 displayName: {
                     type: Boolean,

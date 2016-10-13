@@ -12,7 +12,7 @@ It displays dropdown with given content. On click outside content it closes drop
 Example:
 
     <body>
-        <appsco-dropdown open></appsco-dropdown>
+        <appsco-dropdown></appsco-dropdown>
 
 ### Styling
 
@@ -97,6 +97,32 @@ Custom property | Description | Default
             properties: {
 
                 /**
+                 * Indicates whether dropdown is opened or not.
+                 */
+                open: {
+                    type: Boolean,
+                    value: false,
+                    notify: true
+                },
+
+                /**
+                 * Indicates if user clicks inside dropdown.
+                 */
+                trigger: {
+                    type: Object,
+                    value: {},
+                    notify: true
+                },
+
+                /**
+                 * Indicates if dropdown should be closed on click outside.
+                 */
+                dontCloseOutside: {
+                    type: Boolean,
+                    value: false
+                },
+
+                /**
                  * Animation for dropdown appearance.
                  */
                 animationConfig: {
@@ -121,49 +147,24 @@ Custom property | Description | Default
                             }
                         }
                     }
-                },
-
-                /**
-                 * Indicates whether dropdown is opened or not.
-                 * This value comes from an element that triggers dropdown to toggle.
-                 */
-                open: {
-                    type: Boolean,
-                    value: false,
-                    notify: true
-                },
-
-                /**
-                 * Indicates if user clicks inside dropdown.
-                 */
-                trigger: {
-                    type: Object,
-                    value: {},
-                    notify: true
-                },
-
-                /**
-                 * Indicates if dropdown should be closed on click outside.
-                 */
-                closeOutside: {
-                    type: Boolean,
-                    value: false
                 }
             },
 
             listeners: {
-                'neon-animation-finish': '__onAnimationFinish',
-                'open-changed': '__openChanged'
+                'neon-animation-finish': '_onAnimationFinish',
+                'open-changed': '_openChanged'
             },
 
             ready: function() {
 
-                this.__openChanged();
-
-                if (this.closeOutside) {
-                    Polymer.Gestures.add(document, 'tap', this.__handleDocumentClick.bind(this));
+                if (!this.dontCloseOutside) {
+                    Polymer.Gestures.add(document, 'tap', this._handleDocumentClick.bind(this));
                 }
 
+            },
+            
+            toggle: function() {
+                this.open = !this.open;
             },
 
             /**
@@ -175,7 +176,7 @@ Custom property | Description | Default
              *
              * @private
              */
-            __isInPath: function(path, element) {
+            _isInPath: function(path, element) {
                 path = path || [];
 
                 for (var i = 0; i < path.length; i++) {
@@ -194,10 +195,10 @@ Custom property | Description | Default
              * Listens for click outside of dropdown in order to close it.
              * @private
              */
-            __handleDocumentClick: function(e) {
-                var path = Polymer.dom(e).path;
+            _handleDocumentClick: function(event) {
+                var path = Polymer.dom(event).path;
 
-                if (this.trigger && !this.__isInPath(path, this) && !this.__isInPath(path, this.trigger)) {
+                if (this.trigger && !this._isInPath(path, this) && !this._isInPath(path, this.trigger)) {
                     this.open = false;
                 }
 
@@ -207,7 +208,7 @@ Custom property | Description | Default
              * It is called after dropdown animation is finished.
              * @private
              */
-            __onAnimationFinish: function() {
+            _onAnimationFinish: function() {
 
                 if (!this.open) {
                     this.style.display = 'none';
@@ -221,7 +222,7 @@ Custom property | Description | Default
              * If it is false it hides the dropdown.
              * @private
              */
-            __openChanged: function() {
+            _openChanged: function() {
 
                 if (this.open) {
                     this.style.display = 'block';

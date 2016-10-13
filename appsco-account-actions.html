@@ -2,7 +2,7 @@
 <link rel="import" href="../paper-icon-button/paper-icon-button.html">
 
 <link rel="import" href="appsco-account-chat.html">
-<link rel="import" href="appsco-account-notifications-action.html">
+<link rel="import" href="appsco-account-notifications-dropdown.html">
 
 <!--
 `appsco-account-actions`
@@ -46,6 +46,10 @@ Custom property | Description | Default
                 color: var(--appsco-account-action-color);
                 --paper-icon-button-ink-color: var(--appsco-account-action-color);
             }
+            :host .new-notifications-icon {
+                color: var(--appsco-account-new-notifications-color, --primary-color);
+                --paper-icon-button-ink-color: var(--appsco-account-new-notifications-color, --primary-color);
+            }
         </style>
 
         <div class="account-actions">
@@ -60,17 +64,49 @@ Custom property | Description | Default
             </template>
 
             <template is="dom-if" if="[[ chat ]]">
+                <paper-icon-button
+                        id="chatAction"
+                        class="action-icon"
+                        icon="communication:forum"
+                        title="Chat"
+                        on-tap="_onChatAction">
+                </paper-icon-button>
+
                 <appsco-account-chat
+                        id="appscoAccountChat"
                         account="[[ account ]]"
-                        chat="[[ chat ]]">
+                        chat="[[ chat ]]"
+                        dont-close-outside>
                 </appsco-account-chat>
             </template>
 
-            <appsco-account-notifications-action
+            <template is="dom-if" if="[[ _newNotifications ]]">
+                <paper-icon-button
+                        id="newNotificationsAction"
+                        class="action-icon new-notifications-icon"
+                        icon="social:notifications-active"
+                        title="Notifications"
+                        on-tap="_onNewNotificationsAction">
+                </paper-icon-button>
+            </template>
+
+            <template is="dom-if" if="[[ !_newNotifications ]]">
+                <paper-icon-button
+                        id="notificationsAction"
+                        class="action-icon"
+                        icon="social:notifications"
+                        title="Notifications"
+                        on-tap="_onNotificationsAction">
+                </paper-icon-button>
+            </template>
+
+            <appsco-account-notifications-dropdown
+                    id="appscoAccountNotificationsDropdown"
                     authorization-token="[[ authorizationToken ]]"
                     notifications-api="[[ notificationsApi ]]"
-                    notifications-size="[[ notificationsSize ]]">
-            </appsco-account-notifications-action>
+                    notifications-size="[[ notificationsSize ]]"
+                    on-new-notifications="_onNewNotifications">
+            </appsco-account-notifications-dropdown>
 
         </div>
 
@@ -115,7 +151,42 @@ Custom property | Description | Default
                 notificationsSize: {
                     type: Number,
                     value: 5
+                },
+
+                /**
+                 * Indicates if there are new notifications.
+                 */
+                _newNotifications: {
+                    type: Boolean,
+                    value: false
                 }
+            },
+
+            _onChatAction: function(event) {
+                this.$$('#appscoAccountChat').toggleChat(event.target);
+            },
+
+            _onNewNotifications: function() {
+                this._newNotifications = true;
+            },
+
+            /**
+             * Handles notifications action.
+             *
+             * @private
+             */
+            _onNotificationsAction: function(event) {
+                this.$.appscoAccountNotificationsDropdown.toggleNotifications(event.target);
+            },
+
+            /**
+             * Handles notifications action when there are new notifications.
+             *
+             * @private
+             */
+            _onNewNotificationsAction: function(event) {
+                this._newNotifications = false;
+                this.$.appscoAccountNotificationsDropdown.toggleNotifications(event.target);
             }
 
         });

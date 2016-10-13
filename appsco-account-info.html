@@ -104,6 +104,14 @@ Custom property | Description | Default
                 float: left;
                 max-width: 200px;
             }
+            :host .my-account-button {
+                background-color: var(--primary-button-background-color, #00b4ff);
+                color: #ffffff;
+            }
+            :host .add-account-button {
+                background-color: var(--default-button-background-color, #f8f8f8);
+                border: 1px solid var(--border-color);
+            }
             :host appsco-dropdown {
                 top: 35px;
                 right: -5px;
@@ -165,7 +173,7 @@ Custom property | Description | Default
 
         <div class="account-holder" hidden$="[[ !_accountExists }}">
 
-            <div id="triggerDropdown" class="user-holder clearfix" on-tap="_toggleDropdownAction">
+            <div id="triggerDropdown" class="user-holder clearfix" on-tap="_toggleDropdown">
 
                 <img src="[[ account.picture_url ]]" class="account-img pull-left">
 
@@ -176,10 +184,8 @@ Custom property | Description | Default
 
             <appsco-dropdown
                     id="accountInfoDropdown"
-                    open="{{ _pressed }}"
                     trigger="[[ _triggerDropdown ]]"
-                    data-info$="[[ info ]]"
-                    close-outside>
+                    data-info$="[[ info ]]">
 
                 <template is="dom-if" if="[[ info ]]">
                     <div class="info">
@@ -201,8 +207,8 @@ Custom property | Description | Default
 
                             <div class="layout vertical end-justified flex">
                                 <paper-button
-                                        class="primary-btn"
-                                        on-tap="_accountSettingsAction">
+                                        class="my-account-button"
+                                        on-tap="_onAccountSettingsAction">
                                     My Account
                                 </paper-button>
                             </div>
@@ -216,7 +222,7 @@ Custom property | Description | Default
 
                         <appsco-account-info-account
                                 account="{{ item }}"
-                                on-account-selected="_switchAccountAction">
+                                on-account-selected="_onSwitchAccountAction">
                         </appsco-account-info-account>
 
                     </template>
@@ -225,16 +231,15 @@ Custom property | Description | Default
                 <div class="actions layout horizontal">
                     <div class="flex">
                         <paper-button
-                                class="default-btn"
-                                on-tap="_addAccountAction">
+                                class="add-account-button"
+                                on-tap="_onAddAccountAction">
                             Add Account
                         </paper-button>
                     </div>
 
                     <div>
                         <paper-button
-                                class="link-btn"
-                                on-tap="_logoutAccountAction">
+                                on-tap="_onLogoutAccountAction">
                             Logout
                         </paper-button>
                     </div>
@@ -315,23 +320,6 @@ Custom property | Description | Default
                     type: Boolean,
                     value: false,
                     reflectToAttribute: true
-                },
-
-                /**
-                 * Indicates if user clicked on element or not.
-                 */
-                _pressed: {
-                    type: Boolean,
-                    value: false,
-                    notify: true
-                },
-
-                /**
-                 * DOM element which triggers the dropdown.
-                 */
-                _triggerDropdown: {
-                    type: Object,
-                    notify: true
                 }
             },
 
@@ -423,8 +411,8 @@ Custom property | Description | Default
              *
              * @private
              */
-            _toggleDropdownAction: function() {
-                this._pressed = !this._pressed;
+            _toggleDropdown: function() {
+                this.$.accountInfoDropdown.toggle();
             },
 
             /**
@@ -432,7 +420,7 @@ Custom property | Description | Default
              *
              * @private
              */
-            _accountSettingsAction: function() {
+            _onAccountSettingsAction: function() {
 
                 /**
                  * Fired when user taps on account settings action.
@@ -440,7 +428,7 @@ Custom property | Description | Default
                  * @event account-settings
                  */
                 this.fire('account-settings', {
-                    account: this.account.id
+                    account: this.account
                 });
 
             },
@@ -451,7 +439,7 @@ Custom property | Description | Default
              *
              * @private
              */
-            _switchAccountAction: function(event) {
+            _onSwitchAccountAction: function(event) {
 
                 /**
                  * Fired when user switches account.
@@ -460,7 +448,7 @@ Custom property | Description | Default
                  * @param {number} account Id of account to switch to.
                  */
                 this.fire('account-switch', {
-                    account: event.model.item.id
+                    account: event.model.item
                 });
 
             },
@@ -469,7 +457,7 @@ Custom property | Description | Default
              * Fires event on add account.
              * @private
              */
-            _addAccountAction: function() {
+            _onAddAccountAction: function() {
 
                 /**
                  * Fired when tapped on add new account action.
@@ -484,7 +472,7 @@ Custom property | Description | Default
              * Fires event on account logout.
              * @private
              */
-            _logoutAccountAction: function() {
+            _onLogoutAccountAction: function() {
 
                 /**
                  * Fired when tapped on add account logout action.
@@ -492,7 +480,7 @@ Custom property | Description | Default
                  * @event account-logout
                  */
                 this.fire('account-logout', {
-                    account: this.account.id
+                    account: this.account
                 });
 
             }

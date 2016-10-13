@@ -24,7 +24,6 @@ Example:
 
  Custom property | Description | Default
 ----------------|-------------|----------
-`--appsco-account-action-color` | Color for icon-button action | ``
 `--divider-color` | Default color for divider | `#eaeaea`
 `--appsco-account-chat-message-color` | Background color for message | `#eaeaea`
 `--appsco-account-chat-incoming-message-color` | Background color for incoming message | `#eaeaea`
@@ -35,7 +34,6 @@ Example:
 `--appsco-account-chat-message-time` | Mixin applied to message time within chat | `{}`
 `--appsco-account-chat-message-arrow-before` | Mixin applied to message arrow :before pseudo element | `{}`
 `--appsco-account-chat-message-arrow-after` | Mixin applied to message arrow :after pseudo element | `{}`
-`--appsco-account-active-action` | Mixin applied to action in active state | `{}`
 
 @demo demo/appsco-account-chat.html
 -->
@@ -47,37 +45,20 @@ Example:
                 display: inline-block;
                 position: relative;
 
-                --paper-input-container-color: #cde2f5;
-
                 --paper-input-container-input: {
                      font-size: 14px;
                  };
+
                 --paper-input-container-focus-color: var(--primary-text-color);
                 --paper-input-container-input-color: var(--primary-text-color);
 
                 --paper-input-container-underline: {
                      background: #cde2f5;
                  };
+
                 --paper-input-container-underline-focus: {
                      height: 1px;
                  };
-
-                @apply(--appsco-account-chat);
-            }
-            :host .action-icon {
-                color: var(--appsco-account-action-color);
-                --paper-icon-button-ink-color: var(--appsco-account-action-color);
-            }
-            :host[_pressed] .action-icon {
-                border-radius: 50%;
-
-                @apply(--shadow-elevation-2dp);
-                @apply(--appsco-account-active-action);
-            }
-            :host paper-card {
-                width: 100%;
-                height: 100%;
-                position: relative;
 
                 --paper-card-header: {
                      width: 100%;
@@ -101,6 +82,8 @@ Example:
                 --paper-card-content: {
                      width: 100%;
                      height: 100%;
+                     padding: 0;
+                     font-size: 14px;
                      position: absolute;
                      top: 0;
                      left: 0;
@@ -119,7 +102,16 @@ Example:
                      z-index: 5;
                  };
 
-                --paper-card-header-color: #8398b1;
+                --appsco-dropdown-caret: {
+                     display: none;
+                 };
+
+                @apply(--appsco-account-chat);
+            }
+            :host paper-card {
+                width: 100%;
+                height: 100%;
+                position: relative;
             }
             :host .close-icon {
                 position: absolute;
@@ -134,14 +126,7 @@ Example:
                 bottom: 0;
                 right: 100px;
 
-                --appsco-dropdown-caret: {
-                     display: none;
-                 };
-
                 @apply(--appsco-account-chat-dropdown);
-            }
-            :host appsco-dropdown paper-card {
-                @apply(--shadow-elevation-4dp);
             }
             :host appsco-dropdown .messages-container {
                 position: absolute;
@@ -235,7 +220,7 @@ Example:
             :host .message:before {
                 @apply(--appsco-account-chat-message-arrow-before);
             }
-            :host[mobile] appsco-dropdown {
+            :host([mobile]) appsco-dropdown {
                 width: 100vw;
                 height: 100vh;
                 top: 0;
@@ -246,24 +231,17 @@ Example:
 
         <iron-media-query query="(max-width: 600px)" query-matches="{{ mobile }}"></iron-media-query>
 
-        <paper-icon-button
-                id="trigger"
-                class="action-icon"
-                icon="communication:forum"
-                title="Chat">
-        </paper-icon-button>
-
         <appsco-dropdown
-                id="chatContainer"
-                open="{{ _pressed }}"
-                trigger="[[ _triggerDropdown ]]">
+                id="chatDropdown"
+                trigger="[[ _triggerDropdown ]]"
+                dont-close-outside="[[ dontCloseOutside ]]">
 
             <paper-card heading="[[ _accountDisplay ]]">
                 <paper-icon-button
                         class="close-icon"
                         icon="close"
                         title="Close"
-                        on-tap="_toggleDropdownAction">
+                        on-tap="_toggleDropdown">
                 </paper-icon-button>
 
                 <div class="card-content layout vertical">
@@ -407,7 +385,10 @@ Example:
                  * Active account from AppsCo dashboard.
                  */
                 account: {
-                    type: Object
+                    type: Object,
+                    value: function() {
+                        return {};
+                    }
                 },
 
                 /**
@@ -421,17 +402,9 @@ Example:
                 /** Chat object with connect data. */
                 chat: {
                     type: Object,
-                    value: {}
-                },
-
-                /**
-                 * Indicates if user clicked on element or not.
-                 */
-                _pressed: {
-                    type: Boolean,
-                    value: false,
-                    notify: true,
-                    reflectToAttribute: true
+                    value: function() {
+                        return {};
+                    }
                 },
 
                 /**
@@ -440,21 +413,33 @@ Example:
                 _triggerDropdown: {
                     type: Object,
                     notify: true
+                },
+
+                /**
+                 * Target element for keyboard actions.
+                 */
+                _target: {
+                    type: Object,
+                    value: function() {
+                        return this.$.inputMessage;
+                    }
+                },
+
+                /**
+                 * Indicates if chat should be closed on click outside.
+                 */
+                dontCloseOutside: {
+                    type: Boolean,
+                    value: false
                 }
             },
 
-            listeners: {
-                'trigger.tap': '_toggleDropdownAction'
-            },
-
             ready: function() {
-                this.$.chatContainer.animationConfig.entry.name = 'slide-from-bottom-animation';
-                this.$.chatContainer.animationConfig.exit.name = 'slide-down-animation';
+                this.$.chatDropdown.animationConfig.entry.name = 'slide-from-bottom-animation';
+                this.$.chatDropdown.animationConfig.exit.name = 'slide-down-animation';
             },
 
             attached: function() {
-                this._triggerDropdown = this.$$('#trigger');
-
                 this._scrollToLastMessage();
             },
 
@@ -487,9 +472,8 @@ Example:
              *
              * @private
              */
-            _toggleDropdownAction: function() {
-                this._pressed = !this._pressed;
-
+            _toggleDropdown: function() {
+                this.$.chatDropdown.toggle();
                 this._focusInputMessage();
             },
 
@@ -509,7 +493,6 @@ Example:
              */
             _scrollToLastMessage: function() {
                 var chatMessages = this.$.chatMessages;
-
                 chatMessages.scrollTop = chatMessages.scrollHeight;
             },
 
@@ -530,6 +513,11 @@ Example:
              */
             _onEnter: function() {
                 this._sendMessage();
+            },
+
+            toggleChat: function(target) {
+                this._triggerDropdown = target;
+                this._toggleDropdown();
             }
 
         });

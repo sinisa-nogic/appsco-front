@@ -1,9 +1,13 @@
 <link rel="import" href="../polymer/polymer.html">
 
+<link rel="import" href="../neon-animation/neon-animation-runner-behavior.html">
+<link rel="import" href="../neon-animation/animations/fade-in-animation.html">
+<link rel="import" href="../neon-animation/animations/fade-out-animation.html">
+
 <link rel="import" href="../paper-input/paper-input.html">
 <link rel="import" href="../paper-input/paper-textarea.html">
 <link rel="import" href="../paper-styles/typography.html">
-<link rel="import" href="../appsco-header/appsco-copy.html">
+<link rel="import" href="../appsco-components/appsco-copy.html">
 <link rel="import" href="../iron-icon/iron-icon.html">
 
 <!--
@@ -28,52 +32,42 @@ Custom property | Description | Default
     <template>
         <style>
             :host {
-                display: block;
-                @apply(--appsco-application-details);
-                @apply(--layout-vertical);
-                --appsco-application-icons-color: #000;
+            @apply(--appsco-application-details);
+            @apply(--layout-vertical);
+                display: none;
+
+                --iron-icon-width: 18px;
+                --iron-icon-height: 18px;
+                --iron-icon-fill-color: var(--appsco-application-icons-color);
+
+            --paper-icon-button: {
+                 height: 18px;
+                 width: 18px;
+                 padding: 0;
+                 /*color: var(--appsco-application-icons-color);*/
+             };
             }
 
             :host div[label] {
-                @apply(--paper-font-body1);
-                text-transform: uppercase;
-                opacity: 0.6;
+                color: var(--secondary-text-color);
+            @apply(--paper-font-body1);
             }
 
             :host div[content] {
-                @apply(--layout-horizontal);
-                @apply(--layout-center);
+                color: var(--primary-text-color);
+            @apply(--layout-horizontal);
+            @apply(--layout-center);
 
-                @apply(--paper-font-subhead);
+            @apply(--paper-font-subhead);
             }
 
             :host .flex {
-                @apply(--layout-flex);
-                @apply(--paper-font-common-nowrap);
-                opacity: 0.8;
+            @apply(--layout-flex);
+            @apply(--paper-font-common-nowrap);
             }
 
             :host > div {
-                border-bottom: 1px dashed rgba(0, 0, 0, 0.3);
                 margin: 6px 0;
-                /*opacity: 0.6;*/
-            }
-
-            :host appsco-copy {
-
-                --paper-icon-button: {
-                    height: 32px;
-                    width: 32px;
-                    color: var(--appsco-application-icons-color);
-                }
-            }
-
-            :host iron-icon {
-                --iron-icon-height: 18px;
-                --iron-icon: {
-                    margin-right: 4px;
-                    color: var(--appsco-application-icons-color);
-                }
             }
         </style>
         <div>
@@ -97,7 +91,7 @@ Custom property | Description | Default
                 </div>
             </div>
         </div>
-        <div>
+        <div hidden$="[[ !application.claims.username ]]">
             <div label>Username</div>
             <div content>
                 <div class="flex">
@@ -108,7 +102,7 @@ Custom property | Description | Default
                 </div>
             </div>
         </div>
-        <div>
+        <div hidden$="[[ !application.claims.password ]]">
             <div label>Password</div>
             <div content>
                 <div class="flex">
@@ -119,7 +113,7 @@ Custom property | Description | Default
                 </div>
             </div>
         </div>
-        <div>
+        <div hidden$="[[ !application.claims.note ]]">
             <div label>Note</div>
             <div content>
                 <div class="flex">
@@ -142,8 +136,54 @@ Custom property | Description | Default
                  */
                 application: {
                     type: Object,
-                    value: {}
+                    value: {},
+                    notify: true
+                },
+
+                /**
+                 * Animation for loader appearance.
+                 */
+                animationConfig: {
+                    value: function() {
+                        return {
+                            'entry': {
+                                name: 'fade-in-animation',
+                                node: this,
+                                timing: {
+                                    duration: 500
+                                }
+                            },
+                            'exit': {
+                                name: 'fade-out-animation',
+                                node: this,
+                                timing: {
+                                    duration: 100
+                                }
+                            }
+                        }
+                    }
                 }
+            },
+
+            behaviors: [
+                Polymer.NeonAnimationRunnerBehavior
+            ],
+
+            listeners: {
+                'application-changed': '_onApplicationChanged'
+            },
+
+            attached: function() {
+                this._showApplicationDetails();
+            },
+
+            _onApplicationChanged: function() {
+                this._showApplicationDetails();
+            },
+
+            _showApplicationDetails: function() {
+                this.style.display = 'block';
+                this.playAnimation('entry');
             }
         });
     </script>

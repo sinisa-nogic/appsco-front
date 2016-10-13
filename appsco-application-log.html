@@ -8,6 +8,8 @@
 <link rel="import" href="../paper-button/paper-button.html">
 <link rel="import" href="../paper-progress/paper-progress.html">
 
+<link rel="import" href="../appsco-components/appsco-list-item.html">
+
 <!--
 `appsco-application-log`
 Used to present application log. Each log message is presented in a new row.
@@ -33,44 +35,9 @@ Custom property | Description | Default
                 display: block;
                 @apply(--appsco-application-log);
             }
-            :host .flex {
-                @apply(--layout-flex);
-            }
-            :host .messages {
+            :host .logs {
+                padding-top: 20px;
                 @apply(--layout-vertical);
-            }
-
-            :host .message {
-                @apply(--layout-vertical);
-
-                @apply(--paper-font-caption);
-                @apply(--shadow-elevation-2dp);
-                margin: 4px;
-                padding: 5px 5px 0 5px;
-                background-color: #f5f5f5;
-                opacity: 0;
-                transition: opacity 0.4s ease-in-out;
-            }
-
-            :host .message.active {
-                opacity: 1;
-            }
-            :host .end {
-                @apply(--layout-end);
-                text-align: end;
-                opacity: 0.6;
-            }
-            :host .message-content {
-                @apply(--layout-horizontal);
-                @apply(--layout-center);
-            }
-            :host iron-image {
-                width: 48px;
-                height: 48px;
-                margin-right: 15px;
-            }
-            :host span[msg] {
-                @apply(--paper-font-body1);
             }
             :host paper-progress {
                 width: 100%;
@@ -78,6 +45,14 @@ Custom property | Description | Default
             }
             :host .progress {
                 height: 6px;
+            }
+            :host paper-button {
+                margin: 10px 0 0 0;
+            }
+            :host .message {
+                color: var(--secondary-text-color);
+                font-style: italic;
+                line-height: 1.6;
             }
         </style>
 
@@ -91,41 +66,26 @@ Custom property | Description | Default
                 debounce-duration="300">
         </iron-ajax>
 
-        <div class="messages">
+        <div class="logs">
             <div class="progress">
                 <paper-progress id="progress" indeterminate></paper-progress>
             </div>
-            <template is="dom-repeat" items="[[ _logMessages ]]" id="message" index-as="current">
-                <div class="message" >
-                    <div class="message-content">
-                        <div class="user-image">
-                            <iron-image placeholder="data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiIHN0YW5kYWxvbmU9Im5vIj8+PHN2ZyB3aWR0aD0iMjhweCIgaGVpZ2h0PSIyOHB4IiB2aWV3Qm94PSIwIDAgMjggMjgiIHZlcnNpb249IjEuMSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiB4bWxuczp4bGluaz0iaHR0cDovL3d3dy53My5vcmcvMTk5OS94bGluayI+ICAgICAgICA8dGl0bGU+QXBwc0NvLWxvZ288L3RpdGxlPiAgICA8ZGVzYz5DcmVhdGVkIHdpdGggU2tldGNoLjwvZGVzYz4gICAgPGRlZnM+PC9kZWZzPiAgICA8ZyBpZD0iUGFnZS0xIiBzdHJva2U9Im5vbmUiIHN0cm9rZS13aWR0aD0iMSIgZmlsbD0ibm9uZSIgZmlsbC1ydWxlPSJldmVub2RkIj4gICAgICAgIDxnIGlkPSJBcHBzQ28tbG9nbyI+ICAgICAgICAgICAgPGcgaWQ9Ikdyb3VwIj4gICAgICAgICAgICAgICAgPHJlY3QgaWQ9IlJlY3RhbmdsZS0yIiBmaWxsPSIjMjA5QkMzIiB4PSIwIiB5PSIxNSIgd2lkdGg9IjEzIiBoZWlnaHQ9IjEzIj48L3JlY3Q+ICAgICAgICAgICAgICAgIDxyZWN0IGlkPSJSZWN0YW5nbGUtMi1Db3B5IiBmaWxsPSIjODhCOTU1IiB4PSIxNSIgeT0iMCIgd2lkdGg9IjEzIiBoZWlnaHQ9IjEzIj48L3JlY3Q+ICAgICAgICAgICAgICAgIDxyZWN0IGlkPSJSZWN0YW5nbGUtMi1Db3B5LTIiIGZpbGw9IiNFNkQwMjUiIHg9IjE1IiB5PSIxNSIgd2lkdGg9IjEwIiBoZWlnaHQ9IjEwIj48L3JlY3Q+ICAgICAgICAgICAgICAgIDxyZWN0IGlkPSJSZWN0YW5nbGUtMi1Db3B5LTMiIGZpbGw9IiNEODNEODIiIHg9IjMiIHk9IjMiIHdpZHRoPSIxMCIgaGVpZ2h0PSIxMCI+PC9yZWN0PiAgICAgICAgICAgIDwvZz4gICAgICAgIDwvZz4gICAgPC9nPjwvc3ZnPg=="
-                                    sizing="cover" preload fade src="[[ item.account.image ]]"></iron-image>
-                        </div>
-                        <div class="flex log-message">
-                            <template is="dom-if" if="{{_if(item.type, 'application_shared')}}">
-                                <span msg>Application shared to [[ item.account.display_name ]]</span>
-                            </template>
-                            <template is="dom-if" if="{{_if(item.type, 'modified')}}">
-                                <span msg>Modified application by [[ item.account.display_name ]]</span>
-                            </template>
-                            <template is="dom-if" if="{{_if(item.type, 'logged_in')}}">
-                                <span msg>[[ item.account.display_name ]] logged in.</span>
-                            </template>
-                            <template is="dom-if" if="{{_if(item.type, 'claims_changed')}}">
-                                <span msg>[[ item.account.display_name ]] changed application claims</span>
-                            </template>
-                            <template is="dom-if" if="{{_if(item.type, 'deleted')}}">
-                                <span msg>[[ item.account.display_name ]] removed application</span>
-                            </template>
+            <template is="dom-repeat"
+                      items="[[ _logMessages ]]"
+                      index-as="current"
+                      rendered-item-count="{{ renderedCount }}">
 
-                            <div class="flex end">
-                                <span>[[ _date(item.created_at.date) ]]</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                <appsco-list-item
+                        item="[[ _mapToListItem(item) ]]">
+                </appsco-list-item>
             </template>
+
+            <template is="dom-if" if="{{ _message }}">
+                <p class="message">
+                    [[ _message ]]
+                </p>
+            </template>
+
             <paper-button on-tap="loadMoreLogs" id="loadMore" hidden="[[ !loadMore ]]">Load More</paper-button>
         </div>
 
@@ -194,6 +154,21 @@ Custom property | Description | Default
                 _computedHeaders: {
                     type: Object,
                     computed: "_computeHeaders(authorizationToken)"
+                },
+
+                /**
+                 * Message to display instead of notifications.
+                 */
+                _message: {
+                    type: String
+                },
+
+                /**
+                 * Image to display in log if there is no account image.
+                 */
+                _placeholder: {
+                    type: String,
+                    value: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIwAAACMCAMAAACZHrEMAAAAqFBMVEUAAAAnNEEnNEEnNEEnNEEnNEE8rPcnNEEnNEEnNUI8rPc8rPc8rPcnNEEnNEEnNEEnNEEnNEE8rPc8rPc8rPc8rPcnNEE8rPcnNEE8rPcnNEH///88rPeTmqAoPlDJzNBdZ3Hx8/WBiI+us7g0gLUuWno1QU1OtPjk5+kxbZg9TFtswfprc3w6oebX2ds3lNO8wMShpqxQWmWu3fye1vszeKfU7f6Nz/toHOtWAAAAGnRSTlMAnyC/EO+fYEDPYO26r4+AcFA9IIAQ388wUFlk1w8AAASsSURBVHjazNbdqqtADAXg+XEYvajam1JWkFYLIiIb2/d/uHPgwPam7kmM7p7vCRbJJBmzXR4r6z2w8N5WMTe/7FrbAqsKW1/N73DxFJAUTtGZg7m6AFtRH5gnix5CPmbmCK4M2CCU+5cnt9jM5vtG8VDx+8VxFmp2n2ZlFXZRZUbtfMFOLmdtWU7Y0SlTlSVgV2F7cbISuys3FscVOEDhzAZ5wCFCbsQiDhONkMWB7BFZ+qmZb/TtNjdTr0ijyNJ3M70xd70wjT5L37S0om16SRp9lqmlH7QTP40+y4MSHsI0+izHp4ncLPo00STkSOqIpUNSYhe7gJSxJZZ2REpw5gdZIWmSvlFFZtaVSBqJbURSaVadkfYktifSzqtNCkgbiG1AWlhr1AlpLxJ4Ie20vUnoSKDD1kZlFzDMJDCD4fKuURU4vkjgCxzVm3UHFhIBi+Pfx+PDWNFNWtxJ5I6F4Eb5T4bxzMLow8hLYz8bxrJGSR9GPlDlp8OUzAupDyO7lxFcI4mM4IqcudYvPeF0O3w+zPcTrsEkP5R8tfmnAN+NBG7gK+RdwpMEnhBwiVnS//QEYuLrq100dyyYn+EAvnEigWkEXzB/XcH3IKEH+K6ywe5IrANbvfwetHOtn24r2zIDiQ0ABJsGfLQB+JYPp/oW6C9CbiKA/+PNIJoKfA2JNeCrjAXfRGIT+KzxECCxHnxeFmYmoRkC3iBB16cOEgYiA4m0SFCFaY6bJXmYvhUVpoeIgUyjKIwijP4kDD0StGFef2g1t50GgSCABrSBPhj7aHDcGgPZkk0lFlr+/880PDhpaumc4pwvONnN7ly35ks6VAAiw0c84FiADHjgPI9ZLvOx/LfjMrxnz6sULsMDZnUPGigJu6VxYHnUVrb/meCpDEiu3GUyTTsJb4ZAwHkGCbm7TAFKFXeZEhRx7jKgvHWXWYPCHzXTvipOBloi7k97A5pF7jIv2kZDfDrIrECD0T1QPoHWq7tMAZrSMJ85VJRc2/WId4fkag0GGbB44r/eBox44ACB/3o5GH6xb4a/7Yf71m1D0xoK7l3bhApQ8IFpaI6dSHw1EEW6o1lo9QhHyaHtZCJZZJJMdK36GBfBcqvJROxvu/RRROw+OVg/aGo5Iw7zW69DlDPqhiytlLOHspdLUn/62+TUJ7lkP3s8pXFlJdRyjfgrpCJjlGvUYf5dKyVVUaM0Dj+MKakH1Cln15xUhcN1MsMCmKo46+S3V+O+m7VjFYdhIAigU22x2nCglTE+llRxkYBJlf//tbsikKQ4CVtand4XDCPBNnPdzMV2/f70VRwNrpu52dbP0WBhTnl+mKvHubh7PWVqcSvnlJng+tfyKud1If98qNvdurjfMo/0vN6rdbP+XuvsoP1iHV2yg3ZosI6CIitaRxEFbN0wisg6IWCYNAQMk4aAYdIQMEwaAoZJQ8AwaQg7sblh7BaDuQgRB+hsDmbFIVOy5tKEo5ZgTYUFFSaxhuRZywDlhAXVpvTvv+WdklUjRStRrIpEtBSpopWI1jQFOyAkhYeJxXYSnuBGeceNmFnhTFmCFQVhRR+Rac40QhzRWeREIvZGhFJNjh/wS1HnPv+ePgAAAABJRU5ErkJggg=='
                 }
             },
             listeners: {
@@ -202,6 +177,7 @@ Custom property | Description | Default
             },
             _init: function() {
                 this.set('_logMessages', []);
+                this.set('_message', '');
                 if(this.applicationLog) {
                     this._next = this.applicationLog + "?page=1&limit=" + this.size;
                     this._currentUrl = this._next;
@@ -213,28 +189,35 @@ Custom property | Description | Default
                 }
             },
             _handleResponse: function (e) {
-                var me = this;
-                e.detail.response.log.forEach(function(el, index){
-                    setTimeout(function() {
-                        me.push('_logMessages', el);
-                        var currentElement = me._logMessages.length - 1;
-                        setTimeout(function() {
-                            Polymer.dom(me.root).querySelectorAll('.message')[currentElement].classList.add('active');
-                        }, 50);
-                    }, (index * 100));
-                });
+                var me = this,
+                        log = e.detail.response.log;
 
-                this._next = e.detail.response.meta.next+"&limit="+this.size;
-                // Wait for a bit longer so that loading looks nice
-                setTimeout(function() {
+                if (log.length > 0) {
+
+                    log.forEach(function(el, index) {
+
+                        setTimeout(function() {
+                            me.push('_logMessages', el);
+                        }, (index + 1) * 50);
+
+                    });
+
+                    this._next = e.detail.response.meta.next + "&limit=" + this.size;
+                    // Wait for a bit longer so that loading looks nice
+                    setTimeout(function() {
+                        me.$.progress.hidden = true;
+                        if (parseInt(e.detail.response.meta.page) == parseInt(e.detail.response.meta.pages)) {
+                            me.$.loadMore.disabled = true;
+                        }
+                    }, 600 + (e.detail.response.log.length * 100))
+                }
+                else {
+                    this._message = 'The log is empty.';
                     me.$.progress.hidden = true;
-                    if(parseInt(e.detail.response.meta.page) == parseInt(e.detail.response.meta.pages))
-                    {
-                        me.$.loadMore.disabled = true;
-                    }
-                }, 600 + (e.detail.response.log.length * 100))
+                }
             },
             _handleError: function() {
+                this._message = 'We couldn\'t load log at the moment. Please try again in a minute.';
                 this.$.progress.hidden = true;
             },
             loadMoreLogs: function () {
@@ -242,6 +225,53 @@ Custom property | Description | Default
             },
             _loading: function() {
                 this.$.progress.hidden = false;
+            },
+
+            /**
+             * Returns log message dependent on item type.
+             *
+             * @param {Object} item
+             * @returns {{ message: string }}
+             * @private
+             */
+            _getLogMessage: function(item) {
+                var message = '';
+
+                switch (item.type) {
+                    case 'application_shared':
+                        message = 'Application shared to ' + item.account.display_name + '.';
+                        break;
+                    case 'modified':
+                        message = 'Application modified by ' + item.account.display_name + '.';
+                        break;
+                    case 'logged_in':
+                        message = item.account.display_name + ' logged in.';
+                        break;
+                    case 'claims_changed':
+                        message = item.account.display_name + ' changed application claims.';
+                        break;
+                    case 'deleted':
+                        message = item.account.display_name + ' removed application.';
+                        break;
+                }
+
+                return message;
+
+            },
+
+            /**
+             * Maps log object to list-item object.
+             *
+             * @param {Object} item
+             * @returns {{ item: object }}
+             * @private
+             */
+            _mapToListItem: function(item) {
+                return {
+                    icon: item.account.image ? item.account.image : this._placeholder,
+                    date: item.created_at.date,
+                    message: this._getLogMessage(item)
+                }
             }
         });
     </script>

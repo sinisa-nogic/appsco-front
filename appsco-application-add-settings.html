@@ -90,25 +90,28 @@ Custom property | Description | Default
                         auto-validate
                         name="configure_application[url]"
                         ></paper-input>
-                <paper-input
-                        id="username"
-                        label="username"
-                        value="{{ _icon.claims.username }}"
-                        name="icon_claims[username]"
-                        ></paper-input>
-                <paper-input
-                        id="password"
-                        label="password"
-                        type="password"
-                        value="{{ _icon.claims.password }}"
-                        name="icon_claims[password]"
-                        ></paper-input>
-                <paper-textarea
-                        id="note"
-                        label="note"
-                        value="{{ _icon.claims.note }}"
-                        name="icon_claims[note]"
-                        ></paper-textarea>
+
+                <div hidden$="[[ _computedAuthTypes ]]">
+                    <paper-input
+                            id="username"
+                            label="username"
+                            value="{{ _icon.claims.username }}"
+                            name="icon_claims[username]"
+                            ></paper-input>
+                    <paper-input
+                            id="password"
+                            label="password"
+                            type="password"
+                            value="{{ _icon.claims.password }}"
+                            name="icon_claims[password]"
+                            ></paper-input>
+                    <paper-textarea
+                            id="note"
+                            label="note"
+                            value="{{ _icon.claims.note }}"
+                            name="icon_claims[note]"
+                            ></paper-textarea>
+                </div>
             </form>
 
         </div>
@@ -130,11 +133,20 @@ Custom property | Description | Default
                 },
 
                 /**
+                 * Selected application from search.
+                 */
+                _selectedApplication: {
+                    type: Object
+                },
+
+                /**
                  * Stores typed values (title, url and claims) to add.
                  */
                 _icon: {
                     type: Object,
-                    value: {},
+                    value: function() {
+                        return {};
+                    },
                     notify: true
                 },
 
@@ -168,6 +180,15 @@ Custom property | Description | Default
                 _computedHeaders: {
                     type: Object,
                     computed: "_computeHeaders(authorizationToken)"
+                },
+
+                /**
+                 * Computed auth types.
+                 * It returns true if application has auth type: item or unpw.
+                 */
+                _computedAuthTypes: {
+                    type: Boolean,
+                    computed: "_computeAuthTypes(_selectedApplication)"
                 },
 
                 /**
@@ -255,6 +276,17 @@ Custom property | Description | Default
             },
 
             /**
+             * Computes auth types of application.
+             *
+             * @param {Object} application
+             * @returns Boolean
+             * @private
+             */
+            _computeAuthTypes: function (application) {
+                return !(application.auth_types && (application.auth_types.item || application.auth_types.unpw));
+            },
+
+            /**
              * Called after application has been changed.
              * It sets _icon property values.
              * It sets focus to title input field.
@@ -262,6 +294,10 @@ Custom property | Description | Default
              * @private
              */
             _onApplicationChanged: function() {
+
+                if (!this._selectedApplication || (this._selectedApplication && !this._selectedApplication.auth_types)) {
+                    this._selectedApplication = this.application;
+                }
 
                 this._icon.claims = this.application.claims;
 
@@ -357,9 +393,10 @@ Custom property | Description | Default
                     var body = '';
 
                     if(
-                            me.application.claims.username != me.$.username.value ||
+                            me.application.claims &&
+                            (me.application.claims.username != me.$.username.value ||
                             me.application.claims.password != me.$.password.value ||
-                            me.application.claims.note != me.$.note.value
+                            me.application.claims.note != me.$.note.value)
                     ) {
                         body =
                                 encodeURIComponent(me.$.username.name) + '=' + encodeURIComponent(me.$.username.value) +
@@ -457,6 +494,7 @@ Custom property | Description | Default
              */
             reset: function() {
                 this._icon = {};
+                this._selectedApplication = {};
                 this.$.addApplicationForm.reset();
                 this.$.saveApplicationForm.reset();
                 this.$.url.invalid = false;

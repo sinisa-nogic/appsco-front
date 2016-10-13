@@ -43,11 +43,6 @@ Custom property | Description | Default
     <template>
         <style is="custom-style">
             :host {
-                --appsco-content-sections: {
-                    padding: 5px;
-                };
-            }
-            :host {
                 display: block;
                 position: relative;
                 height: 100%;
@@ -55,7 +50,7 @@ Custom property | Description | Default
                 overflow: hidden;
             }
             :host .flex-horizontal {
-                @apply(--layout-horizontal);
+            @apply(--layout-horizontal);
                 height: 100%;
             }
             :host .resource,
@@ -66,15 +61,16 @@ Custom property | Description | Default
                 overflow: auto;
                 position: relative;
                 box-sizing: border-box;
-                @apply(--appsco-content-sections);
+            @apply(--appsco-content-sections);
             }
             :host .resource {
                 width: var(--resource-width, 25%);
                 background-color: var(--resource-background-color, transparent);
                 color: var(--resource-color, #000);
+                border-right: 1px solid var(--divider-color);
             }
             :host .content {
-                @apply(--layout-flex);
+            @apply(--layout-flex);
                 background-color: var(--content-background-color, transparent);
                 color: var(--content-color, #000);
             }
@@ -83,13 +79,13 @@ Custom property | Description | Default
                 background-color: var(--info-background-color, transparent);
                 color: var(--info-color, #000);
 
-                border-left: 1px solid #777;
+                border-left: 1px solid var(--divider-color);
                 display: none;
             }
         </style>
 
         <div class="container flex-horizontal">
-            <div id="resource" class="resource" ><content select="[resource]"></content></div>
+            <div  class="resource" ><content id="resource" select="[resource]"></content></div>
             <div id="content"  class="content"  ><content select="[content]"></content></div>
             <div id="info"     class="info"     ><content select="[info]"></content></div>
         </div>
@@ -136,22 +132,33 @@ Custom property | Description | Default
                     value: false
                 }
             },
-            ready: function() {
-                if (0 == this.$.resource.childNodes.length) {
-                   this.$.resource.hidden = true;
-                }
-            },
+
             listeners: {
                 'neon-animation-finish': '_onAnimationFinish'
             },
-            /**
-             * Is info present in content
-             *
-             * @returns {boolean}
-             */
-            hasInfo: function() {
-                return 0 != this.$.resource.childNodes.length;
+
+            ready: function() {
+                this._setContent();
             },
+
+            _setContent: function() {
+                var resource = Polymer.dom(this.$.resource),
+                        nodes = resource.getDistributedNodes();
+
+                if (nodes.length > 0) {
+                    nodes.forEach(function(el, i) {
+
+                        if (!Polymer.dom(el).firstChild) {
+                            resource.parentNode.hidden = true;
+                        }
+
+                    }.bind(this));
+                }
+                else {
+                    resource.parentNode.hidden = true;
+                }
+            },
+
             _onAnimationFinish: function() {
                 this.$.info.style.display = this._infoActive ? 'block' : 'none';
                 this.fire('animation-finished', {});
@@ -165,6 +172,10 @@ Custom property | Description | Default
             _hideInfo: function() {
                 this.playAnimation('exit');
             },
+
+            /**
+             * Toggles info section.
+             */
             toggleInfo: function() {
                 this._infoActive = !this._infoActive;
                 this._infoActive ? this._showInfo() : this._hideInfo();

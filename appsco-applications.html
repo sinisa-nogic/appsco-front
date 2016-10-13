@@ -5,6 +5,7 @@
 
 <link rel="import" href="../paper-button/paper-button.html">
 <link rel="import" href="appsco-application-item.html">
+<link rel="import" href="../appsco-components/appsco-loader.html">
 
 <!--
 `appsco-applications`
@@ -38,8 +39,8 @@ Custom property | Description | Default
                 @apply(--layout-vertical);
                 @apply(--layout-center);
                 --appsco-applications-item: {
-                    margin: 0 10px 10px 0;
-                };
+                     margin: 0 10px 10px 0;
+                 };
             }
 
             :host div[applications] {
@@ -53,19 +54,13 @@ Custom property | Description | Default
                 @apply(--appsco-applications-item);
             }
 
-            :host .applicationitem {
-                opacity: 0;
-                transition: opacity 0.4s ease-in-out;
-            }
-
-            :host .applicationitem.active {
-                opacity: 1;
-            }
-
             :host .applications-container {
                 width: 100%;
             }
         </style>
+
+        <appsco-loader active="[[ _loader ]]" loader-alt="Loading applications" multi-color></appsco-loader>
+
         <div class="applications-container">
             <iron-ajax
                     auto
@@ -74,17 +69,20 @@ Custom property | Description | Default
                     on-response="_handleResponse"
                     headers="{{ _computedHeaders }}"
                     debounce-duration="300"
-            ></iron-ajax>
+                    ></iron-ajax>
             <div applications>
                 <template is="dom-repeat" items="{{ _applications }}">
-                    <appsco-application-item class="applicationitem"
-                                             application="{{ item }}"
-                    ></appsco-application-item>
+                    <appsco-application-item
+                            id="appscoApplicationItem_[[ index ]]"
+                            class="applicationitem"
+                            application="{{ item }}"
+                            ></appsco-application-item>
                 </template>
             </div>
         </div>
+
         <div>
-            <paper-button on-tap="_loadMoreApps" id="loadMore" hidden="[[ !loadMore ]]">Load More</paper-button>
+            <paper-button on-tap="_loadMoreApps" id="loadMore" hidden$="[[ !_loadMore ]]">Load More</paper-button>
         </div>
     </template>
 
@@ -118,9 +116,14 @@ Custom property | Description | Default
                  */
                 loadMore: {
                     type: Boolean,
-                    value: false,
-                    reflectToAttribute: true
+                    value: false
                 },
+
+                _loadMore: {
+                    type: Boolean,
+                    value: false
+                },
+
                 _computedHeaders: {
                     type: Object,
                     computed: "_computeHeaders(authorizationToken)"
@@ -137,41 +140,77 @@ Custom property | Description | Default
                 },
                 _next: {
                     type: String
+                },
+
+                /**
+                 * Indicates if appsco-loader is shown or hidden.
+                 */
+                _loader: {
+                    type: Boolean,
+                    value: false
                 }
             },
             ready: function () {
                 this._currentUrl = this.applicationsApi + "?page=1&extended=1&limit=" + this.size;
             },
             _loadMoreApps: function () {
+                this._loader = true;
                 this._currentUrl = this._next;
             },
             _handleResponse: function (e) {
-                var me = this;
+                var me = this,
+                        icons = e.detail.response.icons,
+                        iconsCount = icons.length -1;
+
+                me._loader = false;
+
                 this._next = e.detail.response.meta.next + "&limit=" + this.size;
-                e.detail.response.icons.forEach(function (el, index) {
-                    setTimeout(function () {
+
+                icons.forEach(function (el, index) {
+
+                    setTimeout( function() {
+
                         me.push("_applications", el);
-                        var currentElement = me._applications.length - 1;
-                        setTimeout(function () {
-                            Polymer.dom(me.root).querySelectorAll('.applicationitem')[currentElement].classList.add('active');
-                        }, 100);
-                    }, (index * 10));
+
+                        if (index == iconsCount) {
+                            me._loadMore = me.loadMore;
+
+                            /**
+                             * Fired when applications are loaded
+                             *
+                             * @event loaded
+                             * @param {Object} application[] [Application](https://developers.appsco.com/api/dashboard/id/icons/id)
+                             */
+                            me.fire('loaded', {
+                                applications: e.detail.response.icons
+                            })
+                        }
+
+                    }.bind(this), (index + 1) * 50 );
 
                 });
-                /**
-                 * Fired when applications are loaded
-                 *
-                 * @event loaded
-                 * @param {Object} application[] [Application](https://developers.appsco.com/api/dashboard/id/icons/id)
-                 */
-                this.fire('loaded', {
-                    applications: e.detail.response.icons
-                })
             },
             _computeHeaders: function (authorizationToken) {
                 return {
                     "Authorization": "token " + authorizationToken
                 }
+            },
+
+            addApplication: function(application) {
+                this.push('_applications', application);
+            },
+
+            removeApplication: function(application) {
+                var index = this._applications.indexOf(application);
+                this.splice('_applications', index, 1);
+
+                this.fire('application-removed', {
+                    application: application
+                });
+            },
+
+            getFirstApplication: function() {
+                return this._applications[0];
             }
         });
     </script>

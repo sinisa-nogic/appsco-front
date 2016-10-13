@@ -5,7 +5,6 @@
 <link rel="import" href="../paper-styles/typography.html">
 
 <link rel="import" href="../paper-button/paper-button.html">
-<link rel="import" href="../paper-toast/paper-toast.html">
 <link rel="import" href="../iron-ajax/iron-request.html">
 
 <!--
@@ -34,6 +33,12 @@ Custom property | Description | Default
                 position: relative;
                 @apply(--appsco-application-settings);
             }
+            :host paper-textarea {
+                @apply(--paper-font-common-nowrap);
+            }
+            :host paper-button {
+                margin: 10px 0 0 0;
+            }
         </style>
 
         <paper-input
@@ -42,7 +47,7 @@ Custom property | Description | Default
                 value="[[ application.title ]]"
                 name="configure_application[title]"
                 required
-        ></paper-input>
+                ></paper-input>
         <paper-input
                 id="url"
                 label="Url"
@@ -52,29 +57,27 @@ Custom property | Description | Default
                 required
                 auto-validate
                 name="configure_application[url]"
-        ></paper-input>
+                ></paper-input>
         <paper-input
                 id="username"
                 label="Username"
                 value="[[ application.claims.username ]]"
                 name="icon_claims[username]"
-        ></paper-input>
+                ></paper-input>
         <paper-input
                 id="password"
                 label="Password"
                 type="password"
                 value="[[ application.claims.password ]]"
                 name="icon_claims[password]"
-        ></paper-input>
+                ></paper-input>
         <paper-textarea
                 id="note"
                 label="Note"
                 value="[[ application.claims.note ]]"
                 name="icon_claims[note]"
-        ></paper-textarea>
+                ></paper-textarea>
         <paper-button raised on-tap="_submit" id="submit">Save</paper-button>
-
-        <paper-toast id="responseMessage" text="[[ message ]]"></paper-toast>
     </template>
     <script>
         Polymer({
@@ -87,17 +90,12 @@ Custom property | Description | Default
                  */
                 application: {
                     type: Object,
-                    value: {}
+                    value: {},
+                    notify: true
                 },
                 authorizationToken: {
                     type: String,
                     value: ''
-                },
-                /**
-                 * Toast message on success
-                 */
-                message: {
-                    type: String
                 }
             },
             _submit: function () {
@@ -110,6 +108,10 @@ Custom property | Description | Default
                             me.application = app;
                         }
                         me.$.submit.disabled = false;
+
+                        me.fire('application-settings-saved', {
+                            application: app
+                        });
                     });
                 });
             },
@@ -138,10 +140,8 @@ Custom property | Description | Default
 
 
                         var request = document.createElement('iron-request');
-                        request.send(options).then(function (e) {
+                        request.send(options).then(function () {
                             if (request.succeeded) {
-                                me.message = "Successfully configured application";
-                                me.$.responseMessage.open();
                                 resolve(request.response.icon);
                             }
                         });
@@ -180,10 +180,8 @@ Custom property | Description | Default
                         };
 
                         var request = document.createElement('iron-request');
-                        request.send(options).then(function (e) {
+                        request.send(options).then(function () {
                             if (request.succeeded) {
-                                me.message = "Successfully configured application";
-                                me.$.responseMessage.open();
                                 resolve(request.response.icon);
                             }
                         });

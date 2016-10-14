@@ -11,9 +11,7 @@
 <link rel="import" href="../paper-listbox/paper-listbox.html">
 <link rel="import" href="../paper-item/paper-item.html">
 
-
 <link rel="import" href="../paper-dropdown-menu/paper-dropdown-menu.html">
-<link rel="import" href="appsco-application-add.html">
 
 <!--
 `appsco-application-actions`
@@ -45,33 +43,40 @@ Custom property | Description | Default
             :host {
                 display: inline-block;
                 position: relative;
-            @apply(--appsco-application-actions);
-            @apply(--layout-horizontal);
-            @apply(--layout-center);
+                @apply(--appsco-application-actions);
+                @apply(--layout-horizontal);
+                @apply(--layout-center);
+                @apply(--layout-end-justified);
             }
-
+            :host .action-search paper-input {
+                max-width: 184px;
+            }
+            :host paper-dropdown-menu {
+                width: 130px;
+            }
             :host paper-listbox.filter {
                 width: 230px;
             }
-
             :host div[action-item] {
                 margin-right: 10px;
             }
-
-            :host paper-input#search {
-                max-width: 200px;
+            :host div[prefix] iron-icon {
+                width: 18px;
+                height: 18px;
             }
-
-            :host .clear-icon {
-                width: 25px;
-                height: 25px;
+            :host paper-icon-button[suffix] {
+                width: 20px;
+                height: 20px;
                 padding: 0;
             }
             :host .add-application-button {
                 @apply(--add-application-button);
             }
+            :host .flex-none {
+                @apply(--layout-flex-none);
+            }
         </style>
-        <div action-item>
+        <div action-item class="action-search flex-none">
             <paper-input label="Search applications" on-keyup="_search" id="search" no-label-float>
                 <div prefix>
                     <iron-icon icon="search"></iron-icon>
@@ -80,7 +85,7 @@ Custom property | Description | Default
                                    on-tap="_clearSearch"></paper-icon-button>
             </paper-input>
         </div>
-        <div action-item>
+        <div action-item class="flex-none">
             <iron-ajax
                     id="filterRequest"
                     url="[[ filterApi ]]"
@@ -96,22 +101,15 @@ Custom property | Description | Default
                 </paper-listbox>
             </paper-dropdown-menu>
         </div>
-        <div action-item>
+        <div action-item class="flex-none">
             <paper-icon-button id="edit" class="action-icon" icon="icons:flip-to-back" on-tap="_editMode"
                                toggles></paper-icon-button>
         </div>
 
-        <div action-item>
+        <div action-item class="flex-none">
             <paper-button
                     class="add-application-button"
                     on-tap="_onAddApplicationAction">Add application</paper-button>
-
-            <appsco-application-add
-                    id="appscoApplicationAdd"
-                    authorization-token="[[ authorizationToken ]]"
-                    applications-template-api="[[ applicationsTemplateApi ]]"
-                    dashboard-api="[[ dashboardApi ]]">
-            </appsco-application-add>
         </div>
     </template>
 
@@ -142,22 +140,6 @@ Custom property | Description | Default
                     value: function () {
                         return [{name: "All applications", value: 0}];
                     }
-                },
-
-                /**
-                 * Link to save application template.
-                 */
-                applicationsTemplateApi: {
-                    type: String,
-                    value: ''
-                },
-
-                /**
-                 * Link to get dashboard.
-                 */
-                dashboardApi: {
-                    type: String,
-                    value: ''
                 }
             },
             ready: function () {
@@ -226,12 +208,19 @@ Custom property | Description | Default
 
             /**
              * Called on add aplication button tap.
-             * It opens the add application dialog.
+             * It fires an event.
              *
              * @private
              */
             _onAddApplicationAction: function() {
-                this.$.appscoApplicationAdd.toggle();
+                
+                /**
+                 * Fired when filter is selected
+                 *
+                 * @event filtered
+                 * @param {Object} filter {id: filter_id, name: filter_name}
+                 */
+                this.fire('add-application');
             }
         });
     </script>

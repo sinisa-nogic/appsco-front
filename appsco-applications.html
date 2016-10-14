@@ -56,10 +56,13 @@ Custom property | Description | Default
 
             :host .applications-container {
                 width: 100%;
+                min-height: 160px;
+                position: relative;
+            }
+            :host appsco-loader {
+                background-color: rgba(255, 255, 255, 0.4);
             }
         </style>
-
-        <appsco-loader active="[[ _loader ]]" loader-alt="Loading applications" multi-color></appsco-loader>
 
         <div class="applications-container">
             <iron-ajax
@@ -70,6 +73,9 @@ Custom property | Description | Default
                     headers="{{ _computedHeaders }}"
                     debounce-duration="300"
                     ></iron-ajax>
+
+            <appsco-loader active="[[ _loader ]]" loader-alt="Loading applications" multi-color></appsco-loader>
+
             <div applications>
                 <template is="dom-repeat" items="{{ _applications }}">
                     <appsco-application-item
@@ -153,18 +159,25 @@ Custom property | Description | Default
             ready: function () {
                 this._currentUrl = this.applicationsApi + "?page=1&extended=1&limit=" + this.size;
             },
+
+            attached: function () {
+                this._loader = true;
+            },
+
             _loadMoreApps: function () {
                 this._loader = true;
                 this._currentUrl = this._next;
             },
             _handleResponse: function (e) {
                 var me = this,
-                        icons = e.detail.response.icons,
-                        iconsCount = icons.length -1;
+                    response = e.detail.response,
+                    icons = response.icons,
+                    meta = response.meta
+                    iconsCount = icons.length - 1;
 
                 me._loader = false;
 
-                this._next = e.detail.response.meta.next + "&limit=" + this.size;
+                this._next = meta.next + "&limit=" + this.size;
 
                 icons.forEach(function (el, index) {
 
@@ -174,6 +187,10 @@ Custom property | Description | Default
 
                         if (index == iconsCount) {
                             me._loadMore = me.loadMore;
+
+                            if (me._applications.length === meta.total) {
+                                me._loadMore = false;
+                            }
 
                             /**
                              * Fired when applications are loaded

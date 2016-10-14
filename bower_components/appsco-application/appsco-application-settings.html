@@ -1,0 +1,195 @@
+<link rel="import" href="../polymer/polymer.html">
+
+<link rel="import" href="../paper-input/paper-input.html">
+<link rel="import" href="../paper-input/paper-textarea.html">
+<link rel="import" href="../paper-styles/typography.html">
+
+<link rel="import" href="../paper-button/paper-button.html">
+<link rel="import" href="../iron-ajax/iron-request.html">
+
+<!--
+`appsco-application-settings`
+Application settings is used update application.
+
+    <appsco-application-settings>
+    </appsco-application-settings>
+
+### Styling
+
+`<appsco-application-settings>` provides the following custom properties and mixins for styling:
+
+Custom property | Description | Default
+----------------|-------------|----------
+`--appsco-application-settings` | Mixin for the root element | `{}`
+
+@demo demo/appsco-application-settings.html
+-->
+
+<dom-module id="appsco-application-settings">
+    <template>
+        <style>
+            :host {
+                display: block;
+                position: relative;
+                @apply(--appsco-application-settings);
+            }
+            :host paper-textarea {
+                @apply(--paper-font-common-nowrap);
+            }
+            :host paper-button {
+                margin: 10px 0 0 0;
+            }
+        </style>
+
+        <paper-input
+                id="title"
+                label="Title"
+                value="[[ application.title ]]"
+                name="configure_application[title]"
+                required
+                ></paper-input>
+        <paper-input
+                id="url"
+                label="Url"
+                value="[[ application.url ]]"
+                pattern="https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)"
+                error-message="Invalid Url"
+                required
+                auto-validate
+                name="configure_application[url]"
+                ></paper-input>
+        <paper-input
+                id="username"
+                label="Username"
+                value="[[ application.claims.username ]]"
+                name="icon_claims[username]"
+                ></paper-input>
+        <paper-input
+                id="password"
+                label="Password"
+                type="password"
+                value="[[ application.claims.password ]]"
+                name="icon_claims[password]"
+                ></paper-input>
+        <paper-textarea
+                id="note"
+                label="Note"
+                value="[[ application.claims.note ]]"
+                name="icon_claims[note]"
+                ></paper-textarea>
+        <paper-button raised on-tap="_submit" id="submit">Save</paper-button>
+    </template>
+    <script>
+        Polymer({
+
+            is: 'appsco-application-settings',
+
+            properties: {
+                /**
+                 * [Application](https://developers.appsco.com/api/dashboard/id/icons/id) that is to be rendered
+                 */
+                application: {
+                    type: Object,
+                    value: {},
+                    notify: true
+                },
+                authorizationToken: {
+                    type: String,
+                    value: ''
+                }
+            },
+            _submit: function () {
+                this.$.submit.disabled = true;
+                this.message = "";
+                var me = this;
+                this._submitApplicationConfigure().then(function (application) {
+                    me._submitNewClaims(application).then(function (app) {
+                        if (false != app) {
+                            me.application = app;
+                        }
+                        me.$.submit.disabled = false;
+
+                        me.fire('application-settings-saved', {
+                            application: app
+                        });
+                    });
+                });
+            },
+            _submitApplicationConfigure: function () {
+                var me = this;
+                return new Promise(function (resolve, reject) {
+                    var body = "";
+                    if (me.application.title != me.$.title.value) {
+                        body = encodeURIComponent(me.$.title.name) + "=" + encodeURIComponent(me.$.title.value);
+                    }
+                    if (me.application.url != me.$.url.value) {
+                        body += body == "" ? '' : '&';
+                        body += encodeURIComponent(me.$.url.name) + "=" + encodeURIComponent(me.$.url.value);
+                    }
+                    if ('' != body) {
+                        var options = {
+                            url: me.application.self + "/application",
+                            method: "PATCH",
+                            body: body,
+                            handleAs: 'json',
+                            headers: {
+                                "Authorization": "token " + me.authorizationToken,
+                                "Content-Type": "application/x-www-form-urlencoded"
+                            }
+                        };
+
+
+                        var request = document.createElement('iron-request');
+                        request.send(options).then(function () {
+                            if (request.succeeded) {
+                                resolve(request.response.icon);
+                            }
+                        });
+                    } else {
+                        resolve(false);
+                    }
+                });
+            },
+            _submitNewClaims: function (application) {
+                var me = this;
+                return new Promise(function (resolve, reject) {
+                    var body = "";
+                    if (
+                            me.application.claims.username != me.$.username.value ||
+                            me.application.claims.password != me.$.password.value ||
+                            me.application.claims.note != me.$.note.value
+                    ) {
+                        body =
+                                encodeURIComponent(me.$.username.name) + "=" + encodeURIComponent(me.$.username.value) +
+                                '&' +
+                                encodeURIComponent(me.$.password.name) + "=" + encodeURIComponent(me.$.password.value) +
+                                '&' +
+                                encodeURIComponent(me.$.note.name) + "=" + encodeURIComponent(me.$.note.value)
+                        ;
+                    }
+                    if ('' != body) {
+                        var options = {
+                            url: me.application.self,
+                            method: "PATCH",
+                            body: body,
+                            handleAs: 'json',
+                            headers: {
+                                "Authorization": "token " + me.authorizationToken,
+                                "Content-Type": "application/x-www-form-urlencoded"
+                            }
+                        };
+
+                        var request = document.createElement('iron-request');
+                        request.send(options).then(function () {
+                            if (request.succeeded) {
+                                resolve(request.response.icon);
+                            }
+                        });
+                    } else {
+                        resolve(application);
+                    }
+                });
+            }
+        });
+    </script>
+</dom-module>

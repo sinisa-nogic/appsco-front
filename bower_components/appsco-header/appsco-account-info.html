@@ -1,0 +1,489 @@
+<link rel="import" href="../polymer/polymer.html">
+<link rel="import" href="../iron-flex-layout/iron-flex-layout-classes.html">
+
+<link rel="import" href="../iron-icons/iron-icons.html">
+<link rel="import" href="../paper-button/paper-button.html">
+<link rel="import" href="../iron-localstorage/iron-localstorage.html">
+<link rel="import" href="../iron-media-query/iron-media-query.html">
+
+<link rel="import" href="appsco-dropdown.html">
+<link rel="import" href="appsco-account-info-account.html">
+
+<!--
+`appsco-account-info`
+Representation of user identity
+
+Example:
+
+    <body>
+        <appsco-account-info></appsco-account-info>
+        <appsco-account-info display-name></appsco-account-info>
+        <appsco-account-info account="{{ account }}" display-short></appsco-account-info>
+
+Custom property | Description | Default
+----------------|-------------|----------
+`--light-background-color` | Background color for additional accounts | `#f5f5f5`
+`--hover-background-color` | Hover for additional accounts | `#f9f7f7`
+`--info-background-color` | Background color for info inside element | `#edf9ff`
+`--appsco-account-info-box` | Mixin for info box | `{}`
+`--appsco-account-info` | Mixin applied to root appsco-account-info element | `{}`
+`--appsco-account-info-user-holder` | Mixin applied to user container within root element | `{}`
+`--appsco-account-info-account-img` | Mixin applied to account image | `{}`
+`--appsco-account-info-dropdown` | Mixin applied to inner appsco-account-info-dropdown element | `{}`
+
+@demo demo/appsco-account-info.html
+-->
+
+<dom-module id="appsco-account-info">
+    <template>
+        <style include="iron-flex iron-flex-alignment">
+            :host {
+                font-size: 14px;
+                position: relative;
+                cursor: pointer;
+                display: inline-block;
+
+                @apply(--appsco-account-info);
+            }
+            :host[display-name] .account-info.hidden {
+                display: inline;
+            }
+            :host[display-name] iron-icon.hidden {
+                display: inline-flex;
+            }
+            :host[display-name] appsco-dropdown {
+                top: 30px;
+                right: -10px;
+            }
+            :host paper-button {
+                @apply(--paper-font-button);
+
+                max-width: 110px;
+                margin: 0;
+                font-size: 90%;
+                line-height: normal;
+                text-align: center;
+                display: block;
+            }
+            :host .pull-left {
+                float: left;
+            }
+            :host .clearfix:before, :host .clearfix:after {
+                content: " ";
+                display: table;
+            }
+            :host .clearfix:after {
+                clear: both;
+            }
+            :host .truncate {
+                @apply(--paper-font-common-nowrap);
+                display: block;
+            }
+            :host .account-holder:after {
+                clear: both;
+            }
+            :host .user-holder {
+                height: 34px;
+                line-height: 34px;
+                font-size: 16px;
+
+                @apply(--appsco-account-info-user-holder);
+            }
+            :host .account-img {
+                width: 32px;
+                height: 32px;
+                border-radius: 50%;
+
+                @apply(--appsco-account-info-account-img);
+            }
+            :host .account-info {
+                margin: 0 0 0 10px;
+                overflow: hidden;
+            }
+            :host .user-holder .account-info {
+                float: left;
+                max-width: 200px;
+            }
+            :host .my-account-button {
+                background-color: var(--primary-button-background-color, #00b4ff);
+                color: #ffffff;
+            }
+            :host .add-account-button {
+                background-color: var(--default-button-background-color, #f8f8f8);
+                border: 1px solid var(--border-color);
+            }
+            :host appsco-dropdown {
+                top: 35px;
+                right: -5px;
+
+                @apply(--appsco-account-info-dropdown);
+            }
+            :host appsco-dropdown .info {
+                font-size: 11px;
+                background-color: var(--account-info-background-color, #edf9ff);
+
+                @apply(--appsco-account-info-box);
+            }
+            :host appsco-dropdown .actions {
+                background-color: var(--light-background-color, #f5f5f5);
+            }
+            :host appsco-dropdown .account, :host appsco-dropdown .actions, :host appsco-dropdown .info {
+                padding: 10px 20px;
+            }
+            :host appsco-dropdown .account-img {
+                width: 48px;
+                height: 48px;
+            }
+            :host appsco-dropdown .account .info-lead {
+                font-size: 120%;
+                margin: 0;
+                display: block;
+            }
+            :host appsco-dropdown .account .info-additional {
+                font-size: 90%;
+                margin: 0;
+                padding: 0;
+            }
+            :host appsco-dropdown .active-account {
+                padding: 20px;
+                background-color: var(--hover-background-color, #ffffff);
+                border-top-left-radius: 4px;
+                border-top-right-radius: 4px;
+            }
+            :host appsco-dropdown .active-account .account-img {
+                width: 96px;
+                height: 96px;
+            }
+            :host .active-account .account-info {
+                margin-top: 10px;
+            }
+            :host .end-justified {
+                @apply(--layout-end-justified);
+            }
+            :host[mobile] appsco-dropdown {
+                top: 35px;
+                right: -5px;
+            }
+            :host[mobile] .hidden-xs {
+                display: none;
+            }
+        </style>
+
+        <iron-media-query query="(max-width: 600px)" query-matches="{{ mobile }}"></iron-media-query>
+
+        <div class="account-holder" hidden$="[[ !_accountExists }}">
+
+            <div id="triggerDropdown" class="user-holder clearfix" on-tap="_toggleDropdown">
+
+                <img src="[[ account.picture_url ]]" class="account-img pull-left">
+
+                <span class="account-info truncate hidden-xs" hidden$="{{ !displayName }}">[[ _accountDisplay ]]</span>
+
+                <iron-icon icon="arrow-drop-down" class="hidden-xs" hidden$="{{ !displayName }}" ></iron-icon>
+            </div>
+
+            <appsco-dropdown
+                    id="accountInfoDropdown"
+                    trigger="[[ _triggerDropdown ]]"
+                    data-info$="[[ info ]]">
+
+                <template is="dom-if" if="[[ info ]]">
+                    <div class="info">
+                        [[ info ]]
+                    </div>
+                </template>
+
+                <div class="account-holder layout vertical">
+                    <div class="active-account account layout horizontal">
+                        <img src="[[ account.picture_url ]]" class="account-img">
+
+                        <div class="account-info layout vertical">
+
+                            <template is="dom-if" if="[[ account.first_name ]]">
+                                <span class="info-lead truncate">[[ _accountDisplay ]]</span>
+                            </template>
+
+                            <span class="info-additional truncate">[[ account.email ]]</span>
+
+                            <div class="layout vertical end-justified flex">
+                                <paper-button
+                                        class="my-account-button"
+                                        on-tap="_onAccountSettingsAction">
+                                    My Account
+                                </paper-button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="account-holder layout vertical">
+
+                    <template is="dom-repeat" items="{{ accounts }}">
+
+                        <appsco-account-info-account
+                                account="{{ item }}"
+                                on-account-selected="_onSwitchAccountAction">
+                        </appsco-account-info-account>
+
+                    </template>
+
+                </div>
+                <div class="actions layout horizontal">
+                    <div class="flex">
+                        <paper-button
+                                class="add-account-button"
+                                on-tap="_onAddAccountAction">
+                            Add Account
+                        </paper-button>
+                    </div>
+
+                    <div>
+                        <paper-button
+                                on-tap="_onLogoutAccountAction">
+                            Logout
+                        </paper-button>
+                    </div>
+                </div>
+            </appsco-dropdown>
+        </div>
+
+        <iron-localstorage
+                id="localStorageAccounts"
+                name="appsco-login-accounts"
+                value="{{ accounts }}">
+        </iron-localstorage>
+
+    </template>
+
+    <script>
+
+        Polymer({
+
+            is: 'appsco-account-info',
+
+            properties: {
+
+                /**
+                 * Indicates if it is mobile view.
+                 * It uses iron-media-query.
+                 */
+                mobile: {
+                    type: Boolean,
+                    value: false,
+                    reflectToAttribute: true
+                },
+
+                /**
+                 * Active account from AppsCo dashboard.
+                 */
+                account: {
+                    type: Object,
+                    notify: true
+                },
+
+                /**
+                 * If attribute is set account display will contain account display name.
+                 * Otherwise, account display will contain account picture_url only.
+                 */
+                _accountDisplay: {
+                    type: String,
+                    computed: '_setAccountDisplay(account)'
+                },
+
+                /**
+                 * Indicates if account exists or not.
+                 */
+                _accountExists: {
+                    type: Boolean,
+                    value: false
+                },
+
+                /**
+                 * Additional accounts from AppsCo dashboard - currently inactive.
+                 */
+                accounts: {
+                    type: Array,
+                    value: []
+                },
+
+                /**
+                 * Info related to active account.
+                 */
+                info: {
+                    type: String
+                },
+
+                /**
+                 * Indicates if account info should display _accountDisplay or not.
+                 */
+                displayName: {
+                    type: Boolean,
+                    value: false,
+                    reflectToAttribute: true
+                }
+            },
+
+            listeners: {
+                'account-changed': '_accountChanged'
+            },
+
+            attached: function() {
+                this._triggerDropdown = this.$$('#triggerDropdown');
+
+                this._checkAccountInfo();
+
+                this._checkIfAccountExists();
+            },
+
+            /**
+             * Checks if account exists or not.
+             * It sets _accountExists property value.
+             *
+             * @private
+             */
+            _checkIfAccountExists: function() {
+                var account = this.account;
+
+                if (account) {
+
+                    for (var key in account) {
+                        this._accountExists = true;
+
+                        break;
+                    }
+
+                }
+                else {
+                    this._accountExists = false;
+                }
+            },
+
+            /**
+             * Returns display name for account.
+             * @param {Object} account.
+             *
+             * @private
+             */
+            _setAccountDisplay: function(account) {
+                var displayName = '';
+
+                if (account.first_name != '') {
+                    displayName = account.first_name + ' ';
+                }
+
+                if (account.last_name != '') {
+                    displayName += account.last_name;
+                }
+
+                if (account.first_name == '' && account.last_name == '') {
+                    displayName = account.email;
+                }
+
+                return displayName;
+            },
+
+            /**
+             * Checks if info exists and sets appropriate style.
+             *
+             * @private
+             */
+            _checkAccountInfo: function() {
+                var accountInfoDropdown = this.$.accountInfoDropdown;
+
+                if (this.info && this.info.trim() != '') {
+                    accountInfoDropdown.customStyle['--dropdown-caret-background-color'] = 'var(--info-background-color, #edf9ff)';
+                    accountInfoDropdown.updateStyles();
+                }
+
+            },
+
+            /**
+             * Listens for account change event.
+             *
+             * @private
+             */
+            _accountChanged: function() {
+                this._checkIfAccountExists();
+            },
+
+            /**
+             * Toggles account dropdown.
+             *
+             * @private
+             */
+            _toggleDropdown: function() {
+                this.$.accountInfoDropdown.toggle();
+            },
+
+            /**
+             * Fires event on account switch.
+             *
+             * @private
+             */
+            _onAccountSettingsAction: function() {
+
+                /**
+                 * Fired when user taps on account settings action.
+                 *
+                 * @event account-settings
+                 */
+                this.fire('account-settings', {
+                    account: this.account
+                });
+
+            },
+
+            /**
+             * Fires event on account switch.
+             * @param {Object} event Event from on-tap listener.
+             *
+             * @private
+             */
+            _onSwitchAccountAction: function(event) {
+
+                /**
+                 * Fired when user switches account.
+                 *
+                 * @event account-switch
+                 * @param {number} account Id of account to switch to.
+                 */
+                this.fire('account-switch', {
+                    account: event.model.item
+                });
+
+            },
+
+            /**
+             * Fires event on add account.
+             * @private
+             */
+            _onAddAccountAction: function() {
+
+                /**
+                 * Fired when tapped on add new account action.
+                 *
+                 * @event account-add
+                 */
+                this.fire('account-add');
+
+            },
+
+            /**
+             * Fires event on account logout.
+             * @private
+             */
+            _onLogoutAccountAction: function() {
+
+                /**
+                 * Fired when tapped on add account logout action.
+                 *
+                 * @event account-logout
+                 */
+                this.fire('account-logout', {
+                    account: this.account
+                });
+
+            }
+        });
+    </script>
+</dom-module>

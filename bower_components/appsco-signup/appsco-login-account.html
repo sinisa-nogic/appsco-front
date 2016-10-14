@@ -1,0 +1,212 @@
+<link rel="import" href="../polymer/polymer.html">
+<link rel="import" href="../iron-flex-layout/iron-flex-layout-classes.html">
+<link rel="import" href="../iron-icons/iron-icons.html">
+
+<!--
+`appsco-login-account`
+Appsco login account component
+
+Example:
+
+    <body>
+      <appsco-login-account></appsco-login-account>
+
+ Custom property | Description | Default
+----------------|-------------|----------
+`--divider-color` | Color for divider used for border of appsco-login-account | `Based on default theme --border-color`
+`--appsco-login-account` | Mixin applied to root element | `{}`
+`--appsco-account` | Mixin applied to inner element with class .account | `{}`
+`--appsco-account-img` | Mixin applied to inner <img> element that holds account picture | `{}`
+`--appsco-account-info-lead` | Mixin applied to inner element that holds account display name | `{}`
+`--appsco-account-info-additional` | Mixin applied to inner element that holds account email | `{}`
+
+@demo demo/appsco-login-account.html
+-->
+
+<dom-module id="appsco-login-account">
+    <template>
+        <style include="iron-flex iron-flex-alignment">
+            :host {
+                display: block;
+                border-bottom: 1px solid var(--divider-color);
+                min-height: 68px;
+                position: relative;
+
+                @apply(--appsco-account);
+            }
+            :host:first-child {
+                border-top: 1px solid var(--divider-color);
+            }
+            :host .account {
+                padding: 10px 20px;
+                width: 100%;
+                height: 100%;
+                position: absolute;
+                top: 0;
+                left: 0;
+                box-sizing: border-box;
+                cursor: pointer;
+
+                @apply(--appsco-account);
+            }
+            :host .account:hover {
+                background-color: var(--hover-background-color);
+            }
+            :host .account-img {
+                width: 48px;
+                height: 48px;
+                margin-right: 10px;
+                border-radius: 50%;
+
+                @apply(--appsco-account-img);
+            }
+            :host .account .info-lead {
+                font-size: 14px;
+                margin: 0;
+                display: block;
+
+                @apply(--appsco-account-info-lead);
+            }
+            :host .account .info-additional {
+                font-size: 12px;
+                margin: 0;
+                padding: 0;
+                height: 100%;
+                line-height: 48px;
+
+                @apply(--appsco-account-info-additional);
+            }
+            :host .account .info-lead, :host .account .info-additional {
+                display: block;
+                width: 95%;
+            }
+            :host[_name] .account .account-info {
+                margin-top: 8px;
+            }
+            :host[_name] .account .info-additional {
+                margin-top: 4px;
+                height: auto;
+                line-height: 1.2;
+            }
+            :host .account iron-icon {
+                position: absolute;
+                top: 0;
+                bottom: 0;
+                right: 14px;
+                margin: auto;
+            }
+            :host .truncate {
+                @apply(--paper-font-common-nowrap);
+                display: block;
+            }
+        </style>
+
+        <div class="account layout horizontal">
+
+            <img src="[[ account.picture_url ]]" class="account-img">
+
+            <div class="account-info flex truncate">
+                <template is="dom-if" if="[[ _accountDisplay ]]">
+                    <span class="info-lead truncate">[[ _accountDisplay ]]</span>
+                </template>
+
+                <span class="info-additional truncate">[[ account.email ]]</span>
+            </div>
+
+            <template is="dom-if" if="[[ !removeAccount ]]">
+                <iron-icon icon="icons:chevron-right" class="flex"></iron-icon>
+            </template>
+
+            <template is="dom-if" if="[[ removeAccount ]]">
+                <iron-icon icon="icons:clear" class="flex"></iron-icon>
+            </template>
+
+        </div>
+
+    </template>
+
+    <script>
+        Polymer({
+
+            is: 'appsco-login-account',
+
+            properties: {
+
+                /**
+                 * Account to display.
+                 */
+                account: {
+                    type: Object,
+                    notify: true
+                },
+
+                /**
+                 * Account display name to present to user.
+                 */
+                _accountDisplay: {
+                    type: String,
+                    computed: '_setAccountDisplay(account)'
+                },
+
+                /**
+                 * Indicates if user wants to perform removing accounts.
+                 */
+                removeAccount: {
+                    type: Boolean,
+                    value: false
+                },
+
+                /**
+                 * Indicates if _accountDisplay is empty or not.
+                 */
+                _name: {
+                    type: Boolean,
+                    value: false,
+                    reflectToAttribute: true
+                }
+            },
+
+            listeners: {
+                'tap': '_onAccountTap'
+            },
+
+            /**
+             * Returns display name for account.
+             * @param {Object} account.
+             *
+             * @private
+             */
+            _setAccountDisplay: function(account) {
+                var displayName = '';
+
+                if (account.first_name != '') {
+                    displayName = account.first_name + ' ';
+                    this._name = true;
+                }
+
+                if (account.last_name != '') {
+                    displayName += account.last_name;
+                    this._name = true;
+                }
+
+                return displayName;
+            },
+
+            /**
+             * Fires event when user selects account.
+             *
+             * @private
+             */
+            _onAccountTap: function() {
+
+                /**
+                 * Fired when user selects account.
+                 *
+                 * @event account-selected
+                 */
+                this.fire('account-selected');
+            }
+
+        });
+    </script>
+</dom-module>

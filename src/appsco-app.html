@@ -1,0 +1,474 @@
+<!--
+@license
+Copyright (c) 2016 The Polymer Project Authors. All rights reserved.
+This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE.txt
+The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
+The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
+Code distributed by Google as part of the polymer project is also
+subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
+-->
+
+<link rel="import" href="../bower_components/polymer/polymer.html">
+<link rel="import" href="../bower_components/app-layout/app-drawer/app-drawer.html">
+<link rel="import" href="../bower_components/app-layout/app-drawer-layout/app-drawer-layout.html">
+<link rel="import" href="../bower_components/app-layout/app-header/app-header.html">
+<link rel="import" href="../bower_components/app-layout/app-header-layout/app-header-layout.html">
+<link rel="import" href="../bower_components/app-layout/app-scroll-effects/app-scroll-effects.html">
+<link rel="import" href="../bower_components/app-layout/app-toolbar/app-toolbar.html">
+<link rel="import" href="../bower_components/app-route/app-location.html">
+<link rel="import" href="../bower_components/app-route/app-route.html">
+<link rel="import" href="../bower_components/iron-pages/iron-pages.html">
+<link rel="import" href="../bower_components/iron-selector/iron-selector.html">
+<link rel="import" href="../bower_components/paper-icon-button/paper-icon-button.html">
+<link rel="import" href="my-icons.html">
+
+<link rel="import" href="../bower_components/appsco-header/appsco-header.html">
+<link rel="import" href="../bower_components/appsco-page/appsco-page-global.html">
+<link rel="import" href="../bower_components/iron-flex-layout/iron-flex-layout.html">
+<link rel="import" href="../bower_components/paper-icon-button/paper-icon-button.html">
+<link rel="import" href="../bower_components/neon-animation/neon-animated-pages.html">
+<link rel="import" href="../bower_components/neon-animation/animations/fade-in-animation.html">
+<link rel="import" href="../bower_components/neon-animation/animations/fade-out-animation.html">
+<link rel="import" href="../bower_components/neon-animation/neon-animation-runner-behavior.html">
+
+<link rel="import" href="../bower_components/paper-listbox/paper-listbox.html">
+<link rel="import" href="../bower_components/paper-item/paper-item.html">
+<link rel="import" href="../bower_components/paper-dropdown-menu/paper-dropdown-menu.html">
+<link rel="import" href="../bower_components/paper-toast/paper-toast.html">
+
+<link rel="import" href="../bower_components/iron-ajax/iron-ajax.html">
+
+<link rel="import" href="../bower_components/appsco-application/appsco-application-actions.html">
+<link rel="import" href="my-view2-actions.html">
+<link rel="import" href="my-view3-actions.html">
+
+
+
+<dom-module id="appsco-app">
+    <template>
+        <style>
+            :host {
+                --app-primary-color: #00b4ff;
+                --app-secondary-color: #273441;
+                --app-danger-color: #ff0000;
+
+                display: block;
+
+                --paper-input-container-underline-focus: {
+                     height: 1px;
+                 };
+
+                --paper-dropdown-menu-icon: {
+                    color: #ffffff;
+                 };
+
+            }
+
+            /* Top header style START */
+            appsco-header {
+                height: 64px;
+                padding: 16px 10px;
+                box-sizing: border-box;
+                color: var(--app-secondary-color);
+
+                --appsco-account-action-color: var(--app-primary-color);
+
+                --paper-listbox: {
+                     color: var(--app-secondary-color);
+                 };
+            }
+            /* Top header style END */
+
+            /* Bottom header style START */
+            app-header {
+                color: #ffffff;
+                background-color: var(--app-primary-color);
+            }
+            app-header paper-icon-button {
+                --paper-icon-button-ink-color: white;
+            }
+            app-header appsco-application-actions {
+
+                --add-application-button: {
+                     font-size: 14px;
+                     width: 150px;
+                     border: 1px solid #ffffff;
+                     padding: 4px 6px;
+                     border-radius: 0;
+                 };
+
+                --paper-input-container-color: #f5f8fa;
+                --paper-input-container-input-color: #ffffff;
+                --paper-input-container-focus-color: #ffffff;
+
+                --paper-input-container: {
+                     padding: 0;
+                 };
+                --paper-input-container-label: {
+                     font-size: 16px;
+                     bottom: 0;
+                     top: initial;
+                 };
+                --paper-input-container-underline: {
+                     background-color: #f5f8fa;
+                 };
+                --paper-input-container-underline-focus: {
+                     background-color: #ffffff;
+                     height: 1px;
+                 };
+                --paper-input-prefix: {
+                     height: 20px;
+                     margin-right: 4px;
+                 };
+
+                --iron-icon-width: 18px;
+                --iron-icon-height: 18px;
+
+                --paper-dropdown-menu-icon: {
+                     color: #ffffff;
+                     width: 22px;
+                     height: 22px;
+                 };
+
+                --paper-icon-button: {
+                     padding: 0;
+                     width: 30px;
+                     height: 30px;
+                 };
+
+                --paper-listbox: {
+                     padding: 0;
+                 };
+
+                --paper-item: {
+                     cursor: pointer;
+                     color: var(--secondary-text-color);
+                 };
+                --paper-item-selected-weight: normal;
+                --paper-item-selected: {
+                     color: var(--primary-text-color);
+                     background-color: #f5f8fa;
+                 };
+            }
+            /* Bottom header style END */
+
+            /* Menu list style START */
+            .drawer-list {
+            }
+            .drawer-list a {
+                display: block;
+                padding: 0 16px;
+                text-decoration: none;
+                color: var(--app-secondary-color);
+                line-height: 40px;
+                border-bottom: 1px solid var(--divider-color);
+                outline: none;
+            }
+            .drawer-list a.iron-selected {
+                background-color: var(--google-grey-100);
+            }
+            /* Menu list style END */
+
+            :host app-drawer-layout[fullbleed] {
+                top: 64px;
+                overflow: hidden;
+            }
+            app-drawer {
+                top: 128px;
+
+                --app-drawer-content-container: {
+                     padding-top: 0;
+                     @apply(--shadow-elevation-2dp);
+                 };
+
+                --app-drawer-scrim-background: none;
+            }
+            app-toolbar {
+                padding: 0 10px;
+            }
+            appsco-page-global {
+                /*border-left: 1px solid;*/
+                width: 25%;
+                text-align: right;
+            }
+            :host .flex-horizontal {
+                @apply(--layout-horizontal);
+                @apply(--layout-center);
+            }
+            :host .flex {
+                @apply(--layout-flex);
+            }
+            /*.actions {*/
+                /*height: 40px;*/
+                /*margin: 0 12px;*/
+            /*}*/
+            .pages {
+                height: 100%;
+            }
+        </style>
+
+        <app-location route="{{route}}"></app-location>
+
+        <app-route
+                route="{{route}}"
+                pattern="/:page"
+                data="{{routeData}}"
+                tail="{{subroute}}"></app-route>
+
+        <paper-toast id="toast" text="[[ _toastMessage ]]"></paper-toast>
+
+        <appsco-header
+                account='{
+                                "id": "1",
+                                "email": "john.doe@exampleemail.com",
+                                "first_name": "John",
+                                "last_name": "Doe",
+                                "locale": "Europe/Serbia",
+                                "gender": "m",
+                                "country": "RS",
+                                "phone": "null",
+                                "picture_url": "http://app-layout-assets.appspot.com/assets/PharrellWilliams.jpg",
+                                "info": "This account is managed by boutsourcing.com.",
+                                "intranet": "https://appsco.com"
+                            }'
+                brand-logo="http://appsco.loc/bundles/appscodashboardapproot/img/appsco-logo.png"
+                brand-logo-width="32"
+                brand-logo-height="32"
+                brand-title="AppsCo"
+                account-chat='{
+                            "auth": "auth code",
+                            "room": "room number",
+                            "service": "https://www.xxx.com",
+                            "active": "false"
+                          }'
+                authorization-token="1o833krv0s68osk4skckkwsgws844o480ko48wsco0k4o4kook4wnkgimtqyo0g0ko0g8wok4go40kgwgksw84wcs808wwcgg44"
+                notifications-api="https://my-dev.appsco.com/api/v2/notifications"
+                notifications-size="8"
+                account-info="Info related to account"
+                account-display-name
+                product-partner>
+        </appsco-header>
+
+        <app-drawer-layout fullbleed force-narrow>
+
+             <!--Drawer content -->
+            <app-drawer id="appDrawer" persistent>
+                <iron-selector selected="[[page]]" attr-for-selected="name" class="drawer-list" role="navigation">
+                    <a name="applications" href="/applications">Applications</a>
+                    <a name="application" href="/application">Account</a>
+                    <a name="view3" href="/view3">Vault</a>
+                </iron-selector>
+            </app-drawer>
+
+            <!-- Main content -->
+            <app-header-layout has-scrolling-region>
+
+                <app-header condenses reveals effects="waterfall">
+                    <app-toolbar class="flex-horizontal">
+                        <paper-icon-button icon="menu" drawer-toggle></paper-icon-button>
+                        <div class="page-title" main-title>[[ page ]]</div>
+
+                        <neon-animated-pages
+                                class="actions flex flex-end"
+                                selected="[[page]]"
+                                attr-for-selected="name">
+                            <appsco-application-actions
+                                    id="actions"
+                                    name="applications"
+                                    application="[[ application ]]"
+                                    authorization-token="1o833krv0s68osk4skckkwsgws844o480ko48wsco0k4o4kook4wnkgimtqyo0g0ko0g8wok4go40kgwgksw84wcs808wwcgg44"
+                                    accounts-api="https://my-dev.appsco.com/api/v2/accounts"
+                                    filter-api="https://my-dev.appsco.com/api/v2/dashboards?extended=1"
+                                    dashboard-api="https://my-dev.appsco.com/api/v2/dashboards/483"
+                                    applications-template-api="https://my-dev.appsco.com/api/v2/applications"
+                                    on-application-added="_onApplicationAdded"
+                                    ></appsco-application-actions>
+                            <my-view2-actions name="view2"></my-view2-actions>
+                            <my-view3-actions name="view3"></my-view3-actions>
+                        </neon-animated-pages>
+
+                        <appsco-page-global
+                                id="appscoPageGlobal"
+                                info
+                                sort
+                                settings
+                                on-on-info="_onInfoAction"></appsco-page-global>
+
+                        <!--<paper-button on-tap="_backToPreviousPage">Back to [[ _previousPage ]]</paper-button>-->
+                    </app-toolbar>
+                </app-header>
+
+                <neon-animated-pages
+                        class="pages"
+                        selected="[[page]]"
+                        attr-for-selected="name"
+                        fallback-selection="view404"
+                        role="main"
+                        entry-animation="fade-in-animation"
+                        exit-animation="fade-out-animation">
+                    <appsco-applications-page
+                            id="appscoApplicationsPage"
+                            name="applications"
+                            application="{{ application }}"
+                            on-view-application="_onViewApplication">
+                    </appsco-applications-page>
+
+                    <appsco-application-page
+                            name="application"
+                            application="{{ application }}"
+                            on-application-removed="_onApplicationRemoved"
+                            on-application-settings-saved="_onApplicationSettingsSaved">
+                    </appsco-application-page>
+                    <my-view3 name="view3"></my-view3>
+                    <my-view404 name="view404"></my-view404>
+                </neon-animated-pages>
+            </app-header-layout>
+        </app-drawer-layout>
+    </template>
+
+    <script>
+        Polymer({
+            is: 'appsco-app',
+
+            properties: {
+                page: {
+                    type: String,
+                    reflectToAttribute: true,
+                    observer: '_pageChanged'
+                },
+
+                appscoApplicationsPage: {
+                    type: Boolean,
+                    value: false
+                },
+
+                application: {
+                    type: Object,
+                    notify: true
+                },
+
+                _globalActions: {
+                    type: Boolean,
+                    value: true
+                },
+
+                _toastMessage: {
+                    type: String,
+                    value: ''
+                },
+
+                /**
+                 * Animation for dropdown appearance.
+                 */
+                animationConfig: {
+                    type: Object,
+                    value: function() {
+                        return {
+                            'entry': {
+                                name: 'fade-in-animation',
+                                node: this.$.appscoPageGlobal,
+                                timing: {
+                                    duration: 300
+                                }
+                            },
+                            'exit': {
+                                name: 'fade-out-animation',
+                                node: this.$.appscoPageGlobal,
+                                timing: {
+                                    duration: 200
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+
+            observers: [
+                '_routePageChanged(routeData.page)'
+            ],
+
+            behaviors: [
+                    Polymer.NeonAnimationRunnerBehavior
+            ],
+
+            listeners: {
+                'neon-animation-finish': '_onNeonAnimationFinish'
+            },
+
+            _routePageChanged: function(page) {
+                this.page = page || 'applications';
+            },
+
+            _pageChanged: function(page) {
+                // Load page import on demand. Show 404 page if fails
+                var resolvedPageUrl = this.resolveUrl('appsco-' + page + '-page.html');
+                this.importHref(resolvedPageUrl, null, this._showPage404, true);
+
+                this.$.appDrawer.close();
+                this._hideElements();
+            },
+
+            _showPage404: function() {
+                this.page = 'view404';
+            },
+
+            _onInfoAction: function(e) {
+                this.$.appscoApplicationsPage.toggleInfo();
+            },
+
+            _onViewApplication: function() {
+                this.set('routeData.page', 'application');
+            },
+
+            _hideElements: function() {
+
+                if (this.page === 'applications') {
+                    this._globalActions = true;
+
+                    this.$.appscoPageGlobal.style.display = 'inline-block';
+                    this.playAnimation('entry');
+                }
+                else {
+                    this._globalActions = false;
+
+                    this.playAnimation('exit');
+                }
+
+            },
+
+            _onNeonAnimationFinish: function() {
+
+                if (!this._globalActions) {
+                    this.$.appscoPageGlobal.style.display = 'none';
+                }
+
+            },
+
+            _onApplicationAdded: function(event) {
+                var application = event.detail.application;
+
+                this.$.appscoApplicationsPage.addApplication(application);
+
+                this._toastMessage = application.title + ' was successfully saved.';
+                this.$.toast.open();
+            },
+
+            _onApplicationRemoved: function(event) {
+                var application = event.detail.application;
+
+                this.$.appscoApplicationsPage.removeApplication(application);
+                this.set('routeData.page', 'applications');
+
+                this._toastMessage = application.title + ' was successfully removed.';
+                this.$.toast.open();
+            },
+
+            _onApplicationSettingsSaved: function(event) {
+                var application = event.detail.application;
+
+                this._toastMessage = application.title + ' was successfully changed.';
+                this.$.toast.open();
+            }
+        });
+    </script>
+</dom-module>

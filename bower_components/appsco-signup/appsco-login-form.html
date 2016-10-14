@@ -1,0 +1,431 @@
+<link rel="import" href="../polymer/polymer.html">
+<link rel="import" href="../iron-flex-layout/iron-flex-layout-classes.html">
+
+<link rel="import" href="../iron-form/iron-form.html">
+<link rel="import" href="../paper-card/paper-card.html">
+<link rel="import" href="../paper-input/paper-input.html">
+<link rel="import" href="../gold-email-input/gold-email-input.html">
+<link rel="import" href="../paper-button/paper-button.html">
+<link rel="import" href="../paper-checkbox/paper-checkbox.html">
+
+<link rel="import" href="../neon-animation/animations/slide-from-left-animation.html">
+<link rel="import" href="../neon-animation/animations/slide-left-animation.html">
+<link rel="import" href="../neon-animation/animations/slide-from-right-animation.html">
+<link rel="import" href="../neon-animation/animations/slide-right-animation.html">
+<link rel="import" href="../neon-animation/neon-animatable-behavior.html">
+
+<link rel="import" href="../iron-localstorage/iron-localstorage.html">
+<link rel="import" href="../iron-a11y-keys/iron-a11y-keys.html">
+
+<link rel="import" href="../appsco-components/appsco-form-error.html">
+<link rel="import" href="../appsco-components/appsco-loader.html">
+<link rel="import" href="appsco-oauth.html">
+
+<!--
+`appsco-login-form`
+Appsco login form component
+
+Example:
+
+    <body>
+      <appsco-login-form></appsco-login-form>
+
+ Custom property | Description | Default
+----------------|-------------|----------
+`--appsco-login-form` | Mixin applied to root appsco-login-form element | `{}`
+
+@demo demo/appsco-login-form.html
+-->
+
+<dom-module id="appsco-login-form">
+    <template>
+        <style include="iron-flex iron-flex-alignment">
+            :host {
+                display: block;
+
+                --paper-checkbox-size: 14px;
+
+                @apply(--appsco-login-form);
+            }
+            :host form paper-button {
+                margin-top: 20px;
+            }
+            :host appsco-oauth {
+                margin-top: 30px;
+            }
+            :host .remember-me-section {
+                margin-top: 5px;
+                @apply(--paper-font-caption);
+            }
+            :host .password-forgotten {
+                cursor: pointer;
+            }
+        </style>
+
+        <appsco-loader active="[[ _loader ]]" loader-alt="Appsco is signing you in" multi-color></appsco-loader>
+
+        <paper-card heading="Login" class="layout vertical">
+            <div class="card-content">
+
+                <content select="[ header ]"></content>
+
+                <appsco-form-error message="[[ _error ]]"></appsco-form-error>
+
+                <form is="iron-form"
+                      method="post"
+                      action="/login"
+                      id="appscoLoginForm"
+                      on-input="_onInputChange"
+                      on-iron-form-presubmit="_onFormPresubmit"
+                      on-iron-form-error="_onFormError"
+                      on-iron-form-response="_onFormResponse">
+
+                    <gold-email-input
+                            id="usernameInput"
+                            name="_username"
+                            label="email"
+                            error-message="Please type correct email address."
+                            required
+                            auto-focus
+                            on-change="_validateInput">
+                    </gold-email-input>
+
+                    <paper-input
+                            type="password"
+                            name="_password"
+                            id="password"
+                            label="password"
+                            required
+                            >
+                    </paper-input>
+
+                    <div class="remember-me-section layout horizontal">
+                        <paper-checkbox id="rememberMe"
+                                        name="rememberMe"
+                                        class="flex"
+                                        on-change="_onRememberMeChange">
+                            Remember me
+                        </paper-checkbox>
+
+                        <span
+                                class="password-forgotten"
+                                on-tap="_onPasswordForgotten">
+                            Password forgotten?
+                        </span>
+                    </div>
+
+                    <paper-button
+                            type="submit"
+                            on-tap="_onFormSubmit"
+                            raised>
+                        Login
+                    </paper-button>
+                </form>
+
+                <appsco-oauth
+                        providers="[[ providers ]]">
+                </appsco-oauth>
+
+                <content select="[ footer ]"></content>
+
+            </div>
+        </paper-card>
+
+        <iron-a11y-keys
+                target="[[ _target ]]"
+                keys="enter"
+                on-keys-pressed="_onEnter">
+        </iron-a11y-keys>
+
+        <iron-localstorage
+                id="localStorageAccounts"
+                name="appsco-accounts"
+                value="{{ _accounts }}">
+        </iron-localstorage>
+
+    </template>
+
+    <script>
+        Polymer({
+
+            is: 'appsco-login-form',
+
+            properties: {
+
+                /**
+                 * Locale
+                 */
+                locale: {
+                    type: String,
+                    value: 'en'
+                },
+
+                /**
+                 * Error message for login form.
+                 */
+                _error: {
+                    type: String
+                },
+
+                /**
+                 * Indicates if appsco loader should be displayed.
+                 */
+                _loader: {
+                    type: Boolean,
+                    value: false
+                },
+
+                /**
+                 * Indicates if remember me checkbox is checked or not.
+                 */
+                _rememberMe: {
+                    type: Boolean,
+                    value: false
+                },
+
+                /**
+                 * Array of oauth applications with application name and oauth url.
+                 */
+                providers: {
+                    type: Array,
+                    value: [
+                        {
+                            name: 'google',
+                            oauth_url: 'https://accounts.google.com/o/oauth2/auth?client_id=726001410240-mmndnim45nuh71e0thscn307ho329lhv.apps.googleusercontent.com&response_type=code&scope=https://www.googleapis.com/auth/plus.login+https://www.googleapis.com/auth/userinfo.email&redirect_uri=https://appsco.com/oauth/client/callback/google&state=ozfprkk0qio4484k088ck4ggogk884s'
+                        },
+                        {
+                            name: 'facebook',
+                            oauth_url: 'https://graph.facebook.com/oauth/authorize?client_id=1604779689796337&response_type=code&scope=public_profile email&redirect_uri=https://appsco.com/oauth/client/callback/facebook&state=mk4yxc207uo40w4oscg4cckw8g004sk'
+                        }
+                    ]
+                },
+
+                /**
+                 * Synced Accounts from local storage
+                 */
+                _accounts: {
+                    type: Array
+                },
+
+                /**
+                 * Target for iron-a11y-keys component.
+                 * Submit form on enter.
+                 */
+                _target: {
+                    type: Object,
+                    value: function() {
+                        return this.$.appscoLoginForm
+                    }
+                },
+                
+                /**
+                 * Animation configuration for root element.
+                 */
+                animationConfig: {
+                    value: function() {
+                        return {
+                            'entry': {
+                                name: 'slide-from-left-animation',
+                                node: this,
+                                timing: {
+                                    duration: 200
+                                }
+                            },
+                            'exit': {
+                                name: 'slide-left-animation',
+                                node: this,
+                                timing: {
+                                    duration: 200
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+
+            behaviors: [
+                Polymer.NeonAnimatableBehavior
+            ],
+
+            /**
+             * Sets error property to empty string.
+             *
+             * @private
+             */
+            _onInputChange: function() {
+                this._error = '';
+            },
+
+            /**
+             * Sets rememberMe property when checkbox value is changed.
+             *
+             * @private
+             */
+            _onRememberMeChange: function() {
+                this._rememberMe = !this._rememberMe;
+            },
+
+            /**
+             * Validates related input.
+             *
+             * @private
+             */
+            _validateInput: function(event) {
+                var input = event.target;
+
+                if (input.value.trim() != '') {
+                    input.validate();
+                }
+                else {
+                    event.target.invalid = false;
+                }
+            },
+
+            /**
+             * Called before form submit.
+             * Sets headers and shows loader.
+             *
+             * @private
+             */
+            _onFormPresubmit: function(event) {
+                var form = event.target,
+                    basic = btoa(form.request.params.username+":"+form.request.params.password);
+
+//                event.target.headers.authorization = "token 4mp22mlvwv8kk00804owskwko08o8kcw0ocgoc80cksss4cg0c4n636060eu4g0sckkwsscock0848gk44ws4oowwgowkcscckgs";
+                event.target.headers.authorization = "Basic " + basic;
+
+                this._loader = true;
+            },
+
+            /**
+             * Submits login form.
+             *
+             * @private
+             */
+            _onFormSubmit: function() {
+                this.$.appscoLoginForm.submit();
+            },
+
+            /**
+             * Called after form submit if error is returned.
+             * Sets message in error property.
+             *
+             * @private
+             */
+            _onFormError: function(event) {
+                this._error = event.detail.error.message;
+
+                this._saveAccountToLocalStorage(event.detail.response);
+
+                this._loader = false;
+            },
+
+            /**
+             * Called after form submit if response is returned.
+             *
+             * @private
+             */
+            _onFormResponse: function(event) {
+                console.log('Response: ', event.detail.response);
+
+                // If response should contain account logged in.
+//                this._saveAccountToLocalStorage(event.detail.response.account);
+
+                this._loader = false;
+            },
+
+            /**
+             * Submits login form on ENTER key using iron-a11y-keys component.
+             *
+             * @private
+             */
+            _onEnter: function() {
+                this._onFormSubmit();
+            },
+
+            /**
+             * Show forgot password form when clicked on Forgot Password link.
+             *
+             * @private
+             */
+            _onPasswordForgotten: function() {
+                this.fire('forgot-password');
+            },
+
+            /**
+             * Saves logged in account to local storage if user checked Remember Me option.
+             * @param {Object} account
+             *
+             * @private
+             */
+            _saveAccountToLocalStorage: function(account) {
+
+                if (this._rememberMe) {
+
+                    var newAccount = {
+                        first_name: "Nikola",
+                        last_name: "Vucinic",
+                        email: "nikola.vucinic@boutsourcing.com",
+                        picture_url: "https://my-dev.appsco.com/bundles/appscodashboardapproot/img/profile-avatar.png"
+                    };
+
+                    // Sync accounts from storage.
+                    this.$.localStorageAccounts.reload();
+
+                    var accounts = this._accounts,
+                        accountExists = false;
+
+                    if (accounts) {
+
+                        accounts.forEach(function(account) {
+
+                            if (account.email === newAccount.email) {
+                                accountExists = true;
+                            }
+
+                        });
+
+                        if (!accountExists) {
+                            this.push('_accounts', newAccount);
+
+                        }
+                    }
+                    else {
+                        this._accounts = [newAccount];
+                    }
+                }
+            },
+
+            /**
+             * It sets up the component.
+             */
+            setUpPage: function() {
+                this.$.usernameInput.focus();
+            },
+
+            /**
+             * It resets the component.
+             */
+            resetPage: function() {
+                this.$.appscoLoginForm.reset();
+                this._error = '';
+            },
+
+            /**
+             * Returns animationConfig property.
+             */
+            getAnimationConfig: function() {
+                return this.animationConfig;
+            },
+
+            /**
+             * Sets animationConfig property.
+             *
+             * @param {Object} config
+             */
+            setAnimationConfig: function(config) {
+                this.animationConfig = config;
+            }
+        });
+    </script>
+</dom-module>

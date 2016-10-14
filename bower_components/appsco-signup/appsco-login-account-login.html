@@ -1,0 +1,376 @@
+<link rel="import" href="../polymer/polymer.html">
+<link rel="import" href="../iron-flex-layout/iron-flex-layout-classes.html">
+<link rel="import" href="../iron-form/iron-form.html">
+<link rel="import" href="../paper-card/paper-card.html">
+<link rel="import" href="../paper-input/paper-input.html">
+<link rel="import" href="../paper-button/paper-button.html">
+<link rel="import" href="../neon-animation/neon-animatable-behavior.html">
+<link rel="import" href="../neon-animation/animations/slide-from-right-animation.html">
+<link rel="import" href="../neon-animation/animations/slide-right-animation.html">
+<link rel="import" href="../iron-a11y-keys/iron-a11y-keys.html">
+
+<link rel="import" href="../appsco-components/appsco-form-error.html">
+<link rel="import" href="../appsco-components/appsco-loader.html">
+
+<!--
+`appsco-login-account-login`
+Appsco account login component
+
+    <body>
+      <appsco-login-account-login></appsco-login-account-login>
+
+ Custom property | Description | Default
+----------------|-------------|----------
+`--appsco-login-account-login` | Mixin applied to root element | `{}`
+
+@demo demo/appsco-login-account-login.html
+-->
+
+<dom-module id="appsco-login-account-login">
+    <template>
+        <style include="iron-flex iron-flex-alignment">
+            :host {
+                display: block;
+
+                @apply(--appsco-login-account-login);
+            }
+            :host form paper-button {
+                margin-top: 20px;
+            }
+            :host .account {
+                padding: 10px 0 0 0;
+            }
+            :host .account-img {
+                width: 96px;
+                height: 96px;
+                border-radius: 50%;
+            }
+            :host .account-info {
+                margin-top: 10px;
+                text-align: center;
+            }
+            :host .account .info-lead, :host .account .info-additional {
+                margin: 0;
+                display: block;
+            }
+            :host .account .info-lead {
+                font-size: 14px;
+            }
+            :host .account .info-additional {
+                padding: 0;
+                margin-top: 5px;
+            }
+            :host .truncate {
+                @apply(--paper-font-common-nowrap);
+                width: 100%;
+                display: block;
+            }
+        </style>
+
+        <appsco-loader active="[[ _loader ]]" loader-alt="Appsco is signing you in" multi-color></appsco-loader>
+
+        <paper-card heading="Account login" class="layout vertical">
+            <div class="card-content layout vertical">
+
+                <content select="[ header ]"></content>
+
+                <div class="content-info">
+
+                    <div class="account layout vertical center">
+
+                        <img src="[[ account.picture_url ]]" class="account-img">
+
+                        <div class="account-info mt-10 truncate layout vertical center">
+
+                            <template is="dom-if" if="[[ _accountDisplay ]]">
+                                <span class="info-lead truncate">[[ _accountDisplay ]]</span>
+                            </template>
+
+                            <span class="info-additional truncate">[[ account.email ]]</span>
+                        </div>
+                    </div>
+
+                </div>
+
+                <appsco-form-error message="[[ _error ]]"></appsco-form-error>
+
+                <form is="iron-form"
+                      method="post"
+                      action="/login"
+                      id="accountLoginForm"
+                      on-input="_onInputChange"
+                      on-iron-form-presubmit="_onFormPresubmit"
+                      on-iron-form-error="_onFormError"
+                      on-iron-form-response="_onFormResponse">
+
+                    <paper-input
+                            id="passwordInput"
+                            type="password"
+                            name="_password"
+                            id="password"
+                            label="password"
+                            required
+                            auto-focus
+                            on-change="_validateInput">
+                    </paper-input>
+
+                    <paper-input
+                            type="email"
+                            name="username"
+                            value="{{ account.email }}"
+                            hidden>
+                    </paper-input>
+
+                    <paper-button
+                            type="submit"
+                            on-tap="_onFormSubmit">
+                        Login
+                    </paper-button>
+                </form>
+
+                <paper-button class="link-btn"
+                              on-tap="_onCancelAction">
+                    Cancel
+                </paper-button>
+
+                <content select="[ footer ]"></content>
+
+            </div>
+        </paper-card>
+
+        <iron-a11y-keys
+                target="[[ _target ]]"
+                keys="enter"
+                on-keys-pressed="_onEnter">
+        </iron-a11y-keys>
+
+    </template>
+
+    <script>
+        Polymer({
+
+            is: 'appsco-login-account-login',
+
+            properties: {
+
+                /**
+                 * Locale
+                 */
+                locale: {
+                    type: String,
+                    value: 'en'
+                },
+
+                /**
+                 * Account to display.
+                 */
+                account: {
+                    type: Object
+                },
+
+                /**
+                 * Account display name to present to user.
+                 */
+                _accountDisplay: {
+                    type: String,
+                    computed: '_setAccountDisplay(account)'
+                },
+
+                /**
+                 * Error message for login form.
+                 */
+                _error: {
+                    type: String
+                },
+
+                /**
+                 * Indicates if appsco loader should be displayed.
+                 */
+                _loader: {
+                    type: Boolean,
+                    value: false
+                },
+
+                /**
+                 * Target for iron-a11y-keys component.
+                 * Submit form on enter.
+                 */
+                _target: {
+                    type: Object,
+                    value: function() {
+                        return this.$.accountLoginForm
+                    }
+                },
+
+                /**
+                 * Animation configuration for root element.
+                 */
+                animationConfig: {
+                    value: function() {
+                        return {
+                            'entry': {
+                                name: 'slide-from-right-animation',
+                                node: this,
+                                timing: {
+                                    duration: 200
+                                }
+                            },
+                            'exit': {
+                                name: 'slide-right-animation',
+                                node: this,
+                                timing: {
+                                    duration: 300
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+
+            behaviors: [
+                Polymer.NeonAnimatableBehavior
+            ],
+
+            /**
+             * Returns display name for account.
+             * @param {Object} account.
+             *
+             * @private
+             */
+            _setAccountDisplay: function(account) {
+                var displayName = '';
+
+                if (account.first_name != '') {
+                    displayName = account.first_name + ' ';
+                }
+
+                if (account.last_name != '') {
+                    displayName += account.last_name;
+                }
+
+                return displayName;
+            },
+
+            /**
+             * Cancels account login.
+             * Fires canceling event.
+             *
+             * @private
+             */
+            _onCancelAction: function() {
+
+                /**
+                 * Fired when user taps on cancel account login action.
+                 *
+                 * @event account-login-cancel
+                 */
+                this.fire('account-login-cancel');
+            },
+
+            /**
+             * Sets error property to empty string.
+             *
+             * @private
+             */
+            _onInputChange: function() {
+                this._error = '';
+            },
+
+            /**
+             * Sets rememberMe property when checkbox value is changed.
+             *
+             * @private
+             */
+            _onRememberMeChange: function() {
+                this._rememberMe = !this._rememberMe;
+            },
+
+            /**
+             * Validates related input.
+             *
+             * @private
+             */
+            _validateInput: function(event) {
+                var input = event.target;
+
+                if (input.value.trim() != '') {
+                    input.validate();
+                }
+                else {
+                    event.target.invalid = false;
+                }
+            },
+
+            /**
+             * Called before form submit.
+             * Sets headers and shows loader.
+             *
+             * @private
+             */
+            _onFormPresubmit: function(event) {
+                var form = event.target,
+                    basic = btoa(form.request.params.username+":"+form.request.params.password);
+
+//                event.target.headers.authorization = "token 4mp22mlvwv8kk00804owskwko08o8kcw0ocgoc80cksss4cg0c4n636060eu4g0sckkwsscock0848gk44ws4oowwgowkcscckgs";
+                event.target.headers.authorization = "Basic " + basic;
+
+                this._loader = true;
+            },
+
+            /**
+             * Submits account login form.
+             *
+             * @private
+             */
+            _onFormSubmit: function() {
+                this.$.accountLoginForm.submit();
+            },
+
+            /**
+             * Called after form submit if error is returned.
+             * Sets message in error property.
+             *
+             * @private
+             */
+            _onFormError: function(event) {
+                this._error = event.detail.error.message;
+                this._loader = false;
+            },
+
+            /**
+             * Called after form submit if response is returned.
+             *
+             * @private
+             */
+            _onFormResponse: function(event) {
+                console.log('Response: ', event.detail.response);
+
+                this._loader = false;
+            },
+
+            /**
+             * Submits account login form on ENTER key using iron-a11y-keys component.
+             *
+             * @private
+             */
+            _onEnter: function() {
+                this._onFormSubmit();
+            },
+
+            /**
+             * It sets up the component.
+             */
+            setUpPage: function() {
+                this.$.passwordInput.focus();
+            },
+
+            /**
+             * It resets the component.
+             */
+            resetPage: function() {
+                this.$.accountLoginForm.reset();
+                this._error = '';
+            }
+        });
+    </script>
+</dom-module>

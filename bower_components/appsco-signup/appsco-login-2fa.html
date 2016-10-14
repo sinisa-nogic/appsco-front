@@ -1,0 +1,263 @@
+<link rel="import" href="../polymer/polymer.html">
+<link rel="import" href="../iron-flex-layout/iron-flex-layout-classes.html">
+
+<link rel="import" href="../iron-form/iron-form.html">
+<link rel="import" href="../paper-card/paper-card.html">
+<link rel="import" href="../paper-input/paper-input.html">
+<link rel="import" href="../paper-button/paper-button.html">
+
+<link rel="import" href="../neon-animation/animations/slide-from-right-animation.html">
+<link rel="import" href="../neon-animation/animations/slide-right-animation.html">
+<link rel="import" href="../neon-animation/neon-animatable-behavior.html">
+
+<link rel="import" href="../iron-a11y-keys/iron-a11y-keys.html">
+
+<link rel="import" href="../appsco-components/appsco-form-error.html">
+<link rel="import" href="../appsco-components/appsco-loader.html">
+
+<!--
+`appsco-login-2fa`
+Appsco login two-factor authentication form component
+
+Example:
+
+    <body>
+      <appsco-login-2fa></appsco-login-2fa>
+
+ Custom property | Description | Default
+----------------|-------------|----------
+`--appsco-login-2fa` | Mixin applied to root appsco-login-2fa element | `{}`
+
+@demo demo/appsco-login-2fa.html
+-->
+
+<dom-module id="appsco-login-2fa">
+    <template>
+        <style include="iron-flex iron-flex-alignment">
+            :host {
+                display: block;
+
+                @apply(--appsco-login-2fa);
+            }
+            :host form paper-button {
+                margin-top: 20px;
+            }
+        </style>
+
+        <appsco-loader active="[[ _loader ]]" loader-alt="Appsco is signing you in" multi-color></appsco-loader>
+
+        <paper-card heading="Two-factor authentication" class="layout vertical">
+            <div class="card-content">
+
+                <content select="[ header ]"></content>
+
+                <appsco-form-error message="[[ _error ]]"></appsco-form-error>
+
+                <form is="iron-form"
+                      method="post"
+                      action="/login2fa"
+                      id="appscoLogin2faForm"
+                      on-input="_onInputChange"
+                      on-iron-form-presubmit="_onFormPresubmit"
+                      on-iron-form-error="_onFormError"
+                      on-iron-form-response="_onFormResponse">
+
+                    <paper-input
+                            id="authCodeInput"
+                            type="text"
+                            name="_auth_code"
+                            label="authentication code"
+                            pattern="[0-9]*"
+                            error-message="Authentication code can contain numbers only."
+                            on-change="_validateInput"
+                            required></paper-input>
+
+                    <paper-button
+                            type="submit"
+                            on-tap="_onFormSubmit">
+                        Login
+                    </paper-button>
+                </form>
+
+                <content select="[ footer ]"></content>
+
+            </div>
+        </paper-card>
+
+        <iron-a11y-keys
+                target="[[ _target ]]"
+                keys="enter"
+                on-keys-pressed="_onEnter">
+        </iron-a11y-keys>
+
+    </template>
+
+    <script>
+        Polymer({
+
+            is: 'appsco-login-2fa',
+
+            properties: {
+
+                /**
+                 * Locale
+                 */
+                locale: {
+                    type: String,
+                    value: 'en'
+                },
+
+                /**
+                 * Error message for 2fa form.
+                 */
+                _error: {
+                    type: String
+                },
+
+                /**
+                 * Indicates if appsco loader should be displayed.
+                 */
+                _loader: {
+                    type: Boolean,
+                    value: false
+                },
+
+                /**
+                 * Target for iron-a11y-keys component.
+                 * Submit form on enter.
+                 */
+                _target: {
+                    type: Object,
+                    value: function() {
+                        return this.$.appscoLogin2faForm
+                    }
+                },
+
+                /**
+                 * Animation configuration for root element.
+                 */
+                animationConfig: {
+                    value: function() {
+                        return {
+                            'entry': {
+                                name: 'slide-from-right-animation',
+                                node: this,
+                                timing: {
+                                    duration: 300
+                                }
+                            },
+                            'exit': {
+                                name: 'slide-right-animation',
+                                node: this,
+                                timing: {
+                                    duration: 200
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+
+            behaviors: [
+                Polymer.NeonAnimatableBehavior
+            ],
+
+            /**
+             * Sets error property to empty string.
+             *
+             * @private
+             */
+            _onInputChange: function() {
+                this._error = '';
+            },
+
+            /**
+             * Validates related input.
+             *
+             * @private
+             */
+            _validateInput: function(event) {
+                var input = event.target;
+
+                if (input.value.trim() != '') {
+                    input.validate();
+                }
+                else {
+                    event.target.invalid = false;
+                }
+            },
+
+            /**
+             * Called before form submit.
+             * Sets headers and shows loader.
+             *
+             * @private
+             */
+            _onFormPresubmit: function(event) {
+                var form = event.target,
+                        basic = btoa(form.request.params.username+":"+form.request.params.password);
+
+//                event.target.headers.authorization = "token 4mp22mlvwv8kk00804owskwko08o8kcw0ocgoc80cksss4cg0c4n636060eu4g0sckkwsscock0848gk44ws4oowwgowkcscckgs";
+                event.target.headers.authorization = "Basic " + basic;
+
+                this._loader = true;
+            },
+
+            /**
+             * Submits 2fa form.
+             *
+             * @private
+             */
+            _onFormSubmit: function() {
+                this.$.appscoLogin2faForm.submit();
+            },
+
+            /**
+             * Called after form submit if error is returned.
+             * Sets message in error property.
+             *
+             * @private
+             */
+            _onFormError: function(event) {
+                this._error = event.detail.error.message;
+
+                this._loader = false;
+            },
+
+            /**
+             * Called after form submit if response is returned.
+             *
+             * @private
+             */
+            _onFormResponse: function(event) {
+                console.log('Response: ', event.detail.response);
+
+                this._loader = false;
+            },
+
+            /**
+             * Submits 2fa form on ENTER key using iron-a11y-keys component.
+             *
+             * @private
+             */
+            _onEnter: function() {
+                this._onFormSubmit();
+            },
+
+            /**
+             * It sets up the component.
+             */
+            setUpPage: function() {
+                this.$.authCodeInput.focus();
+            },
+
+            /**
+             * It resets the component.
+             */
+            resetPage: function() {
+                this.$.appscoLogin2faForm.reset();
+                this._error = '';
+            }
+        });
+    </script>
+</dom-module>

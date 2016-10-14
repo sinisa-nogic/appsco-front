@@ -1,0 +1,331 @@
+<link rel="import" href="../polymer/polymer.html">
+<link rel="import" href="../iron-flex-layout/iron-flex-layout-classes.html">
+<link rel="import" href="../paper-card/paper-card.html">
+<link rel="import" href="../paper-button/paper-button.html">
+<link rel="import" href="../iron-ajax/iron-ajax.html">
+
+<link rel="import" href="../appsco-components/appsco-loader.html">
+<link rel="import" href="../appsco-components/appsco-list-item.html">
+
+<!--
+`appsco-account-notifications`
+Is used to present notifications.
+
+Example:
+
+    <body>
+        <appsco-account-notifications>
+        </appsco-account-notifications>
+
+ Custom property | Description | Default
+----------------|-------------|----------
+`--border-color` | Default border color | `Based on default theme --border-color`
+`--divider-color` | Color for divider used for border of root element | `Based on default theme --divider-color`
+
+@demo demo/appsco-account-notifications.html
+-->
+
+<dom-module id="appsco-account-notifications">
+    <template>
+        <style include="iron-flex iron-flex-alignment">
+            :host {
+                display: block;
+                position: relative;
+                width: 100%;
+
+                @apply(--appsco-account-notifications);
+            }
+            :host .divider {
+                width: 100%;
+                height: 1px;
+                background-color: var(--divider-color);
+            }
+            :host paper-card {
+                width: 100%;
+
+                --paper-card-actions: {
+                     padding: 0;
+                 };
+            }
+            :host paper-card .card-content-notifications {
+                padding: 0;
+            }
+            :host paper-button {
+                @apply(--paper-font-button);
+
+                line-height: normal;
+            }
+            :host .see-all-button {
+                width: 100%;
+                padding: 16px;
+                background-color: transparent;
+                color: var(--primary-text-color, #273441);
+                border: none;
+            }
+            :host .message {
+                font-style: italic;
+                line-height: 1.6;
+            }
+        </style>
+
+        <paper-card heading="Notifications" class="layout vertical">
+
+            <appsco-loader active="[[ _loader ]]" loader-alt="Loading notifications" multi-color></appsco-loader>
+
+            <div class="card-content card-content-notifications layout vertical">
+
+                <iron-ajax
+                    id="ironAjaxNotifications"
+                    url="{{ _computedUrl }}"
+                    method="GET"
+                    headers="{{ _computedHeaders }}"
+                    handle-as="json"
+                    on-error="_handleError"
+                    on-response="_handleResponse">
+                </iron-ajax>
+
+                <template is="dom-repeat" items="{{ _notifications }}">
+
+                    <div class="divider"></div>
+
+                    <appsco-list-item
+                            item="[[ _mapToListItem(item) ]]">
+                    </appsco-list-item>
+
+                </template>
+
+            </div>
+
+            <template is="dom-if" if="[[ _message ]]">
+                <div class="card-content layout horizontal center">
+                    <p class="message">
+                        [[ _message ]]
+                    </p>
+                </div>
+            </template>
+
+            <div class="card-actions" hidden$="[[ !_notificationsExists }}">
+                <paper-button id="seeAllNotifications" class="see-all-button">See all notifications</paper-button>
+            </div>
+
+        </paper-card>
+
+    </template>
+
+    <script>
+        Polymer({
+
+            is: 'appsco-account-notifications',
+
+            properties: {
+
+                /**
+                 * Authorization token
+                 */
+                authorizationToken: {
+                    type: String
+                },
+
+                /**
+                 * Notifications API link.
+                 */
+                notificationsApi: {
+                    type: String
+                },
+
+                /**
+                 * Number of notifications to load.
+                 */
+                size: {
+                    type: Number,
+                    value: 5
+                },
+
+                /**
+                 * Computed headers.
+                 * It contains authorization token.
+                 */
+                _computedUrl: {
+                    type: String,
+                    computed: "_computeUrl(notificationsApi)"
+                },
+
+                /**
+                 * Computed headers.
+                 * It contains authorization token.
+                 */
+                _computedHeaders: {
+                    type: Object,
+                    computed: "_computeHeaders(authorizationToken)"
+                },
+
+                /**
+                 * Notifications for account.
+                 * Get from Appsco API within iron-ajax.
+                 *
+                 * @type Notification[]
+                 */
+                _notifications: {
+                    type: Array,
+                    notify: true
+                },
+
+                /**
+                 * Indicates if notifications are loaded or not.
+                 */
+                _notificationsExists: {
+                    type: Boolean,
+                    value: false
+                },
+
+                /**
+                 * Message to display instead of notifications.
+                 */
+                _message: {
+                    type: String
+                },
+
+                /**
+                 * Indicates if appsco-loader is shown or hidden.
+                 */
+                _loader: {
+                    type: Boolean,
+                    value: false
+                }
+            },
+
+            listeners: {
+                'seeAllNotifications.tap': '_seeAllNotificationsAction'
+            },
+
+            ready: function() {
+
+                // This is set just to see how it works.
+                // Should be removed after implementation of 'new notifications' scenario.
+                // We should see how to check if there are new notifications.
+                setTimeout(function() {
+
+                    /**
+                     * Fired when there are new notifications.
+                     *
+                     * @event new-notifications
+                     */
+                    this.fire('new-notifications');
+
+                }.bind(this), 3000);
+            },
+
+            /**
+             * Computes iron-ajax url.
+             *
+             * @param {String} notificationsApi
+             * @private
+             */
+            _computeUrl: function (notificationsApi) {
+                return notificationsApi + '?page=1&limit=' + this.size;
+            },
+
+            /**
+             * Computes authorization headers.
+             *
+             * @param {Object} authorizationToken
+             * @returns {{ Authorization: string }}
+             * @private
+             */
+            _computeHeaders: function (authorizationToken) {
+                return {
+                    'Authorization': 'token ' + authorizationToken
+                }
+            },
+
+            /**
+             * Maps notification object to list-item object.
+             *
+             * @param {Object} item
+             * @returns {{ item: object }}
+             * @private
+             */
+            _mapToListItem: function(item) {
+                return {
+                    icon: item.imageUrl,
+                    date: item.createdAt,
+                    message: item.message
+                }
+            },
+
+            /**
+             * Fires event on see all notifications action.
+             *
+             * @private
+             */
+            _seeAllNotificationsAction: function() {
+
+                /**
+                 * Fired when user taps on see all notifications action.
+                 *
+                 * @event all-notifications
+                 */
+                this.fire('all-notifications');
+            },
+
+            /**
+             * Triggers ajax request in order to get notifications.
+             */
+            loadNotifications: function() {
+                this._loader = true;
+                this._notifications = [];
+                this._notificationsExists = false;
+                this.$.ironAjaxNotifications.generateRequest();
+            },
+
+            /**
+             * Handles error on get notifications API request.
+             * @param {Object} event Event from error response.
+             *
+             * @private
+             */
+            _handleError: function(event) {
+                this._message = 'We couldn\'t load notifications at the moment. Please try again in a minute. If error continues contact us.';
+                this._loader = false;
+            },
+
+            /**
+             * Handles response on get notifications API request.
+             * @param {Object} event Event from response.
+             *
+             * @private
+             */
+            _handleResponse: function(event) {
+                var notifications = event.detail.response;
+
+                if (notifications && notifications.length > 0) {
+
+                    notifications.forEach(function(notification, i) {
+
+                        setTimeout( function() {
+
+                            this.push('_notifications', notifications[i]);
+
+                            if (i === (notifications.length - 1)) {
+                                this._notificationsExists = true;
+                            }
+
+                        }.bind(this), (i + 1) * 50 );
+
+                    }.bind(this));
+
+                }
+                else if (notifications.length === 0) {
+                    this._message = 'You don\'t have notifications.';
+                }
+                else {
+                    this._message = 'We couldn\'t load notifications at the moment.';
+                }
+
+                this._loader = false;
+
+            }
+
+        });
+    </script>
+</dom-module>

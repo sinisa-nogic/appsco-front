@@ -1,0 +1,379 @@
+<link rel="import" href="../polymer/polymer.html">
+<link rel="import" href="../iron-flex-layout/iron-flex-layout-classes.html">
+<link rel="import" href="../paper-card/paper-card.html">
+<link rel="import" href="../paper-button/paper-button.html">
+<link rel="import" href="../neon-animation/neon-animatable-behavior.html">
+<link rel="import" href="../neon-animation/animations/slide-from-left-animation.html">
+<link rel="import" href="../neon-animation/animations/slide-left-animation.html">
+<link rel="import" href="../neon-animation/animations/fade-out-animation.html">
+<link rel="import" href="../neon-animation/neon-animation-runner-behavior.html">
+<link rel="import" href="../iron-localstorage/iron-localstorage.html">
+
+<link rel="import" href="appsco-login-account.html">
+
+<!--
+`appsco-login-accounts`
+Appsco login accounts component
+
+Example:
+
+    <body>
+      <appsco-login-accounts></appsco-login-accounts>
+
+ Custom property | Description | Default
+----------------|-------------|----------
+`--primary-color` | Used for button background color | `Based on Polymer default theme --primary-color`
+`--error-color` | Used for remove button background color | `#ff0000`
+`--appsco-login-accounts` | Mixin applied to root element | `{}`
+
+@demo demo/appsco-login-accounts.html
+-->
+
+<dom-module id="appsco-login-accounts">
+    <template>
+        <style include="iron-flex iron-flex-alignment">
+            :host {
+                display: block;
+
+                @apply(--appsco-login-accounts);
+            }
+            :host .card-content-no-padding {
+                padding: 0;
+            }
+            :host paper-button {
+                margin-left: 0;
+                margin-right: 0;
+                color: #ffffff;
+                border-radius: 0;
+            }
+            :host .btn-primary {
+                background-color: var(--primary-color, #03BCFF);
+
+            }
+            :host .btn-danger {
+                background-color: var(--error-color, #ff0000);
+            }
+            :host paper-button[toggles][active] {
+                @apply(--shadow-elevation-4dp);
+            }
+            :host p {
+                margin: 0 0 5px 0;
+            }
+        </style>
+
+        <paper-card heading="Your accounts" class="layout vertical">
+
+            <div class="card-content">
+                <content id="headerContent" select="[ header ]"></content>
+            </div>
+
+            <div class="card-content card-content-no-padding layout vertical">
+                <template is="dom-repeat" items="{{ _accounts }}">
+
+                    <appsco-login-account
+                            id$="{{ _setLoginAccountId(index) }}"
+                            account="{{ item }}"
+                            remove-account="[[ _removeAccount ]]"
+                            on-account-selected="_onAccountSelected">
+                    </appsco-login-account>
+
+                </template>
+            </div>
+
+            <template is="dom-if" if="[[ _emptyAccounts ]]">
+                <div class="card-content layout vertical">
+                    <p>You've removed all accounts.</p>
+                    <p>Please check 'Remember me' next time you log in.</p>
+                </div>
+            </template>
+
+            <div class="card-content layout vertical">
+
+                <div class="actions layout horizontal">
+                    <paper-button class="flex btn-primary"
+                                  on-tap="_onAddAccount">
+                        Add account
+                    </paper-button>
+
+                    <paper-button
+                            id="actionRemoveAccount"
+                            class="flex btn-danger"
+                            on-tap="_onRemoveAccount"
+                            toggles>
+                        Remove account
+                    </paper-button>
+                </div>
+
+                <content select="[ footer ]"></content>
+
+            </div>
+
+        </paper-card>
+
+        <iron-localstorage
+                id="localStorageAccounts"
+                name="appsco-accounts"
+                value="{{ _accounts }}">
+        </iron-localstorage>
+
+    </template>
+
+    <script>
+        Polymer({
+
+            is: 'appsco-login-accounts',
+
+            properties: {
+
+                /**
+                 * Synced Accounts from local storage.
+                 */
+                _accounts: {
+                    type: Array
+                },
+
+                /**
+                 * Indicates if there are no more accounts in storage.
+                 * It becomes 'true' after removing all accounts from list.
+                 */
+                _emptyAccounts: {
+                    type: Boolean,
+                    value: false
+                },
+
+                /**
+                 * Selected account from account list.
+                 */
+                selectedAccount: {
+                    type: Object,
+                    notify: true
+                },
+
+                /**
+                 * Selected account from account list.
+                 */
+                _selectedAccountDOM: {
+                    type: String
+                },
+
+                /**
+                 * Indicates if user wants to perform removing accounts.
+                 */
+                _removeAccount: {
+                    type: Boolean,
+                    value: false
+                },
+
+                /**
+                 * Animation configuration for root element.
+                 */
+                animationConfig: {
+                    value: function() {
+                        return {
+                            'entry': {
+                                name: 'slide-from-left-animation',
+                                node: this,
+                                timing: {
+                                    duration: 200
+                                }
+                            },
+                            'exit': {
+                                name: 'slide-left-animation',
+                                node: this,
+                                timing: {
+                                    duration: 200
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+
+            behaviors: [
+                    Polymer.NeonAnimatableBehavior,
+                    Polymer.NeonAnimationRunnerBehavior
+            ],
+
+            listeners: {
+                'neon-animation-finish': '_onAnimationFinish'
+            },
+
+            ready: function() {
+                this._setHeaderContentStyle();
+            },
+
+            /**
+             * Checks if header content is empty.
+             * Hides it if it is empty.
+             *
+             * @private
+             */
+            _setHeaderContentStyle: function() {
+                var header = Polymer.dom(this.$.headerContent),
+                    nodes = header.getDistributedNodes();
+
+                if (nodes.length > 0) {
+                    nodes.forEach(function(el, i) {
+
+                        if (!Polymer.dom(el).firstChild) {
+                            header.parentNode.hidden = true;
+                        }
+
+                    }.bind(this));
+                }
+                else {
+                    header.parentNode.hidden = true;
+                }
+            },
+
+            /**
+             * Called while dom-repeat rendering.
+             * It sets 'id' attribute to dom-repeat item 'appsco-login-account'.
+             * @param {Number} index
+             *
+             * @private
+             */
+            _setLoginAccountId: function(index) {
+                return 'loginAccount_' + index;
+            },
+
+            /**
+             * Hides appsco-login-account element from DOM before it is removed from storage.
+             * @param {Number} index
+             *
+             * @private
+             */
+            _hideAccountFromDOM: function(index) {
+                var exitAnimation = Object.assign({}, this.animationConfig.exit);
+
+                this.animationConfig.exit.node = this.$$('#loginAccount_' + index);
+
+                this.playAnimation('exit');
+            },
+
+            /**
+             * It is called after login account animation is finished.
+             * It hides login account before it is removed from storage.
+             *
+             * @private
+             */
+            _onAnimationFinish: function() {
+                this._selectedAccountDOM.style.display = 'none';
+
+                this.animationConfig.exit.node = this;
+
+                this._removeAccountFromStorage();
+            },
+
+            /**
+             * Called after account is selected by user.
+             * It invites appropriate method depending if user wants to remove account from storage or to login with selected account.
+             * @param {Object} event
+             *
+             * @private
+             */
+            _onAccountSelected: function(event) {
+                this.selectedAccount = event.model.item;
+                this._selectedAccountDOM = event.target;
+
+                if (this._removeAccount) {
+                    this._hideAccountFromDOM(event.model.index);
+                }
+                else {
+                    this._showAccountLogin();
+                }
+
+            },
+
+            /**
+             * Removes previously selected account from local storage.
+             *
+             * @private
+             */
+            _removeAccountFromStorage: function() {
+                var index = this._accounts.indexOf(this.selectedAccount);
+
+                this.splice('_accounts', index, 1);
+
+                if (this._accounts.length === 0) {
+                    this._onEmptyStorage();
+                }
+            },
+
+            /**
+             * Shows account login form for selected account.
+             * Fires an event.
+             *
+             * @private
+             */
+            _showAccountLogin: function() {
+
+                /**
+                 * Fired when user selects an account.
+                 *
+                 * @event account-login
+                 */
+                this.fire('account-login');
+            },
+
+            /**
+             * Called when user taps on new account action.
+             * Fires an event.
+             *
+             * @private
+             */
+            _onAddAccount: function() {
+
+                /**
+                 * Fired when user taps on new account action.
+                 *
+                 * @event add-account
+                 */
+                this.fire('add-account');
+            },
+
+            /**
+             * Called when user taps on remove account action.
+             * It toggles removing mode.
+             *
+             * @private
+             */
+            _onRemoveAccount: function() {
+                this._removeAccount = !this._removeAccount;
+            },
+
+            /**
+             * Called after all accounts have been removed from storage.
+             * It fires event.
+             *
+             * @private
+             */
+            _onEmptyStorage: function() {
+                this._emptyAccounts = true;
+                this.$.actionRemoveAccount.hidden = true;
+
+                this.resetPage();
+
+                /**
+                 * Fired if there are no accounts left in storage.
+                 *
+                 * @event storage-empty
+                 */
+                this.fire('storage-empty');
+            },
+
+            /**
+             * It sets up the component.
+             */
+            setUpPage: function() {},
+
+            /**
+             * It resets the component.
+             */
+            resetPage: function() {
+                this._removeAccount = false;
+                this.$.actionRemoveAccount.active = false;
+            }
+        });
+    </script>
+</dom-module>

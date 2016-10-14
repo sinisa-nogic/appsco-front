@@ -1,0 +1,184 @@
+<link rel="import" href="../polymer/polymer.html">
+
+<link rel="import" href="../iron-ajax/iron-ajax.html">
+<link rel="import" href="../paper-progress/paper-progress.html">
+<link rel="import" href="../paper-styles/typography.html">
+
+<link rel="import" href="appsco-application-subscriber.html">
+
+
+<!--
+`appsco-application-subscribers`
+Contains info about subscribers to application (accounts to whom app is shared, including owner).
+
+    <appsco-application-subscribers>
+    </appsco-application-subscribers>
+
+### Styling
+
+`<appsco-application-subscribers>` provides the following custom properties and mixins for styling:
+
+Custom property | Description | Default
+----------------|-------------|----------
+`--appsco-application-subscribers` | Mixin for the root element | `{}`
+
+@demo demo/appsco-application-subscribers.html
+-->
+
+<dom-module id="appsco-application-subscribers">
+    <template>
+        <style>
+            :host {
+                display: block;
+                position: relative;
+                @apply(--appsco-application-subscribers);
+            }
+            :host paper-progress {
+                width: 100%;
+                --paper-progress-active-color: #7baaf7;
+            }
+            :host .progress {
+                height: 6px;
+            }
+            :host .total {
+                @apply(--paper-font-caption);
+                opacity: 0.6;
+            }
+        </style>
+        <iron-ajax
+                on-request="_loading"
+                auto
+                url="[[ _currentUrl ]]"
+                on-response="_handleResponse"
+                on-error="_handleError"
+                headers="{{ _computedHeaders }}"
+                debounce-duration="300">
+        </iron-ajax>
+
+        <div class="accounts">
+            <div class="progress">
+                <paper-progress id="progress" indeterminate></paper-progress>
+            </div>
+
+            <template is="dom-repeat" items="[[ _accounts ]]" id="message" index-as="current">
+                <appsco-application-subscriber
+                        item="[[ item ]]"></appsco-application-subscriber>
+            </template>
+        </div>
+
+        <div hidden$="[[ !_totalSubscribers ]]">
+            <span class="total">Total subscribers: [[ _totalSubscribers ]]</span>
+        </div>
+    </template>
+
+    <script>
+        Polymer({
+
+            is: 'appsco-application-subscribers',
+
+            /**
+             * Link to load next page
+             */
+            _next: "",
+
+            properties: {
+                /**
+                 * [Accounts](https://developers.appsco.com/api/accounts/id) that is to be rendered
+                 */
+                _accounts: {
+                    type: Array,
+                    value: function () {
+                        return [];
+                    }
+                },
+                /**
+                 * Number of accounts to load and present
+                 */
+                size: {
+                    type: Number,
+                    value: 5
+                },
+                authorizationToken: {
+                    type: String,
+                    value: ''
+                },
+                /**
+                 * [Application](https://developers.appsco.com/api/dashboard/id/icons/id) that is to be rendered
+                 */
+                application: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    },
+                    notify: true
+                },
+                _currentUrl: {
+                    type: String,
+                    value: '',
+                    notify: true
+                },
+                _computedHeaders: {
+                    type: Object,
+                    computed: "_computeHeaders(authorizationToken)"
+                },
+                _totalSubscribers: {
+                    type: Number
+                }
+            },
+            listeners: {
+                'application-changed': "_init",
+                'on-request': "_loading"
+            },
+
+            attached: function() {
+                this._init();
+            },
+
+            _init: function () {
+                this.set('_accounts', []);
+                this.set('_currentUrl', '');
+                this.set('_totalSubscribers', null);
+
+                if ("meta" in this.application) {
+                    this._next = this.application.meta.subscribers + "?page=1&extended=1&limit=" + this.size;
+                    this._currentUrl = this._next;
+                }
+            },
+            _computeHeaders: function (authorizationToken) {
+                return {
+                    "Authorization": "token " + authorizationToken
+                }
+            },
+            _handleResponse: function (e) {
+                var me = this;
+                if (null == e.detail.response) {
+                    return;
+                }
+                e.detail.response.accounts.forEach(function (el, index) {
+
+                    setTimeout(function () {
+                        me.push('_accounts', el);
+
+                        if (index === e.detail.response.accounts.length -1) {
+                            me._totalSubscribers = e.detail.response.meta.total;
+                        }
+
+                    }, (index + 1) * 50);
+
+                });
+
+                this._next = e.detail.response.meta.next + "&limit=" + this.size;
+                // Wait for a bit longer so that loading looks nice
+                setTimeout(function () {
+                    me.$.progress.hidden = true;
+                }, 600 + (e.detail.response.accounts.length * 100))
+            },
+            _handleError: function () {
+                this.$.progress.hidden = true;
+            },
+            _loading: function () {
+                this.$.progress.hidden = false;
+            }
+        });
+    </script>
+</dom-module>

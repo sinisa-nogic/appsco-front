@@ -1,0 +1,438 @@
+<link rel="import" href="../polymer/polymer.html">
+<link rel="import" href="../iron-flex-layout/iron-flex-layout-classes.html">
+<link rel="import" href="../neon-animation/neon-animated-pages.html">
+<link rel="import" href="../iron-localstorage/iron-localstorage.html">
+
+<link rel="import" href="../appsco-header/appsco-brand.html">
+<link rel="import" href="appsco-login-form.html">
+<link rel="import" href="appsco-login-2fa.html">
+<link rel="import" href="appsco-login-accounts.html">
+<link rel="import" href="appsco-login-account-login.html">
+<link rel="import" href="appsco-signup-form.html">
+<link rel="import" href="appsco-forgot-password.html">
+<link rel="import" href="appsco-reset-password.html">
+
+<!--
+`appsco-signup`
+Signup component is used to represent authentication methods to the user and provide signup process.
+
+@demo demo/index.html 
+-->
+
+<dom-module id="appsco-signup">
+    <template>
+        <style>
+            :host {
+                display: block;
+            }
+            :host neon-animated-pages {
+                height: 100%;
+                overflow: hidden;
+            }
+            :host neon-animated-pages > .iron-selected {
+                position: relative;
+            }
+            :host .login-page {
+                padding: 4px;
+            }
+            .mt-30 {
+                margin-top: 30px;
+            }
+            .text-center {
+                text-align: center;
+            }
+            :host appsco-brand {
+                --appsco-brand: {
+                     width: 64px;
+                     margin: 0 auto 40px;
+                     display: block;
+                 };
+                --appsco-brand-logo: {
+                     margin-right: 0;
+                 };
+            }
+        </style>
+
+        <appsco-brand
+                logo="https://appsco.com/bundles/appscodashboardapproot/img/appsco-logo.png"
+                logo-width="64"
+                logo-height="64">
+
+            <div brand-info>
+            </div>
+
+        </appsco-brand>
+
+        <neon-animated-pages class="flex"
+                             selected="{{ _selected }}"
+                             attr-for-selected="name"
+                             on-neon-animation-finish="_onNeonAnimationFinish">
+
+            <appsco-login-form
+                    id="appscoLoginForm"
+                    name="appsco-login-form"
+                    class="login-page"
+                    locale="[[ locale ]]"
+                    on-forgot-password="_showForgotPasswordForm"
+                    on-iron-form-response="_onAppscoLoginFormResponse"
+                    on-iron-form-error="_onAppscoLoginFormResponse">
+
+                <div header></div>
+
+                <div footer>
+
+                    <template is="dom-if" if="[[ _accountsExist ]]">
+                        <div class="mt-30 text-center">
+                            <paper-button class="link-btn primary" on-tap="_showLoginAccounts">Back</paper-button>
+                            to accounts
+                        </div>
+                    </template>
+
+                    <template is="dom-if" if="[[ !_accountsExist ]]">
+                        <div class="mt-30 text-center">
+                            Don't have account?
+                            <paper-button class="link-btn primary" on-tap="_showSignupForm">Sign up</paper-button>
+                        </div>
+                    </template>
+
+                </div>
+
+            </appsco-login-form>
+
+            <appsco-login-2fa
+                    name="appsco-login-2fa"
+                    class="login-page"
+                    locale="[[ locale ]]">
+
+                <div header></div>
+
+                <div footer>
+                    <div class="text-center mt-30">
+                        Back to
+                        <paper-button class="link-btn primary" on-tap="_showLoginPage">Login</paper-button>
+                    </div>
+                </div>
+
+            </appsco-login-2fa>
+
+            <appsco-login-accounts
+                    name="appsco-login-accounts"
+                    class="login-page"
+                    locale="[[ locale ]]"
+                    selected-account="{{ _selectedAccount }}"
+                    on-add-account="_onAddAccount"
+                    on-storage-empty="_onStorageEmpty"
+                    on-account-login="_showAccountLoginForm">
+
+                <div header></div>
+
+                <div footer>
+                    <div class="text-center mt-30">
+                        Want to create another account?
+                        <paper-button class="link-btn primary" on-tap="_showSignupForm">Sign up</paper-button>
+                    </div>
+                </div>
+
+            </appsco-login-accounts>
+
+            <appsco-login-account-login
+                    name="appsco-login-account-login"
+                    class="login-page"
+                    locale="[[ locale ]]"
+                    account="[[ _selectedAccount ]]"
+                    on-account-login-cancel="_showLoginPage">
+
+                <div header></div>
+
+                <div footer></div>
+
+            </appsco-login-account-login>
+
+            <appsco-signup-form
+                    name="appsco-signup-form"
+                    class="login-page"
+                    locale="[[ locale ]]">
+
+                <div header></div>
+
+                <div footer>
+                    <div class="mt-30">
+                        By registering, you agree to the
+                        <a href="#">privacy policy</a> and
+                        <a href="#">terms of service</a>.
+                        Just enter your e-mail and password and start using
+                        Appsco for free, no need for e-mail confirmation.
+                    </div>
+
+                    <div class="text-center mt-30">
+                        Already have account?
+                        <paper-button class="link-btn primary" on-tap="_showLoginPage">Login</paper-button>
+                    </div>
+                </div>
+
+            </appsco-signup-form>
+
+            <appsco-forgot-password
+                    name="appsco-forgot-password"
+                    class="login-page"
+                    locale="[[ locale ]]">
+
+                <div header>
+                    Enter your email address and we'll send you a mail message with password reset link.
+                </div>
+
+                <div footer>
+                    <div class="text-center mt-30">
+                        Back to
+                        <paper-button class="link-btn primary" on-tap="_showLoginPage">Login</paper-button>
+                    </div>
+                </div>
+
+            </appsco-forgot-password>
+
+            <appsco-reset-password
+                    name="appsco-reset-password"
+                    class="login-page"
+                    locale="[[ locale ]]">
+
+                <div header>
+                    Enter your new password.
+                </div>
+
+                <div footer></div>
+
+            </appsco-reset-password>
+
+        </neon-animated-pages>
+
+        <iron-localstorage
+                id="localStorageAccounts"
+                name="appsco-accounts"
+                value="{{ _accounts }}">
+        </iron-localstorage>
+
+    </template>
+
+    <script>
+        Polymer({
+
+            is: 'appsco-signup',
+
+            properties: {
+
+                /**
+                 * Locale
+                 */
+                locale: {
+                    type: String,
+                    value: 'en'
+                },
+
+                /**
+                 * Selected signup component.
+                 * It has value of component's 'name' attribute.
+                 */
+                _selected: {
+                    type: String
+                },
+
+                /**
+                 * Accounts from local storage.
+                 */
+                _accounts: {
+                    type: Array
+                },
+
+                /**
+                 * Indicates if there are accounts in storage.
+                 */
+                _accountsExist: {
+                    type: Boolean,
+                    value: false
+                },
+
+                /**
+                 * Selected account from local storage within appsco-login-accounts component.
+                 */
+                _selectedAccount: {
+                    type: Object
+                },
+
+                /**
+                 * appsco-login-form page animation.
+                 */
+                _loginFormAnimation: {
+                    type: Object
+                }
+            },
+
+            attached: function() {
+                this._showLoginPage();
+            },
+
+            /**
+             * Sets selected page to Appsco Login Form.
+             *
+             * @private
+             */
+            _showLoginPage: function() {
+
+                this.$.localStorageAccounts.reload();
+
+                if (this._accounts && this._accounts.length > 0) {
+                    this._showLoginAccounts();
+                }
+                else {
+                    this._showLoginForm();
+                }
+
+            },
+
+            /**
+             * It sets selected page to Appsco Login Form.
+             *
+             * @private
+             */
+            _showLoginForm: function() {
+                this._selected = 'appsco-login-form';
+            },
+
+            /**
+             * It sets selected page to Appsco Login Two-factor Authentication form.
+             *
+             * @private
+             */
+            _showLogin2fa: function() {
+                this._selected = 'appsco-login-2fa';
+            },
+
+            /**
+             * It sets selected page to Appsco Login Form.
+             *
+             * @private
+             */
+            _showLoginAccounts: function() {
+                this._selected = 'appsco-login-accounts';
+            },
+
+            /**
+             * It sets selected page to Appsco Account Login Form.
+             *
+             * @private
+             */
+            _showAccountLoginForm: function() {
+                this._selected = 'appsco-login-account-login';
+            },
+
+            /**
+             * It sets selected page to Appsco Signup Form.
+             *
+             * @private
+             */
+            _showSignupForm: function() {
+                this._selected = 'appsco-signup-form';
+            },
+
+            /**
+             * Sets selected page to Appsco Forgot Password.
+             * Also, it sets appsco-login-form animation to its default if it is changed.
+             *
+             * @private
+             */
+            _showForgotPasswordForm: function() {
+
+                if (this._loginFormAnimation) {
+                    this.$.appscoLoginForm.setAnimationConfig(this._loginFormAnimation);
+                }
+
+                this._selected = 'appsco-forgot-password';
+            },
+
+            /**
+             * Changes animation for appsco-login-form
+             * when user comes from appsco-login-accounts page.
+             * It stores previous animationConfig so it can be reused again.
+             *
+             * @private
+             */
+            _adjustLoginFormAnimation: function() {
+
+                if (!this._loginFormAnimation) {
+                    this._loginFormAnimation = this.$.appscoLoginForm.getAnimationConfig();
+                }
+
+                var temporaryAnimation = {
+                    'entry': {
+                        name: 'slide-from-right-animation',
+                        node: this.$.appscoLoginForm,
+                        timing: {
+                            duration: 200
+                        }
+                    },
+                    'exit': {
+                        name: 'slide-right-animation',
+                        node: this.$.appscoLoginForm,
+                        timing: {
+                            duration: 300
+                        }
+                    }
+                };
+
+                this.$.appscoLoginForm.setAnimationConfig(temporaryAnimation);
+            },
+
+            /**
+             * Called if user came from appsco-login-accounts page
+             * and wants to add new account to storage.
+             *
+             * @private
+             */
+            _onAddAccount: function(event) {
+                this._accountsExist = true;
+
+                this._adjustLoginFormAnimation();
+
+                this._showLoginForm();
+            },
+
+            /**
+             * Called after user removed all accounts from storage.
+             *
+             * @private
+             */
+            _onStorageEmpty: function() {
+                this._accountsExist = false;
+                this._showLoginForm();
+            },
+
+            /**
+             * Called after page animation is finished.
+             * @param {Object} event
+             *
+             * @private
+             */
+            _onNeonAnimationFinish: function(event) {
+                event.detail.fromPage.resetPage();
+                event.detail.toPage.setUpPage();
+            },
+
+            /**
+             * Called after Appsco Login Form returns success with response.
+             * @param {Object} event
+             *
+             * @private
+             */
+            _onAppscoLoginFormResponse: function(event) {
+//                var responseHeaders = event.detail.xhr.getAllResponseHeaders();
+//
+//                if (event.detail.response.twoFactorenabled) {
+//                    this._showLogin2fa();
+//                }
+
+                this._showLogin2fa();
+
+            }
+
+        });
+    </script>
+</dom-module>

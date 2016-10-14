@@ -1,0 +1,194 @@
+<link rel="import" href="../polymer/polymer.html">
+<link rel="import" href="../paper-item/paper-item.html">
+<link rel="import" href="../paper-listbox/paper-listbox.html">
+<link rel="import" href="../iron-icons/iron-icons.html">
+<link rel="import" href="../paper-ripple/paper-ripple.html">
+
+<link rel="import" href="appsco-dropdown.html">
+
+<!--
+`appsco-product`
+This component displays AppsCo product. If there is only one product it is displayed as text.
+Otherwise, it is displayed as dropdown from which user can choose AppsCo Product: AppsCo or AppsCo Partner.
+
+Example:
+
+    <body>
+      <appsco-product partner></appsco-product>
+
+
+### Styling
+
+`<appsco-product>` provides the following custom mixins for styling:
+
+Custom property | Description | Default
+----------------|-------------|----------
+`--appsco-light-background-color` | Background color used for SEE ALL action | `#f5f8fa`
+`--border-color` | Border for products. | Based on border-color from theme.
+`--appsco-product` | Mixin applied to root appsco-product element. | `{}`
+`--appsco-product-dropdown` | Mixin applied to inner appsco-dropdown element. | `{}`
+
+@demo demo/appsco-product.html
+-->
+
+<dom-module id="appsco-product">
+    <template>
+        <style>
+            :host {
+                display: inline-block;
+                font-size: 16px;
+                position: relative;
+
+                @apply(--appsco-product);
+            }
+            :host .product-list-action {
+                line-height: 1.6;
+                cursor: pointer;
+            }
+            :host appsco-dropdown {
+                min-width: 160px;
+                width: auto;
+                right: -8px;
+
+                @apply(--appsco-product-dropdown);
+            }
+            :host paper-listbox {
+                padding: 0;
+            }
+            :host paper-listbox paper-item {
+                cursor: pointer;
+                height: 36px;
+                font-size: 14px;
+            }
+            :host paper-listbox paper-item:first-child {
+                border-bottom: 1px solid var(--divider-color);
+            }
+        </style>
+
+        <template is="dom-if" if="{{ partner }}">
+
+            <div
+                    id="triggerDropdown"
+                    class="product-active product-list-action"
+                    on-tap="__toggleProductDropdown">
+                [[ _selectedProductLabel ]]
+                <iron-icon icon="arrow-drop-down"></iron-icon>
+            </div>
+
+            <appsco-dropdown
+                    open="{{ _pressed }}"
+                    trigger="[[ _triggerDropdown ]]"
+                    close-outside>
+
+                <paper-listbox id="productList" selected="appsco-product" attr-for-selected="value" on-iron-select="_onItemSelect">
+
+                    <template is="dom-repeat" items="[[ _products ]]">
+                        <paper-item value="[[ item.value ]]" label="[[ item.label ]]">
+                            [[ item.label ]]
+                            <paper-ripple></paper-ripple>
+                        </paper-item>
+                    </template>
+
+                </paper-listbox>
+
+            </appsco-dropdown>
+
+
+        </template>
+
+        <template is="dom-if" if="{{ !partner }}">
+
+            <span class="product-active">
+                [[ _selectedProductLabel ]]
+            </span>
+
+        </template>
+
+    </template>
+
+    <script>
+        Polymer({
+
+            is: 'appsco-product',
+
+            properties: {
+
+                /** Indicates if user has access to Appsco Partner product. */
+                partner: {
+                    type: Boolean,
+                    value: false
+                },
+
+                /** Appsco products. */
+                _products: {
+                    type: Array,
+                    value: [{
+                        label: 'AppsCo',
+                        value: 'appsco-product'
+                    },
+                    {
+                        label: 'AppsCo Partner',
+                        value: 'appsco-partner-product'
+                    }]
+                },
+
+                /** Label of selected product to display.*/
+                _selectedProductLabel: {
+                    type: String,
+                    value: 'AppsCo'
+                },
+
+                /**
+                 * Indicates if user clicked on element or not.
+                 */
+                _pressed: {
+                    type: Boolean,
+                    value: false,
+                    notify: true
+                },
+
+                /**
+                 * DOM element which triggers the dropdown.
+                 */
+                _triggerDropdown: {
+                    type: Object,
+                    notify: true
+                }
+
+            },
+
+            attached: function() {
+                this._triggerDropdown = this.$$('#triggerDropdown');
+            },
+
+            /**
+             * Listens to iron-select event of paper-listbox.
+             * It sets label of selected product to display.
+             * It fires event that product is changed: appsco-product-changed.
+             *
+             * @private
+             */
+            _onItemSelect: function() {
+                var item = this.$$('#productList').selectedItem;
+
+                this._selectedProductLabel = item.label;
+
+                this.fire('appsco-product-changed', {
+                    product: item.value
+                });
+
+                this._pressed = false;
+            },
+
+            /**
+             * Toggles dropdown with product list.
+             *
+             * @private
+             */
+            __toggleProductDropdown: function() {
+                this._pressed = !this._pressed;
+            }
+
+        });
+    </script>
+</dom-module>

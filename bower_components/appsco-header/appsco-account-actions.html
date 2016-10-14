@@ -1,0 +1,194 @@
+<link rel="import" href="../polymer/polymer.html">
+<link rel="import" href="../paper-icon-button/paper-icon-button.html">
+
+<link rel="import" href="appsco-account-chat.html">
+<link rel="import" href="appsco-account-notifications-dropdown.html">
+
+<!--
+`appsco-account-actions`
+Is used to present account related actions.
+
+Example:
+
+    <body>
+      <appsco-account-actions
+            chat={}
+            intranet="url_to_website">
+     </appsco-account-actions>
+
+
+### Styling
+
+`<appsco-account-actions>` provides the following custom mixins for styling:
+
+Custom property | Description | Default
+----------------|-------------|----------
+`--appsco-account-action-color` | Color for icon-button actions | ``
+`--appsco-account-actions` | Mixin applied to root appsco-account-actions element. | `{}`
+@demo demo/appsco-account-actions.html
+-->
+
+<dom-module id="appsco-account-actions">
+    <template>
+        <style>
+            :host {
+                display: inline-block;
+
+                @apply(--appsco-account-actions);
+            }
+            :host a {
+                text-decoration: none;
+            }
+            :host .action-icon,
+            :host a .action-icon,
+            :host a:active .action-icon,
+            :host a:visited .action-icon {
+                color: var(--appsco-account-action-color);
+                --paper-icon-button-ink-color: var(--appsco-account-action-color);
+            }
+            :host .new-notifications-icon {
+                color: var(--appsco-account-new-notifications-color, --primary-color);
+                --paper-icon-button-ink-color: var(--appsco-account-new-notifications-color, --primary-color);
+            }
+        </style>
+
+        <div class="account-actions">
+
+            <template is="dom-if" if="[[ account.intranet ]]">
+                <a href="[[ account.intranet ]]" target="_blank" tabindex="-1">
+                    <paper-icon-button
+                            class="action-icon"
+                            icon="language"
+                            title="Intranet"></paper-icon-button>
+                </a>
+            </template>
+
+            <template is="dom-if" if="[[ chat ]]">
+                <paper-icon-button
+                        id="chatAction"
+                        class="action-icon"
+                        icon="communication:forum"
+                        title="Chat"
+                        on-tap="_onChatAction">
+                </paper-icon-button>
+
+                <appsco-account-chat
+                        id="appscoAccountChat"
+                        account="[[ account ]]"
+                        chat="[[ chat ]]"
+                        dont-close-outside>
+                </appsco-account-chat>
+            </template>
+
+            <template is="dom-if" if="[[ _newNotifications ]]">
+                <paper-icon-button
+                        id="newNotificationsAction"
+                        class="action-icon new-notifications-icon"
+                        icon="social:notifications-active"
+                        title="Notifications"
+                        on-tap="_onNewNotificationsAction">
+                </paper-icon-button>
+            </template>
+
+            <template is="dom-if" if="[[ !_newNotifications ]]">
+                <paper-icon-button
+                        id="notificationsAction"
+                        class="action-icon"
+                        icon="social:notifications"
+                        title="Notifications"
+                        on-tap="_onNotificationsAction">
+                </paper-icon-button>
+            </template>
+
+            <appsco-account-notifications-dropdown
+                    id="appscoAccountNotificationsDropdown"
+                    authorization-token="[[ authorizationToken ]]"
+                    notifications-api="[[ notificationsApi ]]"
+                    notifications-size="[[ notificationsSize ]]"
+                    on-new-notifications="_onNewNotifications">
+            </appsco-account-notifications-dropdown>
+
+        </div>
+
+    </template>
+
+    <script>
+        Polymer({
+
+            is: 'appsco-account-actions',
+
+            properties: {
+
+                /**
+                 * Active account from AppsCo dashboard.
+                 */
+                account: {
+                    type: Object
+                },
+
+                /** Chat object with connect data. */
+                chat: {
+                    type: Object
+                },
+
+                /**
+                 * Authorization token
+                 */
+                authorizationToken: {
+                    type: String
+                },
+
+                /**
+                 * Notifications API link.
+                 */
+                notificationsApi: {
+                    type: String
+                },
+
+                /**
+                 * Number of notifications to load.
+                 */
+                notificationsSize: {
+                    type: Number,
+                    value: 5
+                },
+
+                /**
+                 * Indicates if there are new notifications.
+                 */
+                _newNotifications: {
+                    type: Boolean,
+                    value: false
+                }
+            },
+
+            _onChatAction: function(event) {
+                this.$$('#appscoAccountChat').toggleChat(event.target);
+            },
+
+            _onNewNotifications: function() {
+                this._newNotifications = true;
+            },
+
+            /**
+             * Handles notifications action.
+             *
+             * @private
+             */
+            _onNotificationsAction: function(event) {
+                this.$.appscoAccountNotificationsDropdown.toggleNotifications(event.target);
+            },
+
+            /**
+             * Handles notifications action when there are new notifications.
+             *
+             * @private
+             */
+            _onNewNotificationsAction: function(event) {
+                this._newNotifications = false;
+                this.$.appscoAccountNotificationsDropdown.toggleNotifications(event.target);
+            }
+
+        });
+    </script>
+</dom-module>

@@ -1,0 +1,238 @@
+<link rel="import" href="../polymer/polymer.html">
+
+<link rel="import" href="../iron-ajax/iron-ajax.html">
+<link rel="import" href="../iron-flex-layout/iron-flex-layout.html">
+<link rel="import" href="../paper-input/paper-input.html">
+<link rel="import" href="../paper-icon-button/paper-icon-button.html">
+<link rel="import" href="../iron-icon/iron-icon.html">
+<link rel="import" href="../iron-icons/iron-icons.html">
+<link rel="import" href="../paper-styles/typography.html">
+
+<link rel="import" href="../paper-listbox/paper-listbox.html">
+<link rel="import" href="../paper-item/paper-item.html">
+
+
+<link rel="import" href="../paper-dropdown-menu/paper-dropdown-menu.html">
+<link rel="import" href="appsco-application-add.html">
+
+<!--
+`appsco-application-actions`
+Actions related to applications page: New Application, Search, Filter, Edit (mode).
+- New Application - adding new app <appsco-application-add>.
+- Search: search added applications.
+- Filter: filter added applications.
+- Edit mode: make added applications in edit mode for reorder (drag and drop), select grouping.
+
+
+    <appsco-application-actions>
+    </appsco-application-actions>
+
+### Styling
+
+`<appsco-application-actions>` provides the following custom properties and mixins for styling:
+
+Custom property | Description | Default
+----------------|-------------|----------
+`--appsco-application-actions` | Mixin for the root element | `{}`
+`--add-application-button` | Mixin for add application action button | `{}`
+
+@demo demo/appsco-application-actions.html
+-->
+
+<dom-module id="appsco-application-actions">
+    <template>
+        <style>
+            :host {
+                display: inline-block;
+                position: relative;
+            @apply(--appsco-application-actions);
+            @apply(--layout-horizontal);
+            @apply(--layout-center);
+            }
+
+            :host paper-listbox.filter {
+                width: 230px;
+            }
+
+            :host div[action-item] {
+                margin-right: 10px;
+            }
+
+            :host paper-input#search {
+                max-width: 200px;
+            }
+
+            :host .clear-icon {
+                width: 25px;
+                height: 25px;
+                padding: 0;
+            }
+            :host .add-application-button {
+                @apply(--add-application-button);
+            }
+        </style>
+        <div action-item>
+            <paper-input label="Search applications" on-keyup="_search" id="search" no-label-float>
+                <div prefix>
+                    <iron-icon icon="search"></iron-icon>
+                </div>
+                <paper-icon-button class="clear-icon" id="clear" suffix icon="clear" hidden
+                                   on-tap="_clearSearch"></paper-icon-button>
+            </paper-input>
+        </div>
+        <div action-item>
+            <iron-ajax
+                    id="filterRequest"
+                    url="[[ filterApi ]]"
+                    on-response="_handleResponse"
+                    headers="{{ _computedHeaders }}"
+                    debounce-duration="300"
+                    ></iron-ajax>
+            <paper-dropdown-menu on-iron-select="_selected" no-label-float>
+                <paper-listbox class="dropdown-content filter" selected="0">
+                    <template is="dom-repeat" items="[[ _filterItems ]]">
+                        <paper-item value$="[[ item.value ]]" name$="[[ item.name ]]">[[ item.name ]]</paper-item>
+                    </template>
+                </paper-listbox>
+            </paper-dropdown-menu>
+        </div>
+        <div action-item>
+            <paper-icon-button id="edit" class="action-icon" icon="icons:flip-to-back" on-tap="_editMode"
+                               toggles></paper-icon-button>
+        </div>
+
+        <div action-item>
+            <paper-button
+                    class="add-application-button"
+                    on-tap="_onAddApplicationAction">Add application</paper-button>
+
+            <appsco-application-add
+                    id="appscoApplicationAdd"
+                    authorization-token="[[ authorizationToken ]]"
+                    applications-template-api="[[ applicationsTemplateApi ]]"
+                    dashboard-api="[[ dashboardApi ]]">
+            </appsco-application-add>
+        </div>
+    </template>
+
+    <script>
+        Polymer({
+
+            is: 'appsco-application-actions',
+
+            properties: {
+                authorizationToken: {
+                    type: String,
+                    value: ''
+                },
+                _computedHeaders: {
+                    type: Object,
+                    computed: "_computeHeaders(authorizationToken)"
+                },
+                /**
+                 * Link to retrieve filters from
+                 */
+                filterApi: {
+                    type: String,
+                    value: '',
+                    reflectToAttribute: true
+                },
+                _filterItems: {
+                    type: Array,
+                    value: function () {
+                        return [{name: "All applications", value: 0}];
+                    }
+                },
+
+                /**
+                 * Link to save application template.
+                 */
+                applicationsTemplateApi: {
+                    type: String,
+                    value: ''
+                },
+
+                /**
+                 * Link to get dashboard.
+                 */
+                dashboardApi: {
+                    type: String,
+                    value: ''
+                }
+            },
+            ready: function () {
+                this.$.filterRequest.generateRequest();
+            },
+            _selected: function (e) {
+                /**
+                 * Fired when filter is selected
+                 *
+                 * @event filtered
+                 * @param {Object} filter {id: filter_id, name: filter_name}
+                 */
+                this.fire('filtered', {
+                    id: e.detail.item.getAttribute('value'),
+                    name: e.detail.item.getAttribute('name')
+                })
+            },
+            _search: function () {
+                /**
+                 * Fired when user searches. Below 3 chars is empty
+                 *
+                 * @event search
+                 * @param {Object} filter {term: search_term}
+                 */
+                this.$.clear.hidden = !this.$.search.value;
+                if (this.$.search.value.length < 3) {
+                    this.fire('search', {
+                        term: ''
+                    });
+                    return;
+                }
+                this.fire('search', {
+                    term: this.$.search.value
+                });
+            },
+            _clearSearch: function () {
+                this.$.search.value = "";
+                this._search();
+            },
+            _editMode: function () {
+                this.$.edit.icon = this.$.edit.active ? "icons:flip-to-front" : "icons:flip-to-back";
+                /**
+                 * Fired when edit mode is on/off
+                 *
+                 * @event edit-mode
+                 * @param {Object} edit {active: edit_mode_active}
+                 */
+                this.fire("edit-mode", {
+                    active: this.$.edit.active
+                });
+            },
+            _handleResponse: function (e) {
+                var me = this;
+                e.detail.response.dashboards.forEach(function (el, index) {
+                    me.push("_filterItems", {
+                        name: el.title,
+                        value: el.alias
+                    })
+                });
+            },
+            _computeHeaders: function (authorizationToken) {
+                return {
+                    "Authorization": "token " + authorizationToken
+                }
+            },
+
+            /**
+             * Called on add aplication button tap.
+             * It opens the add application dialog.
+             *
+             * @private
+             */
+            _onAddApplicationAction: function() {
+                this.$.appscoApplicationAdd.toggle();
+            }
+        });
+    </script>
+</dom-module>

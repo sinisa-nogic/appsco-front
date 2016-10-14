@@ -7,6 +7,7 @@
 <link rel="import" href="../bower_components/appsco-application/appsco-application-details.html">
 <link rel="import" href="../bower_components/appsco-application/appsco-application-log.html">
 <link rel="import" href="../bower_components/appsco-application/appsco-application-share.html">
+<link rel="import" href="../bower_components/appsco-application/appsco-application-add.html">
 <link rel="import" href="../bower_components/paper-tabs/paper-tabs.html">
 
 <link rel="import" href="../bower_components/neon-animation/neon-animated-pages.html">
@@ -25,8 +26,30 @@
                 display: block;
 
                 --paper-tabs-selection-bar-color: var(--app-primary-color);
+                --info-width: 330px;
+                
+                --appsco-list-item-message: {
+                    font-size: 14px;
+                    @apply(--paper-font-common-nowrap);
+                };
+                
+                --account-log-appsco-list-item: {
+                    padding-top: 14px;
+                    padding-bottom: 8px;
+                };
+
+                --application-details-label: {
+                    font-size: 12px;
+                };
+                --application-details-value: {
+                    font-size: 14px;
+                };
+
             }
-            :host div[content] > *, :host div[info] > * {
+            :host div[content] > * {
+                padding: 10px 0 0 10px;
+            }
+            :host div[info] > * {
                 padding: 10px;
             }
             :host div[info] {
@@ -61,17 +84,19 @@
                 left: 0;
                 right: 0;
             }
-
-
-            :host .view-button {
-                /*border: 1px solid var(--border-color);*/
-                background-color: var(--app-primary-color);
+            :host .view-button, :host .share-button {
                 color: #ffffff;
                 border-radius: 0;
                 margin: 0 1px 0 0;
                 padding: 6px 12px;
                 font-size: 14px;
                 height: 34px;
+            }
+            :host .view-button {
+                background-color: var(--app-primary-color);
+            }
+            :host .share-button {
+                background-color: var(--app-secondary-color);
             }
             appsco-application-share {
                 --appsco-application-share-button: {
@@ -140,7 +165,6 @@
                         <paper-tab name="log">Log</paper-tab>
                     </paper-tabs>
 
-
                     <neon-animated-pages
                             selected="{{ _selectedTab }}"
                             entry-animation="fade-in-animation"
@@ -168,17 +192,31 @@
                         View
                     </paper-button>
 
-                    <appsco-application-share
-                            class="flex"
-                            application="[[ application ]]"
-                            authorization-token="1o833krv0s68osk4skckkwsgws844o480ko48wsco0k4o4kook4wnkgimtqyo0g0ko0g8wok4go40kgwgksw84wcs808wwcgg44"
-                            accounts-api="https://my-dev.appsco.com/api/v2/accounts"
-                            ></appsco-application-share>
+                    <paper-button
+                            class="share-button flex"
+                            on-tap="_onShareApplication">
+                        Share
+                    </paper-button>
                 </div>
 
             </div>
 
         </appsco-content>
+
+        <appsco-application-add
+                id="appscoApplicationAdd"
+                authorization-token="[[ authorizationToken ]]"
+                applications-template-api="[[ applicationsTemplateApi ]]"
+                dashboard-api="[[ dashboardApi ]]"
+                on-application-added="_onApplicationAdded">
+        </appsco-application-add>
+
+        <appsco-application-share
+                            id="appscoApplicationShare"
+                            application="[[ application ]]"
+                            authorization-token="1o833krv0s68osk4skckkwsgws844o480ko48wsco0k4o4kook4wnkgimtqyo0g0ko0g8wok4go40kgwgksw84wcs808wwcgg44"
+                            accounts-api="https://my-dev.appsco.com/api/v2/accounts"
+                            ></appsco-application-share>
 
     </template>
 
@@ -200,6 +238,27 @@
 
                 _selectedTab: {
                     type: Number
+                },
+
+                authorizationToken: {
+                    type: String,
+                    value: ''
+                },
+
+                /**
+                 * Link to save application template.
+                 */
+                applicationsTemplateApi: {
+                    type: String,
+                    value: ''
+                },
+
+                /**
+                 * Link to get dashboard.
+                 */
+                dashboardApi: {
+                    type: String,
+                    value: ''
                 }
             },
 
@@ -233,8 +292,8 @@
                 this.fire('view-application');
             },
 
-            addApplication: function(application) {
-                this.$.appscoApplications.addApplication(application);
+            _onShareApplication: function() {
+                this.$.appscoApplicationShare.toggle();
             },
 
             removeApplication: function(application) {
@@ -243,7 +302,17 @@
 
             _onApplicationRemoved: function() {
                 this.application = this.$.appscoApplications.getFirstApplication();
-            }
+            },
+
+            addApplication: function() {
+                this.$.appscoApplicationAdd.toggle();
+            },
+
+            _onApplicationAdded: function(event) {
+                var application = event.detail.application;
+
+                this.$.appscoApplications.addApplication(application);
+            },
         });
     </script>
 </dom-module>

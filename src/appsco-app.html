@@ -23,6 +23,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 <link rel="import" href="my-icons.html">
 
 <link rel="import" href="../bower_components/appsco-header/appsco-header.html">
+<link rel="import" href="../bower_components/appsco-header/appsco-account-chat.html">
 <link rel="import" href="../bower_components/appsco-page/appsco-page-global.html">
 <link rel="import" href="../bower_components/iron-flex-layout/iron-flex-layout.html">
 <link rel="import" href="../bower_components/paper-icon-button/paper-icon-button.html">
@@ -62,6 +63,13 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
                     color: #ffffff;
                  };
 
+                 --paper-icon-button: {
+                    padding: 0;
+                    width: 24px;
+                    height: 24px;
+                    margin-right: 4px;
+                 };
+
             }
 
             /* Top header style START */
@@ -90,8 +98,8 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
             app-header appsco-application-actions {
 
                 --add-application-button: {
-                     font-size: 14px;
-                     width: 150px;
+                     font-size: 12px;
+                     width: 120px;
                      border: 1px solid #ffffff;
                      padding: 4px 6px;
                      border-radius: 0;
@@ -121,9 +129,6 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
                      margin-right: 4px;
                  };
 
-                --iron-icon-width: 18px;
-                --iron-icon-height: 18px;
-
                 --paper-dropdown-menu-icon: {
                      color: #ffffff;
                      width: 22px;
@@ -149,6 +154,9 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
                      color: var(--primary-text-color);
                      background-color: #f5f8fa;
                  };
+            }
+            .page-title {
+                margin-right: 10px;
             }
             /* Bottom header style END */
 
@@ -187,9 +195,13 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
                 padding: 0 10px;
             }
             appsco-page-global {
-                /*border-left: 1px solid;*/
-                width: 25%;
+                padding-left: 20px;
+                margin-left: 10px;
+                border-left: 1px solid;
+                /*width: 320px;*/
                 text-align: right;
+
+                --appsco-page-global-action-color: #ffffff;
             }
             :host .flex-horizontal {
                 @apply(--layout-horizontal);
@@ -198,10 +210,6 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
             :host .flex {
                 @apply(--layout-flex);
             }
-            /*.actions {*/
-                /*height: 40px;*/
-                /*margin: 0 12px;*/
-            /*}*/
             .pages {
                 height: 100%;
             }
@@ -218,35 +226,19 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
         <paper-toast id="toast" text="[[ _toastMessage ]]"></paper-toast>
 
         <appsco-header
-                account='{
-                                "id": "1",
-                                "email": "john.doe@exampleemail.com",
-                                "first_name": "John",
-                                "last_name": "Doe",
-                                "locale": "Europe/Serbia",
-                                "gender": "m",
-                                "country": "RS",
-                                "phone": "null",
-                                "picture_url": "http://app-layout-assets.appspot.com/assets/PharrellWilliams.jpg",
-                                "info": "This account is managed by boutsourcing.com.",
-                                "intranet": "https://appsco.com"
-                            }'
-                brand-logo="http://appsco.loc/bundles/appscodashboardapproot/img/appsco-logo.png"
+                account="{{ account }}"
+                brand-logo="https://appsco.com/bundles/appscodashboardapproot/img/appsco-logo.png"
                 brand-logo-width="32"
                 brand-logo-height="32"
                 brand-title="AppsCo"
-                account-chat='{
-                            "auth": "auth code",
-                            "room": "room number",
-                            "service": "https://www.xxx.com",
-                            "active": "false"
-                          }'
                 authorization-token="1o833krv0s68osk4skckkwsgws844o480ko48wsco0k4o4kook4wnkgimtqyo0g0ko0g8wok4go40kgwgksw84wcs808wwcgg44"
                 notifications-api="https://my-dev.appsco.com/api/v2/notifications"
                 notifications-size="8"
+                account-chat
                 account-info="Info related to account"
                 account-display-name
-                product-partner>
+                product-partner
+                on-account-chat="_onAccountChat">
         </appsco-header>
 
         <app-drawer-layout fullbleed force-narrow>
@@ -263,10 +255,10 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
             <!-- Main content -->
             <app-header-layout has-scrolling-region>
 
-                <app-header condenses reveals effects="waterfall">
+                <app-header>
                     <app-toolbar class="flex-horizontal">
                         <paper-icon-button icon="menu" drawer-toggle></paper-icon-button>
-                        <div class="page-title" main-title>[[ page ]]</div>
+                        <div class="page-title" condense-title>[[ page ]]</div>
 
                         <neon-animated-pages
                                 class="actions flex flex-end"
@@ -281,7 +273,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
                                     filter-api="https://my-dev.appsco.com/api/v2/dashboards?extended=1"
                                     dashboard-api="https://my-dev.appsco.com/api/v2/dashboards/483"
                                     applications-template-api="https://my-dev.appsco.com/api/v2/applications"
-                                    on-application-added="_onApplicationAdded"
+                                    on-add-application="_onAddApplication"
                                     ></appsco-application-actions>
                             <my-view2-actions name="view2"></my-view2-actions>
                             <my-view3-actions name="view3"></my-view3-actions>
@@ -292,7 +284,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
                                 info
                                 sort
                                 settings
-                                on-on-info="_onInfoAction"></appsco-page-global>
+                                on-page-global-info="_onInfoAction"></appsco-page-global>
 
                         <!--<paper-button on-tap="_backToPreviousPage">Back to [[ _previousPage ]]</paper-button>-->
                     </app-toolbar>
@@ -303,14 +295,16 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
                         selected="[[page]]"
                         attr-for-selected="name"
                         fallback-selection="view404"
-                        role="main"
-                        entry-animation="fade-in-animation"
-                        exit-animation="fade-out-animation">
+                        role="main">
                     <appsco-applications-page
                             id="appscoApplicationsPage"
                             name="applications"
                             application="{{ application }}"
-                            on-view-application="_onViewApplication">
+                            authorization-token="[[ authorizationToken ]]"
+                            dashboard-api="[[ dashboardApi ]]"
+                            applications-template-api="[[ applicationsTemplateApi ]]"
+                            on-view-application="_onViewApplication"
+                            on-application-added="_onApplicationAdded">
                     </appsco-applications-page>
 
                     <appsco-application-page
@@ -324,6 +318,14 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
                 </neon-animated-pages>
             </app-header-layout>
         </app-drawer-layout>
+
+        <appsco-account-chat
+                id="appscoAccountChat"
+                account="{{ account }}"
+                chat="{{ chat }}"
+                dont-close-outside>
+        </appsco-account-chat>
+
     </template>
 
     <script>
@@ -337,14 +339,61 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
                     observer: '_pageChanged'
                 },
 
-                appscoApplicationsPage: {
-                    type: Boolean,
-                    value: false
+                account: {
+                    type: Object,
+                    value: function() {
+                        return {
+                            id: "1",
+                            email: "john.doe@exampleemail.com",
+                            first_name: "John",
+                            last_name: "Doe",
+                            locale: "Europe/Serbia",
+                            gender: "m",
+                            country: "RS",
+                            phone: "null",
+                            picture_url: "http://app-layout-assets.appspot.com/assets/PharrellWilliams.jpg",
+                            info: "This account is managed by boutsourcing.com.",
+                            intranet: "https://appsco.com"
+                        }
+                    }
+                },
+
+                chat: {
+                    type: Object,
+                    value: function() {
+                        return {
+                            auth: "auth code",
+                            room: "room number",
+                            service: "https://www.xxx.com",
+                            active: "false"
+                        }
+                    }
                 },
 
                 application: {
                     type: Object,
                     notify: true
+                },
+
+                authorizationToken: {
+                    type: String,
+                    value: '1o833krv0s68osk4skckkwsgws844o480ko48wsco0k4o4kook4wnkgimtqyo0g0ko0g8wok4go40kgwgksw84wcs808wwcgg44'
+                },
+
+                /**
+                 * Link to save application template.
+                 */
+                applicationsTemplateApi: {
+                    type: String,
+                    value: 'https://my-dev.appsco.com/api/v2/applications'
+                },
+
+                /**
+                 * Link to get dashboard.
+                 */
+                dashboardApi: {
+                    type: String,
+                    value: 'https://my-dev.appsco.com/api/v2/dashboards/483'
                 },
 
                 _globalActions: {
@@ -417,7 +466,11 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
             },
 
             _onViewApplication: function() {
+                var applicationLog = this.application.meta.log;
                 this.set('routeData.page', 'application');
+
+                this.set('application.meta.log', '');
+                this.set('application.meta.log', applicationLog);
             },
 
             _hideElements: function() {
@@ -444,10 +497,12 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 
             },
 
+            _onAddApplication: function() {
+                this.$.appscoApplicationsPage.addApplication();
+            },
+
             _onApplicationAdded: function(event) {
                 var application = event.detail.application;
-
-                this.$.appscoApplicationsPage.addApplication(application);
 
                 this._toastMessage = application.title + ' was successfully saved.';
                 this.$.toast.open();
@@ -468,6 +523,10 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 
                 this._toastMessage = application.title + ' was successfully changed.';
                 this.$.toast.open();
+            },
+
+            _onAccountChat: function(event) {
+                this.$.appscoAccountChat.toggleChat(event.target);
             }
         });
     </script>

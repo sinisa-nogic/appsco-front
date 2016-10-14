@@ -1,0 +1,234 @@
+<link rel="import" href="../bower_components/polymer/polymer.html">
+<link rel="import" href="../bower_components/appsco-page/appsco-content.html">
+<link rel="import" href="../bower_components/appsco-application/appsco-applications.html">
+<link rel="import" href="../bower_components/appsco-application/appsco-application-info.html">
+<link rel="import" href="../bower_components/appsco-application/appsco-application-security.html">
+<link rel="import" href="../bower_components/appsco-application/appsco-application-subscribers.html">
+<link rel="import" href="../bower_components/appsco-application/appsco-application-details.html">
+<link rel="import" href="../bower_components/appsco-application/appsco-application-log.html">
+<link rel="import" href="../bower_components/appsco-application/appsco-application-share.html">
+<link rel="import" href="../bower_components/paper-tabs/paper-tabs.html">
+
+<link rel="import" href="../bower_components/neon-animation/neon-animated-pages.html">
+<link rel="import" href="../bower_components/neon-animation/animations/fade-in-animation.html">
+<link rel="import" href="../bower_components/neon-animation/animations/fade-out-animation.html">
+
+<link rel="import" href="../bower_components/iron-flex-layout/iron-flex-layout.html">
+
+<link rel="import" href="shared-styles.html">
+
+<dom-module id="appsco-applications-page">
+    <template>
+        <style include="shared-styles">
+            :host {
+                display: block;
+
+                --paper-tabs-selection-bar-color: var(--app-primary-color);
+            }
+            :host div[content] > *, :host div[info] > * {
+                padding: 10px;
+            }
+            :host div[info] {
+                height: 100%;
+            }
+            :host div[info] .application-info {
+                padding-top: 20px;
+                padding-bottom: 20px;
+                border-bottom: 1px solid var(--app-primary-color);
+            }
+            :host appsco-application-security {
+                width: 32px;
+                height: 32px;
+                font-size: 14px;
+            }
+            :host div[info] appsco-application-subscribers {
+                padding-top: 20px;
+                padding-bottom: 0;
+                height: 65px;
+            }
+            :host div[info] .info-actions {
+                padding: 0;
+                position: absolute;
+                bottom: 0;
+                left: 0;
+                right: 0;
+            }
+            :host .view-button {
+                /*border: 1px solid var(--border-color);*/
+                background-color: var(--app-primary-color);
+                color: #ffffff;
+                border-radius: 0;
+                margin: 0 1px 0 0;
+                padding: 6px 12px;
+                font-size: 14px;
+                height: 34px;
+            }
+            appsco-application-share {
+                --appsco-application-share-button: {
+                     /*border: 1px solid var(--app-primary-color);*/
+                     border-radius: 0;
+                     margin: 0;
+                     padding: 6px 12px;
+                     background-color: var(--app-secondary-color);
+                     color: #ffffff;
+                     font-size: 14px;
+                     height: 34px;
+                 };
+            }
+            appsco-application-details {
+                --appsco-application-icons-color: var(--app-secondary-color);
+            }
+            :host .flex-horizontal {
+                @apply(--layout-horizontal);
+                @apply(--layout-center);
+            }
+            :host .flex-vertical {
+                @apply(--layout-vertical);
+            }
+            :host .flex {
+                @apply(--layout-flex);
+            }
+        </style>
+
+        <appsco-content id="appscoContent">
+
+            <div content>
+                <appsco-applications
+                        id="appscoApplications"
+                        size="6"
+                        load-more
+                        authorization-token="1o833krv0s68osk4skckkwsgws844o480ko48wsco0k4o4kook4wnkgimtqyo0g0ko0g8wok4go40kgwgksw84wcs808wwcgg44"
+                        applications-api="https://my-dev.appsco.com/api/v2/dashboards/483/icons"
+                        on-loaded="_onLoadedApplications"
+                        on-view="_onViewApplicationInfo"
+                        on-application-removed="_onApplicationRemoved"
+                        ></appsco-applications>
+            </div>
+
+            <div class="flex-vertical" info>
+
+                <div class="application-info flex-horizontal">
+                    <appsco-application-info
+                            class="flex"
+                            application="[[ application ]]">
+                    </appsco-application-info>
+
+                    <appsco-application-security strength="67"></appsco-application-security>
+                </div>
+
+                <appsco-application-subscribers
+                        application="[[ application ]]"
+                        authorization-token="1o833krv0s68osk4skckkwsgws844o480ko48wsco0k4o4kook4wnkgimtqyo0g0ko0g8wok4go40kgwgksw84wcs808wwcgg44">
+                </appsco-application-subscribers>
+
+                <div class="details-log flex-vertical">
+                    <paper-tabs id="paperTabs" selected="{{ _selectedTab }}">
+                        <paper-tab name="details">Details</paper-tab>
+                        <paper-tab name="log">Log</paper-tab>
+                    </paper-tabs>
+
+
+                    <neon-animated-pages
+                            selected="{{ _selectedTab }}"
+                            entry-animation="fade-in-animation"
+                            exit-animation="fade-out-animation">
+                        <div name="details">
+                            <appsco-application-details
+                                    application="[[ application ]]">
+                            </appsco-application-details>
+                        </div>
+                        <div name="log">
+                            <appsco-application-log
+                                    application-log="[[ application.meta.log ]]"
+                                    authorization-token="1o833krv0s68osk4skckkwsgws844o480ko48wsco0k4o4kook4wnkgimtqyo0g0ko0g8wok4go40kgwgksw84wcs808wwcgg44">
+                            </appsco-application-log>
+                        </div>
+                    </neon-animated-pages>
+                </div>
+
+                <div class="info-actions flex-horizontal">
+                    <paper-button
+                            class="view-button flex"
+                            on-tap="_onViewApplication">
+                        View
+                    </paper-button>
+
+                    <appsco-application-share
+                            class="flex"
+                            application="[[ application ]]"
+                            authorization-token="1o833krv0s68osk4skckkwsgws844o480ko48wsco0k4o4kook4wnkgimtqyo0g0ko0g8wok4go40kgwgksw84wcs808wwcgg44"
+                            accounts-api="https://my-dev.appsco.com/api/v2/accounts"
+                            ></appsco-application-share>
+                </div>
+
+            </div>
+
+        </appsco-content>
+
+    </template>
+
+    <script>
+        Polymer({
+            is: 'appsco-applications-page',
+
+            properties: {
+
+                application: {
+                    type: Object,
+                    notify: true
+                },
+
+                _infoShown: {
+                    type: Boolean,
+                    value: false
+                },
+
+                _selectedTab: {
+                    type: Number
+                }
+            },
+
+            toggleInfo: function() {
+                this.$.appscoContent.toggleInfo();
+                this._infoShown = !this._infoShown;
+
+                if (this._infoShown) {
+                    this._selectedTab = 0;
+                }
+            },
+
+            _onLoadedApplications: function(event) {
+
+                if (!this.application) {
+                    this.application = event.detail.applications[0];
+                }
+
+            },
+
+            _onViewApplicationInfo: function(event) {
+
+                if (!this._infoShown) {
+                    this.toggleInfo();
+                }
+
+                this.application = event.detail;
+            },
+
+            _onViewApplication: function() {
+                this.fire('view-application');
+            },
+
+            addApplication: function(application) {
+                this.$.appscoApplications.addApplication(application);
+            },
+
+            removeApplication: function(application) {
+                this.$.appscoApplications.removeApplication(application);
+            },
+
+            _onApplicationRemoved: function() {
+                this.application = this.$.appscoApplications.getFirstApplication();
+            }
+        });
+    </script>
+</dom-module>

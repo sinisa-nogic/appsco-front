@@ -7,6 +7,8 @@
 <link rel="import" href="../bower_components/appsco-application/appsco-application-details.html">
 <link rel="import" href="../bower_components/appsco-application/appsco-application-log.html">
 <link rel="import" href="../bower_components/appsco-application/appsco-application-settings.html">
+<link rel="import" href="../bower_components/appsco-application/appsco-application-share.html">
+<link rel="import" href="../bower_components/appsco-application/appsco-application-remove.html">
 
 <link rel="import" href="../bower_components/neon-animation/neon-animated-pages.html">
 <link rel="import" href="../bower_components/neon-animation/neon-animation-runner-behavior.html">
@@ -16,14 +18,11 @@
 
 <link rel="import" href="../bower_components/paper-tabs/paper-tabs.html">
 <link rel="import" href="../bower_components/paper-card/paper-card.html">
-
-<link rel="import" href="../bower_components/appsco-application/appsco-application-share.html">
-<link rel="import" href="../bower_components/appsco-application/appsco-application-subscribers.html">
-<link rel="import" href="../bower_components/appsco-application/appsco-application-remove.html">
+<link rel="import" href="../bower_components/paper-icon-button/paper-icon-button.html">
 <link rel="import" href="../bower_components/iron-image/iron-image.html">
 
 
-<link rel="import" href="application/appsco-application-details-page.html">
+<link rel="import" href="application/appsco-application-components-page.html">
 <link rel="import" href="application/appsco-application-settings-page.html">
 
 <link rel="import" href="shared-styles.html">
@@ -42,19 +41,30 @@
 
                 --resource-width: 300px;
             }
+            :host paper-icon-button::shadow paper-ripple {
+                width: 150%;
+                height: 150%;
+                top: -25%;
+                left: -25%;
+            }
             :host div[content], :host div[resource] {
                 padding: 10px;
             }
-            :host div[resource] .resource-header {
+            :host div[content] {
+                height: calc(100% - 20px);
+            }
+            :host .application-components, :host .application-components neon-animated-pages {
+                height: 100%;
+            }
+            :host .resource-header {
                 padding: 20px 10px 40px;
                 border-bottom: 1px solid var(--divider-color);
                 position: relative;
             }
-            :host appsco-application-share {
-                width: 90px;
+            :host .resource-header .action-share {
                 position: absolute;
-                top: 10px;
-                right: 10px;
+                top: 0;
+                right: 0;
             }
             :host .application-icon {
                 width: 64px;
@@ -95,7 +105,6 @@
             :host paper-card {
                 width: 400px;
             }
-
             :host .flex-horizontal {
                 @apply(--layout-horizontal);
                 @apply(--layout-center);
@@ -112,22 +121,12 @@
 
             <div class="flex-vertical" resource>
 
-                <!--<appsco-application-info-->
-                        <!--application="[[ application ]]">-->
-                <!--</appsco-application-info>-->
-
-                <!--<appsco-application-subscribers-->
-                        <!--size="5"-->
-                        <!--application="{{ application }}"-->
-                        <!--authorization-token="1o833krv0s68osk4skckkwsgws844o480ko48wsco0k4o4kook4wnkgimtqyo0g0ko0g8wok4go40kgwgksw84wcs808wwcgg44">-->
-                <!--</appsco-application-subscribers>-->
-
                 <div class="resource-header">
-                    <appsco-application-share
-                            application="[[ application ]]"
-                            authorization-token="1o833krv0s68osk4skckkwsgws844o480ko48wsco0k4o4kook4wnkgimtqyo0g0ko0g8wok4go40kgwgksw84wcs808wwcgg44"
-                            accounts-api="https://my-dev.appsco.com/api/v2/accounts"
-                            ></appsco-application-share>
+                    <paper-icon-button
+                            class="action-share"
+                            icon="social:share"
+                            title="Share"
+                            on-tap="_onShareApplication"></paper-icon-button>
 
                     <iron-image
                             class="application-icon"
@@ -153,9 +152,9 @@
 
                 <appsco-application-subscribers
                         application="[[ application ]]"
-                        authorization-token="1o833krv0s68osk4skckkwsgws844o480ko48wsco0k4o4kook4wnkgimtqyo0g0ko0g8wok4go40kgwgksw84wcs808wwcgg44">
+                        authorization-token="[[ authorizationToken ]]"
+                        size="5">
                 </appsco-application-subscribers>
-
 
                 <div class="resource-actions flex-horizontal">
                     <paper-button
@@ -171,33 +170,27 @@
                     </paper-button>
                 </div>
 
-                <appsco-application-remove
-                        id="appscoApplicationRemove"
-                        application="[[ application ]]"
-                        authorization-token="1o833krv0s68osk4skckkwsgws844o480ko48wsco0k4o4kook4wnkgimtqyo0g0ko0g8wok4go40kgwgksw84wcs808wwcgg44"
-                        ></appsco-application-remove>
-
             </div>
 
             <div content>
 
-                <div class="application-details">
+                <div class="application-components">
                     <neon-animated-pages class="flex"
                                          selected="{{ _selected }}"
                                          attr-for-selected="name">
 
-                        <appsco-application-details-page
-                                id="appscoApplicationDetailsPage"
-                                name="appsco-application-details-page"
+                        <appsco-application-components-page
+                                id="appscoApplicationComponentsPage"
+                                name="appsco-application-components-page"
                                 application="{{ application }}"
                                 on-application-settings="_onApplicationSettings">
-                        </appsco-application-details-page>
+                        </appsco-application-components-page>
 
                         <appsco-application-settings-page
                                 id="appscoApplicationSettingsPage"
                                 name="appsco-application-settings-page"
                                 application="{{ application }}"
-                                authorization-token="1o833krv0s68osk4skckkwsgws844o480ko48wsco0k4o4kook4wnkgimtqyo0g0ko0g8wok4go40kgwgksw84wcs808wwcgg44"
+                                authorization-token="[[ authorizationToken ]]"
                                 on-application-settings-saved="_onApplicationSettingsSaved"
                                 on-back="_onResourceBack">
                         </appsco-application-settings-page>
@@ -205,10 +198,19 @@
                     </neon-animated-pages>
                 </div>
 
+                <appsco-application-share
+                        id="appscoApplicationShare"
+                        application="[[ application ]]"
+                        authorization-token="[[ authorizationToken ]]"
+                        accounts-api="[[ accountsApi ]]"
+                        ></appsco-application-share>
 
-
+                <appsco-application-remove
+                        id="appscoApplicationRemove"
+                        application="[[ application ]]"
+                        authorization-token="[[ authorizationToken ]]"
+                        ></appsco-application-remove>
             </div>
-
         </appsco-content>
 
     </template>
@@ -231,9 +233,22 @@
                  */
                 _selected: {
                     type: String,
-                    value: 'appsco-application-details-page',
+                    value: 'appsco-application-components-page',
                     notify: true
-                }
+                },
+
+                authorizationToken: {
+                    type: String,
+                    value: ''
+                },
+
+                /**
+                 * Get accounts link.
+                 */
+                accountsApi: {
+                    type: String,
+                    value: ''
+                },
             },
 
             _onApplicationSettings: function() {
@@ -249,11 +264,15 @@
             },
 
             _showApplicationDetailsPage: function() {
-                this._selected = 'appsco-application-details-page';
+                this._selected = 'appsco-application-components-page';
+            },
+
+            _onShareApplication: function() {
+                this.$.appscoApplicationShare.toggle();
             },
 
             _onRemoveApplication: function() {
-                    this.$.appscoApplicationRemove.open();
+                this.$.appscoApplicationRemove.open();
             }
         });
     </script>

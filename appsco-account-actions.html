@@ -1,7 +1,6 @@
 <link rel="import" href="../polymer/polymer.html">
 <link rel="import" href="../paper-icon-button/paper-icon-button.html">
 
-<link rel="import" href="appsco-account-chat.html">
 <link rel="import" href="appsco-account-notifications-dropdown.html">
 
 <!--
@@ -12,8 +11,8 @@ Example:
 
     <body>
       <appsco-account-actions
-            chat={}
-            intranet="url_to_website">
+            intranet="url_to_website"
+            chat>
      </appsco-account-actions>
 
 
@@ -34,6 +33,8 @@ Custom property | Description | Default
             :host {
                 display: inline-block;
 
+                --paper-icon-button-ink-color: var(--appsco-account-action-color);
+
                 @apply(--appsco-account-actions);
             }
             :host a {
@@ -44,11 +45,16 @@ Custom property | Description | Default
             :host a:active .action-icon,
             :host a:visited .action-icon {
                 color: var(--appsco-account-action-color);
-                --paper-icon-button-ink-color: var(--appsco-account-action-color);
             }
             :host .new-notifications-icon {
                 color: var(--appsco-account-new-notifications-color, --primary-color);
                 --paper-icon-button-ink-color: var(--appsco-account-new-notifications-color, --primary-color);
+            }
+            :host paper-icon-button::shadow paper-ripple {
+                width: 150%;
+                height: 150%;
+                top: -25%;
+                left: -25%;
             }
         </style>
 
@@ -71,13 +77,6 @@ Custom property | Description | Default
                         title="Chat"
                         on-tap="_onChatAction">
                 </paper-icon-button>
-
-                <appsco-account-chat
-                        id="appscoAccountChat"
-                        account="[[ account ]]"
-                        chat="[[ chat ]]"
-                        dont-close-outside>
-                </appsco-account-chat>
             </template>
 
             <template is="dom-if" if="[[ _newNotifications ]]">
@@ -126,9 +125,10 @@ Custom property | Description | Default
                     type: Object
                 },
 
-                /** Chat object with connect data. */
+                /** Indicates if chat exists or not. */
                 chat: {
-                    type: Object
+                    type: Boolean,
+                    value: false
                 },
 
                 /**
@@ -162,8 +162,19 @@ Custom property | Description | Default
                 }
             },
 
+            /**
+             * Fires an event after chat action is tapped.
+             *
+             * @private
+             */
             _onChatAction: function(event) {
-                this.$$('#appscoAccountChat').toggleChat(event.target);
+                
+            /**
+             * Fired after chat action is tapped.
+             *
+             * @event account-chat
+             */
+                this.fire('account-chat');
             },
 
             _onNewNotifications: function() {

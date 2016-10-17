@@ -4,8 +4,8 @@
 <link rel="import" href="../iron-flex-layout/iron-flex-layout.html">
 
 <link rel="import" href="../paper-button/paper-button.html">
+<link rel="import" href="../paper-progress/paper-progress.html">
 <link rel="import" href="appsco-application-item.html">
-<link rel="import" href="../appsco-components/appsco-loader.html">
 
 <!--
 `appsco-applications`
@@ -35,31 +35,49 @@ Custom property | Description | Default
             :host {
                 display: inline-block;
                 position: relative;
-                @apply(--appsco-applications);
-                @apply(--layout-vertical);
-                @apply(--layout-center);
-                --appsco-applications-item: {
-                     margin: 0 10px 10px 0;
-                 };
+            @apply(--appsco-applications);
+            @apply(--layout-vertical);
+            @apply(--layout-center);
+            --appsco-applications-item: {
+                 margin: 0 10px 10px 0;
+             };
             }
 
             :host div[applications] {
-                @apply(--layout-horizontal);
-                @apply(--layout-wrap);
-                @apply(--layout-start);
+            @apply(--layout-horizontal);
+            @apply(--layout-wrap);
+            @apply(--layout-start);
                 width: 100%;
             }
 
             :host appsco-application-item {
-                @apply(--appsco-applications-item);
+            @apply(--appsco-applications-item);
             }
 
             :host .applications-container {
                 width: 100%;
+                min-height: 160px;
+                position: relative;
+            }
+            :host appsco-loader {
+                background-color: rgba(255, 255, 255, 0.4);
+            }
+            :host .load-more-box {
+                margin-top: 10px;
+                padding-top: 4px;
+                position: relative;
+            }
+            :host paper-progress {
+                width: 100%;
+                position: absolute;
+                top: 0;
+                left: 0;
+            }
+            :host paper-button {
+                padding: 6px 12px;
+                margin: 0;
             }
         </style>
-
-        <appsco-loader active="[[ _loader ]]" loader-alt="Loading applications" multi-color></appsco-loader>
 
         <div class="applications-container">
             <iron-ajax
@@ -70,6 +88,7 @@ Custom property | Description | Default
                     headers="{{ _computedHeaders }}"
                     debounce-duration="300"
                     ></iron-ajax>
+
             <div applications>
                 <template is="dom-repeat" items="{{ _applications }}">
                     <appsco-application-item
@@ -81,7 +100,8 @@ Custom property | Description | Default
             </div>
         </div>
 
-        <div>
+        <div class="load-more-box">
+            <paper-progress id="paperProgress" indeterminate></paper-progress>
             <paper-button on-tap="_loadMoreApps" id="loadMore" hidden$="[[ !_loadMore ]]">Load More</paper-button>
         </div>
     </template>
@@ -140,31 +160,24 @@ Custom property | Description | Default
                 },
                 _next: {
                     type: String
-                },
-
-                /**
-                 * Indicates if appsco-loader is shown or hidden.
-                 */
-                _loader: {
-                    type: Boolean,
-                    value: false
                 }
             },
             ready: function () {
                 this._currentUrl = this.applicationsApi + "?page=1&extended=1&limit=" + this.size;
             },
+
             _loadMoreApps: function () {
-                this._loader = true;
+                this.$.paperProgress.hidden = false;
                 this._currentUrl = this._next;
             },
             _handleResponse: function (e) {
                 var me = this,
-                        icons = e.detail.response.icons,
-                        iconsCount = icons.length -1;
+                        response = e.detail.response,
+                        icons = response.icons,
+                        meta = response.meta,
+                        iconsCount = icons.length - 1;
 
-                me._loader = false;
-
-                this._next = e.detail.response.meta.next + "&limit=" + this.size;
+                this._next = meta.next + "&limit=" + this.size;
 
                 icons.forEach(function (el, index) {
 
@@ -174,6 +187,14 @@ Custom property | Description | Default
 
                         if (index == iconsCount) {
                             me._loadMore = me.loadMore;
+
+                            if (me._applications.length === meta.total) {
+                                me._loadMore = false;
+                            }
+
+                            setTimeout(function() {
+                                me.$.paperProgress.hidden = true;
+                            }, 300);
 
                             /**
                              * Fired when applications are loaded

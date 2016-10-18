@@ -196,6 +196,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
                 border-left: 1px solid;
                 /*width: 320px;*/
                 text-align: right;
+                display: none;
 
                 --appsco-page-global-action-color: #ffffff;
             }
@@ -208,6 +209,11 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
             }
             .pages {
                 height: 100%;
+            }
+            .back-to-page {
+                @apply(--layout-horizontal);
+                @apply(--layout-center);
+                @apply(--layout-end-justified);
             }
         </style>
 
@@ -223,7 +229,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 
         <appsco-header
                 account="{{ account }}"
-                brand-logo="https://appsco.com/bundles/appscodashboardapproot/img/appsco-logo.png"
+                brand-logo="data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiIHN0YW5kYWxvbmU9Im5vIj8+PHN2ZyB3aWR0aD0iMjhweCIgaGVpZ2h0PSIyOHB4IiB2aWV3Qm94PSIwIDAgMjggMjgiIHZlcnNpb249IjEuMSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiB4bWxuczp4bGluaz0iaHR0cDovL3d3dy53My5vcmcvMTk5OS94bGluayI+ICAgICAgICA8dGl0bGU+QXBwc0NvLWxvZ288L3RpdGxlPiAgICA8ZGVzYz5DcmVhdGVkIHdpdGggU2tldGNoLjwvZGVzYz4gICAgPGRlZnM+PC9kZWZzPiAgICA8ZyBpZD0iUGFnZS0xIiBzdHJva2U9Im5vbmUiIHN0cm9rZS13aWR0aD0iMSIgZmlsbD0ibm9uZSIgZmlsbC1ydWxlPSJldmVub2RkIj4gICAgICAgIDxnIGlkPSJBcHBzQ28tbG9nbyI+ICAgICAgICAgICAgPGcgaWQ9Ikdyb3VwIj4gICAgICAgICAgICAgICAgPHJlY3QgaWQ9IlJlY3RhbmdsZS0yIiBmaWxsPSIjMjA5QkMzIiB4PSIwIiB5PSIxNSIgd2lkdGg9IjEzIiBoZWlnaHQ9IjEzIj48L3JlY3Q+ICAgICAgICAgICAgICAgIDxyZWN0IGlkPSJSZWN0YW5nbGUtMi1Db3B5IiBmaWxsPSIjODhCOTU1IiB4PSIxNSIgeT0iMCIgd2lkdGg9IjEzIiBoZWlnaHQ9IjEzIj48L3JlY3Q+ICAgICAgICAgICAgICAgIDxyZWN0IGlkPSJSZWN0YW5nbGUtMi1Db3B5LTIiIGZpbGw9IiNFNkQwMjUiIHg9IjE1IiB5PSIxNSIgd2lkdGg9IjEwIiBoZWlnaHQ9IjEwIj48L3JlY3Q+ICAgICAgICAgICAgICAgIDxyZWN0IGlkPSJSZWN0YW5nbGUtMi1Db3B5LTMiIGZpbGw9IiNEODNEODIiIHg9IjMiIHk9IjMiIHdpZHRoPSIxMCIgaGVpZ2h0PSIxMCI+PC9yZWN0PiAgICAgICAgICAgIDwvZz4gICAgICAgIDwvZz4gICAgPC9nPjwvc3ZnPg=="
                 brand-logo-width="32"
                 brand-logo-height="32"
                 brand-title="AppsCo"
@@ -259,7 +265,9 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
                         <neon-animated-pages
                                 class="actions flex flex-end"
                                 selected="[[page]]"
-                                attr-for-selected="name">
+                                attr-for-selected="name"
+                                entry-animation="fade-in-animation"
+                                exit-animation="fade-out-animation">
                             <appsco-application-actions
                                     id="actions"
                                     name="applications"
@@ -268,6 +276,14 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
                                     filter-api="[[ applicationsFilterApi ]]"
                                     on-add-application="_onAddApplication"
                                     ></appsco-application-actions>
+                            <div name="application"
+                                 id="backToPage"
+                                 class="back-to-page">
+                                <paper-icon-button
+                                        icon="arrow-back"
+                                        title="Back"
+                                        on-tap="_backToApplications">Back to applications</paper-icon-button>
+                            </div>
                         </neon-animated-pages>
 
                         <appsco-page-global
@@ -276,8 +292,6 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
                                 sort
                                 settings
                                 on-page-global-info="_onInfoAction"></appsco-page-global>
-
-                        <!--<paper-button on-tap="_backToPreviousPage">Back to [[ _previousPage ]]</paper-button>-->
                     </app-toolbar>
                 </app-header>
 
@@ -286,7 +300,9 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
                         selected="[[page]]"
                         attr-for-selected="name"
                         fallback-selection="404"
-                        role="main">
+                        role="main"
+                        entry-animation="fade-in-animation"
+                        exit-animation="fade-out-animation">
                     <appsco-applications-page
                             id="appscoApplicationsPage"
                             name="applications"
@@ -468,7 +484,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
                                 name: 'fade-out-animation',
                                 node: this.$.appscoPageGlobal,
                                 timing: {
-                                    duration: 200
+                                    duration: 300
                                 }
                             }
                         }
@@ -505,6 +521,11 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
                 this.page = '404';
             },
 
+            _backToApplications: function() {
+                this.set('routeData.page', 'applications');
+                this.$.backToPage.style.display = 'none';
+            },
+
             /**
              * Computes authorization headers.
              *
@@ -524,6 +545,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 
             _onViewApplication: function() {
                 var applicationLog = this.application.meta.log;
+                this.$.backToPage.style.display = 'flex';
                 this.set('routeData.page', 'application');
 
                 this.set('application.meta.log', '');
@@ -535,13 +557,13 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
                 if (this.page === 'applications') {
                     this._globalActions = true;
 
-                    this.$.appscoPageGlobal.style.display = 'inline-block';
+                    this.$.appscoPageGlobal.style.display = 'flex';
                     this.playAnimation('entry');
                 }
                 else {
                     this._globalActions = false;
-
-                    this.playAnimation('exit');
+                    this.$.appscoPageGlobal.style.display = 'none';
+//                    this.playAnimation('exit');
                 }
 
             },

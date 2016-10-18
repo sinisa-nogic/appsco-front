@@ -25,6 +25,8 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 <link rel="import" href="../bower_components/appsco-header/appsco-header.html">
 <link rel="import" href="../bower_components/appsco-header/appsco-account-chat.html">
 <link rel="import" href="../bower_components/appsco-page/appsco-page-global.html">
+<link rel="import" href="../bower_components/appsco-components/appsco-api.html">
+
 <link rel="import" href="../bower_components/iron-flex-layout/iron-flex-layout.html">
 <link rel="import" href="../bower_components/paper-icon-button/paper-icon-button.html">
 <link rel="import" href="../bower_components/neon-animation/neon-animated-pages.html">
@@ -45,7 +47,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
     <template>
         <style>
             :host {
-                --app-primary-color: #00b4ff;
+                --app-primary-color: #34c2d7;
                 --app-secondary-color: #273441;
                 --app-danger-color: #ff0000;
 
@@ -153,6 +155,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
             }
             .page-title {
                 margin-right: 10px;
+                text-transform: capitalize;
             }
             /* Bottom header style END */
 
@@ -217,6 +220,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
             }
         </style>
 
+        <appsco-api id="api" domain="http://appsco.loc" index="app_dev.php" name="{{ api }}"></appsco-api>
         <app-location route="{{route}}"></app-location>
 
         <app-route
@@ -234,7 +238,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
                 brand-logo-height="32"
                 brand-title="AppsCo"
                 authorization-token="[[ authorizationToken ]]"
-                notifications-api="[[ notificationsApi ]]"
+                notifications-api="[[ api.notifications ]]"
                 notifications-size="5"
                 account-chat
                 account-info="Info related to account"
@@ -249,8 +253,8 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
             <app-drawer id="appDrawer" persistent>
                 <iron-selector selected="[[page]]" attr-for-selected="name" class="drawer-list" role="navigation">
                     <a name="applications" href="/applications">Applications</a>
-                    <a name="application" href="/application">Account</a>
-                    <a name="vault" href="/vault">Vault</a>
+                    <!--<a name="application" href="/application">Account</a>-->
+                    <!--<a name="vault" href="/vault">Vault</a>-->
                 </iron-selector>
             </app-drawer>
 
@@ -273,8 +277,10 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
                                     name="applications"
                                     application="[[ application ]]"
                                     authorization-token="[[ authorizationToken ]]"
-                                    filter-api="[[ applicationsFilterApi ]]"
+                                    filter-api="[[ api.dashboards ]]?extended=1"
                                     on-add-application="_onAddApplication"
+                                    on-search="_searchApplications"
+                                    on-filtered="_filteredApplications"
                                     ></appsco-application-actions>
                             <div name="application"
                                  id="backToPage"
@@ -308,9 +314,9 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
                             name="applications"
                             application="{{ application }}"
                             authorization-token="[[ authorizationToken ]]"
-                            dashboard-api="[[ dashboardApi ]]"
-                            applications-template-api="[[ applicationsTemplateApi ]]"
-                            accounts-api="[[ accountsApi ]]"
+                            dashboard-api="[[ addAppApi ]]"
+                            applications-template-api="[[ api.applicationTemplates ]]"
+                            accounts-api="[[ api.accounts ]]"
                             applications-api="[[ applicationsApi ]]"
                             on-view-application="_onViewApplication"
                             on-application-added="_onApplicationAdded">
@@ -320,7 +326,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
                             name="application"
                             application="{{ application }}"
                             authorization-token="[[ authorizationToken ]]"
-                            accounts-api="[[ accountsApi ]]"
+                            accounts-api="[[ api.accounts ]]"
                             on-application-removed="_onApplicationRemoved"
                             on-application-settings-saved="_onApplicationSettingsSaved">
                     </appsco-application-page>
@@ -338,11 +344,17 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 
         <iron-ajax
                 auto
-                url="[[ accountApi ]]"
+                url="[[ api.me ]]"
                 on-response="_onGetAccountResponse"
                 headers="{{ _computedHeaders }}">
         </iron-ajax>
 
+        <iron-ajax
+                auto
+                url="[[ api.dashboards ]]?extended=1"
+                on-response="_onDashboardsResponse"
+                headers="{{ _computedHeaders }}">
+        </iron-ajax>
     </template>
 
     <script>
@@ -354,6 +366,12 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
                     type: String,
                     reflectToAttribute: true,
                     observer: '_pageChanged'
+                },
+
+                api: {
+                    type: Object,
+                    value: function () { return {}; },
+                    notify: true
                 },
 
                 account: {
@@ -397,63 +415,17 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
                  */
                 authorizationToken: {
                     type: String,
-                    value: '1o833krv0s68osk4skckkwsgws844o480ko48wsco0k4o4kook4wnkgimtqyo0g0ko0g8wok4go40kgwgksw84wcs808wwcgg44'
+                    value: 'rtlXv2jBLh_nDsmYrHhAmT2GyfUt7PBslcBfe8Cwx0QDsHQlkV211SlnmKVxqtzvuJxSfDDvjVUQHkRKOIWRJ8'
                 },
 
-                /**
-                 * Link to get account.
-                 */
-                accountApi: {
+                addAppApi: {
                     type: String,
-                    value: 'https://my-dev.appsco.com/api/v2/me'
+                    value: ''
                 },
 
-                /**
-                 * Link to save application template.
-                 */
-                applicationsTemplateApi: {
-                    type: String,
-                    value: 'https://my-dev.appsco.com/api/v2/applications'
-                },
-
-                /**
-                 * Link to get dashboard.
-                 */
-                dashboardApi: {
-                    type: String,
-                    value: 'https://my-dev.appsco.com/api/v2/dashboards/483'
-                },
-
-                /**
-                 * Filter applications by group link.
-                 */
-                applicationsFilterApi: {
-                    type: String,
-                    value: 'https://my-dev.appsco.com/api/v2/dashboards?extended=1'
-                },
-
-                /**
-                 * Get notifications link.
-                 */
-                notificationsApi: {
-                    type: String,
-                    value: 'https://my-dev.appsco.com/api/v2/notifications'
-                },
-
-                /**
-                 * Get accounts link.
-                 */
-                accountsApi: {
-                    type: String,
-                    value: 'https://my-dev.appsco.com/api/v2/accounts'
-                },
-
-                /**
-                 * Get applications from dashboard link.
-                 */
                 applicationsApi: {
                     type: String,
-                    value: 'https://my-dev.appsco.com/api/v2/dashboards/483/icons'
+                    value: ''
                 },
 
                 _globalActions: {
@@ -501,7 +473,18 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
             ],
 
             listeners: {
-                'neon-animation-finish': '_onNeonAnimationFinish'
+                'neon-animation-finish': '_onNeonAnimationFinish',
+                'api-changed': "_apiChanged"
+            },
+
+            _apiChanged: function () {
+                this.applicationsApi = this.api.applications +"?extended=1";
+            },
+
+            _onDashboardsResponse: function (e) {
+                if(e.detail.response) {
+                    this.addAppApi = e.detail.response.dashboards[0].self;
+                }
             },
 
             _routePageChanged: function(page) {
@@ -613,6 +596,19 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 
                 // For testing purposes
                 this.set('account.intranet', 'https://appsco.com');
+            },
+            _searchApplications: function (e) {
+                this.$.appscoApplicationsPage.filterApplications(e.detail.term);
+            },
+            _filteredApplications: function (e) {
+                switch(parseInt(e.detail.id)) {
+                    case 0:
+                        this.applicationsApi = this.api.applications +"?extended=1";
+                        break;
+                    default:
+                        this.applicationsApi = this.api.dashboards + "/" + e.detail.id + "/icons";
+                }
+                console.log(this.applicationsApi);
             }
         });
     </script>

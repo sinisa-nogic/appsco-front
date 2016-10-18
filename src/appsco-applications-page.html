@@ -151,50 +151,69 @@
                     <appsco-application-security strength="67"></appsco-application-security>
                 </div>
 
-                <appsco-application-subscribers
-                        application="[[ application ]]"
-                        authorization-token="[[ authorizationToken ]]">
-                </appsco-application-subscribers>
+                <template is="dom-if" if="[[ application.owner ]]">
+                    <appsco-application-subscribers
+                            application="[[ application ]]"
+                            authorization-token="[[ authorizationToken ]]">
+                    </appsco-application-subscribers>
+                </template>
+                <template is="dom-if" if="[[ !application.owner ]]">
+                    <p>This is shared application</p>
+                </template>
 
                 <div class="details-log flex-vertical">
-                    <paper-tabs id="paperTabs" selected="{{ _selectedTab }}">
-                        <paper-tab name="details">Details</paper-tab>
-                        <paper-tab name="log">Log</paper-tab>
-                    </paper-tabs>
+                    <template is="dom-if" if="[[ application.owner ]]">
+                        <paper-tabs id="paperTabs" selected="{{ _selectedTab }}">
+                            <paper-tab name="details">Details</paper-tab>
+                            <paper-tab name="log">Log</paper-tab>
+                        </paper-tabs>
 
-                    <neon-animated-pages
-                            selected="{{ _selectedTab }}"
-                            entry-animation="fade-in-animation"
-                            exit-animation="fade-out-animation"
-                            class="info-details-section"
-                    >
+                        <neon-animated-pages
+                                selected="{{ _selectedTab }}"
+                                entry-animation="fade-in-animation"
+                                exit-animation="fade-out-animation"
+                                class="info-details-section"
+                        >
+                            <div name="details">
+                                <appsco-application-details
+                                        application="[[ application ]]">
+                                </appsco-application-details>
+                            </div>
+
+                                <div name="log" class="log">
+                                    <appsco-application-log
+                                            application-log="[[ application.meta.log ]]"
+                                            authorization-token="[[ authorizationToken ]]">
+                                    </appsco-application-log>
+                                </div>
+
+
+                        </neon-animated-pages>
+                    </template>
+                    <template is="dom-if" if="[[ !application.owner ]]">
                         <div name="details">
                             <appsco-application-details
                                     application="[[ application ]]">
                             </appsco-application-details>
                         </div>
-                        <div name="log" class="log">
-                            <appsco-application-log
-                                    application-log="[[ application.meta.log ]]"
-                                    authorization-token="[[ authorizationToken ]]">
-                            </appsco-application-log>
-                        </div>
-                    </neon-animated-pages>
+                    </template>
                 </div>
 
-                <div class="info-actions flex-horizontal">
-                    <paper-button
-                            class="view-button flex"
-                            on-tap="_onViewApplication">
-                        View
-                    </paper-button>
+                <template is="dom-if" if="[[ application.owner ]]">
+                    <div class="info-actions flex-horizontal">
+                        <paper-button
+                                class="view-button flex"
+                                on-tap="_onViewApplication">
+                            View
+                        </paper-button>
 
-                    <paper-button
-                            class="share-button flex"
-                            on-tap="_onShareApplication">
-                        Share
-                    </paper-button>
-                </div>
+                        <paper-button
+                                class="share-button flex"
+                                on-tap="_onShareApplication">
+                            Share
+                        </paper-button>
+                    </div>
+                </template>
 
             </div>
 
@@ -272,6 +291,13 @@
                 applicationsApi: {
                     type: String,
                     value: ''
+                },
+
+                _applications: {
+                    type: Array,
+                    value: function () {
+                        return [];
+                    }
                 }
             },
 
@@ -326,6 +352,20 @@
 
                 this.$.appscoApplications.addApplication(application);
             },
+
+            filterApplications: function (term) {
+                var me = this;
+                if (this._applications.length == 0) {
+                    this._applications = JSON.parse(JSON.stringify(this.$.appscoApplications._applications));
+                }
+                me.$.appscoApplications.set('_applications', []);
+                me._applications.forEach(function (elem, i) {
+                    if (elem.title.toLowerCase().indexOf(term.toLowerCase()) >= 0) {
+                        var oldElem = JSON.parse(JSON.stringify(elem));
+                        me.$.appscoApplications.push('_applications', oldElem);
+                    }
+                });
+            }
         });
     </script>
 </dom-module>

@@ -35,23 +35,23 @@ Custom property | Description | Default
             :host {
                 display: inline-block;
                 position: relative;
-            @apply(--appsco-applications);
-            @apply(--layout-vertical);
-            @apply(--layout-center);
-            --appsco-applications-item: {
-                 margin: 0 10px 10px 0;
-             };
+                @apply(--appsco-applications);
+                @apply(--layout-vertical);
+                @apply(--layout-center);
+                --appsco-applications-item: {
+                    margin: 0 10px 10px 0;
+                };
             }
 
             :host div[applications] {
-            @apply(--layout-horizontal);
-            @apply(--layout-wrap);
-            @apply(--layout-start);
+                @apply(--layout-horizontal);
+                @apply(--layout-wrap);
+                @apply(--layout-start);
                 width: 100%;
             }
 
             :host appsco-application-item {
-            @apply(--appsco-applications-item);
+                @apply(--appsco-applications-item);
             }
 
             :host .applications-container {
@@ -87,7 +87,7 @@ Custom property | Description | Default
                     on-response="_handleResponse"
                     headers="{{ _computedHeaders }}"
                     debounce-duration="300"
-                    ></iron-ajax>
+            ></iron-ajax>
 
             <div applications>
                 <template is="dom-repeat" items="{{ _applications }}">
@@ -95,7 +95,7 @@ Custom property | Description | Default
                             id="appscoApplicationItem_[[ index ]]"
                             class="applicationitem"
                             application="{{ item }}"
-                            ></appsco-application-item>
+                    ></appsco-application-item>
                 </template>
             </div>
         </div>
@@ -122,7 +122,8 @@ Custom property | Description | Default
                 applicationsApi: {
                     type: String,
                     value: '',
-                    reflectToAttribute: true
+                    reflectToAttribute: true,
+                    notify: true
                 },
                 /**
                  * Number of application items to load and present
@@ -162,8 +163,16 @@ Custom property | Description | Default
                     type: String
                 }
             },
+            listeners: {
+                'applications-api-changed': "_changedApplicationsApi"
+            },
             ready: function () {
                 this._currentUrl = this.applicationsApi + "?page=1&extended=1&limit=" + this.size;
+            },
+
+            _changedApplicationsApi: function () {
+                this._currentUrl = this.applicationsApi + "?page=1&extended=1&limit=" + this.size;
+                this.set('_applications', []);
             },
 
             _loadMoreApps: function () {

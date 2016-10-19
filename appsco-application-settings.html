@@ -3,9 +3,10 @@
 <link rel="import" href="../paper-input/paper-input.html">
 <link rel="import" href="../paper-input/paper-textarea.html">
 <link rel="import" href="../paper-styles/typography.html">
-
 <link rel="import" href="../paper-button/paper-button.html">
 <link rel="import" href="../iron-ajax/iron-request.html">
+
+<link rel="import" href="../appsco-components/appsco-loader.html">
 
 <!--
 `appsco-application-settings`
@@ -31,15 +32,17 @@ Custom property | Description | Default
             :host {
                 display: block;
                 position: relative;
-                @apply(--appsco-application-settings);
+            @apply(--appsco-application-settings);
             }
             :host paper-textarea {
-                @apply(--paper-font-common-nowrap);
+            @apply(--paper-font-common-nowrap);
             }
             :host paper-button {
                 margin: 10px 0 0 0;
             }
         </style>
+
+        <appsco-loader active="[[ _loader ]]" loader-alt="Appsco is saving application" multi-color></appsco-loader>
 
         <paper-input
                 id="title"
@@ -96,22 +99,38 @@ Custom property | Description | Default
                 authorizationToken: {
                     type: String,
                     value: ''
+                },
+
+                _loader: {
+                    type: Boolean,
+                    value: false
                 }
             },
             _submit: function () {
+
+                this._loader = true;
+
                 this.$.submit.disabled = true;
                 this.message = "";
                 var me = this;
-                this._submitApplicationConfigure().then(function (application) {
-                    me._submitNewClaims(application).then(function (app) {
-                        if (false != app) {
-                            me.application = app;
-                        }
-                        me.$.submit.disabled = false;
+                this._submitApplicationConfigure().then(function (app) {
+                    me._submitNewClaims(app).then(function(app) {
 
-                        me.fire('application-settings-saved', {
-                            application: app
-                        });
+                        me.$.submit.disabled = false;
+                        me._loader = false;
+
+                        if (!app) {
+                            me.fire('application-settings-no-changes', {
+                                application: me.application
+                            });
+                        }
+                        else {
+                            me.application = app;
+
+                            me.fire('application-settings-saved', {
+                                application: app
+                            });
+                        }
                     });
                 });
             },

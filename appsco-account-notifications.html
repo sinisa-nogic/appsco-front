@@ -3,8 +3,8 @@
 <link rel="import" href="../paper-card/paper-card.html">
 <link rel="import" href="../paper-button/paper-button.html">
 <link rel="import" href="../iron-ajax/iron-ajax.html">
+<link rel="import" href="../paper-progress/paper-progress.html">
 
-<link rel="import" href="../appsco-components/appsco-loader.html">
 <link rel="import" href="../appsco-components/appsco-list-item.html">
 
 <!--
@@ -33,14 +33,14 @@ Example:
                 position: relative;
                 width: 100%;
 
-                --paper-card-actions: {
-                     padding: 0;
-                 };
-                --paper-card-content: {
-                     padding: 0;
-                 };
+            --paper-card-actions: {
+                 padding: 0;
+             };
+            --paper-card-content: {
+                 padding: 0;
+             };
 
-                @apply(--appsco-account-notifications);
+            @apply(--appsco-account-notifications);
             }
             :host appsco-list-item {
                 font-size: 14px;
@@ -50,7 +50,7 @@ Example:
                 width: 100%;
             }
             :host paper-button {
-                @apply(--paper-font-button);
+            @apply(--paper-font-button);
                 line-height: normal;
             }
             :host .see-all-button {
@@ -65,24 +65,35 @@ Example:
             :host .message {
                 padding: 8px 16px;
                 font-style: italic;
-                @apply(--paper-font-body2);
+            @apply(--paper-font-body2);
+            }
+            :host .card-content {
+                position: relative;
+            }
+            :host paper-progress {
+                position: absolute;
+                top: -8px;
+                left: 0;
+                right: 0;
+                margin: auto;
+                width: 94%;
             }
         </style>
 
         <paper-card heading="Notifications" class="layout vertical">
 
-            <appsco-loader active="[[ _loader ]]" loader-alt="Loading notifications" multi-color></appsco-loader>
-
             <div class="card-content layout vertical">
 
+                <paper-progress id="progress" indeterminate></paper-progress>
+
                 <iron-ajax
-                    id="ironAjaxNotifications"
-                    url="{{ _computedUrl }}"
-                    method="GET"
-                    headers="{{ _computedHeaders }}"
-                    handle-as="json"
-                    on-error="_handleError"
-                    on-response="_handleResponse">
+                        id="ironAjaxNotifications"
+                        url="{{ _computedUrl }}"
+                        method="GET"
+                        headers="{{ _computedHeaders }}"
+                        handle-as="json"
+                        on-error="_handleError"
+                        on-response="_handleResponse">
                 </iron-ajax>
 
                 <template is="dom-repeat" items="{{ _notifications }}">
@@ -182,14 +193,6 @@ Example:
                  */
                 _message: {
                     type: String
-                },
-
-                /**
-                 * Indicates if appsco-loader is shown or hidden.
-                 */
-                _loader: {
-                    type: Boolean,
-                    value: false
                 }
             },
 
@@ -278,7 +281,7 @@ Example:
              * Triggers ajax request in order to get notifications.
              */
             loadNotifications: function() {
-                this._loader = true;
+                this.$.progress.hidden = false;
                 this._notifications = [];
                 this._notificationsExists = false;
                 this.$.ironAjaxNotifications.generateRequest();
@@ -292,7 +295,7 @@ Example:
              */
             _handleError: function(event) {
                 this._message = 'We couldn\'t load notifications at the moment. Please try again in a minute. If error continues contact us.';
-                this._loader = false;
+                this._hideProgressBar();
             },
 
             /**
@@ -314,6 +317,7 @@ Example:
 
                             if (i === (notifications.length - 1)) {
                                 this._notificationsExists = true;
+                                this._hideProgressBar();
                             }
 
                         }.bind(this), (i + 1) * 50 );
@@ -327,9 +331,12 @@ Example:
                 else {
                     this._message = 'We couldn\'t load notifications at the moment.';
                 }
+            },
 
-                this._loader = false;
-
+            _hideProgressBar: function() {
+                setTimeout(function() {
+                    this.$.progress.hidden = true;
+                }.bind(this), 500);
             }
 
         });

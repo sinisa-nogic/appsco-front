@@ -43,10 +43,10 @@ Custom property | Description | Default
             :host {
                 display: inline-block;
                 position: relative;
-                @apply(--appsco-application-actions);
-                @apply(--layout-horizontal);
-                @apply(--layout-center);
-                @apply(--layout-end-justified);
+            @apply(--appsco-application-actions);
+            @apply(--layout-horizontal);
+            @apply(--layout-center);
+            @apply(--layout-end-justified);
             }
             :host .action-search paper-input {
                 max-width: 184px;
@@ -70,10 +70,10 @@ Custom property | Description | Default
                 padding: 0;
             }
             :host .add-application-button {
-                @apply(--add-application-button);
+            @apply(--add-application-button);
             }
             :host .flex-none {
-                @apply(--layout-flex-none);
+            @apply(--layout-flex-none);
             }
         </style>
         <div action-item class="action-search flex-none">
@@ -81,8 +81,12 @@ Custom property | Description | Default
                 <div prefix>
                     <iron-icon icon="search"></iron-icon>
                 </div>
-                <paper-icon-button class="clear-icon" id="clear" suffix icon="clear" hidden
-                                   on-tap="_clearSearch"></paper-icon-button>
+
+                <template is="dom-if" if="[[ _clear ]]">
+                    <paper-icon-button class="clear-icon" id="clear" suffix icon="clear"
+                                       on-tap="_clearSearch"></paper-icon-button>
+                </template>
+
             </paper-input>
         </div>
         <div action-item class="flex-none">
@@ -93,7 +97,7 @@ Custom property | Description | Default
                     on-response="_handleResponse"
                     headers="{{ _computedHeaders }}"
                     debounce-duration="300"
-            ></iron-ajax>
+                    ></iron-ajax>
             <paper-dropdown-menu on-iron-select="_selected" no-label-float>
                 <paper-listbox class="dropdown-content filter" selected="0">
                     <template is="dom-repeat" items="[[ _filterItems ]]">
@@ -141,6 +145,11 @@ Custom property | Description | Default
                     value: function () {
                         return [{name: "All applications", value: 0}];
                     }
+                },
+
+                _clear: {
+                    type: Boolean,
+                    value: false
                 }
             },
             ready: function () {
@@ -153,25 +162,28 @@ Custom property | Description | Default
                  * @event filtered
                  * @param {Object} filter {id: filter_id, name: filter_name}
                  */
-                this.fire('filtered', {
+                this.fire('group-selected', {
                     id: e.detail.item.getAttribute('value'),
                     name: e.detail.item.getAttribute('name')
                 })
             },
             _search: function () {
-                /**
-                 * Fired when user searches. Below 3 chars is empty
-                 *
-                 * @event search
-                 * @param {Object} filter {term: search_term}
-                 */
-                this.$.clear.hidden = !this.$.search.value;
+
+                this.set('_clear', (this.$.search.value.length > 0));
+
                 if (this.$.search.value.length < 3) {
                     this.fire('search', {
                         term: ''
                     });
                     return;
                 }
+
+                /**
+                 * Fired when user searches. Below 3 chars is empty
+                 *
+                 * @event search
+                 * @param {Object} filter {term: search_term}
+                 */
                 this.fire('search', {
                     term: this.$.search.value
                 });
@@ -193,13 +205,19 @@ Custom property | Description | Default
                 });
             },
             _handleResponse: function (e) {
-                var me = this;
-                e.detail.response.dashboards.forEach(function (el, index) {
-                    me.push("_filterItems", {
-                        name: el.title,
-                        value: el.role_id
-                    })
-                });
+                var me = this,
+                        response = e.detail.response;
+
+                if (response) {
+
+                    response.dashboards.forEach(function(el, index) {
+                        me.push("_filterItems", {
+                            name: el.title,
+                            value: el.role_id
+                        })
+                    });
+
+                }
             },
             _computeHeaders: function (authorizationToken) {
                 return {

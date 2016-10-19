@@ -35,23 +35,23 @@ Custom property | Description | Default
             :host {
                 display: inline-block;
                 position: relative;
-                @apply(--appsco-applications);
-                @apply(--layout-vertical);
-                @apply(--layout-center);
-                --appsco-applications-item: {
-                    margin: 0 10px 10px 0;
-                };
+            @apply(--appsco-applications);
+            @apply(--layout-vertical);
+            @apply(--layout-center);
+            --appsco-applications-item: {
+                 margin: 0 10px 10px 0;
+             };
             }
 
             :host div[applications] {
-                @apply(--layout-horizontal);
-                @apply(--layout-wrap);
-                @apply(--layout-start);
+            @apply(--layout-horizontal);
+            @apply(--layout-wrap);
+            @apply(--layout-start);
                 width: 100%;
             }
 
             :host appsco-application-item {
-                @apply(--appsco-applications-item);
+            @apply(--appsco-applications-item);
             }
 
             :host .applications-container {
@@ -68,6 +68,7 @@ Custom property | Description | Default
                 position: relative;
             }
             :host paper-progress {
+                min-width: 100px;
                 width: 100%;
                 position: absolute;
                 top: 0;
@@ -76,6 +77,10 @@ Custom property | Description | Default
             :host paper-button {
                 padding: 6px 12px;
                 margin: 0;
+            }
+            :host .message {
+                font-style: italic;
+                opacity: 0.5;
             }
         </style>
 
@@ -87,23 +92,31 @@ Custom property | Description | Default
                     on-response="_handleResponse"
                     headers="{{ _computedHeaders }}"
                     debounce-duration="300"
-            ></iron-ajax>
+                    ></iron-ajax>
 
-            <div applications>
-                <template is="dom-repeat" items="{{ _applications }}">
-                    <appsco-application-item
-                            id="appscoApplicationItem_[[ index ]]"
-                            class="applicationitem"
-                            application="{{ item }}"
-                    ></appsco-application-item>
-                </template>
+            <template is="dom-if" if="[[ _applicationsEmpty ]]">
+                <p class="message">There are no applications with asked term.</p>
+            </template>
+
+            <template is="dom-if" if="[[ !_applicationsEmpty ]]">
+                <div applications>
+                    <template is="dom-repeat" items="{{ _applications }}">
+                        <appsco-application-item
+                                id="appscoApplicationItem_[[ index ]]"
+                                class="applicationitem"
+                                application="{{ item }}"
+                                ></appsco-application-item>
+                    </template>
+                </div>
+            </template>
+        </div>
+
+        <template is="dom-if" if="[[ !_applicationsEmpty ]]">
+            <div class="load-more-box">
+                <paper-progress id="paperProgress" indeterminate></paper-progress>
+                <paper-button on-tap="_loadMoreApps" id="loadMore" hidden$="[[ !_loadMore ]]">Load More</paper-button>
             </div>
-        </div>
-
-        <div class="load-more-box">
-            <paper-progress id="paperProgress" indeterminate></paper-progress>
-            <paper-button on-tap="_loadMoreApps" id="loadMore" hidden$="[[ !_loadMore ]]">Load More</paper-button>
-        </div>
+        </template>
     </template>
 
     <script>
@@ -153,14 +166,33 @@ Custom property | Description | Default
                     type: Array,
                     value: function () {
                         return [];
+                    },
+                    notify: true
+                },
+
+                _allApplications: {
+                    type: Array,
+                    value: function () {
+                        return [];
                     }
                 },
+
+                _applicationsEmpty: {
+                    type: Boolean,
+                    value: false
+                },
+
                 _currentUrl: {
                     type: String,
                     notify: true
                 },
                 _next: {
                     type: String
+                },
+
+                _totalApplications: {
+                    type: Number,
+                    value: 0
                 }
             },
             listeners: {
@@ -171,12 +203,14 @@ Custom property | Description | Default
             },
 
             _changedApplicationsApi: function () {
+                this.$$('#paperProgress').hidden = false;
+                this._loadMore = false;
                 this._currentUrl = this.applicationsApi + "?page=1&extended=1&limit=" + this.size;
                 this.set('_applications', []);
             },
 
             _loadMoreApps: function () {
-                this.$.paperProgress.hidden = false;
+                this.$$('#paperProgress').hidden = false;
                 this._currentUrl = this._next;
             },
             _handleResponse: function (e) {
@@ -186,6 +220,7 @@ Custom property | Description | Default
                         meta = response.meta,
                         iconsCount = icons.length - 1;
 
+                this._totalApplications = meta.total;
                 this._next = meta.next + "&limit=" + this.size;
 
                 icons.forEach(function (el, index) {
@@ -202,7 +237,7 @@ Custom property | Description | Default
                             }
 
                             setTimeout(function() {
-                                me.$.paperProgress.hidden = true;
+                                me.$$('#paperProgress').hidden = true;
                             }, 300);
 
                             /**
@@ -241,6 +276,43 @@ Custom property | Description | Default
 
             getFirstApplication: function() {
                 return this._applications[0];
+            },
+
+            filterApplicationsByTerm: function(term) {
+                var length = this._allApplications.length;
+
+                this.$$('#paperProgress').hidden = false;
+
+                if (length < this._applications.length) {
+                    this._allApplications = JSON.parse(JSON.stringify(this._applications));
+                    length = this._allApplications.length;
+                }
+
+                this.set('_applications', []);
+
+                this._allApplications.forEach(function(elem, index) {
+
+                    if (elem.title.toLowerCase().indexOf(term.toLowerCase()) >= 0) {
+                        var oldElem = JSON.parse(JSON.stringify(elem));
+
+                        this.addApplication(oldElem);
+                    }
+
+                    if (index === length - 1) {
+                        this._applicationsEmpty = (this._applications.length === 0);
+
+                        setTimeout(function() {
+                            this.$$('#paperProgress').hidden = true;
+                        }.bind(this), 300);
+                    }
+
+                }.bind(this));
+
+                this._loadMore = false;
+
+                if (term.length < 3 && this._applications.length < this._totalApplications) {
+                    this._loadMore = true;
+                }
             }
         });
     </script>

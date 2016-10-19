@@ -19,7 +19,6 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 <link rel="import" href="../bower_components/app-route/app-route.html">
 <link rel="import" href="../bower_components/iron-pages/iron-pages.html">
 <link rel="import" href="../bower_components/iron-selector/iron-selector.html">
-<link rel="import" href="../bower_components/paper-icon-button/paper-icon-button.html">
 <link rel="import" href="my-icons.html">
 
 <link rel="import" href="../bower_components/appsco-header/appsco-header.html">
@@ -50,6 +49,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
                 --app-primary-color: #34c2d7;
                 --app-secondary-color: #273441;
                 --app-danger-color: #ff0000;
+                --body-background-color: #f5f8fa;
 
                 display: block;
 
@@ -67,7 +67,6 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
                     height: 24px;
                     margin-right: 6px;
                  };
-
             }
 
             /* Top header style START */
@@ -187,8 +186,6 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
                      padding-top: 0;
                      @apply(--shadow-elevation-2dp);
                  };
-
-                --app-drawer-scrim-background: none;
             }
             app-toolbar {
                 padding: 0 10px;
@@ -220,7 +217,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
             }
         </style>
 
-        <appsco-api id="api" domain="http://appsco.loc" index="app_dev.php" name="{{ api }}"></appsco-api>
+        <appsco-api id="api" domain="https://my-dev.appsco.com" index="" name="{{ api }}"></appsco-api>
         <app-location route="{{route}}"></app-location>
 
         <app-route
@@ -250,7 +247,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
         <app-drawer-layout fullbleed force-narrow>
 
              <!--Drawer content -->
-            <app-drawer id="appDrawer" persistent>
+            <app-drawer id="appDrawer">
                 <iron-selector selected="[[page]]" attr-for-selected="name" class="drawer-list" role="navigation">
                     <a name="applications" href="/applications">Applications</a>
                     <!--<a name="application" href="/application">Account</a>-->
@@ -280,7 +277,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
                                     filter-api="[[ api.dashboards ]]?extended=1"
                                     on-add-application="_onAddApplication"
                                     on-search="_searchApplications"
-                                    on-filtered="_filteredApplications"
+                                    on-group-selected="_onGroupSelected"
                                     ></appsco-application-actions>
                             <div name="application"
                                  id="backToPage"
@@ -319,7 +316,8 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
                             accounts-api="[[ api.accounts ]]"
                             applications-api="[[ applicationsApi ]]"
                             on-view-application="_onViewApplication"
-                            on-application-added="_onApplicationAdded">
+                            on-application-added="_onApplicationAdded"
+                            on-application-shared="_onApplicationShared">
                     </appsco-applications-page>
 
                     <appsco-application-page
@@ -328,7 +326,9 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
                             authorization-token="[[ authorizationToken ]]"
                             accounts-api="[[ api.accounts ]]"
                             on-application-removed="_onApplicationRemoved"
-                            on-application-settings-saved="_onApplicationSettingsSaved">
+                            on-application-settings-saved="_onApplicationSettingsSaved"
+                            on-application-settings-no-changes="_onApplicationSettingsNoChanges"
+                            on-application-shared="_onApplicationShared">
                     </appsco-application-page>
                     <appsco-404-page name="404"></appsco-404-page>
                 </neon-animated-pages>
@@ -531,7 +531,6 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
                 this.$.backToPage.style.display = 'flex';
                 this.set('routeData.page', 'application');
 
-                this.set('application.meta.log', '');
                 this.set('application.meta.log', applicationLog);
             },
 
@@ -581,9 +580,12 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
             },
 
             _onApplicationSettingsSaved: function(event) {
-                var application = event.detail.application;
+                this._toastMessage = event.detail.application.title + ' was successfully changed.';
+                this.$.toast.open();
+            },
 
-                this._toastMessage = application.title + ' was successfully changed.';
+            _onApplicationSettingsNoChanges: function(event) {
+                this._toastMessage = 'No changes have been made to ' + event.detail.application.title + '.';
                 this.$.toast.open();
             },
 
@@ -597,18 +599,38 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
                 // For testing purposes
                 this.set('account.intranet', 'https://appsco.com');
             },
-            _searchApplications: function (e) {
-                this.$.appscoApplicationsPage.filterApplications(e.detail.term);
+
+            _searchApplications: function(event) {
+                this.$.appscoApplicationsPage.filterApplicationsByTerm(event.detail.term);
             },
-            _filteredApplications: function (e) {
-                switch(parseInt(e.detail.id)) {
+
+            _onGroupSelected: function(event) {
+                var id = parseInt(event.detail.id);
+
+                switch(id) {
                     case 0:
                         this.applicationsApi = this.api.applications +"?extended=1";
                         break;
                     default:
-                        this.applicationsApi = this.api.dashboards + "/" + e.detail.id + "/icons";
+                        this.applicationsApi = this.api.dashboards + "/" + id + "/icons";
                 }
-                console.log(this.applicationsApi);
+
+            },
+
+            _onApplicationShared: function(event) {
+                var application = event.detail.application,
+                    applicationLogApi = application.meta.log;
+
+                // In order to notify.
+                this.set('application', {});
+                this.set('application', application);
+
+                // In order to notify appsco-application-log.
+                this.set('application.meta.log', '');
+                this.set('application.meta.log', applicationLogApi);
+
+                this._toastMessage = 'You successfully shared ' + this.application.title + '.';
+                this.$.toast.open();
             }
         });
     </script>

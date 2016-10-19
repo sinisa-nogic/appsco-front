@@ -264,13 +264,12 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
                         <div class="page-title" condense-title>[[ page ]]</div>
 
                         <neon-animated-pages
+                                id="animatedActions"
                                 class="actions flex flex-end"
                                 selected="[[page]]"
-                                attr-for-selected="name"
-                                entry-animation="fade-in-animation"
-                                exit-animation="fade-out-animation">
+                                attr-for-selected="name">
                             <appsco-application-actions
-                                    id="actions"
+                                    id="appscoApplicationActions"
                                     name="applications"
                                     application="[[ application ]]"
                                     authorization-token="[[ authorizationToken ]]"
@@ -304,8 +303,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
                         attr-for-selected="name"
                         fallback-selection="404"
                         role="main"
-                        entry-animation="fade-in-animation"
-                        exit-animation="fade-out-animation">
+                        on-neon-animation-finish="_onPageAnimationFinish">
                     <appsco-applications-page
                             id="appscoApplicationsPage"
                             name="applications"
@@ -445,20 +443,44 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
                     type: Object,
                     value: function() {
                         return {
-                            'entry': {
+                            entry: [{
                                 name: 'fade-in-animation',
                                 node: this.$.appscoPageGlobal,
                                 timing: {
                                     duration: 300
                                 }
-                            },
-                            'exit': {
-                                name: 'fade-out-animation',
-                                node: this.$.appscoPageGlobal,
+                            }, {
+                                name: 'fade-in-animation',
+                                node: this.$.appscoApplicationActions,
                                 timing: {
                                     duration: 300
                                 }
-                            }
+                            }, {
+                                name: 'fade-in-animation',
+                                node: this.$.backToPage,
+                                timing: {
+                                    duration: 300
+                                }
+                            }],
+                            exit: [{
+                                name: 'fade-out-animation',
+                                node: this.$.appscoPageGlobal,
+                                timing: {
+                                    duration: 200
+                                }
+                            }, {
+                                name: 'fade-out-animation',
+                                node: this.$.appscoApplicationActions,
+                                timing: {
+                                    duration: 200
+                                }
+                            }, {
+                                name: 'fade-out-animation',
+                                node: this.$.backToPage,
+                                timing: {
+                                    duration: 200
+                                }
+                            }]
                         }
                     }
                 }
@@ -506,7 +528,6 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 
             _backToApplications: function() {
                 this.set('routeData.page', 'applications');
-                this.$.backToPage.style.display = 'none';
             },
 
             /**
@@ -522,15 +543,14 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
                 }
             },
 
-            _onInfoAction: function(e) {
+            _onInfoAction: function() {
                 this.$.appscoApplicationsPage.toggleInfo();
             },
 
             _onViewApplication: function() {
                 var applicationLog = this.application.meta.log;
-                this.$.backToPage.style.display = 'flex';
-                this.set('routeData.page', 'application');
 
+                this.set('routeData.page', 'application');
                 this.set('application.meta.log', applicationLog);
             },
 
@@ -631,6 +651,37 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 
                 this._toastMessage = 'You successfully shared ' + this.application.title + '.';
                 this.$.toast.open();
+            },
+
+            _onPageAnimationFinish: function(event) {
+                var fromPage = event.detail.fromPage,
+                    toPage = event.detail.toPage;
+
+                switch(fromPage.getAttribute('name')) {
+                    case 'applications':
+                        fromPage.toggleInfo();
+                        break;
+
+                    case 'application':
+                        fromPage.initializePage();
+                        break;
+
+                    default:
+                        break;
+                }
+
+                switch(toPage.getAttribute('name')) {
+                    case 'applications':
+                        toPage.setDefaultApplication();
+                        break;
+
+                    case 'application':
+                        break;
+
+                    default:
+                        break;
+                }
+
             }
         });
     </script>

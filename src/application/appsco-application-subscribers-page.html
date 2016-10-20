@@ -1,0 +1,228 @@
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../bower_components/iron-flex-layout/iron-flex-layout.html">
+
+<link rel="import" href="../../bower_components/neon-animation/neon-shared-element-animatable-behavior.html">
+<link rel="import" href="../../bower_components/neon-animation/animations/hero-animation.html">
+<link rel="import" href="../../bower_components/neon-animation/animations/fade-in-animation.html">
+<link rel="import" href="../../bower_components/neon-animation/animations/fade-out-animation.html">
+
+<link rel="import" href="../../bower_components/appsco-application/appsco-application-subscribers.html">
+<link rel="import" href="../../bower_components/appsco-components/appsco-list-item.html">
+<link rel="import" href="../../bower_components/paper-card/paper-card.html">
+<link rel="import" href="../../bower_components/paper-icon-button/paper-icon-button.html">
+<link rel="import" href="../../bower_components/paper-button/paper-button.html">
+
+<dom-module id="appsco-application-subscribers-page">
+    <template>
+        <style>
+            :host {
+                display: block;
+                height: 100%;
+                overflow: hidden;
+                position: relative;
+                font-size: 14px
+
+                --paper-card-header: {
+                     border-bottom: 1px solid var(--divider-color);
+                 };
+            }
+            :host paper-card {
+                width: 100%;
+                height: 100%;
+                background-color: #ffffff;
+                overflow-y: auto;
+            }
+            :host paper-icon-button {
+                color: var(--app-secondary-color);
+                position: absolute;
+                top: 10px;
+                right: 10px;
+                width: 24px;
+                height: 24px;
+            }
+            :host appsco-application-subscribers {
+                display: none;
+            }
+            :host appsco-list-item {
+                padding-top: 10px;
+            }
+            :host appsco-list-item:first-of-type {
+                border-top: none;
+            }
+            .total-subscribers {
+                margin-bottom: 10px;
+                display: block;
+            }
+            :host paper-button {
+                display: block;
+                width: 120px;
+                margin: 20px auto 0;
+                text-align: center;
+            }
+        </style>
+
+        <appsco-application-subscribers
+                id="appscoApplicationSubscribers"
+                application="[[ application ]]"
+                authorization-token="[[ authorizationToken ]]"
+                size="5"
+                on-subscribers-load="_onSubscribersLoad"
+                hidden>
+        </appsco-application-subscribers>
+
+        <paper-card heading="Subscribers" id="card">
+            <paper-icon-button
+                    icon="close"
+                    title="Back"
+                    on-tap="_back"></paper-icon-button>
+
+            <div class="card-content layout vertical">
+
+                <div hidden$="[[ !_totalSubscribers ]]">
+                    <span class="total-subscribers">Total subscribers: [[ _totalSubscribers ]]</span>
+                </div>
+
+                <template is="dom-repeat" items="{{ _subscribers }}">
+
+                    <appsco-list-item
+                            item="[[ _mapToListItem(item) ]]"></appsco-list-item>
+
+                </template>
+
+                <paper-button on-tap="_loadMore" id="loadMore" hidden="[[ !loadMore ]]">Load More</paper-button>
+
+            </div>
+        </paper-card>
+
+    </template>
+
+    <script>
+        Polymer({
+
+            is: 'appsco-application-subscribers-page',
+
+            properties: {
+
+                /**
+                 * Selected application from search list.
+                 */
+                application: {
+                    type: Object,
+                    notify: true
+                },
+
+                authorizationToken: {
+                    type: String,
+                    value: ''
+                },
+
+                _subscribers: {
+                    type: Array,
+                    value: function() {
+                        return [];
+                    },
+                    notify: true
+                },
+
+                _totalSubscribers: {
+                    type: Number
+                },
+
+                _placeholder: {
+                    type: String,
+                    value: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIwAAACMCAMAAACZHrEMAAAAqFBMVEUAAAAnNEEnNEEnNEEnNEEnNEE8rPcnNEEnNEEnNUI8rPc8rPc8rPcnNEEnNEEnNEEnNEEnNEE8rPc8rPc8rPc8rPcnNEE8rPcnNEE8rPcnNEH///88rPeTmqAoPlDJzNBdZ3Hx8/WBiI+us7g0gLUuWno1QU1OtPjk5+kxbZg9TFtswfprc3w6oebX2ds3lNO8wMShpqxQWmWu3fye1vszeKfU7f6Nz/toHOtWAAAAGnRSTlMAnyC/EO+fYEDPYO26r4+AcFA9IIAQ388wUFlk1w8AAASsSURBVHjazNbdqqtADAXg+XEYvajam1JWkFYLIiIb2/d/uHPgwPam7kmM7p7vCRbJJBmzXR4r6z2w8N5WMTe/7FrbAqsKW1/N73DxFJAUTtGZg7m6AFtRH5gnix5CPmbmCK4M2CCU+5cnt9jM5vtG8VDx+8VxFmp2n2ZlFXZRZUbtfMFOLmdtWU7Y0SlTlSVgV2F7cbISuys3FscVOEDhzAZ5wCFCbsQiDhONkMWB7BFZ+qmZb/TtNjdTr0ijyNJ3M70xd70wjT5L37S0om16SRp9lqmlH7QTP40+y4MSHsI0+izHp4ncLPo00STkSOqIpUNSYhe7gJSxJZZ2REpw5gdZIWmSvlFFZtaVSBqJbURSaVadkfYktifSzqtNCkgbiG1AWlhr1AlpLxJ4Ie20vUnoSKDD1kZlFzDMJDCD4fKuURU4vkjgCxzVm3UHFhIBi+Pfx+PDWNFNWtxJ5I6F4Eb5T4bxzMLow8hLYz8bxrJGSR9GPlDlp8OUzAupDyO7lxFcI4mM4IqcudYvPeF0O3w+zPcTrsEkP5R8tfmnAN+NBG7gK+RdwpMEnhBwiVnS//QEYuLrq100dyyYn+EAvnEigWkEXzB/XcH3IKEH+K6ywe5IrANbvfwetHOtn24r2zIDiQ0ABJsGfLQB+JYPp/oW6C9CbiKA/+PNIJoKfA2JNeCrjAXfRGIT+KzxECCxHnxeFmYmoRkC3iBB16cOEgYiA4m0SFCFaY6bJXmYvhUVpoeIgUyjKIwijP4kDD0StGFef2g1t50GgSCABrSBPhj7aHDcGgPZkk0lFlr+/880PDhpaumc4pwvONnN7ly35ks6VAAiw0c84FiADHjgPI9ZLvOx/LfjMrxnz6sULsMDZnUPGigJu6VxYHnUVrb/meCpDEiu3GUyTTsJb4ZAwHkGCbm7TAFKFXeZEhRx7jKgvHWXWYPCHzXTvipOBloi7k97A5pF7jIv2kZDfDrIrECD0T1QPoHWq7tMAZrSMJ85VJRc2/WId4fkag0GGbB44r/eBox44ACB/3o5GH6xb4a/7Yf71m1D0xoK7l3bhApQ8IFpaI6dSHw1EEW6o1lo9QhHyaHtZCJZZJJMdK36GBfBcqvJROxvu/RRROw+OVg/aGo5Iw7zW69DlDPqhiytlLOHspdLUn/62+TUJ7lkP3s8pXFlJdRyjfgrpCJjlGvUYf5dKyVVUaM0Dj+MKakH1Cln15xUhcN1MsMCmKo46+S3V+O+m7VjFYdhIAigU22x2nCglTE+llRxkYBJlf//tbsikKQ4CVtand4XDCPBNnPdzMV2/f70VRwNrpu52dbP0WBhTnl+mKvHubh7PWVqcSvnlJng+tfyKud1If98qNvdurjfMo/0vN6rdbP+XuvsoP1iHV2yg3ZosI6CIitaRxEFbN0wisg6IWCYNAQMk4aAYdIQMEwaAoZJQ8AwaQg7sblh7BaDuQgRB+hsDmbFIVOy5tKEo5ZgTYUFFSaxhuRZywDlhAXVpvTvv+WdklUjRStRrIpEtBSpopWI1jQFOyAkhYeJxXYSnuBGeceNmFnhTFmCFQVhRR+Rac40QhzRWeREIvZGhFJNjh/wS1HnPv+ePgAAAABJRU5ErkJggg=='
+                },
+
+                /**
+                 * Animation config with hero animation.
+                 */
+                animationConfig: {
+                    value: function() {
+                        return {
+                            'entry': [{
+                                name: 'hero-animation',
+                                id: 'hero',
+                                toPage: this
+                            }, {
+                                name: 'fade-in-animation',
+                                node: this,
+                                timing: {
+                                    duration: 600
+                                }
+                            }],
+                            'exit': {
+                                name: 'fade-out-animation',
+                                node: this
+                            }
+                        }
+                    }
+                },
+
+                /**
+                 * Defines shared element of hero animation.
+                 */
+                sharedElements: {
+                    value: function() {
+                        return {
+                            'hero': this
+                        }
+                    }
+                }
+            },
+
+            behaviors: [
+                Polymer.NeonSharedElementAnimatableBehavior
+            ],
+
+            listeners: {
+                'application-changed': '_onApplicationChanged'
+            },
+
+            _onApplicationChanged: function() {
+                this.$.loadMore.disabled = false;
+                this.set('_subscribers', []);
+            },
+
+            _onSubscribersLoad: function(event) {
+
+                event.detail.subscribers.accounts.forEach(function(element, index) {
+
+                    setTimeout(function() {
+                        this.push('_subscribers', element);
+                    }.bind(this), (index + 1) * 50);
+
+                    if (parseInt(event.detail.subscribers.meta.page) == parseInt(event.detail.subscribers.meta.pages)) {
+                        this.$.loadMore.disabled = true;
+                    }
+
+                }.bind(this));
+
+                this._totalSubscribers = event.detail.subscribers.meta.total;
+            },
+
+            _loadMore: function() {
+                this.$.appscoApplicationSubscribers.loadMore();
+            },
+
+            _back: function() {
+                this.fire('back');
+            },
+
+            /**
+             * Maps subscriber object to list-item object.
+             *
+             * @param {Object} item
+             * @returns {{ item: object }}
+             * @private
+             */
+            _mapToListItem: function(item) {
+                return {
+                    icon: item.picture_url ? item.picture_url : this._placeholder,
+                    date: '',
+                    message: item.name + ' - ' + item.email
+                };
+            }
+        });
+    </script>
+</dom-module>
+

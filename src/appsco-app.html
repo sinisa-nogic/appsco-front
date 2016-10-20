@@ -57,16 +57,14 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
                      height: 1px;
                  };
 
-                --paper-dropdown-menu-icon: {
-                    color: #ffffff;
-                 };
-
                  --paper-icon-button: {
                     padding: 0;
                     width: 24px;
                     height: 24px;
                     margin-right: 6px;
                  };
+
+                --paper-progress-height: 2px;
             }
 
             /* Top header style START */
@@ -149,11 +147,12 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
                 --paper-item-selected-weight: normal;
                 --paper-item-selected: {
                      color: var(--primary-text-color);
-                     background-color: #f5f8fa;
+                     background-color: transparent;
                  };
             }
             .page-title {
                 margin-right: 10px;
+                font-size: 18px;
                 text-transform: capitalize;
             }
             /* Bottom header style END */
@@ -171,7 +170,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
                 outline: none;
             }
             .drawer-list a.iron-selected {
-                background-color: var(--google-grey-100);
+                background-color: var(--google-grey-300);
             }
             /* Menu list style END */
 
@@ -180,21 +179,20 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
                 overflow: hidden;
             }
             app-drawer {
-                top: 128px;
+                top: 64px;
 
                 --app-drawer-content-container: {
                      padding-top: 0;
-                     @apply(--shadow-elevation-2dp);
+                     background: var(--body-background-color);
                  };
             }
             app-toolbar {
                 padding: 0 10px;
             }
             appsco-page-global {
-                padding-left: 20px;
-                margin-left: 10px;
+                padding-left: 16px;
+                margin-left: 16px;
                 border-left: 1px solid;
-                /*width: 320px;*/
                 text-align: right;
                 display: none;
 
@@ -236,11 +234,10 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
                 brand-title="AppsCo"
                 authorization-token="[[ authorizationToken ]]"
                 notifications-api="[[ api.notifications ]]"
+                logout-api="[[ api.logout ]]"
                 notifications-size="5"
                 account-chat
                 account-info="Info related to account"
-                account-display-name
-                product-partner
                 on-account-chat="_onAccountChat">
         </appsco-header>
 
@@ -323,6 +320,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
                             application="{{ application }}"
                             authorization-token="[[ authorizationToken ]]"
                             accounts-api="[[ api.accounts ]]"
+                            account="{{ account }}"
                             on-application-removed="_onApplicationRemoved"
                             on-application-settings-saved="_onApplicationSettingsSaved"
                             on-application-settings-no-changes="_onApplicationSettingsNoChanges"
@@ -499,6 +497,10 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
                 'api-changed': "_apiChanged"
             },
 
+            ready: function() {
+//                this.$$('#paperProgress').hidden = false;
+            },
+
             _apiChanged: function () {
                 this.applicationsApi = this.api.applications +"?extended=1";
             },
@@ -615,9 +617,6 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 
             _onGetAccountResponse: function(event) {
                 this.account = event.detail.response.account;
-
-                // For testing purposes
-                this.set('account.intranet', 'https://appsco.com');
             },
 
             _searchApplications: function(event) {

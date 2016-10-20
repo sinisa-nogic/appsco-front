@@ -21,19 +21,26 @@
                 @apply(--layout-horizontal);
                 @apply(--layout-wrap);
                 @apply(--layout-justified);
+                font-size: 14px;
 
-                --paper-card-content: {
-                     padding-top: 0;
-                 };
                 --paper-card-actions: {
                      padding: 0;
                  };
+                --paper-card-header-text: {
+                     padding: 8px 16px;
+                     font-size: 18px;
+                     border-bottom: 1px solid #e8e8e8;
+                };
 
                 --paper-button: {
-                     padding: 8px 0;
+                     padding: 6px 0;
                      margin: 0;
                      border-radius: 0;
                      width: 100%;
+                 };
+
+                --application-details-value: {
+                        font-size: 14px;
                  };
             }
             :host > * {
@@ -41,21 +48,30 @@
                 margin-bottom: 10px;
                 @apply(--layout-self-start);
             }
-            :host .subscribers-security {
+            :host .details-subscribers, :host .security-autologin {
                 @apply(--layout-vertical);
             }
             appsco-application-details {
                 --appsco-application-icons-color: var(--app-secondary-color);
             }
+            .appsco-application-log {
+                --paper-card-content: {
+                     padding-top: 0;
+                     padding-bottom: 0;
+                 };
+            }
             appsco-application-log {
                 --appsco-application-logs: {
                      padding-top: 0;
                  };
+                --account-log-appsco-list-item-first: {
+                     border-top: none;
+                 };
             }
-            :host .appsco-application-details, :host .subscribers-security {
+            :host .details-subscribers, :host .security-autologin {
                 margin-right: 10px;
             }
-            :host .appsco-application-subscribers, :host .appsco-application-security {
+            :host .appsco-application-details, :host .appsco-application-subscribers, :host .appsco-application-security {
                 margin-bottom: 10px;
             }
             :host([medium-screen]) > * {
@@ -64,13 +80,13 @@
             :host([medium-screen]) > .appsco-application-log {
                 width: 100%;
             }
-            :host([medium-screen]) .subscribers-security {
+            :host([medium-screen]) .security-autologin {
                 margin-right: 0;
             }
             :host([mobile-screen]) > * {
                 width: 100%;
             }
-            :host([mobile-screen]) .appsco-application-details {
+            :host([mobile-screen]) .details-subscribers {
                 margin-right: 0;
             }
         </style>
@@ -78,32 +94,35 @@
         <iron-media-query query="(max-width: 1200px)" query-matches="{{ mediumScreen }}"></iron-media-query>
         <iron-media-query query="(max-width: 800px)" query-matches="{{ mobileScreen }}"></iron-media-query>
 
-        <paper-card heading="Details" class="appsco-application-details">
-            <div class="card-content">
-                <appsco-application-details
-                        application="{{ application }}">
-                </appsco-application-details>
-            </div>
+        <div class="details-subscribers">
+            <paper-card heading="Details" class="appsco-application-details">
+                <div class="card-content">
+                    <appsco-application-details
+                            application="{{ application }}">
+                    </appsco-application-details>
+                </div>
 
-            <div class="card-actions">
-                <paper-button on-tap="_onApplicationSettings">SETTINGS</paper-button>
-            </div>
-        </paper-card>
+                <div class="card-actions">
+                    <paper-button on-tap="_onApplicationSettings">SETTINGS</paper-button>
+                </div>
+            </paper-card>
 
-        <div class="subscribers-security">
             <paper-card heading="Subscribers" class="appsco-application-subscribers">
                 <div class="card-content">
                     <appsco-application-subscribers
+                            id="appscoApplicationSubscribers"
                             application="[[ application ]]"
                             authorization-token="[[ authorizationToken ]]">
                     </appsco-application-subscribers>
                 </div>
 
                 <div class="card-actions">
-                    <paper-button on-tap="">ALL</paper-button>
+                    <paper-button on-tap="_onAllSubscribers">ALL</paper-button>
                 </div>
             </paper-card>
+        </div>
 
+        <div class="security-autologin">
             <paper-card heading="Security" class="appsco-application-security">
                 <div class="card-content">
                     <appsco-application-security strength="67"></appsco-application-security>
@@ -132,7 +151,7 @@
             </div>
 
             <div class="card-actions">
-                <paper-button on-tap="">ALL</paper-button>
+                <paper-button on-tap="_onAllLog">ALL</paper-button>
             </div>
         </paper-card>
 
@@ -219,6 +238,14 @@
 
             _onApplicationSettings: function() {
                 this.fire('application-settings');
+            },
+
+            _onAllSubscribers: function() {
+                this.fire('all-subscribers');
+            },
+
+            _onAllLog: function() {
+                this.fire('all-log');
             }
         });
     </script>

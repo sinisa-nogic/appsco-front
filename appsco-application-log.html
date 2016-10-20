@@ -41,15 +41,21 @@ Custom property | Description | Default
             @apply(--layout-vertical);
             @apply(--appsco-application-logs);
             }
-            :host paper-progress {
-                width: 100%;
-                --paper-progress-active-color: #7baaf7;
-            }
             :host .progress {
                 height: 6px;
+                position: relative;
+            }
+            :host paper-progress {
+                width: 100%;
+                position: absolute;
+                top: 4px;
+                left: 0;
             }
             :host paper-button {
-                margin: 10px 0 0 0;
+                display: block;
+                width: 120px;
+                margin: 20px auto 0;
+                text-align: center;
             }
             :host .message {
                 color: var(--secondary-text-color);
@@ -58,6 +64,9 @@ Custom property | Description | Default
             }
             :host appsco-list-item {
             @apply(--account-log-appsco-list-item);
+            }
+            :host appsco-list-item:first-of-type {
+            @apply(--account-log-appsco-list-item-first);
             }
         </style>
 
@@ -187,6 +196,10 @@ Custom property | Description | Default
 
             _init: function() {
                 this.set('_message', '');
+                this.set('_logMessages', []);
+                this.set('_currentUrl', '');
+
+                this.$.loadMore.disabled = false;
 
                 if(this.applicationLog) {
                     this._next = this.applicationLog + "?page=1&limit=" + this.size;
@@ -201,8 +214,6 @@ Custom property | Description | Default
             _handleResponse: function (e) {
                 var me = this,
                         response = e.detail.response;
-
-                me.set('_logMessages', []);
 
                 if (response && response.log.length > 0) {
 
@@ -251,16 +262,16 @@ Custom property | Description | Default
 
                 switch (item.type) {
                     case 'application_shared':
-                        message = 'Application shared to ' + item.account.display_name + '.';
+                        message = 'Shared to ' + item.account.display_name + '.';
                         break;
                     case 'modified':
-                        message = 'Application modified by ' + item.account.display_name + '.';
+                        message = 'Modified by ' + item.account.display_name + '.';
                         break;
                     case 'logged_in':
                         message = item.account.display_name + ' logged in.';
                         break;
                     case 'claims_changed':
-                        message = item.account.display_name + ' changed application claims.';
+                        message = item.account.display_name + ' changed claims.';
                         break;
                     case 'deleted':
                         message = item.account.display_name + ' removed application.';

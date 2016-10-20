@@ -51,14 +51,37 @@ Custom property | Description | Default
             :host .action-search paper-input {
                 max-width: 184px;
             }
-            :host paper-dropdown-menu {
-                width: 130px;
+            paper-dropdown-menu {
+            --paper-input-container-underline: {
+                 display: none;
+             };
+            --paper-input-container-underline-focus: {
+                 display: none;
+             };
+            --paper-dropdown-menu-button: {
+                 display: block;
+                 padding: 0 0 0 8px;
+                 background-color: #4ccde0;
+                 height: 30px;
+                 margin-top: 4px;
+             };
+            --paper-dropdown-menu-ripple: {
+                 display: none;
+             };
+            --paper-input-container-input: {
+                 vertical-align: middle;
+                 cursor: pointer;
+             @apply(--application-actions-paper-dropdown-menu-input);
+             };
             }
             :host paper-listbox.filter {
                 width: 230px;
             }
-            :host div[action-item] {
+            :host .action {
                 margin-right: 10px;
+            }
+            :host .add-application-action {
+                margin-right: 0;
             }
             :host div[prefix] iron-icon {
                 width: 18px;
@@ -76,8 +99,11 @@ Custom property | Description | Default
             @apply(--layout-flex-none);
             }
         </style>
-        <div action-item class="action-search flex-none">
-            <paper-input label="Search applications" on-keyup="_search" id="search" no-label-float>
+        <div action-item class="action action-search flex-none">
+            <paper-input label="Search applications"
+                         on-keyup="_search"
+                         id="search"
+                         no-label-float>
                 <div prefix>
                     <iron-icon icon="search"></iron-icon>
                 </div>
@@ -89,7 +115,7 @@ Custom property | Description | Default
 
             </paper-input>
         </div>
-        <div action-item class="flex-none">
+        <div action-item class="action flex-none">
             <iron-ajax
                     auto
                     id="filterRequest"
@@ -98,7 +124,7 @@ Custom property | Description | Default
                     headers="{{ _computedHeaders }}"
                     debounce-duration="300"
                     ></iron-ajax>
-            <paper-dropdown-menu on-iron-select="_selected" no-label-float>
+            <paper-dropdown-menu on-iron-select="_selected" horizontal-align="left" no-label-float>
                 <paper-listbox class="dropdown-content filter" selected="0">
                     <template is="dom-repeat" items="[[ _filterItems ]]">
                         <paper-item value$="[[ item.value ]]" name$="[[ item.name ]]">[[ item.name ]]</paper-item>
@@ -106,12 +132,13 @@ Custom property | Description | Default
                 </paper-listbox>
             </paper-dropdown-menu>
         </div>
-        <div action-item class="flex-none">
-            <paper-icon-button id="edit" class="action-icon" icon="icons:flip-to-back" on-tap="_editMode"
-                               toggles></paper-icon-button>
-        </div>
 
-        <div action-item class="flex-none">
+        <!--<div action-item class="action flex-none">-->
+        <!--<paper-icon-button id="edit" class="action-icon" icon="icons:flip-to-back" on-tap="_editMode"-->
+        <!--toggles></paper-icon-button>-->
+        <!--</div>-->
+
+        <div action-item class="action add-application-action flex-none">
             <paper-button
                     class="add-application-button"
                     on-tap="_onAddApplicationAction">Add application</paper-button>
@@ -137,8 +164,7 @@ Custom property | Description | Default
                  */
                 filterApi: {
                     type: String,
-                    value: '',
-                    reflectToAttribute: true
+                    value: ''
                 },
                 _filterItems: {
                     type: Array,
@@ -152,6 +178,7 @@ Custom property | Description | Default
                     value: false
                 }
             },
+
             ready: function () {
                 this.$.filterRequest.generateRequest();
             },

@@ -35,28 +35,33 @@ Custom property | Description | Default
             :host {
                 display: inline-block;
                 position: relative;
-                @apply(--appsco-applications);
-                @apply(--layout-vertical);
-                @apply(--layout-center);
-                --appsco-applications-item: {
-                     margin: 0 10px 10px 0;
-                 };
+            @apply(--appsco-applications);
+            @apply(--layout-vertical);
+            @apply(--layout-center);
+
+            --appsco-applications-item: {
+                 margin: 0 10px 10px 0;
+             };
+
+            --paper-progress-container-color: var(--body-background-color);
+            --paper-progress-height: 2px;
             }
 
             :host div[applications] {
-                @apply(--layout-horizontal);
-                @apply(--layout-wrap);
-                @apply(--layout-start);
+            @apply(--layout-horizontal);
+            @apply(--layout-wrap);
+            @apply(--layout-start);
                 margin-right: -10px;
             }
 
             :host appsco-application-item {
-                @apply(--appsco-applications-item);
+            @apply(--appsco-applications-item);
             }
 
             :host .applications-container {
                 width: 100%;
                 min-height: 160px;
+                padding-top: 10px;
                 position: relative;
             }
             :host appsco-loader {
@@ -94,6 +99,8 @@ Custom property | Description | Default
                     debounce-duration="300"
                     ></iron-ajax>
 
+            <paper-progress id="paperProgress" indeterminate></paper-progress>
+
             <template is="dom-if" if="[[ _applicationsEmpty ]]">
                 <p class="message">There are no applications with asked term.</p>
             </template>
@@ -113,7 +120,6 @@ Custom property | Description | Default
 
         <template is="dom-if" if="[[ !_applicationsEmpty ]]">
             <div class="load-more-box">
-                <paper-progress id="paperProgress" indeterminate></paper-progress>
                 <paper-button on-tap="_loadMoreApps" id="loadMore" hidden$="[[ !_loadMore ]]">Load More</paper-button>
             </div>
         </template>
@@ -196,13 +202,13 @@ Custom property | Description | Default
                 }
             },
             listeners: {
-                'applications-api-changed': "_changedApplicationsApi"
+                'applications-api-changed': "_loadApplications"
             },
             ready: function () {
                 this._currentUrl = this.applicationsApi + "?page=1&extended=1&limit=" + this.size;
             },
 
-            _changedApplicationsApi: function () {
+            _loadApplications: function () {
                 this.$$('#paperProgress').hidden = false;
                 this._loadMore = false;
                 this._currentUrl = this.applicationsApi + "?page=1&extended=1&limit=" + this.size;
@@ -263,6 +269,11 @@ Custom property | Description | Default
 
             addApplication: function(application) {
                 this.push('_applications', application);
+            },
+
+            reloadApplications: function() {
+                this.set('_currentUrl', '');
+                this._loadApplications();
             },
 
             removeApplication: function(application) {

@@ -6,8 +6,6 @@
 <link rel="import" href="../bower_components/appsco-application/appsco-application-subscribers.html">
 <link rel="import" href="../bower_components/appsco-application/appsco-application-details.html">
 <link rel="import" href="../bower_components/appsco-application/appsco-application-log.html">
-<link rel="import" href="../bower_components/appsco-application/appsco-application-share.html">
-<link rel="import" href="../bower_components/appsco-application/appsco-application-add.html">
 <link rel="import" href="../bower_components/paper-tabs/paper-tabs.html">
 
 <link rel="import" href="../bower_components/neon-animation/neon-animated-pages.html">
@@ -183,7 +181,7 @@
 
                             <div name="log" class="log">
                                 <appsco-application-log
-                                        application-log="[[ application.meta.log ]]"
+                                        application-log="[[ applicationLog ]]"
                                         authorization-token="[[ authorizationToken ]]">
                                 </appsco-application-log>
                             </div>
@@ -219,21 +217,6 @@
 
         </appsco-content>
 
-        <appsco-application-add
-                id="appscoApplicationAdd"
-                authorization-token="[[ authorizationToken ]]"
-                applications-template-api="[[ applicationsTemplateApi ]]"
-                dashboard-api="[[ dashboardApi ]]"
-                on-application-added="_onApplicationAdded">
-        </appsco-application-add>
-
-        <appsco-application-share
-                            id="appscoApplicationShare"
-                            application="[[ application ]]"
-                            authorization-token="[[ authorizationToken ]]"
-                            accounts-api="[[ accountsApi ]]"
-                            ></appsco-application-share>
-
     </template>
 
     <script>
@@ -247,6 +230,13 @@
                     notify: true
                 },
 
+                /**
+                 * [Application](https://developers.appsco.com/api/dashboard/id/icons/id/log) that log is to be rendered for
+                 */
+                applicationLog: {
+                    type: String
+                },
+
                 _infoShown: {
                     type: Boolean,
                     value: false
@@ -257,30 +247,6 @@
                 },
 
                 authorizationToken: {
-                    type: String,
-                    value: ''
-                },
-
-                /**
-                 * Link to save application template.
-                 */
-                applicationsTemplateApi: {
-                    type: String,
-                    value: ''
-                },
-
-                /**
-                 * Link to get dashboard.
-                 */
-                dashboardApi: {
-                    type: String,
-                    value: ''
-                },
-
-                /**
-                 * Get accounts link.
-                 */
-                accountsApi: {
                     type: String,
                     value: ''
                 },
@@ -360,7 +326,15 @@
             },
 
             _onShareApplication: function() {
-                this.$.appscoApplicationShare.toggle();
+                this.fire('share-application');
+            },
+
+            reloadApplications: function() {
+                this.$.appscoApplications.reloadApplications();
+            },
+
+            addApplication: function(application) {
+                this.$.appscoApplications.addApplication(application);
             },
 
             removeApplication: function(application) {
@@ -373,16 +347,6 @@
 
             setDefaultApplication: function() {
                 this.set('application', this.$.appscoApplications.getFirstApplication());
-            },
-
-            addApplication: function() {
-                this.$.appscoApplicationAdd.toggle();
-            },
-
-            _onApplicationAdded: function(event) {
-                var application = event.detail.application;
-
-                this.$.appscoApplications.addApplication(application);
             },
 
             filterApplicationsByTerm: function(term) {

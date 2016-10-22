@@ -7,8 +7,6 @@
 <link rel="import" href="../bower_components/appsco-application/appsco-application-details.html">
 <link rel="import" href="../bower_components/appsco-application/appsco-application-log.html">
 <link rel="import" href="../bower_components/appsco-application/appsco-application-settings.html">
-<link rel="import" href="../bower_components/appsco-application/appsco-application-share.html">
-<link rel="import" href="../bower_components/appsco-application/appsco-application-remove.html">
 
 <link rel="import" href="../bower_components/neon-animation/neon-animated-pages.html">
 <link rel="import" href="../bower_components/neon-animation/animations/fade-in-animation.html">
@@ -22,6 +20,8 @@
 
 <link rel="import" href="application/appsco-application-components-page.html">
 <link rel="import" href="application/appsco-application-settings-page.html">
+<link rel="import" href="application/appsco-application-subscribers-page.html">
+<link rel="import" href="application/appsco-application-log-page.html">
 
 <link rel="import" href="shared-styles.html">
 <link rel="import" href="webkit-scrollbar-style.html">
@@ -45,14 +45,17 @@
                 top: -25%;
                 left: -25%;
             }
-            :host div[content], :host div[resource] {
+            :host div[resource] {
                 padding: 10px;
             }
             :host div[content] {
-                height: calc(100% - 20px);
+                height: 100%;
             }
             :host .application-components, :host .application-components neon-animated-pages {
                 height: 100%;
+            }
+            appsco-application-components-page {
+                padding: 10px;
             }
             :host .resource-header {
                 padding: 20px 10px 40px;
@@ -141,13 +144,12 @@
                             sizing="contain">
                     </iron-image>
 
-                    <!--src="[[ account.image_url ]]"-->
                     <iron-image
                             class="owner-image"
-                            placeholder="data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiIHN0YW5kYWxvbmU9Im5vIj8+PHN2ZyB3aWR0aD0iMjhweCIgaGVpZ2h0PSIyOHB4IiB2aWV3Qm94PSIwIDAgMjggMjgiIHZlcnNpb249IjEuMSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiB4bWxuczp4bGluaz0iaHR0cDovL3d3dy53My5vcmcvMTk5OS94bGluayI+ICAgICAgICA8dGl0bGU+QXBwc0NvLWxvZ288L3RpdGxlPiAgICA8ZGVzYz5DcmVhdGVkIHdpdGggU2tldGNoLjwvZGVzYz4gICAgPGRlZnM+PC9kZWZzPiAgICA8ZyBpZD0iUGFnZS0xIiBzdHJva2U9Im5vbmUiIHN0cm9rZS13aWR0aD0iMSIgZmlsbD0ibm9uZSIgZmlsbC1ydWxlPSJldmVub2RkIj4gICAgICAgIDxnIGlkPSJBcHBzQ28tbG9nbyI+ICAgICAgICAgICAgPGcgaWQ9Ikdyb3VwIj4gICAgICAgICAgICAgICAgPHJlY3QgaWQ9IlJlY3RhbmdsZS0yIiBmaWxsPSIjMjA5QkMzIiB4PSIwIiB5PSIxNSIgd2lkdGg9IjEzIiBoZWlnaHQ9IjEzIj48L3JlY3Q+ICAgICAgICAgICAgICAgIDxyZWN0IGlkPSJSZWN0YW5nbGUtMi1Db3B5IiBmaWxsPSIjODhCOTU1IiB4PSIxNSIgeT0iMCIgd2lkdGg9IjEzIiBoZWlnaHQ9IjEzIj48L3JlY3Q+ICAgICAgICAgICAgICAgIDxyZWN0IGlkPSJSZWN0YW5nbGUtMi1Db3B5LTIiIGZpbGw9IiNFNkQwMjUiIHg9IjE1IiB5PSIxNSIgd2lkdGg9IjEwIiBoZWlnaHQ9IjEwIj48L3JlY3Q+ICAgICAgICAgICAgICAgIDxyZWN0IGlkPSJSZWN0YW5nbGUtMi1Db3B5LTMiIGZpbGw9IiNEODNEODIiIHg9IjMiIHk9IjMiIHdpZHRoPSIxMCIgaGVpZ2h0PSIxMCI+PC9yZWN0PiAgICAgICAgICAgIDwvZz4gICAgICAgIDwvZz4gICAgPC9nPjwvc3ZnPg=="
+                            placeholder="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIwAAACMCAMAAACZHrEMAAAAqFBMVEUAAAAnNEEnNEEnNEEnNEEnNEE8rPcnNEEnNEEnNUI8rPc8rPc8rPcnNEEnNEEnNEEnNEEnNEE8rPc8rPc8rPc8rPcnNEE8rPcnNEE8rPcnNEH///88rPeTmqAoPlDJzNBdZ3Hx8/WBiI+us7g0gLUuWno1QU1OtPjk5+kxbZg9TFtswfprc3w6oebX2ds3lNO8wMShpqxQWmWu3fye1vszeKfU7f6Nz/toHOtWAAAAGnRSTlMAnyC/EO+fYEDPYO26r4+AcFA9IIAQ388wUFlk1w8AAASsSURBVHjazNbdqqtADAXg+XEYvajam1JWkFYLIiIb2/d/uHPgwPam7kmM7p7vCRbJJBmzXR4r6z2w8N5WMTe/7FrbAqsKW1/N73DxFJAUTtGZg7m6AFtRH5gnix5CPmbmCK4M2CCU+5cnt9jM5vtG8VDx+8VxFmp2n2ZlFXZRZUbtfMFOLmdtWU7Y0SlTlSVgV2F7cbISuys3FscVOEDhzAZ5wCFCbsQiDhONkMWB7BFZ+qmZb/TtNjdTr0ijyNJ3M70xd70wjT5L37S0om16SRp9lqmlH7QTP40+y4MSHsI0+izHp4ncLPo00STkSOqIpUNSYhe7gJSxJZZ2REpw5gdZIWmSvlFFZtaVSBqJbURSaVadkfYktifSzqtNCkgbiG1AWlhr1AlpLxJ4Ie20vUnoSKDD1kZlFzDMJDCD4fKuURU4vkjgCxzVm3UHFhIBi+Pfx+PDWNFNWtxJ5I6F4Eb5T4bxzMLow8hLYz8bxrJGSR9GPlDlp8OUzAupDyO7lxFcI4mM4IqcudYvPeF0O3w+zPcTrsEkP5R8tfmnAN+NBG7gK+RdwpMEnhBwiVnS//QEYuLrq100dyyYn+EAvnEigWkEXzB/XcH3IKEH+K6ywe5IrANbvfwetHOtn24r2zIDiQ0ABJsGfLQB+JYPp/oW6C9CbiKA/+PNIJoKfA2JNeCrjAXfRGIT+KzxECCxHnxeFmYmoRkC3iBB16cOEgYiA4m0SFCFaY6bJXmYvhUVpoeIgUyjKIwijP4kDD0StGFef2g1t50GgSCABrSBPhj7aHDcGgPZkk0lFlr+/880PDhpaumc4pwvONnN7ly35ks6VAAiw0c84FiADHjgPI9ZLvOx/LfjMrxnz6sULsMDZnUPGigJu6VxYHnUVrb/meCpDEiu3GUyTTsJb4ZAwHkGCbm7TAFKFXeZEhRx7jKgvHWXWYPCHzXTvipOBloi7k97A5pF7jIv2kZDfDrIrECD0T1QPoHWq7tMAZrSMJ85VJRc2/WId4fkag0GGbB44r/eBox44ACB/3o5GH6xb4a/7Yf71m1D0xoK7l3bhApQ8IFpaI6dSHw1EEW6o1lo9QhHyaHtZCJZZJJMdK36GBfBcqvJROxvu/RRROw+OVg/aGo5Iw7zW69DlDPqhiytlLOHspdLUn/62+TUJ7lkP3s8pXFlJdRyjfgrpCJjlGvUYf5dKyVVUaM0Dj+MKakH1Cln15xUhcN1MsMCmKo46+S3V+O+m7VjFYdhIAigU22x2nCglTE+llRxkYBJlf//tbsikKQ4CVtand4XDCPBNnPdzMV2/f70VRwNrpu52dbP0WBhTnl+mKvHubh7PWVqcSvnlJng+tfyKud1If98qNvdurjfMo/0vN6rdbP+XuvsoP1iHV2yg3ZosI6CIitaRxEFbN0wisg6IWCYNAQMk4aAYdIQMEwaAoZJQ8AwaQg7sblh7BaDuQgRB+hsDmbFIVOy5tKEo5ZgTYUFFSaxhuRZywDlhAXVpvTvv+WdklUjRStRrIpEtBSpopWI1jQFOyAkhYeJxXYSnuBGeceNmFnhTFmCFQVhRR+Rac40QhzRWeREIvZGhFJNjh/wS1HnPv+ePgAAAABJRU5ErkJggg=="
                             preload
                             fade
-                            src="https://appsco.com/bundles/appscodashboardapproot/img/profile-avatar.png"
+                            src="[[ account.picture_url ]]"
                             sizing="contain">
                     </iron-image>
                 </div>
@@ -187,8 +189,11 @@
                                 id="appscoApplicationComponentsPage"
                                 name="appsco-application-components-page"
                                 application="{{ application }}"
+                                application-log="[[ applicationLog ]]"
                                 authorization-token="[[ authorizationToken ]]"
-                                on-application-settings="_onApplicationSettings">
+                                on-application-settings="_onApplicationSettings"
+                                on-all-subscribers="_onAllSubscribers"
+                                on-all-log="_onAllLog">
                         </appsco-application-components-page>
 
                         <appsco-application-settings-page
@@ -200,21 +205,25 @@
                                 on-back="_onResourceBack">
                         </appsco-application-settings-page>
 
+                        <appsco-application-subscribers-page
+                                id="appscoApplicationSubscribersPage"
+                                name="appsco-application-subscribers-page"
+                                application="{{ application }}"
+                                authorization-token="[[ authorizationToken ]]"
+                                on-back="_onResourceBack">
+                        </appsco-application-subscribers-page>
+
+                        <appsco-application-log-page
+                                id="appscoApplicationSubscribersPage"
+                                name="appsco-application-log-page"
+                                application-log="[[ applicationLog ]]"
+                                authorization-token="[[ authorizationToken ]]"
+                                on-back="_onResourceBack">
+                        </appsco-application-log-page>
+
                     </neon-animated-pages>
                 </div>
 
-                <appsco-application-share
-                        id="appscoApplicationShare"
-                        application="[[ application ]]"
-                        authorization-token="[[ authorizationToken ]]"
-                        accounts-api="[[ accountsApi ]]"
-                        ></appsco-application-share>
-
-                <appsco-application-remove
-                        id="appscoApplicationRemove"
-                        application="[[ application ]]"
-                        authorization-token="[[ authorizationToken ]]"
-                        ></appsco-application-remove>
             </div>
         </appsco-content>
 
@@ -230,6 +239,13 @@
                     type: Object,
                     value: {},
                     notify: true
+                },
+
+                /**
+                 * [Application](https://developers.appsco.com/api/dashboard/id/icons/id/log) that log is to be rendered for
+                 */
+                applicationLog: {
+                    type: String
                 },
 
                 /**
@@ -253,6 +269,23 @@
                 accountsApi: {
                     type: String,
                     value: ''
+                },
+
+                /**
+                 * Get accounts link.
+                 */
+                account: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    }
+                },
+
+                _subscribers: {
+                    type: Array,
+                    value: function() {
+                        return [];
+                    }
                 },
 
                 /**
@@ -288,6 +321,14 @@
                 this._selected = 'appsco-application-settings-page';
             },
 
+            _onAllSubscribers: function() {
+                this._selected = 'appsco-application-subscribers-page';
+            },
+
+            _onAllLog: function() {
+                this._selected = 'appsco-application-log-page';
+            },
+
             _onApplicationSettingsSaved: function() {
                 this._showApplicationComponentsPage();
             },
@@ -301,11 +342,11 @@
             },
 
             _onShareApplication: function() {
-                this.$.appscoApplicationShare.toggle();
+                this.fire('share-application');
             },
 
             _onRemoveApplication: function() {
-                this.$.appscoApplicationRemove.open();
+                this.fire('remove-application');
             },
 
             initializePage: function() {

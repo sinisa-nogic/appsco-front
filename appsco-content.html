@@ -68,6 +68,7 @@ Custom property | Description | Default
                 background-color: var(--resource-background-color, transparent);
                 color: var(--resource-color, #000);
                 border-right: 1px solid var(--divider-color);
+                display: none;
             }
             :host .content {
             @apply(--layout-flex);
@@ -82,10 +83,13 @@ Custom property | Description | Default
                 border-left: 1px solid var(--divider-color);
                 display: none;
             }
+            :host([resource-active]) .resource, :host([info-active]) .info {
+                display: block;
+            }
         </style>
 
         <div class="container flex-horizontal">
-            <div  class="resource" ><content id="resource" select="[resource]"></content></div>
+            <div id="resource" class="resource" ><content select="[resource]"></content></div>
             <div id="content"  class="content"  ><content select="[content]"></content></div>
             <div id="info"     class="info"     ><content select="[info]"></content></div>
         </div>
@@ -110,6 +114,12 @@ Custom property | Description | Default
                     value: function() {
                         return {
                             'entry': [{
+                                name: 'slide-from-left-animation',
+                                node: this.$.resource,
+                                timing: {
+                                    "duration": 200
+                                }
+                            }, {
                                 name: 'slide-from-right-animation',
                                 node: this.$.info,
                                 timing: {
@@ -117,6 +127,12 @@ Custom property | Description | Default
                                 }
                             }],
                             'exit': [{
+                                name: 'slide-left-animation',
+                                node: this.$.resource,
+                                timing: {
+                                    "duration": 100
+                                }
+                            }, {
                                 name: 'slide-right-animation',
                                 node: this.$.info,
                                 timing: {
@@ -127,9 +143,24 @@ Custom property | Description | Default
                     }
                 },
 
-                _infoActive: {
+                /**
+                 * Indicates if resource section is shown or not.
+                 */
+                resourceActive: {
                     type: Boolean,
                     value: false
+                },
+
+                /**
+                 * Indicates if info section is shown or not.
+                 */
+                infoActive: {
+                    type: Boolean,
+                    value: false
+                },
+
+                _activeSection: {
+                    type: String
                 }
             },
 
@@ -137,48 +168,42 @@ Custom property | Description | Default
                 'neon-animation-finish': '_onAnimationFinish'
             },
 
-            ready: function() {
-                this._setContent();
-            },
-
-            _setContent: function() {
-                var resource = Polymer.dom(this.$.resource),
-                        nodes = resource.getDistributedNodes();
-
-                if (nodes.length > 0) {
-                    nodes.forEach(function(el, i) {
-
-                        if (!Polymer.dom(el).firstChild) {
-                            resource.parentNode.hidden = true;
-                        }
-
-                    }.bind(this));
-                }
-                else {
-                    resource.parentNode.hidden = true;
-                }
-            },
-
             _onAnimationFinish: function() {
-                this.$.info.style.display = this._infoActive ? 'block' : 'none';
+
+                if (this._activeSection === 'info' && !this.infoActive) {
+                    this.$.info.style.display = 'none';
+                }
+                else if (this._activeSection === 'resource' && !this.resourceActive) {
+                    this.$.resource.style.display = 'none';
+                }
+
                 this.fire('animation-finished', {});
             },
 
-            _showInfo: function() {
-                this.$.info.style.display = 'inline-block';
+            _showSection: function() {
+                this.$$('#' + this._activeSection).style.display = 'inline-block';
                 this.playAnimation('entry');
             },
 
-            _hideInfo: function() {
+            _hideSection: function() {
                 this.playAnimation('exit');
             },
 
             /**
-             * Toggles info section.
+             * Toggles section - info or resource.
              */
-            toggleInfo: function() {
-                this._infoActive = !this._infoActive;
-                this._infoActive ? this._showInfo() : this._hideInfo();
+            toggleSection: function(section) {
+
+                this._activeSection = section;
+
+                if (section === 'info') {
+                    this.infoActive = !this.infoActive;
+                }
+                else if (section === 'resource') {
+                    this.resourceActive = !this.resourceActive;
+                }
+
+                (this.infoActive || this.resourceActive) ? this._showSection() : this._hideSection();
             }
 
         });

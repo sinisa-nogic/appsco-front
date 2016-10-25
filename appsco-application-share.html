@@ -109,7 +109,18 @@ Custom property | Description | Default
                 margin-top: 10px;
             }
             :host .buttons paper-button {
-                padding: 4px 8px;
+            @apply(--paper-dialog-button);
+            }
+            :host .buttons paper-button[dialog-confirm] {
+            @apply(--paper-dialog-confirm-button);
+            }
+            :host .buttons paper-button[dialog-dismiss] {
+            @apply(--paper-dialog-dismiss-button);
+            }
+            :host .message {
+                color: var(--secondary-text-color);
+                font-style: italic;
+            @apply(--paper-font-body2);
             }
         </style>
 
@@ -168,12 +179,18 @@ Custom property | Description | Default
                             </paper-button>
                         </div>
                     </template>
+
+                    <template is="dom-if" if="[[ _message ]]">
+                        <p class="message">
+                            [[ _message ]]
+                        </p>
+                    </template>
                 </div>
             </div>
 
             <div class="buttons">
                 <paper-button dialog-dismiss>Cancel</paper-button>
-                <paper-button autofocus on-tap="_shareApplicationAction">Share</paper-button>
+                <paper-button dialog-confirm autofocus on-tap="_shareApplicationAction">Share</paper-button>
             </div>
         </paper-dialog>
 
@@ -257,6 +274,14 @@ Custom property | Description | Default
                     type: Array,
                     value: function () { return []; }
                 },
+
+                /**
+                 * Message to display if there is no search result.
+                 */
+                _message: {
+                    type: String
+                },
+
                 /**
                  * Accounts API link
                  */
@@ -357,23 +382,23 @@ Custom property | Description | Default
                         me = this;
 
                 this._loader = true;
+                this.set('_message', '');
 
                 if (
                         this.$.search.value.length < 3 || !(regexpAlphanumeric.test(e.key) || regexpBackspace.test(e.key))
                 ) {
 
-                    this.$.search.invalid = true;
+                    this._message = 'Please type three or more letters.';
                     this._loader = false;
-                    me.set('_searchList', []);
+                    this.set('_searchList', []);
 
                     return;
                 }
 
                 var request = document.createElement('iron-request'),
-                        me = this,
                         url = this.accountsApi + "?extended=1&limit=" + this.size + '&term=' + this.$.search.value
 
-                this.$.search.invalid = false;
+                this._message = '';
 
                 var options = {
                     url: url,
@@ -384,14 +409,18 @@ Custom property | Description | Default
                     }
                 };
 
-                request.send(options).then(function(){
-                    me.set('_searchList', []);
+                request.send(options).then(function() {
+                    var accounts = request.response.accounts;
+
+                    if (accounts && accounts.length > 0) {
+                        me.set('_searchList', accounts);
+                    }
+                    else {
+                        me.set('_searchList', []);
+                        me._message = 'There are no accounts with asked term. Please check your input.';
+                    }
 
                     me._loader = false;
-
-                    request.response.accounts.forEach(function(el, index){
-                        me.push('_searchList', el);
-                    });
                 });
             },
 

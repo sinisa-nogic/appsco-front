@@ -3,6 +3,8 @@
 <link rel="import" href="../../bower_components/neon-animation/neon-animatable-behavior.html">
 <link rel="import" href="../../bower_components/neon-animation/animations/fade-in-animation.html">
 <link rel="import" href="../../bower_components/neon-animation/animations/fade-out-animation.html">
+<link rel="import" href="../../bower_components/iron-media-query/iron-media-query.html">
+
 <link rel="import" href="../../bower_components/appsco-page/appsco-page-global.html">
 <link rel="import" href="../../bower_components/appsco-application/appsco-application-actions.html">
 
@@ -14,14 +16,13 @@
                 @apply(--layout-horizontal);
                 @apply(--layout-center);
                 @apply(--layout-end-justified);
-            }
-            appsco-application-actions {
 
                 --add-application-button: {
                      font-size: 12px;
                      width: 120px;
                      border: 1px solid #ffffff;
                      padding: 4px 6px;
+                     margin: 0;
                      border-radius: 0;
                  };
 
@@ -50,6 +51,10 @@
                 --paper-dropdown-menu: {
                      width: 130px;
                  };
+                --applications-actions-paper-dropdown-menu-button: {
+                     height: 30px;
+                     margin-top: 4px;
+                 };
                 --application-actions-paper-dropdown-menu-input: {
                      font-size: 14px;
                  };
@@ -59,9 +64,9 @@
                      height: 22px;
                  };
                 --paper-icon-button: {
+                     width: 24px;
+                     height: 24px;
                      padding: 0;
-                     width: 30px;
-                     height: 30px;
                  };
                 --paper-listbox: {
                      padding: 0;
@@ -76,21 +81,63 @@
                      background-color: transparent;
                  };
             }
-            appsco-page-global {
-                padding-left: 16px;
+            :host appsco-page-global {
+                height: 34px;
+                padding-left: 10px;
+                padding-right: 4px;
                 margin-left: 16px;
                 border-left: 1px solid;
                 text-align: right;
-                /*display: none;*/
 
                 --appsco-page-global-action-color: #ffffff;
             }
+            :host([tablet-screen]) {
+
+                --input-search-max-width: 22px;
+
+                --appsco-application-actions: {
+                     width: 100%;
+                 };
+                --paper-input-search-container: {
+                     height: 38px;
+                     background-color: #34c2d7;
+                     position: absolute;
+                     left: 0;
+                     z-index: 10;
+                     @apply(--paper-input-search-container-tablet);
+                 };
+
+                --paper-input-search: {
+                     transition: all 0.2s ease-in;
+                     max-width: var(--input-search-max-width);
+                 };
+            }
+            :host([mobile-screen]) appsco-page-global {
+                margin-left: 10px;
+            }
+            :host([mobile-screen]) {
+                --add-application-button: {
+                     display: none;
+                 };
+                --add-application-icon-button: {
+                     display: block;
+                 };
+
+                --applications-actions-paper-dropdown-menu-button: {
+                     margin-top: 0;
+                 };
+            }
         </style>
+
+        <iron-media-query query="(max-width: 800px)" query-matches="{{ tabletScreen }}"></iron-media-query>
+        <iron-media-query query="(max-width: 600px)" query-matches="{{ mobileScreen }}"></iron-media-query>
 
         <appsco-application-actions
                 id="appscoApplicationActions"
                 authorization-token="[[ authorizationToken ]]"
-                filter-api="[[ filterApi ]]"></appsco-application-actions>
+                filter-api="[[ filterApi ]]"
+                on-search-icon="_onSearchIcon"
+                on-close-search="_closeSearch"></appsco-application-actions>
 
         <appsco-page-global
                 id="appscoPageGlobal"
@@ -115,6 +162,23 @@
                  */
                 filterApi: {
                     type: String
+                },
+
+                mobileScreen: {
+                    type: Boolean,
+                    value: false,
+                    reflectToAttribute: true
+                },
+
+                tabletScreen: {
+                    type: Boolean,
+                    value: false,
+                    reflectToAttribute: true
+                },
+
+                _searchActive: {
+                    type: Boolean,
+                    value: false
                 },
 
                 /**
@@ -147,8 +211,47 @@
                 Polymer.NeonAnimatableBehavior
             ],
 
-            _backToApplications: function() {
-                this.fire('back');
+            observers: [
+                '_isCSSChanged(mobileScreen, tabletScreen)'
+            ],
+
+            attached: function() {
+
+                if (this.mobileScreen || this.tabletScreen) {
+                    this.updateStyles();
+                }
+
+            },
+
+            _isCSSChanged: function(mobile, tablet) {
+                this.updateStyles();
+            },
+
+            _showSearch: function() {
+                this.customStyle['--input-search-max-width'] = '100%';
+                this.customStyle['--paper-input-search-container-tablet'] = 'width: 100%;';
+                this.$.appscoApplicationActions.focusSearch();
+
+                this.updateStyles();
+            },
+
+            _closeSearch: function() {
+                this._searchActive = false;
+
+                this.customStyle['--input-search-max-width'] = '22px';
+
+                // Wait for animation to finish.
+                setTimeout(function() {
+                    this.customStyle['--paper-input-search-container-tablet'] = 'width: auto';
+                    this.updateStyles();
+                }.bind(this), 200);
+
+                this.updateStyles();
+            },
+
+            _onSearchIcon: function() {
+                this._searchActive = !this._searchActive;
+                this._searchActive ? this._showSearch() : this._closeSearch();
             }
         });
     </script>

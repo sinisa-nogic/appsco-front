@@ -5,6 +5,7 @@
 <link rel="import" href="../paper-button/paper-button.html">
 <link rel="import" href="../paper-dialog/paper-dialog.html">
 <link rel="import" href="../iron-ajax/iron-request.html">
+<link rel="import" href="../paper-styles/typography.html">
 
 <link rel="import" href="../neon-animation/neon-shared-element-animatable-behavior.html">
 <link rel="import" href="../neon-animation/animations/hero-animation.html">
@@ -69,6 +70,11 @@ Custom property | Description | Default
                 margin-top: 20px;
                 position: relative;
             }
+            :host .message {
+                color: var(--secondary-text-color);
+                font-style: italic;
+            @apply(--paper-font-body2);
+            }
         </style>
 
         <paper-input id="search"
@@ -91,6 +97,12 @@ Custom property | Description | Default
                         <span name>[[ item.title ]]</span>
                     </paper-button>
                 </div>
+            </template>
+
+            <template is="dom-if" if="[[ _message ]]">
+                <p class="message">
+                    [[ _message ]]
+                </p>
             </template>
         </div>
 
@@ -119,6 +131,13 @@ Custom property | Description | Default
                     value: function() {
                         return [];
                     }
+                },
+
+                /**
+                 * Message to display if there is no search result.
+                 */
+                _message: {
+                    type: String
                 },
 
                 /**
@@ -208,21 +227,22 @@ Custom property | Description | Default
                         me = this;
 
                 this._loader = true;
+                this.set('_message', '');
 
                 if (
                         this.$.search.value.length < 3 ||
                         !(regexpAlphanumeric.test(event.key) || regexpBackspace.test(event.key))
                 ) {
-                    this.$.search.invalid = true;
+                    this._message = 'Please type three or more letters.';
                     this._loader = false;
-                    me.set('_searchList', []);
+                    this.set('_searchList', []);
                     return;
                 }
 
                 var request = document.createElement('iron-request'),
                         url = this.applicationsTemplateApi + '?extended=1&limit=' + this.size + '&term=' + this.$.search.value;
 
-                this.$.search.invalid = false;
+                this._message = '';
 
                 var options = {
                     url: url,
@@ -234,7 +254,16 @@ Custom property | Description | Default
                 };
 
                 request.send(options).then(function() {
-                    me.set('_searchList', request.response.applications);
+                    var applications = request.response.applications;
+
+                    if (applications && applications.length > 0) {
+                        me.set('_searchList', applications);
+                    }
+                    else {
+                        me.set('_searchList', []);
+                        me._message = 'There are no applications with asked title. Please check your input.';
+                    }
+
                     me._loader = false;
                 });
             },

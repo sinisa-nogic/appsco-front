@@ -43,39 +43,43 @@ Custom property | Description | Default
             :host {
                 display: inline-block;
                 position: relative;
-            @apply(--appsco-application-actions);
-            @apply(--layout-horizontal);
-            @apply(--layout-center);
-            @apply(--layout-end-justified);
+                @apply(--layout-horizontal);
+                @apply(--layout-center);
+                @apply(--layout-end-justified);
+                @apply(--appsco-application-actions);
+
+                --paper-dropdown-menu-button: {
+                     display: block;
+                     padding: 0 0 0 8px;
+                     background-color: #4ccde0;
+                     @apply(--applications-actions-paper-dropdown-menu-button);
+                 };
+            }
+            :host .action-search {
+                @apply(--paper-input-search-container);
             }
             :host .action-search paper-input {
                 max-width: 184px;
             }
             paper-dropdown-menu {
-            --paper-input-container-underline: {
-                 display: none;
-             };
-            --paper-input-container-underline-focus: {
-                 display: none;
-             };
-            --paper-dropdown-menu-button: {
-                 display: block;
-                 padding: 0 0 0 8px;
-                 background-color: #4ccde0;
-                 height: 30px;
-                 margin-top: 4px;
-             };
-            --paper-dropdown-menu-ripple: {
-                 display: none;
-             };
-            --paper-input-container-input: {
-                 vertical-align: middle;
-                 cursor: pointer;
-             @apply(--application-actions-paper-dropdown-menu-input);
-             };
+                --paper-input-container-underline: {
+                     display: none;
+                 };
+                --paper-input-container-underline-focus: {
+                     display: none;
+                 };
+                --paper-dropdown-menu-ripple: {
+                     display: none;
+                 };
+                --paper-input-container-input: {
+                     vertical-align: middle;
+                     cursor: pointer;
+                     @apply(--application-actions-paper-dropdown-menu-input);
+                 };
             }
-            :host paper-listbox.filter {
-                width: 230px;
+            :host paper-listbox {
+                max-width: 230px;
+                overflow: hidden;
             }
             :host .action {
                 margin-right: 10px;
@@ -86,6 +90,7 @@ Custom property | Description | Default
             :host div[prefix] iron-icon {
                 width: 18px;
                 height: 18px;
+                cursor: pointer;
             }
             :host paper-icon-button[suffix] {
                 width: 20px;
@@ -93,19 +98,35 @@ Custom property | Description | Default
                 padding: 0;
             }
             :host .add-application-button {
-            @apply(--add-application-button);
+                @apply(--add-application-button);
+            }
+            :host .add-application-icon-button {
+                display: none;
+                @apply(--add-application-icon-button);
             }
             :host .flex-none {
-            @apply(--layout-flex-none);
+                @apply(--layout-flex-none);
+            }
+            :host .action-search paper-input {
+                @apply(--paper-input-search);
+            }
+            :host paper-icon-button::shadow paper-ripple {
+                width: 150%;
+                height: 150%;
+                top: -25%;
+                left: -25%;
             }
         </style>
+
         <div action-item class="action action-search flex-none">
             <paper-input label="Search applications"
                          on-keyup="_search"
                          id="search"
-                         no-label-float>
+                         no-label-float
+                         tabindex="1">
                 <div prefix>
-                    <iron-icon icon="search"></iron-icon>
+                    <iron-icon icon="search"
+                               on-tap="_onSearchIcon"></iron-icon>
                 </div>
 
                 <template is="dom-if" if="[[ _clear ]]">
@@ -142,7 +163,12 @@ Custom property | Description | Default
             <paper-button
                     class="add-application-button"
                     on-tap="_onAddApplicationAction">Add application</paper-button>
+            <paper-icon-button
+                    icon="add-circle-outline"
+                    class="add-application-icon-button"
+                    on-tap="_onAddApplicationAction">Add application</paper-icon-button>
         </div>
+
     </template>
 
     <script>
@@ -181,7 +207,46 @@ Custom property | Description | Default
 
             ready: function () {
                 this.$.filterRequest.generateRequest();
+                Polymer.Gestures.add(document, 'tap', this._handleDocumentClick.bind(this));
             },
+
+            /**
+             * Evaluates if item is in given path.
+             *
+             * @param {HTMLElement} element The element to be evaluated.
+             * @param {Array<HTMLElements>=} path Elements in path to be checked against item element.
+             * @return {Boolean}
+             *
+             * @private
+             */
+            _isInPath: function(path, element) {
+                path = path || [];
+
+                for (var i = 0; i < path.length; i++) {
+
+                    if (path[i] == element) {
+                        return true;
+
+                        break;
+                    }
+                }
+
+                return false;
+            },
+
+            /**
+             * Listens for click outside.
+             * @private
+             */
+            _handleDocumentClick: function(event) {
+                var path = Polymer.dom(event).path;
+
+                if (!this._isInPath(path, this)) {
+                    this.fire('close-search');
+                }
+
+            },
+
             _selected: function (e) {
                 /**
                  * Fired when filter is selected
@@ -267,6 +332,14 @@ Custom property | Description | Default
                  * @param {Object} filter {id: filter_id, name: filter_name}
                  */
                 this.fire('add-application');
+            },
+
+            _onSearchIcon: function() {
+                this.fire('search-icon');
+            },
+
+            focusSearch: function() {
+                this.$.search.$.input.focus();
             }
         });
     </script>

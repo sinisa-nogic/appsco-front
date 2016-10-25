@@ -1,4 +1,11 @@
 <link rel="import" href="../bower_components/polymer/polymer.html">
+<link rel="import" href="../bower_components/paper-tabs/paper-tabs.html">
+<link rel="import" href="../bower_components/neon-animation/neon-animated-pages.html">
+<link rel="import" href="../bower_components/neon-animation/animations/fade-in-animation.html">
+<link rel="import" href="../bower_components/neon-animation/animations/fade-out-animation.html">
+<link rel="import" href="../bower_components/iron-flex-layout/iron-flex-layout.html">
+<link rel="import" href="../bower_components/iron-media-query/iron-media-query.html">
+
 <link rel="import" href="../bower_components/appsco-page/appsco-content.html">
 <link rel="import" href="../bower_components/appsco-application/appsco-applications.html">
 <link rel="import" href="../bower_components/appsco-application/appsco-application-info.html">
@@ -6,13 +13,6 @@
 <link rel="import" href="../bower_components/appsco-application/appsco-application-subscribers.html">
 <link rel="import" href="../bower_components/appsco-application/appsco-application-details.html">
 <link rel="import" href="../bower_components/appsco-application/appsco-application-log.html">
-<link rel="import" href="../bower_components/paper-tabs/paper-tabs.html">
-
-<link rel="import" href="../bower_components/neon-animation/neon-animated-pages.html">
-<link rel="import" href="../bower_components/neon-animation/animations/fade-in-animation.html">
-<link rel="import" href="../bower_components/neon-animation/animations/fade-out-animation.html">
-
-<link rel="import" href="../bower_components/iron-flex-layout/iron-flex-layout.html">
 
 <link rel="import" href="shared-styles.html">
 <link rel="import" href="webkit-scrollbar-style.html">
@@ -107,6 +107,7 @@
                  };
             }
             appsco-application-details {
+                padding-top: 14px;
                 --appsco-application-icons-color: var(--app-secondary-color);
             }
             :host .flex-horizontal {
@@ -122,7 +123,12 @@
             .log, .details {
                 overflow: auto;
             }
+            :host([mobile-screen]) {
+                --info-width: 100%;
+            }
         </style>
+
+        <iron-media-query query="(max-width: 600px)" query-matches="{{ mobileScreen }}"></iron-media-query>
 
         <appsco-content id="appscoContent">
 
@@ -266,6 +272,12 @@
                     }
                 },
 
+                mobileScreen: {
+                    type: Boolean,
+                    value: false,
+                    reflectToAttribute: true
+                },
+
                 /**
                  * Animation config.
                  */
@@ -295,8 +307,25 @@
                 Polymer.NeonAnimatableBehavior
             ],
 
+            observers: [
+                '_isCSSChanged(mobileScreen)'
+            ],
+
+            attached: function() {
+
+                if (this.mobileScreen) {
+                    this.updateStyles();
+                }
+
+            },
+
+            _isCSSChanged: function(mobile) {
+                this.updateStyles();
+            },
+
             toggleInfo: function() {
-                this.$.appscoContent.toggleInfo();
+                this.$.appscoContent.toggleSection('info');
+
                 this._infoShown = !this._infoShown;
 
                 if (this._infoShown) {
@@ -315,7 +344,7 @@
             _onViewApplicationInfo: function(event) {
 
                 if (!this._infoShown) {
-                    this.toggleInfo();
+                    this.toggleInfo('info');
                 }
 
                 this.set('application', event.detail);

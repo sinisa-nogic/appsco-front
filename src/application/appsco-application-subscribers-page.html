@@ -1,20 +1,22 @@
 <link rel="import" href="../../bower_components/polymer/polymer.html">
 <link rel="import" href="../../bower_components/iron-flex-layout/iron-flex-layout.html">
-
 <link rel="import" href="../../bower_components/neon-animation/neon-shared-element-animatable-behavior.html">
 <link rel="import" href="../../bower_components/neon-animation/animations/hero-animation.html">
 <link rel="import" href="../../bower_components/neon-animation/animations/fade-in-animation.html">
 <link rel="import" href="../../bower_components/neon-animation/animations/fade-out-animation.html">
-
-<link rel="import" href="../../bower_components/appsco-application/appsco-application-subscribers.html">
-<link rel="import" href="../../bower_components/appsco-components/appsco-list-item.html">
 <link rel="import" href="../../bower_components/paper-card/paper-card.html">
 <link rel="import" href="../../bower_components/paper-icon-button/paper-icon-button.html">
 <link rel="import" href="../../bower_components/paper-button/paper-button.html">
+<link rel="import" href="../../bower_components/paper-progress/paper-progress.html">
+
+<link rel="import" href="../../bower_components/appsco-application/appsco-application-subscribers.html">
+<link rel="import" href="../../bower_components/appsco-components/appsco-list-item.html">
+<link rel="import" href="../shared-styles.html">
+<link rel="import" href="../webkit-scrollbar-style.html">
 
 <dom-module id="appsco-application-subscribers-page">
     <template>
-        <style>
+        <style include="shared-styles webkit-scrollbar-style">
             :host {
                 display: block;
                 height: 100%;
@@ -53,11 +55,8 @@
                 margin-bottom: 10px;
                 display: block;
             }
-            :host paper-button {
-                display: block;
-                width: 120px;
-                margin: 20px auto 0;
-                text-align: center;
+            :host paper-progress {
+                width: 100%;
             }
         </style>
 
@@ -82,6 +81,8 @@
                     <span class="total-subscribers">Total subscribers: [[ _totalSubscribers ]]</span>
                 </div>
 
+                <paper-progress id="progressBar" indeterminate hidden></paper-progress>
+
                 <template is="dom-repeat" items="{{ _subscribers }}">
 
                     <appsco-list-item
@@ -89,7 +90,10 @@
 
                 </template>
 
-                <paper-button on-tap="_loadMore" id="loadMore" hidden="[[ !loadMore ]]">Load More</paper-button>
+                <paper-button id="loadMore"
+                              class="load-more-button"
+                              on-tap="_loadMore"
+                              hidden="[[ !loadMore ]]">Load More</paper-button>
 
             </div>
         </paper-card>
@@ -195,12 +199,15 @@
                         this.$.loadMore.disabled = true;
                     }
 
+                    this.$.progressBar.hidden = true;
+
                 }.bind(this));
 
                 this._totalSubscribers = event.detail.subscribers.meta.total;
             },
 
             _loadMore: function() {
+                this.$.progressBar.hidden = false;
                 this.$.appscoApplicationSubscribers.loadMore();
             },
 

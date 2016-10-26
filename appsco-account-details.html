@@ -1,0 +1,172 @@
+<link rel="import" href="../polymer/polymer.html">
+<link rel="import" href="../iron-flex-layout/iron-flex-layout.html">
+<link rel="import" href="../paper-styles/typography.html">
+<link rel="import" href="../iron-ajax/iron-ajax.html">
+
+<!--
+`appsco-account-details`
+Component holds details about appsco account.
+
+Example:
+    <body>
+        <appsco-account-details account={}>
+        </appsco-account-details>
+
+### Styling
+
+`<appsco-account-details>` provides the following custom properties and mixins for styling:
+
+Custom property | Description | Default
+----------------|-------------|----------
+`--appsco-account-details` | Mixin for the root element. | `{}`
+`--account-detail-container` | Mixin for the inner element that holds label and value. | `{}`
+`--account-details-label` | Mixin applied to detail label. | `{}`
+`--account-details-value` | Mixin applied to detail value. | `{}`
+
+@demo demo/appsco-account-details.html
+-->
+
+<dom-module id="appsco-account-details">
+    <template>
+        <style>
+            :host {
+                display: block;
+                @apply(--layout-vertical);
+            }
+            :host > div {
+                margin: 6px 0;
+                @apply(--account-detail-container);
+            }
+            :host div[label] {
+                color: var(--secondary-text-color);
+                @apply(--paper-font-body1);
+                @apply(--account-details-label);
+            }
+            :host div[content] {
+                color: var(--primary-text-color);
+                @apply(--layout-horizontal);
+                @apply(--layout-center);
+                @apply(--paper-font-subhead);
+                @apply(--account-details-value);
+            }
+            :host .flex {
+                @apply(--layout-flex);
+                @apply(--paper-font-common-nowrap);
+            }
+        </style>
+
+        <iron-ajax
+                auto
+                url="data/country-list.json"
+                handle-as="json"
+                on-response="_onCountryListResponse">
+        </iron-ajax>
+
+        <div hidden$="[[ !account.first_name ]]">
+            <div label>First name</div>
+            <div content>
+                <div class="flex">
+                    [[ account.first_name ]]
+                </div>
+            </div>
+        </div>
+
+        <div hidden$="[[ !account.last_name ]]">
+            <div label>Last name</div>
+            <div content>
+                <div class="flex">
+                    [[ account.last_name ]]
+                </div>
+            </div>
+        </div>
+
+        <div>
+            <div label>Email</div>
+            <div content>
+                <div class="flex">
+                    [[ account.email ]]
+                </div>
+            </div>
+        </div>
+
+        <div hidden$="[[ !account.country ]]">
+            <div label>Country</div>
+            <div content>
+                <div class="flex">
+                    [[ _accountCountry ]]
+                </div>
+            </div>
+        </div>
+
+        <div hidden$="[[ !account.phone ]]">
+            <div label>Phone</div>
+            <div content>
+                <div class="flex">
+                    [[ account.phone ]]
+                </div>
+            </div>
+        </div>
+
+    </template>
+
+    <script>
+        Polymer({
+
+            is: 'appsco-account-details',
+
+            properties: {
+
+                /**
+                 * [Account](https://developers.appsco.com/api/me) that is to be rendered.
+                 */
+                account: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    },
+                    notify: true
+                },
+
+                /**
+                 * Computed country name.
+                 */
+                _accountCountry: {
+                    type: String,
+                    computed: '_computeCountry(_countryList, account)'
+                },
+
+                /**
+                 * Country list to get name of country from.
+                 * Country code = account.country.
+                 *
+                 * This is loaded from local data/country-list.json.
+                 */
+                _countryList: {
+                    type: Array,
+                    value: function() {
+                        return [];
+                    }
+                }
+            },
+
+            _onCountryListResponse: function(event, ironRequest) {
+                this._countryList = ironRequest.response;
+            },
+
+            _computeCountry: function(list, account) {
+                var length = list.length - 1;
+
+                for (var i = 0; i < length; i++) {
+                    var country = list[i];
+
+                    if (country.code == account.country) {
+                        return country.name;
+                    }
+
+                }
+
+                return '';
+            }
+        });
+    </script>
+</dom-module>

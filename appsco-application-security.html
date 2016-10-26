@@ -1,13 +1,13 @@
 <link rel="import" href="../polymer/polymer.html">
-
 <link rel="import" href="../iron-image/iron-image.html">
 <link rel="import" href="../iron-flex-layout/iron-flex-layout.html">
 <link rel="import" href="../paper-styles/typography.html">
-<link rel="import" href="../paper-tooltip/paper-tooltip.html">
+<link rel="import" href="../iron-icon/iron-icon.html">
+<link rel="import" href="../iron-icons/iron-icons.html">
 
 <!--
 `appsco-application-security`
-Contains security information: security strength (in percentage) displayed as colored circle with percentage number
+Contains security information: security score (in percentage) displayed as colored circle with percentage number
     inside it and security info as text.
 
     <appsco-application-security>
@@ -22,7 +22,10 @@ Custom property | Description | Default
 `--strong-color` | Strong color | `#0f9d58`
 `--medium-color` | Medium color | `#4285f4`
 `--weak-color` | Weak color | `#db4437`
+`--icon-pass-color` | Security pass icon color  | `#0f9d58`
+`--icon-fail-color` | Security fail icon color  | `#db4437`
 `--appsco-application-security` | Mixin for the root element | `{}`
+`--security-score` | Mixin for inner score element. | `{}`
 
 @demo demo/appsco-application-security.html
 -->
@@ -32,33 +35,117 @@ Custom property | Description | Default
         <style>
             :host {
                 display: block;
-            @apply(--paper-font-code1);
-            @apply(--layout);
-            @apply(--layout-center);
-            @apply(--layout-center-justified);
+                @apply(--appsco-application-security);
+
+                --iron-icon-height: 20px;
+                --iron-icon-width: 20px;
+                --iron-icon: {
+                     margin-top: -2px;
+                 };
+            }
+            .security-score {
+                @apply(--paper-font-code1);
+                @apply(--layout);
+                @apply(--layout-center);
+                @apply(--layout-center-justified);
                 width: 40px;
                 height: 40px;
                 box-sizing: border-box;
                 border-radius: 50%;
-                color: white;
-            @apply(--appsco-application-security);
+                color: #ffffff;
+                @apply(--security-score);
             }
-
-            :host([strong]) {
+            :host([strong]) .security-score {
                 background-color: var(--strong-color, #0f9d58);
             }
-
-            :host([medium]) {
+            :host([medium]) .security-score {
                 background-color: var(--medium-color, #4285f4);
             }
-
-            :host([weak]) {
+            :host([weak]) .security-score {
                 background-color: var(--weak-color, #db4437);
             }
+            .security-info {
+                margin-top: 10px;
+            }
+            .info {
+                margin-top: 5px;
+                margin-bottom: 5px;
+            }
+            .icon-pass {
+                --iron-icon-fill-color: var(--icon-pass-color, #0f9d58);
+            }
+            .icon-fail {
+                --iron-icon-fill-color: var(--icon-fail-color, #db4437);
+            }
         </style>
-        [[ strength ]]%
+
+        <div class="security-score">
+            [[ application.security.score ]]%
+        </div>
+
         <template is="dom-if" if="[[ info ]]">
-            <paper-tooltip id="tooltip">[[ info ]]</paper-tooltip>
+            <div class="security-info">
+                <p class="info">
+                    <template is="dom-if" if="[[ application.security.info.lower_case ]]">
+                        <iron-icon icon="check" class="icon-pass"></iron-icon>
+                    </template>
+
+                    <template is="dom-if" if="[[ !application.security.info.lower_case ]]">
+                        <iron-icon icon="clear" class="icon-fail"></iron-icon>
+                    </template>
+
+                    Small letters at least two</p>
+                <p class="info">
+                    <template is="dom-if" if="[[ application.security.info.upper_case ]]">
+                        <iron-icon icon="check" class="icon-pass"></iron-icon>
+                    </template>
+
+                    <template is="dom-if" if="[[ !application.security.info.upper_case ]]">
+                        <iron-icon icon="clear" class="icon-fail"></iron-icon>
+                    </template>
+
+                    Upper letters at least two</p>
+                <p class="info">
+                    <template is="dom-if" if="[[ application.security.info.special_chars ]]">
+                        <iron-icon icon="check" class="icon-pass"></iron-icon>
+                    </template>
+
+                    <template is="dom-if" if="[[ !application.security.info.special_chars ]]">
+                        <iron-icon icon="clear" class="icon-fail"></iron-icon>
+                    </template>
+
+                    Special characters at least two</p>
+                <p class="info">
+                    <template is="dom-if" if="[[ application.security.info.digits ]]">
+                        <iron-icon icon="check" class="icon-pass"></iron-icon>
+                    </template>
+
+                    <template is="dom-if" if="[[ !application.security.info.digits ]]">
+                        <iron-icon icon="clear" class="icon-fail"></iron-icon>
+                    </template>
+
+                    Digits ate least two</p>
+                <p class="info">
+                    <template is="dom-if" if="[[ application.security.info.length8 ]]">
+                        <iron-icon icon="check" class="icon-pass"></iron-icon>
+                    </template>
+
+                    <template is="dom-if" if="[[ !application.security.info.length8 ]]">
+                        <iron-icon icon="clear" class="icon-fail"></iron-icon>
+                    </template>
+
+                    More than 8 characters</p>
+                <p class="info">
+                    <template is="dom-if" if="[[ application.security.info.length16 ]]">
+                        <iron-icon icon="check" class="icon-pass"></iron-icon>
+                    </template>
+
+                    <template is="dom-if" if="[[ !application.security.info.length16 ]]">
+                        <iron-icon icon="clear" class="icon-fail"></iron-icon>
+                    </template>
+
+                    More than 16 characters</p>
+            </div>
         </template>
     </template>
 
@@ -68,42 +155,61 @@ Custom property | Description | Default
             is: 'appsco-application-security',
 
             properties: {
-                strength: {
-                    type: Number,
-                    value: 0
+
+                application: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    },
+                    observer: '_applicationChanged'
                 },
+
                 info: {
-                    type: String,
-                    value: '',
-                    notify: true,
-                    reflectToAttribute: true
+                    type: Boolean,
+                    value: false
                 },
+
                 strong: {
                     type: Boolean,
                     value: false,
                     reflectToAttribute: true
                 },
+
                 medium: {
                     type: Boolean,
                     value: false,
                     reflectToAttribute: true
                 },
+
                 weak: {
                     type: Boolean,
                     value: false,
                     reflectToAttribute: true
                 }
             },
-            ready: function () {
-                if (this.strength > 80) {
-                    this.strong = true;
-                    return;
+
+            _applicationChanged: function () {
+
+                if (this.application.security) {
+                    var score = this.application.security.score;
+
+                    this.weak = false;
+                    this.medium = false;
+                    this.strong = false;
+
+                    if (score > 80) {
+                        this.strong = true;
+                        return;
+                    }
+
+                    if (score > 60) {
+                        this.medium = true;
+                        return;
+                    }
+
+                    this.weak = true;
                 }
-                if (this.strength > 60) {
-                    this.medium = true;
-                    return;
-                }
-                this.weak = true;
+
             }
         });
     </script>

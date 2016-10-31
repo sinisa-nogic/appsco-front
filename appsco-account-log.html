@@ -1,0 +1,366 @@
+<link rel="import" href="../polymer/polymer.html">
+<link rel="import" href="../iron-image/iron-image.html">
+<link rel="import" href="../iron-flex-layout/iron-flex-layout.html">
+<link rel="import" href="../paper-styles/typography.html">
+<link rel="import" href="../paper-styles/shadow.html">
+<link rel="import" href="../iron-ajax/iron-ajax.html">
+<link rel="import" href="../paper-button/paper-button.html">
+<link rel="import" href="../paper-progress/paper-progress.html">
+
+<link rel="import" href="../appsco-components/appsco-list-item.html">
+
+<!--
+`appsco-account-log`
+Used to present application log. Each log message is presented in a new row.
+
+Example:
+    <body>
+        <appsco-account-log
+            account-log-api=""
+            authorization-token=""
+            size=""
+            load-more>
+        </appsco-account-log>
+
+### Styling
+
+`<appsco-account-log>` provides the following custom properties and mixins for styling:
+
+Custom property | Description | Default
+----------------|-------------|----------
+`--appsco-account-log` | Mixin for the root element | `{}`
+`--appsco-account-log-container` | Mixin for the log wrapper element | `{}`
+`--account-log-appsco-list-item` | Mixin applied to inner appsco-list-item element | `{}`
+`--account-log-appsco-list-item-first` | Mixin applied to first appsco-list-item element | `{}`
+`--account-log-paper-progress` | Mixin applied to notifications paper-progress | `{}`
+
+@demo demo/appsco-account-log.html
+-->
+
+<dom-module id="appsco-account-log">
+    <template>
+        <style>
+            :host {
+                display: block;
+                @apply(--appsco-account-log);
+            }
+            :host .account-log {
+                padding-top: 20px;
+                position: relative;
+                @apply(--layout-vertical);
+                @apply(--appsco-account-log-container);
+            }
+            :host appsco-list-item {
+                @apply(--account-log-appsco-list-item);
+            }
+            :host appsco-list-item:first-of-type {
+                @apply(--account-log-appsco-list-item-first);
+            }
+            :host .message {
+                color: var(--secondary-text-color);
+                font-style: italic;
+                @apply(--paper-font-body2);
+            }
+            :host paper-progress {
+                width: 100%;
+                position: absolute;
+                top: 4px;
+                left: 0;
+                @apply(--account-log-paper-progress);
+            }
+            :host paper-button {
+                display: block;
+                width: 120px;
+                margin: 20px auto 0;
+                text-align: center;
+            }
+        </style>
+
+        <iron-ajax
+                id="ironAjaxLog"
+                url=""
+                method="GET"
+                headers="{{ _computedHeaders }}"
+                handle-as="json"
+                on-error="_handleError"
+                on-response="_handleResponse">
+        </iron-ajax>
+
+        <div class="account-log">
+
+            <paper-progress id="progress" indeterminate></paper-progress>
+
+            <template is="dom-repeat"
+                      items="[[ _logList ]]">
+                <appsco-list-item
+                        item="[[ _mapToListItem(item) ]]">
+                </appsco-list-item>
+            </template>
+
+            <template is="dom-if" if="{{ _message }}">
+                <p class="message">
+                    [[ _message ]]
+                </p>
+            </template>
+
+            <paper-button id="loadMore"
+                          on-tap="_loadMore"
+                          hidden="[[ !loadMore ]]">Load More</paper-button>
+        </div>
+
+    </template>
+
+    <script>
+        Polymer({
+
+            is: 'appsco-account-log',
+
+            /**
+             * Link to load next page
+             */
+            _next: "",
+
+            properties: {
+
+                /**
+                 * Authorization token
+                 */
+                authorizationToken: {
+                    type: String
+                },
+
+                /**
+                 * [Account](https://developers.appsco.com/api/accounts/id)
+                 */
+                account: {
+                    type: Object,
+                    value: function() {
+                        return {}
+                    },
+                    notify: true
+                },
+
+                /**
+                 * Number of notifications to load.
+                 */
+                size: {
+                    type: Number,
+                    value: 5
+                },
+
+                /**
+                 * Indicates if load more action should be available or not.
+                 */
+                loadMore: {
+                    type: Boolean,
+                    value: false
+                },
+
+                /**
+                 * Account log API link to load next log page.
+                 */
+                _nextPage: {
+                    type: Number,
+                    value: 1
+                },
+
+                /**
+                 * Computed headers.
+                 * It contains authorization token.
+                 */
+                _computedHeaders: {
+                    type: Object,
+                    computed: "_computeHeaders(authorizationToken)"
+                },
+
+                /**
+                 * Log list for account.
+                 * Got from Appsco API within iron-ajax.
+                 */
+                _logList: {
+                    type: Array,
+                    value: function() {
+                        return [];
+                    },
+                    notify: true
+                },
+
+                /**
+                 * Message to display instead of log.
+                 */
+                _message: {
+                    type: String
+                }
+            },
+
+            listeners: {
+                'account-changed': '_onAccountChanged'
+            },
+
+            _onAccountChanged: function() {
+
+                if (this.account.meta && this.account.meta.log) {
+                    this._loadLog();
+                }
+
+            },
+
+            /**
+             * Computes iron-ajax url.
+             *
+             * @private
+             */
+            _computeUrl: function () {
+                return this.account.meta.share + '?page=' + this._nextPage + '&limit=' + this.size;
+            },
+
+            /**
+             * Computes authorization headers.
+             *
+             * @param {Object} authorizationToken
+             * @returns {{ Authorization: string }}
+             * @private
+             */
+            _computeHeaders: function (authorizationToken) {
+                return {
+                    'Authorization': 'token ' + authorizationToken
+                }
+            },
+
+            /**
+             * Returns log message dependent on item type.
+             *
+             * @param {Object} item
+             * @returns {{ message: string }}
+             * @private
+             */
+            _getLogMessage: function(item) {
+                var message = '';
+
+                switch (item.type) {
+                    case 'application_shared':
+                        message = 'Shared to ' + item.account.display_name + '.';
+                        break;
+                    case 'modified':
+                        message = 'Modified by ' + item.account.display_name + '.';
+                        break;
+                    case 'logged_in':
+                        message = item.account.display_name + ' logged in.';
+                        break;
+                    case 'claims_changed':
+                        message = item.account.display_name + ' changed claims.';
+                        break;
+                    case 'deleted':
+                        message = item.account.display_name + ' removed application.';
+                        break;
+                }
+
+                return message;
+
+            },
+
+            /**
+             * Maps log object to list-item object.
+             *
+             * @param {Object} item
+             * @returns {{ item: object }}
+             * @private
+             */
+            _mapToListItem: function(item) {
+                return {
+                    icon: item.icon_url,
+                    date: item.date,
+                    message: this._getLogMessage(item)
+                }
+            },
+
+            /**
+             * Triggers ajax request in order to get notifications.
+             */
+            _loadLog: function() {
+                this.$.progress.hidden = false;
+                this._logList = [];
+
+                this.$.ironAjaxLog.url = this._computeUrl();
+                this.$.ironAjaxLog.generateRequest();
+            },
+
+            _loadMore: function() {
+                this.$.progress.hidden = false;
+
+                this.$.ironAjaxNotifications.url = this._computeUrl();
+                this.$.ironAjaxNotifications.generateRequest();
+            },
+
+            /**
+             * Handles error on get log API request.
+             * @param {Object} event Event from error response.
+             *
+             * @private
+             */
+            _handleError: function(event) {
+                this._message = 'We couldn\'t load log at the moment. Please try again in a minute. If error continues contact us.';
+                this._hideProgressBar();
+            },
+
+            /**
+             * Handles response on get log API request.
+             * @param {Object} event Event from response.
+             *
+             * @private
+             */
+            _handleResponse: function(event) {
+                var response = event.detail.response,
+                    logList = response.log,
+                    currentLength = this._logList.length;
+
+                if (logList && logList.length > 0) {
+
+                    this._nextPage += 1;
+
+                    logList.forEach(function(log, i) {
+
+                        setTimeout( function() {
+
+                            this.push('_logList', logList[i]);
+
+                            if (i === (logList.length - 1)) {
+                                this._hideProgressBar();
+
+                                if (logList.length < this.size) {
+                                    this.$.loadMore.disabled = true;
+                                }
+                            }
+
+                        }.bind(this), (i + 1) * 50 );
+
+                    }.bind(this));
+
+                }
+                else if (logList && !logList.length) {
+
+                    if (!currentLength) {
+                        this._message = 'Your log is empty.';
+                    }
+                    else {
+                        this.$.loadMore.disabled = true;
+                    }
+
+                    this._hideProgressBar();
+                }
+                else if (!currentLength) {
+                    this._message = 'We couldn\'t load log at the moment.';
+                    this._hideProgressBar();
+                }
+            },
+
+            _hideProgressBar: function() {
+
+                setTimeout(function() {
+                    this.$.progress.hidden = true;
+                }.bind(this), 500);
+
+            }
+        });
+    </script>
+</dom-module>

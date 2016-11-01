@@ -1,0 +1,380 @@
+<link rel="import" href="../polymer/polymer.html">
+<link rel="import" href="../iron-flex-layout/iron-flex-layout.html">
+<link rel="import" href="../paper-styles/typography.html">
+<link rel="import" href="../iron-ajax/iron-ajax.html">
+<link rel="import" href="../paper-progress/paper-progress.html">
+<link rel="import" href="../paper-button/paper-button.html">
+
+<link rel="import" href="appsco-account-connected-app.html">
+
+<!--
+`appsco-account-connected-apps`
+Is used to present account's connected apps.
+
+Example:
+
+    <body>
+        <appsco-account-connected-apps account="{}"
+                                       authorization-token=""
+                                       size=""
+                                       load-more
+                                       short-view>
+        </appsco-account-connected-apps>
+
+ Custom property | Description | Default
+----------------|-------------|----------
+`--account-connected-apps` | Mixin applied to root element | `{}`
+`--account-connected-apps-container` | Mixin applied to inner connected apps container element | `{}`
+`--account-connected-apps-paper-progress` | Mixin applied to paper-progress | `{}`
+
+@demo demo/appsco-account-connected-apps.html
+-->
+
+<dom-module id="appsco-account-connected-apps">
+    <template>
+        <style>
+            :host {
+                display: block;
+                position: relative;
+                width: 100%;
+                @apply(--account-connected-apps);
+            }
+            .connected-apps {
+                padding-top: 10px;
+                position: relative;
+                @apply(--layout-vertical);
+                @apply(--account-connected-apps-container);
+            }
+            :host .message {
+                color: var(--secondary-text-color);
+                font-style: italic;
+                @apply(--paper-font-body2);
+            }
+            :host paper-progress {
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                margin: auto;
+                width: 100%;
+                @apply(--account-connected-apps-paper-progress);
+            }
+            :host .load-more-button {
+                display: block;
+                width: 120px;
+                margin: 20px auto 0;
+                text-align: center;
+            }
+        </style>
+
+        <iron-ajax
+                id="ironAjaxConnectedApps"
+                url="{{ _computedUrl }}"
+                method="GET"
+                headers="{{ _computedHeaders }}"
+                handle-as="json"
+                on-error="_handleError"
+                on-response="_handleResponse">
+        </iron-ajax>
+
+        <div class="connected-apps">
+
+            <paper-progress id="progress" indeterminate></paper-progress>
+
+            <template is="dom-repeat" items="{{ _connectedApps }}">
+
+                <appsco-account-connected-app application="[[ item ]]"
+                                              short-view="[[ shortView ]]"></appsco-account-connected-app>
+
+            </template>
+
+            <template is="dom-if" if="[[ _message ]]">
+                <p class="message">
+                    [[ _message ]]
+                </p>
+            </template>
+
+            <paper-button id="loadMore"
+                          class="load-more-button"
+                          hidden="[[ !loadMore ]]"
+                          on-tap="_loadMore">Load More</paper-button>
+
+        </div>
+    </template>
+
+    <script>
+        Polymer({
+
+            is: 'appsco-account-connected-apps',
+
+            properties: {
+
+                /**
+                 * [Account](https://developers.appsco.com/api/accounts/id)
+                 */
+                account: {
+                    type: Object,
+                    value: function() {
+                        return {}
+                    },
+                    notify: true
+                },
+
+                /**
+                 * Authorization token
+                 */
+                authorizationToken: {
+                    type: String
+                },
+
+//                /**
+//                 * Connected apps API link.
+//                 */
+//                connectedAppsApi: {
+//                    type: String
+//                },
+
+                /**
+                 * Next connected apps page to load through use of API link.
+                 */
+                _nextPage: {
+                    type: Number,
+                    value: 1
+                },
+
+                /**
+                 * Number of connected apps to load.
+                 */
+                size: {
+                    type: Number,
+                    value: 5
+                },
+
+                /**
+                 * Indicates if load more action should be available or not.
+                 */
+                loadMore: {
+                    type: Boolean,
+                    value: false
+                },
+
+                /**
+                 * Indicates if short view should be displayed.
+                 */
+                shortView: {
+                    type: Boolean,
+                    value: false
+                },
+
+//                /**
+//                 * Computed url.
+//                 */
+//                _computedUrl: {
+//                    type: String,
+//                    computed: "_computeUrl(connectedAppsApi)"
+//                },
+
+                /**
+                 * Computed headers.
+                 * It contains authorization token.
+                 */
+                _computedHeaders: {
+                    type: Object,
+                    computed: "_computeHeaders(authorizationToken)"
+                },
+
+                /**
+                 * Connected apps of account.
+                 * Get from Appsco API within iron-ajax.
+                 *
+                 * @type OAuthAuthorization[]
+                 */
+                _connectedApps: {
+                    type: Array,
+                    value: function() {
+                        return [];
+                    },
+                    notify: true
+                },
+
+                /**
+                 * Message to display instead of connected apps.
+                 */
+                _message: {
+                    type: String
+                }
+            },
+
+            listeners: {
+                'account-changed': '_onAccountChanged'
+            },
+
+            _onAccountChanged: function() {
+
+                if (this.account.meta && this.account.meta.share) {
+                    this._loadConnectedApps();
+                }
+
+            },
+
+            /**
+             * Computes iron-ajax url.
+             *
+             * @param {String} connectedAppsApi
+             * @private
+             */
+            _computeUrl: function () {
+                return this.account.meta.share + '?page=' + this._nextPage + '&limit=' + this.size;
+//                return account.meta.connectedApps + '?page=' + this._nextPage + '&limit=' + this.size;
+            },
+//            _computeUrl: function (connectedAppsApi) {
+//                return connectedAppsApi + '?page=' + this._nextPage + '&limit=' + this.size;
+//            },
+
+            /**
+             * Computes authorization headers.
+             *
+             * @param {Object} authorizationToken
+             * @returns {{ Authorization: string }}
+             * @private
+             */
+            _computeHeaders: function (authorizationToken) {
+                return {
+                    'Authorization': 'token ' + authorizationToken
+                }
+            },
+
+            /**
+             * Triggers ajax request in order to get connected apps.
+             */
+            _loadConnectedApps: function() {
+                this.$.progress.hidden = false;
+                this._connectedApps = [];
+
+                this.$.ironAjaxConnectedApps.url = this._computeUrl();
+                this.$.ironAjaxConnectedApps.generateRequest();
+            },
+
+            _loadMore: function() {
+                this.$.progress.hidden = false;
+
+//                this.$.ironAjaxConnectedApps.url = this._computeUrl(this.connectedAppsApi);
+                this.$.ironAjaxConnectedApps.url = this._computeUrl();
+                this.$.ironAjaxConnectedApps.generateRequest();
+            },
+
+            /**
+             * Handles error on get notifications API request.
+             * @param {Object} event Event from error response.
+             *
+             * @private
+             */
+            _handleError: function(event) {
+//                this._message = 'We couldn\'t load applications at the moment. Please try again in a minute. If error continues contact us.';
+//                this._hideProgressBar();
+
+                var applications = [
+                    {
+                        icon: 'http://mypro.loc/bundles/app/img/logo-panel.png',
+                        title: 'MyPro',
+                        createdAt: '2016-09-26T14:04:30+02:00',
+                        scope: 'profile_read'
+                    },
+                    {
+                        icon: 'https://medlemsnett.rotary.no/img/logo.png',
+                        title: 'Rotary MNet',
+                        createdAt: '2016-09-26T14:04:30+02:00',
+                        scope: 'profile_read'
+                    },
+                    {
+                        icon: 'https://my-dev.appsco.com/bundles/appscodashboardapproot/img/logo.png',
+                        title: 'Appsco Plugin',
+                        createdAt: '2016-09-26T14:04:30+02:00',
+                        scope: 'all'
+                    }
+                ];
+
+                if (applications && applications.length > 0) {
+
+                    applications.forEach(function(application, i) {
+
+                        setTimeout( function() {
+
+                            this.push('_connectedApps', applications[i]);
+
+                            if (i === (applications.length - 1)) {
+                                this._hideProgressBar();
+
+                                if (applications.length < this.size) {
+                                    this.$.loadMore.disabled = true;
+                                }
+                            }
+
+                        }.bind(this), (i + 1) * 50 );
+
+                    }.bind(this));
+
+                }
+            },
+
+            /**
+             * Handles response on get notifications API request.
+             * @param {Object} event Event from response.
+             *
+             * @private
+             */
+            _handleResponse: function(event) {
+                var applications = event.detail.response,
+                    currentLength = this._connectedApps.length;
+
+                if (applications && applications.length > 0) {
+
+                    this._nextPage += 1;
+
+                    applications.forEach(function(application, i) {
+
+                        setTimeout( function() {
+
+                            this.push('_connectedApps', applications[i]);
+
+                            if (i === (applications.length - 1)) {
+                                this._hideProgressBar();
+
+                                if (applications.length < this.size) {
+                                    this.$.loadMore.disabled = true;
+                                }
+                            }
+
+                        }.bind(this), (i + 1) * 50 );
+
+                    }.bind(this));
+
+                }
+                else if (applications && !applications.length) {
+
+                    if (!currentLength) {
+                        this._message = 'You don\'t have connected applications.';
+                    }
+                    else {
+                        this.$.loadMore.disabled = true;
+                    }
+
+                    this._hideProgressBar();
+                }
+                else if (!currentLength) {
+                    this._message = 'We couldn\'t load applications at the moment.';
+                    this._hideProgressBar();
+                }
+            },
+
+            _hideProgressBar: function() {
+
+                setTimeout(function() {
+                    this.$.progress.hidden = true;
+                }.bind(this), 500);
+
+            }
+
+        });
+    </script>
+</dom-module>

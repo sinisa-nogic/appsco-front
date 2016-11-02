@@ -1,0 +1,290 @@
+<link rel="import" href="../polymer/polymer.html">
+<link rel="import" href="../iron-flex-layout/iron-flex-layout.html">
+<link rel="import" href="../iron-form/iron-form.html">
+<link rel="import" href="../paper-styles/shadow.html">
+<link rel="import" href="../paper-styles/typography.html">
+<link rel="import" href="../paper-button/paper-button.html">
+<link rel="import" href="../neon-animation/neon-animation-runner-behavior.html">
+<link rel="import" href="../neon-animation/animations/fade-in-animation.html">
+<link rel="import" href="../neon-animation/animations/fade-out-animation.html">
+
+<link rel="import" href="../appsco-components/appsco-loader.html">
+<link rel="import" href="../appsco-components/appsco-form-error.html">
+<link rel="import" href="../appsco-components/appsco-copy.html">
+
+<!--
+`appsco-account-transfer-token`
+Form for account transfer token generation.
+
+Example:
+    <body>
+        <appsco-account-transfer-token partner="{}"
+                                        authorization-token=""
+                                        account-transfer-token-api="">
+        </appsco-account-transfer-token>
+
+### Styling
+
+`<appsco-account-transfer-token>` provides the following custom properties and mixins for styling:
+
+Custom property | Description | Default
+----------------|-------------|----------
+`--appsco-account-transfer-token` | Mixin for the root element | `{}`
+
+@demo demo/appsco-account-transfer-token.html
+-->
+
+<dom-module id="appsco-account-transfer-token">
+    <template>
+        <style>
+            :host {
+                display: block;
+                position: relative;
+                @apply(--appsco-account-change-password);
+
+                --appsco-loader: {
+                     width: 16px;
+                     height: 16px;
+                 };
+            }
+            :host .headline {
+                @apply(--paper-font-headline);
+                margin: 0 0 10px;
+            }
+            :host p {
+                line-height: 1.4;
+                margin: 8px 0;
+            }
+            :host form {
+                position: relative;
+            }
+            :host .submit-button {
+                margin: 10px 0;
+                padding: 6px 12px;
+                background-color: #34c2d7;
+                color: #ffffff;
+            }
+            :host .token {
+                max-width: 500px;
+                padding: 6px 30px 6px 6px;
+                height: 18px;
+                @apply(--paper-font-common-nowrap);
+                color: var(--secondary-text-color, #eeeeee);
+                font-size: 14px;
+                font-style: italic;
+                @apply(--shadow-elevation-2dp);
+                border-radius: 2px;
+                position: relative;
+                display: none;
+            }
+            :host appsco-copy {
+                position: absolute;
+                top: 0;
+                right: 0;
+                --paper-icon-button: {
+                     width: 32px;
+                     height: 32px;
+                 };
+            }
+        </style>
+
+        <h3 class="headline">Your partner is [[ partner.company_name ]].</h3>
+        <p>If you would like to switch partner please generate transfer token and provide it to your new partner.</p>
+        <p>
+            Transfer token enables appsco partner to add you as a customer.
+            <br>
+            Once you generate the code, it will be active for short period of time.
+            If you dont provide code to your partner within 24 hours it becomes inactive and you would need to generate another one.
+            Once transfer token is used it will become inactive.
+        </p>
+
+        <form is="iron-form"
+              id="accountTransferTokenForm"
+              method="POST"
+              action="[[ accountTransferTokenApi ]]"
+              headers="{{ _computedHeaders }}"
+              on-iron-form-presubmit="_onFormPresubmit"
+              on-iron-form-error="_onFormError"
+              on-iron-form-response="_onFormResponse">
+
+            <!--<appsco-form-error message="[[ _error ]]"></appsco-form-error>-->
+
+            <paper-button id="submit"
+                          class="submit-button"
+                          on-tap="_submitForm">
+                <appsco-loader active="[[ _loader ]]" loader-alt="Appsco is saving application" multi-color></appsco-loader>
+                Generate token</paper-button>
+        </form>
+
+        <div id="token" class="token">
+            [[ _token ]]
+            <appsco-copy value="[[ _token ]]"></appsco-copy>
+        </div>
+
+    </template>
+    <script>
+        Polymer({
+
+            is: 'appsco-account-transfer-token',
+
+            properties: {
+                /**
+                 * Current partner.
+                 */
+                partner: {
+                    type: Object,
+                    value: function() {
+                        return {}
+                    }
+                },
+
+                /**
+                 * Authorization token for the account.
+                 */
+                authorizationToken: {
+                    type: String
+                },
+
+                /**
+                 * Account chnage password api link.
+                 */
+                accountTransferTokenApi: {
+                    type: String
+                },
+
+                /**
+                 * Generated token.
+                 */
+                _token: {
+                    type: String
+                },
+
+                /**
+                 * Indicates if token has been already generated or not.
+                 */
+                _tokenGenerated: {
+                    type: Boolean,
+                    value: false
+                },
+
+                /**
+                 * Computed headers.
+                 * It contains authorization token.
+                 */
+                _computedHeaders: {
+                    type: Object,
+                    computed: "_computeHeaders(authorizationToken)"
+                },
+
+                _loader: {
+                    type: Boolean,
+                    value: false
+                },
+
+                /**
+                 * Error message for form.
+                 */
+                _error: {
+                    type: String
+                },
+
+                /**
+                 * Animation for loader appearance.
+                 */
+                animationConfig: {
+                    value: function() {
+                        return {
+                            'entry': {
+                                name: 'fade-in-animation',
+                                node: this.$.token,
+                                timing: {
+                                    duration: 300
+                                }
+                            },
+                            'exit': {
+                                name: 'fade-out-animation',
+                                node: this.$.token,
+                                timing: {
+                                    duration: 100
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+
+            behaviors: [
+                Polymer.NeonAnimationRunnerBehavior
+            ],
+
+            /**
+             * Computes authorization headers.
+             *
+             * @param {Object} authorizationToken
+             * @returns {{Authorization: string}}
+             * @private
+             */
+            _computeHeaders: function (authorizationToken) {
+                return {
+                    'Authorization': 'token ' + authorizationToken
+                }
+            },
+
+            _submitForm: function() {
+                this.$.accountTransferTokenForm.submit();
+            },
+
+            _onFormPresubmit: function(event) {
+                this._loader = true;
+            },
+
+            /**
+             * Called on form error when trying to save settings.
+             *
+             * @param {Object} event
+             * @private
+             */
+            _onFormError: function(event) {
+                this._error = event.detail.error.message;
+                this._loader = false;
+
+                // Example until we add support.
+                this._token = Math.random().toString(36);
+
+                if (!this._tokenGenerated) {
+                    this._tokenGenerated = true;
+
+                    setTimeout(function() {
+                        this.$.token.style.display = 'block';
+                        this.playAnimation('entry');
+                    }.bind(this), 200);
+                }
+
+            },
+
+            /**
+             * Called after settings have been submited.
+             *
+             * @param {Object} event
+             * @private
+             */
+            _onFormResponse: function(event) {
+
+                console.log(event);
+
+                this._token = event.detail.token;
+                this.$.token.style.display = 'block';
+                this.playAnimation('entry');
+
+//                /**
+//                 * Fired after successful password change.
+//                 *
+//                 * @event password-changed
+//                 */
+//                this.fire('password-changed');
+
+                this._loader = false;
+            }
+        });
+    </script>
+</dom-module>

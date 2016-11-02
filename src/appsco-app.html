@@ -28,7 +28,7 @@
 <link rel="import" href="../bower_components/appsco-application/appsco-application-share.html">
 <link rel="import" href="../bower_components/appsco-application/appsco-application-remove.html">
 
-<link rel="import" href="application/appsco-applications-page-actions.html">
+<link rel="import" href="application/appsco-home-page-actions.html">
 <link rel="import" href="application/appsco-application-page-actions.html">
 
 <dom-module id="appsco-app">
@@ -119,11 +119,12 @@
             /* Menu list style END */
 
             :host app-drawer-layout[fullbleed] {
-                top: 64px;
+                top: 65px;
                 overflow: hidden;
             }
             app-drawer {
                 top: 64px;
+                border-top: 1px solid #ffffff;
 
                 --app-drawer-content-container: {
                      padding-top: 0;
@@ -185,7 +186,7 @@
              <!--Drawer content -->
             <app-drawer id="appDrawer">
                 <iron-selector selected="[[page]]" attr-for-selected="name" class="drawer-list" role="navigation">
-                    <a name="applications" href="/applications">Applications</a>
+                    <a name="home" href="/home">Home</a>
                     <!--<a name="application" href="/application">Account</a>-->
                     <!--<a name="vault" href="/vault">Vault</a>-->
                 </iron-selector>
@@ -205,18 +206,18 @@
                                 selected="[[page]]"
                                 attr-for-selected="name">
 
-                            <appsco-applications-page-actions
-                                    name="applications"
+                            <appsco-home-page-actions
+                                    name="home"
                                     authorization-token="[[ authorizationToken ]]"
                                     filter-api="[[ api.dashboards ]]?extended=1"
                                     on-add-application="_onAddApplication"
                                     on-search="_searchApplications"
                                     on-group-selected="_onGroupSelected"
-                                    on-page-global-info="_onInfoAction"></appsco-applications-page-actions>
+                                    on-page-global-info="_onInfoAction"></appsco-home-page-actions>
 
                             <appsco-application-page-actions
                                     name="application"
-                                    on-back="_backToApplications"
+                                    on-back="_backToHome"
                                     on-resource-section="_onResourceAction"></appsco-application-page-actions>
                         </neon-animated-pages>
 
@@ -230,16 +231,16 @@
                         fallback-selection="404"
                         role="main"
                         on-neon-animation-finish="_onPageAnimationFinish">
-                    <appsco-applications-page
-                            id="appscoApplicationsPage"
-                            name="applications"
+                    <appsco-home-page
+                            id="appscoHomePage"
+                            name="home"
                             application="{{ application }}"
                             application-log="[[ application.meta.log ]]"
                             authorization-token="[[ authorizationToken ]]"
                             applications-api="[[ applicationsApi ]]"
                             on-view-application="_onViewApplication"
                             on-share-application="_onShareApplication">
-                    </appsco-applications-page>
+                    </appsco-home-page>
 
                     <appsco-application-page
                             id="appscoApplicationPage"
@@ -406,7 +407,7 @@
             },
 
             _routePageChanged: function(page) {
-                this.page = page || 'applications';
+                this.page = page || 'home';
             },
 
             _pageChanged: function(page) {
@@ -421,8 +422,8 @@
                 this.page = '404';
             },
 
-            _backToApplications: function() {
-                this.set('routeData.page', 'applications');
+            _backToHome: function() {
+                this.set('routeData.page', 'home');
             },
 
             /**
@@ -443,7 +444,7 @@
             },
 
             _onInfoAction: function() {
-                this.$.appscoApplicationsPage.toggleInfo();
+                this.$.appscoHomePage.toggleInfo();
             },
 
             _onViewApplication: function() {
@@ -478,7 +479,7 @@
                 var application = event.detail.application,
                     message = application.title + ' was successfully saved.';
 
-                this.$.appscoApplicationsPage.addApplication(application);
+                this.$.appscoHomePage.addApplication(application);
                 this._notify(message);
             },
 
@@ -490,8 +491,8 @@
                 var application = event.detail.application,
                     message = application.title + ' was successfully removed.';
 
-                this.$.appscoApplicationsPage.removeApplication(application);
-                this.set('routeData.page', 'applications');
+                this.$.appscoHomePage.removeApplication(application);
+                this.set('routeData.page', 'home');
 
                 this._notify(message);
             },
@@ -501,7 +502,7 @@
                     applicationLogApi = application.meta.log,
                     message = application.title + ' was successfully changed.';
 
-                this.$.appscoApplicationsPage.reloadApplications();
+                this.$.appscoHomePage.reloadApplications();
                 this._notifyAboutApplicationLogChange(applicationLogApi);
                 this._notify(message);
             },
@@ -519,7 +520,7 @@
             },
 
             _searchApplications: function(event) {
-                this.$.appscoApplicationsPage.filterApplicationsByTerm(event.detail.term);
+                this.$.appscoHomePage.filterApplicationsByTerm(event.detail.term);
             },
 
             _onGroupSelected: function(event) {
@@ -540,7 +541,7 @@
                     toPage = event.detail.toPage;
 
                 switch(fromPage.getAttribute('name')) {
-                    case 'applications':
+                    case 'home':
                         fromPage.toggleInfo('info');
                         break;
 
@@ -553,7 +554,7 @@
                 }
 
                 switch(toPage.getAttribute('name')) {
-                    case 'applications':
+                    case 'home':
                         toPage.setDefaultApplication();
                         break;
 

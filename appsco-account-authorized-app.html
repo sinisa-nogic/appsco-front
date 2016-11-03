@@ -7,34 +7,35 @@
 <link rel="import" href="../paper-icon-button/paper-icon-button.html">
 
 <!--
-`appsco-account-connected-app`
-Is used to represent connected app.
+`appsco-account-authorized-app`
+Is used to represent authorized app.
 
 Example:
 
     <body>
-      <appsco-account-connected-app application="{}"
+      <appsco-account-authorized-app application="{}"
                                     short-view>
-     </appsco-account-connected-app>
+     </appsco-account-authorized-app>
 
  Custom property | Description | Default
 ----------------|-------------|----------
-`--account-connected-app` | Mixin applied to root element | `{}`
-`--connected-app` | Mixin applied to inner application element | `{}`
-`--connected-app-icon` | Mixin applied to application image | `{}`
-`--connected-app-info` | Mixin applied to application info container | `{}`
-`--connected-app-title` | Mixin applied to application title | `{}`
-`--connected-app-date` | Mixin applied to date | `{}`
+`--account-authorized-app` | Mixin applied to root element | `{}`
+`--authorized-app` | Mixin applied to inner application element | `{}`
+`--authorized-app-icon` | Mixin applied to application image | `{}`
+`--authorized-app-info` | Mixin applied to application info container | `{}`
+`--authorized-app-title` | Mixin applied to application title | `{}`
+`--authorized-app-date` | Mixin applied to date | `{}`
+`--authorized-app-additional-info` | Mixin applied additional info | `{}`
 
-@demo demo/appsco-account-connected-apps.html
+@demo demo/appsco-account-authorized-apps.html
 -->
 
-<dom-module id="appsco-account-connected-app">
+<dom-module id="appsco-account-authorized-app">
     <template>
         <style>
             :host {
                 display: none;
-                @apply(--account-connected-app);
+                @apply(--account-authorized-app);
 
                 --paper-icon-button: {
                      width: 32px;
@@ -42,12 +43,20 @@ Example:
                  };
             }
             :host .application {
-                padding: 20px 0 10px 6px;
+                padding: 16px 0 10px 6px;
                 border-top: 1px solid var(--divider-color);
                 position: relative;
                 @apply(--layout-horizontal);
                 @apply(--layout-center);
-                @apply(--connected-app);
+                @apply(--authorized-app);
+            }
+            :host .application-info-container {
+                @apply(--layout-vertical);
+                @apply(--layout-flex);
+            }
+            :host .application-basic {
+                @apply(--layout-horizontal);
+                @apply(--layout-center);
             }
             :host .application-date {
                 font-size: 11px;
@@ -55,26 +64,39 @@ Example:
                 top: 5px;
                 right: 6px;
                 opacity: 0.5;
-                @apply(--connected-app-date);
+                @apply(--authorized-app-date);
             }
             :host .application-icon {
                 width: 96px;
+                margin-right: 10px;
                 @apply(--layout-flex-none);
-                @apply(--connected-app-icon);
+                @apply(--authorized-app-icon);
             }
             :host .application-info {
-                margin-left: 10px;
                 @apply(--layout-flex);
-                @apply(--connected-app-info);
+                @apply(--authorized-app-info);
             }
             :host .application-title {
-                @apply(--connected-app-title);
+                @apply(--authorized-app-title);
             }
             :host .application-scope {
                 font-size: 12px;
                 opacity: 0.6;
             }
             :host .revoke-action {
+                opacity: 0.6;
+            }
+            :host .application-additional {
+                margin-top: 10px;
+                font-size: 12px;
+                opacity: 0.8;
+                @apply(--layout-vertical);
+                @apply(--authorized-app-additional-info);
+            }
+            :host .application-description {
+                margin-top: 4px;
+            }
+            :host .application-info-value {
                 opacity: 0.6;
             }
             :host iron-image::shadow img {
@@ -89,17 +111,40 @@ Example:
         </style>
 
         <div class="application">
-            <div class="application-date">[[ _dateFormat(application.createdAt) ]]</div>
+            <div class="application-date">[[ _dateFormat(application.created.date) ]]</div>
 
-            <iron-image
-                    src="[[ application.icon ]]"
-                    class="application-icon"
-                    hidden$="[[ !application.icon ]]">
-            </iron-image>
+            <div class="application-info-container">
+                <div class="application-basic">
+                    <iron-image
+                            src="[[ application.icon_url ]]"
+                            class="application-icon"
+                            hidden$="[[ !application.icon_url ]]">
+                    </iron-image>
 
-            <div class="application-info">
-                <div class="application-title">[[ application.title ]]</div>
-                <div class="application-scope">Access: [[ application.scope ]]</div>
+                    <div class="application-info">
+                        <div class="application-title">[[ application.title ]]</div>
+                        <div class="application-scope">Access: [[ application.scopes ]]</div>
+                    </div>
+                </div>
+
+                <div class="application-additional">
+
+                    <template is="dom-if" if="[[ application.website ]]">
+                        <div class="application-website">
+                            Website:
+                            <br>
+                            <span class="application-info-value">[[ application.website ]]</span>
+                        </div>
+                    </template>
+
+                    <template is="dom-if" if="[[ application.description ]]">
+                        <div class="application-description">
+                            Description:
+                            <br>
+                            <span class="application-info-value">[[ application.description ]]</span>
+                        </div>
+                    </template>
+                </div>
             </div>
 
             <paper-icon-button icon="clear"
@@ -112,7 +157,7 @@ Example:
     <script>
         Polymer({
 
-            is: 'appsco-account-connected-app',
+            is: 'appsco-account-authorized-app',
 
             properties: {
 

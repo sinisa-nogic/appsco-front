@@ -96,7 +96,7 @@ Custom property | Description | Default
             <div class="input-container">
                 <paper-input
                         id="firstName"
-                        name="profile[firstName]"
+                        name="profile[first_name]"
                         label="First name"
                         value="[[ account.first_name ]]"
                         ></paper-input>
@@ -105,26 +105,26 @@ Custom property | Description | Default
             <div class="input-container">
                 <paper-input
                         id="lastName"
-                        name="profile[lastName]"
+                        name="profile[last_name]"
                         label="Last name"
                         value="[[ account.last_name ]]"
                         ></paper-input>
             </div>
 
-            <div class="input-container">
-                <paper-dropdown-menu name="profile[locale]"
-                                     label="Locale"
-                                     horizontal-align="left">
-                    <paper-listbox id="paperListboxLocale"
-                                   class="dropdown-content filter"
-                                   attr-for-selected="value"
-                                   selected="en">
-                        <template is="dom-repeat" items="[[ _localeList ]]">
-                            <paper-item value="[[ item.value ]]">[[ item.name ]]</paper-item>
-                        </template>
-                    </paper-listbox>
-                </paper-dropdown-menu>
-            </div>
+            <!--<div class="input-container">-->
+                <!--<paper-dropdown-menu name="profile[locale]"-->
+                                     <!--label="Locale"-->
+                                     <!--horizontal-align="left">-->
+                    <!--<paper-listbox id="paperListboxLocale"-->
+                                   <!--class="dropdown-content filter"-->
+                                   <!--attr-for-selected="value"-->
+                                   <!--selected="en">-->
+                        <!--<template is="dom-repeat" items="[[ _localeList ]]">-->
+                            <!--<paper-item value="[[ item.value ]]">[[ item.name ]]</paper-item>-->
+                        <!--</template>-->
+                    <!--</paper-listbox>-->
+                <!--</paper-dropdown-menu>-->
+            <!--</div>-->
 
             <div class="input-container">
                 <iron-ajax
@@ -134,7 +134,8 @@ Custom property | Description | Default
                         on-response="_onTimezoneListResponse">
                 </iron-ajax>
 
-                <paper-dropdown-menu name="profile[timezone]"
+                <paper-dropdown-menu id="dropdownTimezone"
+                                     name="profile[timezone]"
                                      label="Timezone"
                                      horizontal-align="left">
                     <paper-listbox id="paperListboxTimezone"
@@ -155,7 +156,8 @@ Custom property | Description | Default
                         on-response="_onCountryListResponse">
                 </iron-ajax>
 
-                <paper-dropdown-menu name="profile[country]"
+                <paper-dropdown-menu id="dropdownCountry"
+                                     name="profile[country]"
                                      label="Country"
                                      horizontal-align="left">
                     <paper-listbox id="paperListboxCountry"
@@ -177,7 +179,8 @@ Custom property | Description | Default
             </div>
 
             <div class="input-container">
-                <paper-dropdown-menu name="profile[gender]"
+                <paper-dropdown-menu id="dropdownGender"
+                                     name="profile[gender]"
                                      label="Gender"
                                      horizontal-align="left">
                     <paper-listbox id="paperListboxGender"
@@ -190,27 +193,27 @@ Custom property | Description | Default
                 </paper-dropdown-menu>
             </div>
 
-            <div class="input-container input-access">
-                <paper-checkbox name="profile[profileOptions][public]">
-                    Allow other users to search & share apps with you
-                </paper-checkbox>
-            </div>
+            <!--<div class="input-container input-access">-->
+                <!--<paper-checkbox name="profile[profileOptions][public]">-->
+                    <!--Allow other users to search & share apps with you-->
+                <!--</paper-checkbox>-->
+            <!--</div>-->
 
-            <div class="input-container input-upload-image">
-                <paper-input type="file"
-                             name="profile[picture_blob][file]"
-                             label="Account image"
-                             on-change="_onUploadImage"></paper-input>
+            <!--<div class="input-container input-upload-image">-->
+                <!--<paper-input type="file"-->
+                             <!--name="profile[picture_blob][file]"-->
+                             <!--label="Account image"-->
+                             <!--on-change="_onUploadImage"></paper-input>-->
 
-                <iron-image id="accountImage"
-                            class="account-image"
-                            preload
-                            fade
-                            src="[[ account.picture_url ]]"
-                            alt="Account image"
-                            class="sized"
-                            sizing="contain"></iron-image>
-            </div>
+                <!--<iron-image id="accountImage"-->
+                            <!--class="account-image"-->
+                            <!--preload-->
+                            <!--fade-->
+                            <!--src="[[ account.picture_url ]]"-->
+                            <!--alt="Account image"-->
+                            <!--class="sized"-->
+                            <!--sizing="contain"></iron-image>-->
+            <!--</div>-->
         </form>
 
         <paper-button id="submit"
@@ -326,7 +329,7 @@ Custom property | Description | Default
             },
 
             _onAccountChange: function() {
-                this.$.paperListboxLocale.select(this.account.locale);
+//                this.$.paperListboxLocale.select(this.account.locale);
                 this.$.paperListboxTimezone.select(this.account.timezone);
                 this.$.paperListboxCountry.select(this.account.country);
                 this.$.paperListboxGender.select(this.account.gender);
@@ -337,7 +340,24 @@ Custom property | Description | Default
             },
 
             _onTimezoneListResponse: function(event, ironRequest) {
-                this._timezoneList = ironRequest.response;
+
+                ironRequest.response.forEach(function(zone, i) {
+
+                    if (zone.utc) {
+
+                        zone.utc.forEach(function(utc, index) {
+                            var item = {
+                                    value: utc,
+                                    text: utc.split('/')[1]
+                                };
+
+                            this.push('_timezoneList', item);
+                        }.bind(this));
+
+                    }
+
+                }.bind(this));
+
             },
 
             _onUploadImage: function(event) {
@@ -372,11 +392,14 @@ Custom property | Description | Default
                 this.$.accountSettingsForm.submit();
             },
 
-            _onFormPresubmit: function(event) {
+            _onFormPresubmit: function() {
 
-                console.log(this.$.accountSettingsForm.request.body);
+                this._loader = true;
 
-                console.log(event);
+                this.$.accountSettingsForm.request.method = 'put';
+                this.$.accountSettingsForm.request.body['profile[timezone]'] = this.$.dropdownTimezone.selectedItem.value;
+                this.$.accountSettingsForm.request.body['profile[country]'] = this.$.dropdownCountry.selectedItem.value;
+                this.$.accountSettingsForm.request.body['profile[gender]'] = this.$.dropdownGender.selectedItem.value;
             },
 
             /**
@@ -397,8 +420,6 @@ Custom property | Description | Default
              * @private
              */
             _onFormResponse: function(event) {
-
-                console.log(event);
 
                 /**
                  * Fired after successful settings saving.

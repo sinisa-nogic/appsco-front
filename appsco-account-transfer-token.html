@@ -88,8 +88,10 @@ Custom property | Description | Default
             }
         </style>
 
-        <h3 class="headline">Your partner is [[ partner.company_name ]].</h3>
-        <p>If you would like to switch partner please generate transfer token and provide it to your new partner.</p>
+        <template is="dom-if" if="[[ _partnerExists ]]">
+            <h3 class="headline">Your partner is [[ partner.company_name ]].</h3>
+            <p>If you would like to switch partner please generate transfer token and provide it to your new partner.</p>
+        </template>
         <p>
             Transfer token enables appsco partner to add you as a customer.
             <br>
@@ -100,7 +102,7 @@ Custom property | Description | Default
 
         <form is="iron-form"
               id="accountTransferTokenForm"
-              method="POST"
+              method="GET"
               action="[[ accountTransferTokenApi ]]"
               headers="{{ _computedHeaders }}"
               on-iron-form-presubmit="_onFormPresubmit"
@@ -128,6 +130,7 @@ Custom property | Description | Default
             is: 'appsco-account-transfer-token',
 
             properties: {
+
                 /**
                  * Current partner.
                  */
@@ -136,6 +139,11 @@ Custom property | Description | Default
                     value: function() {
                         return {}
                     }
+                },
+
+                _partnerExists: {
+                    type: Boolean,
+                    computed: '_computePartner(partner)'
                 },
 
                 /**
@@ -217,6 +225,15 @@ Custom property | Description | Default
                 Polymer.NeonAnimationRunnerBehavior
             ],
 
+            _computePartner: function(partner) {
+
+                for (key in partner) {
+                    return true;
+                }
+
+                return false;
+            },
+
             /**
              * Computes authorization headers.
              *
@@ -247,19 +264,6 @@ Custom property | Description | Default
             _onFormError: function(event) {
                 this._error = event.detail.error.message;
                 this._loader = false;
-
-                // Example until we add support.
-                this._token = Math.random().toString(36);
-
-                if (!this._tokenGenerated) {
-                    this._tokenGenerated = true;
-
-                    setTimeout(function() {
-                        this.$.token.style.display = 'block';
-                        this.playAnimation('entry');
-                    }.bind(this), 200);
-                }
-
             },
 
             /**
@@ -269,19 +273,16 @@ Custom property | Description | Default
              * @private
              */
             _onFormResponse: function(event) {
+                this._token = event.detail.response.transfer_token;
 
-                console.log(event);
+                if (!this._tokenGenerated) {
+                    this._tokenGenerated = true;
 
-                this._token = event.detail.token;
-                this.$.token.style.display = 'block';
-                this.playAnimation('entry');
-
-//                /**
-//                 * Fired after successful password change.
-//                 *
-//                 * @event password-changed
-//                 */
-//                this.fire('password-changed');
+                    setTimeout(function() {
+                        this.$.token.style.display = 'block';
+                        this.playAnimation('entry');
+                    }.bind(this), 200);
+                }
 
                 this._loader = false;
             }

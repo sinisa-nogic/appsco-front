@@ -4,14 +4,13 @@
 <link rel="import" href="../../bower_components/neon-animation/animations/hero-animation.html">
 <link rel="import" href="../../bower_components/neon-animation/animations/fade-in-animation.html">
 <link rel="import" href="../../bower_components/neon-animation/animations/fade-out-animation.html">
-
-<link rel="import" href="../shared-styles.html">
-<link rel="import" href="../../bower_components/appsco-application/appsco-application-log.html">
-<link rel="import" href="../../bower_components/appsco-components/appsco-list-item.html">
 <link rel="import" href="../../bower_components/paper-card/paper-card.html">
 <link rel="import" href="../../bower_components/paper-icon-button/paper-icon-button.html">
 
-<dom-module id="appsco-application-log-page">
+<link rel="import" href="../shared-styles.html">
+<link rel="import" href="../../bower_components/appsco-account/appsco-account-log.html">
+
+<dom-module id="appsco-account-log-page">
     <template>
         <style>
             :host {
@@ -19,6 +18,10 @@
 
                 --paper-card-header: {
                      border-bottom: 1px solid var(--divider-color);
+                 };
+
+                --appsco-account-log-container: {
+                     padding-top: 0;
                  };
 
                 --account-log-appsco-list-item-first: {
@@ -31,14 +34,14 @@
             .page-close-action {
                 @apply(--page-close-action);
             }
-            appsco-application-log {
+            appsco-account-log {
                 --paper-button: {
                      padding: 6px 12px;
                  };
             }
         </style>
 
-        <paper-card heading="Application log" id="card">
+        <paper-card heading="Activity log" id="card">
             <paper-icon-button
                     icon="close"
                     title="Back"
@@ -47,12 +50,14 @@
 
             <div class="card-content layout vertical">
 
-                <appsco-application-log
-                        size="5"
-                        application-log="[[ applicationLog ]]"
+                <appsco-account-log
+                        id="appscoAccountLog"
+                        account="[[ account ]]"
                         authorization-token="[[ authorizationToken ]]"
+                        log-api="[[ logApi ]]"
+                        size="5"
                         load-more>
-                </appsco-application-log>
+                </appsco-account-log>
 
             </div>
         </paper-card>
@@ -62,21 +67,27 @@
     <script>
         Polymer({
 
-            is: 'appsco-application-log-page',
+            is: 'appsco-account-log-page',
 
             properties: {
 
-                /**
-                 * [Application](https://developers.appsco.com/api/dashboard/id/icons/id/log) that log is to be rendered for
-                 */
-                applicationLog: {
+                account: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    },
+                    notify: true
+                },
+
+                authorizationToken: {
                     type: String
                 },
 
-
-                authorizationToken: {
-                    type: String,
-                    value: ''
+                /**
+                 * Get authorized apps link.
+                 */
+                logApi: {
+                    type: String
                 },
 
                 /**
@@ -119,6 +130,10 @@
             behaviors: [
                 Polymer.NeonSharedElementAnimatableBehavior
             ],
+
+            attached: function() {
+                this.$.appscoAccountLog.loadLog();
+            },
 
             _back: function() {
                 this.fire('back');

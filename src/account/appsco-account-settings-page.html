@@ -4,14 +4,13 @@
 <link rel="import" href="../../bower_components/neon-animation/animations/hero-animation.html">
 <link rel="import" href="../../bower_components/neon-animation/animations/fade-in-animation.html">
 <link rel="import" href="../../bower_components/neon-animation/animations/fade-out-animation.html">
-
-<link rel="import" href="../shared-styles.html">
-<link rel="import" href="../../bower_components/appsco-application/appsco-application-log.html">
-<link rel="import" href="../../bower_components/appsco-components/appsco-list-item.html">
 <link rel="import" href="../../bower_components/paper-card/paper-card.html">
 <link rel="import" href="../../bower_components/paper-icon-button/paper-icon-button.html">
 
-<dom-module id="appsco-application-log-page">
+<link rel="import" href="../shared-styles.html">
+<link rel="import" href="../../bower_components/appsco-account/appsco-account-settings.html">
+
+<dom-module id="appsco-account-settings-page">
     <template>
         <style>
             :host {
@@ -20,10 +19,6 @@
                 --paper-card-header: {
                      border-bottom: 1px solid var(--divider-color);
                  };
-
-                --account-log-appsco-list-item-first: {
-                     border-top: none;
-                 };
             }
             :host paper-card {
                 @apply(--full-page-paper-card);
@@ -31,14 +26,16 @@
             .page-close-action {
                 @apply(--page-close-action);
             }
-            appsco-application-log {
+            appsco-account-settings {
                 --paper-button: {
-                     padding: 6px 12px;
+                     padding: 4px 8px;
+                    background-color: var(--app-primary-color);
+                    color: #ffffff;
                  };
             }
         </style>
 
-        <paper-card heading="Application log" id="card">
+        <paper-card heading="Settings" id="card">
             <paper-icon-button
                     icon="close"
                     title="Back"
@@ -46,14 +43,11 @@
                     on-tap="_back"></paper-icon-button>
 
             <div class="card-content layout vertical">
-
-                <appsco-application-log
-                        size="5"
-                        application-log="[[ applicationLog ]]"
+                <appsco-account-settings
+                        id="appscoAccountSettings"
+                        account="{{ account }}"
                         authorization-token="[[ authorizationToken ]]"
-                        load-more>
-                </appsco-application-log>
-
+                        account-settings-api="[[ settingsApi ]]"></appsco-account-settings>
             </div>
         </paper-card>
 
@@ -62,21 +56,27 @@
     <script>
         Polymer({
 
-            is: 'appsco-application-log-page',
+            is: 'appsco-account-settings-page',
 
             properties: {
 
-                /**
-                 * [Application](https://developers.appsco.com/api/dashboard/id/icons/id/log) that log is to be rendered for
-                 */
-                applicationLog: {
+                account: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    },
+                    notify: true
+                },
+
+                authorizationToken: {
                     type: String
                 },
 
-
-                authorizationToken: {
-                    type: String,
-                    value: ''
+                /**
+                 * Save account settings link.
+                 */
+                settingsApi: {
+                    type: String
                 },
 
                 /**
@@ -122,6 +122,14 @@
 
             _back: function() {
                 this.fire('back');
+            },
+
+            setPage: function() {
+                this.$.appscoAccountSettings.setUp();
+            },
+
+            resetPage: function() {
+                this.$.appscoAccountSettings.reset();
             }
         });
     </script>

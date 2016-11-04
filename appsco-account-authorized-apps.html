@@ -26,6 +26,8 @@ Example:
 `--account-authorized-apps` | Mixin applied to root element | `{}`
 `--account-authorized-apps-container` | Mixin applied to inner authorized apps container element | `{}`
 `--account-authorized-apps-paper-progress` | Mixin applied to paper-progress | `{}`
+`--account-authorized-app` | Mixin applied to inner appsco-account-authorized-app element | `{}`
+`--account-authorized-app-first` | Mixin applied to inner appsco-account-authorized-app first element | `{}`
 
 @demo demo/appsco-account-authorized-apps.html
 -->
@@ -37,18 +39,18 @@ Example:
                 display: block;
                 position: relative;
                 width: 100%;
-                @apply(--account-authorized-apps);
+            @apply(--account-authorized-apps);
             }
             .authorized-apps {
                 padding-top: 10px;
                 position: relative;
-                @apply(--layout-vertical);
-                @apply(--account-authorized-apps-container);
+            @apply(--layout-vertical);
+            @apply(--account-authorized-apps-container);
             }
             :host .message {
                 color: var(--secondary-text-color);
                 font-style: italic;
-                @apply(--paper-font-body2);
+            @apply(--paper-font-body2);
             }
             :host paper-progress {
                 position: absolute;
@@ -57,7 +59,13 @@ Example:
                 right: 0;
                 margin: auto;
                 width: 100%;
-                @apply(--account-authorized-apps-paper-progress);
+            @apply(--account-authorized-apps-paper-progress);
+            }
+            :host appsco-account-authorized-app {
+            @apply(--account-authorized-app);
+            }
+            :host appsco-account-authorized-app:first-of-type {
+            @apply(--account-authorized-app-first);
             }
             :host .load-more-button {
                 display: block;
@@ -84,7 +92,7 @@ Example:
             <template is="dom-repeat" items="{{ _authorizedApps }}">
 
                 <appsco-account-authorized-app application="[[ item ]]"
-                                              short-view="[[ shortView ]]"></appsco-account-authorized-app>
+                                               short-view="[[ shortView ]]"></appsco-account-authorized-app>
 
             </template>
 
@@ -205,14 +213,6 @@ Example:
                 }
             },
 
-            listeners: {
-                'account-changed': '_onAccountChanged'
-            },
-
-            _onAccountChanged: function() {
-                this._loadAuthorizedApps();
-            },
-
             /**
              * Computes iron-ajax url.
              *
@@ -239,9 +239,10 @@ Example:
             /**
              * Triggers ajax request in order to get authorized apps.
              */
-            _loadAuthorizedApps: function() {
+            loadAuthorizedApps: function() {
                 this.$.progress.hidden = false;
                 this._authorizedApps = [];
+                this._nextPage = 1;
 
                 this.$.ironAjaxAuthorizedApps.url = this._computeUrl(this.authorizedAppsApi);
                 this.$.ironAjaxAuthorizedApps.generateRequest();
@@ -273,8 +274,8 @@ Example:
              */
             _handleResponse: function(event) {
                 var response = event.detail.response,
-                    applications = response.authorizations,
-                    currentLength = this._authorizedApps.length;
+                        applications = response.authorizations,
+                        currentLength = this._authorizedApps.length;
 
                 if (applications && applications.length > 0) {
 

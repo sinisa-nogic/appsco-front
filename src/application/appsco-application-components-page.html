@@ -1,6 +1,7 @@
 <link rel="import" href="../../bower_components/polymer/polymer.html">
 <link rel="import" href="../../bower_components/iron-flex-layout/iron-flex-layout.html">
 <link rel="import" href="../../bower_components/neon-animation/neon-shared-element-animatable-behavior.html">
+<link rel="import" href="../../bower_components/neon-animation/animations/cascaded-animation.html">
 <link rel="import" href="../../bower_components/neon-animation/animations/hero-animation.html">
 <link rel="import" href="../../bower_components/neon-animation/animations/fade-out-animation.html">
 <link rel="import" href="../../bower_components/paper-card/paper-card.html">
@@ -31,6 +32,9 @@
                 --paper-card: {
                      min-height: 150px;
                      box-sizing: border-box;
+                 };
+                --paper-card-content: {
+                     min-height: 70px;
                  };
                 --paper-card-actions: {
                      padding: 0;
@@ -65,6 +69,7 @@
             }
             .appsco-application-log {
                 --paper-card-content: {
+                     min-height: 70px;
                      padding-top: 0;
                      padding-bottom: 0;
                  };
@@ -229,31 +234,27 @@
                 animationConfig: {
                     value: function() {
                         return {
+                            'entry': {
+                                name: 'cascaded-animation',
+                                animation: 'fade-in-animation',
+                                nodes: Polymer.dom(this.root).querySelectorAll('paper-card'),
+                                nodeDelay: 50,
+                                timing: {
+                                    delay: 200,
+                                    duration: 100
+                                }
+                            },
                             'exit': [{
                                 name: 'hero-animation',
                                 id: 'hero',
-                                fromPage: this,
-                                timing: {
-                                    duration: 300
-                                }
+                                fromPage: this
                             }, {
                                 name: 'fade-out-animation',
                                 node: this,
                                 timing: {
-                                    duration: 100
+                                    duration: 500
                                 }
                             }]
-                        }
-                    }
-                },
-
-                /**
-                 * Defines shared element of hero animation.
-                 */
-                sharedElements: {
-                    value: function() {
-                        return {
-                            'hero': {}
                         }
                     }
                 }
@@ -263,15 +264,34 @@
                 Polymer.NeonSharedElementAnimatableBehavior
             ],
 
-            _onApplicationSettings: function() {
+            _setSharedElement: function(target) {
+
+                while (target.tagName.toLowerCase() !== 'paper-card' && !target._templateInstance) {
+                    target = target.parentNode;
+                }
+
+                /**
+                 * Set hero animation element that is to be shared between pages.
+                 *
+                 * @type {{hero: *}}
+                 */
+                this.sharedElements = {
+                    'hero': target
+                };
+            },
+
+            _onApplicationSettings: function(event) {
+                this._setSharedElement(event.target);
                 this.fire('application-settings');
             },
 
-            _onAllSubscribers: function() {
+            _onAllSubscribers: function(event) {
+                this._setSharedElement(event.target);
                 this.fire('all-subscribers');
             },
 
-            _onAllLog: function() {
+            _onAllLog: function(event) {
+                this._setSharedElement(event.target);
                 this.fire('all-log');
             }
         });

@@ -200,7 +200,7 @@
                                 application="{{ application }}"
                                 authorization-token="[[ authorizationToken ]]"
                                 on-application-settings-saved="_onApplicationSettingsSaved"
-                                on-back="_onResourceBack">
+                                on-back="_onApplicationSettingsBack">
                         </appsco-application-settings-page>
 
                         <appsco-application-subscribers-page
@@ -235,7 +235,9 @@
 
                 application: {
                     type: Object,
-                    value: {},
+                    value: function() {
+                        return {};
+                    },
                     notify: true
                 },
 
@@ -343,7 +345,7 @@
 
             attached: function() {
 
-                if (this.mobileScreen || this.mediumScreen) {
+                if (this.mobileScreen || this.tabletScreen || this.mediumScreen) {
                     this.updateStyles();
                 }
 
@@ -373,6 +375,11 @@
                 this._showApplicationComponentsPage();
             },
 
+            _onApplicationSettingsBack: function() {
+                this.$.appscoApplicationSettingsPage.resetPage();
+                this._showApplicationComponentsPage();
+            },
+
             _onResourceBack: function() {
                 this._showApplicationComponentsPage();
             },
@@ -398,11 +405,12 @@
             },
 
             _onPageAnimationFinish: function(event) {
-                var fromPage = event.detail.fromPage;
+                var fromPage = event.detail.fromPage,
+                    toPage = event.detail.toPage;
 
-                switch(fromPage.getAttribute('name')) {
+                switch(toPage.getAttribute('name')) {
                     case 'appsco-application-settings-page':
-                        fromPage.resetPage();
+                        toPage.setPage();
                         break;
 
                     default:

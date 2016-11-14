@@ -1,0 +1,339 @@
+<link rel="import" href="../polymer/polymer.html">
+<link rel="import" href="../iron-form/iron-form.html">
+<link rel="import" href="../paper-button/paper-button.html">
+<link rel="import" href="../iron-image/iron-image.html">
+<link rel="import" href="../iron-icon/iron-icon.html">
+<link rel="import" href="../iron-icons/iron-icons.html">
+
+<link rel="import" href="../appsco-components/appsco-loader.html">
+<link rel="import" href="../appsco-components/appsco-form-error.html">
+
+<!--
+`appsco-account-image-settings`
+Account image settings is used to upload account image.
+
+    <appsco-account-image-settings account={}
+                                   authorization-token=""
+                                   image-settings-api=""></appsco-account-image-settings>
+
+### Styling
+
+`<appsco-account-image-settings>` provides the following custom properties and mixins for styling:
+
+Custom property | Description | Default
+----------------|-------------|----------
+`--account-image-upload-radius` | Radius of upload image container and image itself. | `50%`
+`--appsco-account-image-settings` | Mixin applied to the root element | `{}`
+`--account-image-upload-container` | Mixin applied to the image upload container | `{}`
+`--account-image` | Mixin applied to the image preview | `{}`
+`--account-image-upload-field` | Mixin applied to the upload label field | `{}`
+`--account-image-upload-icon` | Mixin applied to the upload icon inside upload field | `{}`
+
+@demo demo/appsco-account-image-settings.html
+-->
+
+<dom-module id="appsco-account-image-settings">
+    <template>
+        <style>
+            :host {
+                display: inline-block;
+                position: relative;
+            @apply(--appsco-account-image-settings);
+            }
+            .upload-container {
+                width: 96px;
+                height: 96px;
+                background-color: #fff;
+                -webkit-background-clip: padding-box;
+                padding: 8px;
+                margin-left: auto;
+                margin-right: auto;
+                border: 2px solid #34c2d7;
+                overflow: hidden;
+                position: relative;
+            @apply(--account-image-upload-container);
+            }
+            :host appsco-loader, .upload-container, .account-image, .account-image-upload {
+                border-radius: var(--account-image-upload-radius, 50%);
+            }
+            .account-image, .account-image-upload, .icon-upload {
+                position: absolute;
+                top: 0;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                margin: auto;
+            }
+            .account-image {
+                width: 96px;
+                height: 96px;
+            --iron-image-placeholder: {
+                 background: #eeeeee;
+             };
+
+            @apply(--account-image);
+            }
+            .account-image-upload {
+                background-color: rgba(250, 250, 250, 0.9);
+                display: block;
+                opacity: 0;
+                z-index: 5;
+                cursor: pointer;
+            @apply(--account-image-upload-field);
+            }
+            .account-image-upload.no-image {
+                opacity: 1;
+            }
+            .account-image-upload:hover {
+                opacity: 1;
+                transition: opacity .2s ease-in;
+            }
+            .icon-upload {
+                width: 32px;
+                height: 32px;
+                color: #273441;
+            @apply(--account-image-upload-icon);
+            }
+            .upload-file {
+                width: 0;
+                height: 0;
+                opacity: 0;
+            }
+        </style>
+
+        <appsco-form-error message="[[ _error ]]"></appsco-form-error>
+
+        <form is="iron-form"
+              id="accountImageSettingsForm"
+              method="POST"
+              action="[[ imageSettingsApi ]]"
+              headers="{{ _computedHeaders }}"
+              on-iron-form-presubmit="_onFormPresubmit"
+              on-iron-form-error="_onFormError"
+              on-iron-form-response="_onFormResponse">
+
+            <div class="upload-container">
+
+                <appsco-loader active="[[ _loader ]]" loader-alt="Appsco is saving application" multi-color></appsco-loader>
+
+                <iron-image class="account-image"
+                            src="[[ account.picture_url ]]"
+                            alt="Account image"
+                            class="sized"
+                            sizing="contain"></iron-image>
+
+                <label for="accountImage"
+                       class$="account-image-upload [[ _imagePreview ]]">
+                    <iron-icon icon="file-upload" class="icon-upload"></iron-icon>
+                </label>
+
+                <input type="file"
+                       accept="image/*"
+                       id="accountImage"
+                       name="profile[picture_blob][file]"
+                       class="upload-file"
+                       on-change="_onUploadImage">
+            </div>
+        </form>
+
+        <content select="[info]"></content>
+
+    </template>
+    <script>
+        Polymer({
+
+            is: 'appsco-account-image-settings',
+
+            properties: {
+                /**
+                 * Account to update.
+                 */
+                account: {
+                    type: Object,
+                    value: function() {
+                        return {}
+                    },
+                    notify: true
+                },
+
+                /**
+                 * Authorization token for the account.
+                 */
+                authorizationToken: {
+                    type: String,
+                    value: ''
+                },
+
+                /**
+                 * Account image settings api link.
+                 */
+                imageSettingsApi: {
+                    type: String
+                },
+
+                /**
+                 * Computed headers.
+                 * It contains authorization token.
+                 */
+                _computedHeaders: {
+                    type: Object,
+                    computed: "_computeHeaders(authorizationToken)"
+                },
+
+                _imagePreview: {
+                    type: String,
+                    computed: '_computeImagePreviewClass(account)'
+                },
+
+                _loader: {
+                    type: Boolean,
+                    value: false
+                },
+
+                /**
+                 * Error message for settings form.
+                 */
+                _error: {
+                    type: String
+                }
+            },
+
+            _validateImageFile: function(file) {
+                var validFileTypes = ['image/jpg', 'image/jpeg', 'image/png'],
+                        fileType = file.type,
+                        valid = true;
+
+                if (file.size > 1048576) {
+                    this._error = 'Image size must be less than 1MB.';
+                    valid = false;
+                }
+                else {
+
+                    for (var i = 0; i < validFileTypes.length; i++) {
+
+                        if (validFileTypes[i] === fileType) {
+                            valid = true;
+                            break;
+                        }
+                        else {
+                            valid = false;
+                        }
+
+                        if (i === (validFileTypes.length - 1) && !valid) {
+                            this._error = 'Allowed file types are: jpg, jpeg and png.';
+                        }
+                    }
+
+                }
+
+                return valid;
+
+            },
+
+            _onUploadImage: function(event) {
+                var input = event.target;
+
+                if (input.files && input.files[0]) {
+                    var file = input.files[0];
+
+                    if (!this._validateImageFile(file)) {
+                        return false;
+                    }
+
+                    // Temporary - set preview of chosen image.
+                    var reader = new FileReader();
+
+                    reader.onload = function(e) {
+                        this.account.picture_url = e.target.result;
+
+                        var account = JSON.parse(JSON.stringify(this.account));
+                        this.account = {};
+                        this.account = account;
+
+                    }.bind(this);
+
+                    reader.readAsDataURL(input.files[0]);
+                    // Temporary - set preview of chosen image.
+
+                    this._submitForm();
+                }
+            },
+
+            /**
+             * Computes authorization headers.
+             *
+             * @param {Object} authorizationToken
+             * @returns {{Authorization: string}}
+             * @private
+             */
+            _computeHeaders: function (authorizationToken) {
+                return {
+                    'Authorization': 'token ' + authorizationToken,
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                }
+            },
+
+            _computeImagePreviewClass: function(account) {
+                return account.picture_url ? 'has-image' : 'no-image';
+            },
+
+            _submitForm: function() {
+                this.$.accountImageSettingsForm.submit();
+            },
+
+            _onFormPresubmit: function() {
+                this._loader = true;
+//                this.$.accountSettingsForm.request.method = 'put';
+            },
+
+            /**
+             * Called on form error when trying to save settings.
+             *
+             * @param {Object} event
+             * @private
+             */
+            _onFormError: function(event) {
+                this._error = event.detail.error.message;
+                this._loader = false;
+            },
+
+            /**
+             * Called after settings have been submited.
+             *
+             * @param {Object} event
+             * @private
+             */
+            _onFormResponse: function(event) {
+//                this.account = event.detail.response.account;
+
+//                var account = JSON.parse(JSON.stringify(this.account));
+//
+//                this.account = {};
+//                this.account = account;
+
+                /**
+                 * Fired after successful image saving.
+                 *
+                 * @event image-settings-saved
+                 */
+                this.fire('image-settings-saved');
+
+                this._error = '';
+                this._loader = false;
+            },
+
+            /**
+             * Resets component.
+             */
+            reset: function() {
+                var account = JSON.parse(JSON.stringify(this.account));
+
+                this.account = {};
+                this.account = account;
+
+                this._error = '';
+
+            }
+        });
+    </script>
+</dom-module>

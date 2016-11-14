@@ -42,31 +42,31 @@ Custom property | Description | Default
         <style>
             :host {
                 display: block;
-                @apply(--appsco-account-log);
+            @apply(--appsco-account-log);
             }
             :host .account-log {
-                padding-top: 20px;
+                padding-top: 10px;
                 position: relative;
-                @apply(--layout-vertical);
-                @apply(--appsco-account-log-container);
+            @apply(--layout-vertical);
+            @apply(--appsco-account-log-container);
             }
             :host appsco-list-item {
-                @apply(--account-log-appsco-list-item);
+            @apply(--account-log-appsco-list-item);
             }
             :host appsco-list-item:first-of-type {
-                @apply(--account-log-appsco-list-item-first);
+            @apply(--account-log-appsco-list-item-first);
             }
             :host .message {
                 color: var(--secondary-text-color);
                 font-style: italic;
-                @apply(--paper-font-body2);
+            @apply(--paper-font-body2);
             }
             :host paper-progress {
                 width: 100%;
                 position: absolute;
-                top: 4px;
+                top: 0;
                 left: 0;
-                @apply(--account-log-paper-progress);
+            @apply(--account-log-paper-progress);
             }
             :host paper-button {
                 display: block;
@@ -78,7 +78,7 @@ Custom property | Description | Default
 
         <iron-ajax
                 id="ironAjaxLog"
-                url=""
+                url="{{ _computedUrl }}"
                 method="GET"
                 headers="{{ _computedHeaders }}"
                 handle-as="json"
@@ -123,13 +123,6 @@ Custom property | Description | Default
             properties: {
 
                 /**
-                 * Authorization token
-                 */
-                authorizationToken: {
-                    type: String
-                },
-
-                /**
                  * [Account](https://developers.appsco.com/api/accounts/id)
                  */
                 account: {
@@ -138,6 +131,20 @@ Custom property | Description | Default
                         return {}
                     },
                     notify: true
+                },
+
+                /**
+                 * Authorization token
+                 */
+                authorizationToken: {
+                    type: String
+                },
+
+                /**
+                 * Account log API link.
+                 */
+                logApi: {
+                    type: String
                 },
 
                 /**
@@ -162,6 +169,14 @@ Custom property | Description | Default
                 _nextPage: {
                     type: Number,
                     value: 1
+                },
+
+                /**
+                 * Computed url.
+                 */
+                _computedUrl: {
+                    type: String,
+                    computed: "_computeUrl(logApi)"
                 },
 
                 /**
@@ -193,21 +208,14 @@ Custom property | Description | Default
                 }
             },
 
-            listeners: {
-                'account-changed': '_onAccountChanged'
-            },
-
-            _onAccountChanged: function() {
-                this._loadLog();
-            },
-
             /**
              * Computes iron-ajax url.
              *
+             * @param {String} logApi
              * @private
              */
-            _computeUrl: function () {
-                return this.account.meta.share + '?page=' + this._nextPage + '&limit=' + this.size;
+            _computeUrl: function (logApi) {
+                return logApi + '?page=' + this._nextPage + '&limit=' + this.size;
             },
 
             /**
@@ -273,18 +281,18 @@ Custom property | Description | Default
             /**
              * Triggers ajax request in order to get notifications.
              */
-            _loadLog: function() {
+            loadLog: function() {
                 this.$.progress.hidden = false;
                 this._logList = [];
 
-                this.$.ironAjaxLog.url = this._computeUrl();
+                this.$.ironAjaxLog.url = this._computeUrl(this.logApi);
                 this.$.ironAjaxLog.generateRequest();
             },
 
             _loadMore: function() {
                 this.$.progress.hidden = false;
 
-                this.$.ironAjaxLog.url = this._computeUrl();
+                this.$.ironAjaxLog.url = this._computeUrl(this.logApi);
                 this.$.ironAjaxLog.generateRequest();
             },
 
@@ -295,6 +303,7 @@ Custom property | Description | Default
              * @private
              */
             _handleError: function(event) {
+                this.$.loadMore.disabled = true;
                 this._message = 'We couldn\'t load log at the moment. Please try again in a minute. If error continues contact us.';
                 this._hideProgressBar();
             },
@@ -307,8 +316,8 @@ Custom property | Description | Default
              */
             _handleResponse: function(event) {
                 var response = event.detail.response,
-                    logList = response.log,
-                    currentLength = this._logList.length;
+                        logList = response.log,
+                        currentLength = this._logList.length;
 
                 if (logList && logList.length > 0) {
 

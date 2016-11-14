@@ -30,6 +30,7 @@
 
 <link rel="import" href="application/appsco-home-page-actions.html">
 <link rel="import" href="application/appsco-application-page-actions.html">
+<link rel="import" href="account/appsco-account-page-actions.html">
 
 <dom-module id="appsco-app">
     <template>
@@ -178,8 +179,8 @@
                 notifications-size="5"
                 account-chat
                 account-info="Info related to account"
-                on-account-chat="_onAccountChat">
-        </appsco-header>
+                on-account-chat="_onAccountChat"
+                on-account-settings="_onAccountSettingsAction"></appsco-header>
 
         <app-drawer-layout fullbleed force-narrow>
 
@@ -187,7 +188,7 @@
             <app-drawer id="appDrawer">
                 <iron-selector selected="[[page]]" attr-for-selected="name" class="drawer-list" role="navigation">
                     <a name="home" href="/home">Home</a>
-                    <!--<a name="application" href="/application">Account</a>-->
+                    <a name="account" href="/account">Account</a>
                     <!--<a name="vault" href="/vault">Vault</a>-->
                 </iron-selector>
             </app-drawer>
@@ -218,7 +219,14 @@
                             <appsco-application-page-actions
                                     name="application"
                                     on-back="_backToHome"
-                                    on-resource-section="_onResourceAction"></appsco-application-page-actions>
+                                    on-resource-section="_onResourceActionApplicationPage"></appsco-application-page-actions>
+
+                            <appsco-account-page-actions
+                                    name="account"
+                                    on-back="_backToHome"
+                                    on-resource-section="_onResourceActionAccountPage"
+                                    on-advanced-settings="_onAccountAdvancedSettings"></appsco-account-page-actions>
+
                         </neon-animated-pages>
 
                     </app-toolbar>
@@ -255,6 +263,21 @@
                             on-application-settings-saved="_onApplicationSettingsSaved"
                             on-application-settings-no-changes="_onApplicationSettingsNoChanges">
                     </appsco-application-page>
+
+                    <appsco-account-page
+                            id="appscoAccountPage"
+                            name="account"
+                            account="{{ account }}"
+                            authorization-token="[[ authorizationToken ]]"
+                            notifications-api="[[ api.notifications ]]"
+                            authorized-apps-api="[[ api.authorizedApps ]]"
+                            log-api="https://my-dev.appsco.com/api/v2/me/log"
+                            two-fa-api="[[ api.twoFA ]]"
+                            settings-api="[[ api.me ]]"
+                            transfer-token-api="[[ api.transferToken ]]"
+                            change-password-api="[[ api.changePassword ]]"
+                            on-settings-saved="_onAccountSettingsSaved"
+                            on-password-changed="_onAccountPasswordChanged"></appsco-account-page>
                     <appsco-404-page name="404"></appsco-404-page>
                 </neon-animated-pages>
             </app-header-layout>
@@ -289,19 +312,23 @@
                 authorization-token="[[ authorizationToken ]]"
                 on-application-removed="_onApplicationRemoved"></appsco-application-remove>
 
-        <iron-ajax
-                auto
-                url="[[ api.me ]]"
-                on-response="_onGetAccountResponse"
-                headers="{{ _computedHeaders }}">
-        </iron-ajax>
+        <template is="dom-if" if="[[ api.me ]]">
+            <iron-ajax
+                    auto
+                    url="[[ api.me ]]"
+                    on-response="_onGetAccountResponse"
+                    headers="{{ _computedHeaders }}">
+            </iron-ajax>
+        </template>
 
-        <iron-ajax
-                auto
-                url="[[ api.dashboards ]]?extended=1"
-                on-response="_onDashboardsResponse"
-                headers="{{ _computedHeaders }}">
-        </iron-ajax>
+        <template is="dom-if" if="[[ api.dashboards ]]">
+            <iron-ajax
+                    auto
+                    url="[[ api.dashboards ]]?extended=1"
+                    on-response="_onDashboardsResponse"
+                    headers="{{ _computedHeaders }}">
+            </iron-ajax>
+        </template>
     </template>
 
     <script>
@@ -325,7 +352,8 @@
                     type: Object,
                     value: function() {
                         return {};
-                    }
+                    },
+                    notify: true
                 },
 
                 /**
@@ -439,8 +467,12 @@
                 }
             },
 
-            _onResourceAction: function() {
+            _onResourceActionApplicationPage: function() {
                 this.$.appscoApplicationPage.toggleResource();
+            },
+
+            _onResourceActionAccountPage: function() {
+                this.$.appscoAccountPage.toggleResource();
             },
 
             _onInfoAction: function() {
@@ -515,6 +547,10 @@
                 this.$.appscoAccountChat.toggleChat(event.target);
             },
 
+            _onAccountSettingsAction: function(event) {
+                this.set('routeData.page', 'account');
+            },
+
             _onGetAccountResponse: function(event) {
                 this.account = event.detail.response.account;
             },
@@ -542,10 +578,14 @@
 
                 switch(fromPage.getAttribute('name')) {
                     case 'home':
-                        fromPage.toggleInfo('info');
+                        fromPage.hideInfo();
                         break;
 
                     case 'application':
+                        fromPage.initializePage();
+                        break;
+
+                    case 'account':
                         fromPage.initializePage();
                         break;
 
@@ -565,6 +605,18 @@
                         break;
                 }
 
+            },
+
+            _onAccountAdvancedSettings: function() {
+                this.$.appscoAccountPage.toggleAdvancedSettings();
+            },
+
+            _onAccountSettingsSaved: function() {
+                this._notify('Account settings were successfully changed.');
+            },
+
+            _onAccountPasswordChanged: function() {
+                this._notify('Account password was successfully changed.');
             },
 
             /**

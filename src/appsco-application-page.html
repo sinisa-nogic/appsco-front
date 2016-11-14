@@ -118,6 +118,7 @@
         </style>
 
         <iron-media-query query="(max-width: 1200px)" query-matches="{{ mediumScreen }}"></iron-media-query>
+        <iron-media-query query="(max-width: 800px)" query-matches="{{ tabletScreen }}"></iron-media-query>
         <iron-media-query query="(max-width: 600px)" query-matches="{{ mobileScreen }}"></iron-media-query>
 
         <appsco-content id="appscoContent" resource-active>
@@ -179,7 +180,8 @@
                 <div class="application-components">
                     <neon-animated-pages class="flex"
                                          selected="{{ _selected }}"
-                                         attr-for-selected="name">
+                                         attr-for-selected="name"
+                                         on-neon-animation-finish="_onPageAnimationFinish">
 
                         <appsco-application-components-page
                                 id="appscoApplicationComponentsPage"
@@ -198,7 +200,7 @@
                                 application="{{ application }}"
                                 authorization-token="[[ authorizationToken ]]"
                                 on-application-settings-saved="_onApplicationSettingsSaved"
-                                on-back="_onResourceBack">
+                                on-back="_onApplicationSettingsBack">
                         </appsco-application-settings-page>
 
                         <appsco-application-subscribers-page
@@ -233,7 +235,9 @@
 
                 application: {
                     type: Object,
-                    value: {},
+                    value: function() {
+                        return {};
+                    },
                     notify: true
                 },
 
@@ -294,6 +298,12 @@
                     reflectToAttribute: true
                 },
 
+                tabletScreen: {
+                    type: Boolean,
+                    value: false,
+                    reflectToAttribute: true
+                },
+
                 mobileScreen: {
                     type: Boolean,
                     value: false,
@@ -330,19 +340,23 @@
             ],
 
             observers: [
-                '_isCSSChanged(mediumScreen, mobileScreen)'
+                '_updateScreen(mediumScreen, tabletScreen, mobileScreen)'
             ],
 
             attached: function() {
 
-                if (this.mobileScreen || this.mediumScreen) {
+                if (this.mobileScreen || this.tabletScreen || this.mediumScreen) {
                     this.updateStyles();
                 }
 
             },
 
-            _isCSSChanged: function(medium, mobile) {
+            _updateScreen: function(medium, tablet, mobile) {
                 this.updateStyles();
+
+                if (!tablet) {
+                    this.$.appscoContent.showSection('resource');
+                }
             },
 
             _onApplicationSettings: function() {
@@ -358,6 +372,11 @@
             },
 
             _onApplicationSettingsSaved: function() {
+                this._showApplicationComponentsPage();
+            },
+
+            _onApplicationSettingsBack: function() {
+                this.$.appscoApplicationSettingsPage.resetPage();
                 this._showApplicationComponentsPage();
             },
 
@@ -383,6 +402,21 @@
 
             toggleResource: function() {
                 this.$.appscoContent.toggleSection('resource');
+            },
+
+            _onPageAnimationFinish: function(event) {
+                var fromPage = event.detail.fromPage,
+                    toPage = event.detail.toPage;
+
+                switch(toPage.getAttribute('name')) {
+                    case 'appsco-application-settings-page':
+                        toPage.setPage();
+                        break;
+
+                    default:
+                        break;
+                }
+
             }
         });
     </script>

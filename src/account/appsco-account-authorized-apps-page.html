@@ -4,14 +4,13 @@
 <link rel="import" href="../../bower_components/neon-animation/animations/hero-animation.html">
 <link rel="import" href="../../bower_components/neon-animation/animations/fade-in-animation.html">
 <link rel="import" href="../../bower_components/neon-animation/animations/slide-right-animation.html">
-
-<link rel="import" href="../shared-styles.html">
-<link rel="import" href="../../bower_components/appsco-application/appsco-application-log.html">
-<link rel="import" href="../../bower_components/appsco-components/appsco-list-item.html">
 <link rel="import" href="../../bower_components/paper-card/paper-card.html">
 <link rel="import" href="../../bower_components/paper-icon-button/paper-icon-button.html">
 
-<dom-module id="appsco-application-log-page">
+<link rel="import" href="../shared-styles.html">
+<link rel="import" href="../../bower_components/appsco-account/appsco-account-authorized-apps.html">
+
+<dom-module id="appsco-account-authorized-apps-page">
     <template>
         <style>
             :host {
@@ -21,7 +20,11 @@
                      border-bottom: 1px solid var(--divider-color);
                  };
 
-                --account-log-appsco-list-item-first: {
+                --account-authorized-apps-container: {
+                     padding-top: 0;
+                 };
+
+                --account-authorized-app-first: {
                      border-top: none;
                  };
             }
@@ -31,14 +34,14 @@
             .page-close-action {
                 @apply(--page-close-action);
             }
-            appsco-application-log {
+            appsco-account-authorized-apps {
                 --paper-button: {
                      padding: 6px 12px;
                  };
             }
         </style>
 
-        <paper-card heading="Application log" id="card">
+        <paper-card heading="Authorized applications" id="card">
             <paper-icon-button
                     icon="close"
                     title="Back"
@@ -47,12 +50,15 @@
 
             <div class="card-content layout vertical">
 
-                <appsco-application-log
-                        size="5"
-                        application-log="[[ applicationLog ]]"
+                <appsco-account-authorized-apps
+                        id="appscoAccountAuthorizedApps"
+                        account="[[ account ]]"
                         authorization-token="[[ authorizationToken ]]"
-                        load-more>
-                </appsco-application-log>
+                        authorized-apps-api="[[ authorizedAppsApi ]]"
+                        size="5"
+                        load-more
+                        on-revoke-application="_onRevokeApplication">
+                </appsco-account-authorized-apps>
 
             </div>
         </paper-card>
@@ -62,21 +68,27 @@
     <script>
         Polymer({
 
-            is: 'appsco-application-log-page',
+            is: 'appsco-account-authorized-apps-page',
 
             properties: {
 
-                /**
-                 * [Application](https://developers.appsco.com/api/dashboard/id/icons/id/log) that log is to be rendered for
-                 */
-                applicationLog: {
+                account: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    },
+                    notify: true
+                },
+
+                authorizationToken: {
                     type: String
                 },
 
-
-                authorizationToken: {
-                    type: String,
-                    value: ''
+                /**
+                 * Get authorized apps link.
+                 */
+                authorizedAppsApi: {
+                    type: String
                 },
 
                 /**
@@ -88,12 +100,15 @@
                             'entry': [{
                                 name: 'hero-animation',
                                 id: 'hero',
-                                toPage: this
+                                toPage: this,
+                                timing: {
+                                    duration: 300
+                                }
                             }, {
                                 name: 'fade-in-animation',
                                 node: this,
                                 timing: {
-                                    duration: 600
+                                    duration: 500
                                 }
                             }],
                             'exit': {
@@ -123,8 +138,16 @@
                 Polymer.NeonSharedElementAnimatableBehavior
             ],
 
+            attached: function() {
+                this.$.appscoAccountAuthorizedApps.loadAuthorizedApps();
+            },
+
             _back: function() {
                 this.fire('back');
+            },
+
+            _onRevokeApplication: function(event) {
+                console.log('Application to revoke....', event.detail.application);
             }
         });
     </script>

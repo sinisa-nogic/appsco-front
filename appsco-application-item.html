@@ -45,6 +45,7 @@ Custom property | Description | Default
                 background-color: var(--background-color, #fff);
                 color: var(--color, #333);
                 padding: 0 4px;
+                cursor: pointer;
             @apply(--appsco-application-item);
             }
 
@@ -86,7 +87,7 @@ Custom property | Description | Default
             }
         </style>
 
-        <div class="item">
+        <div class="item" on-tap="_onApplicationAction">
             <iron-image placeholder="data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACwAAAAAAQABAAACAkQBADs=" sizing="cover"
                         preload fade src="[[ application.icon_url ]]"></iron-image>
             <span class="application-title">[[ application.title ]]</span>
@@ -146,7 +147,9 @@ Custom property | Description | Default
                 this.playAnimation('entry');
             },
 
-            _view: function () {
+            _view: function (event) {
+                event.stopPropagation();
+
                 /**
                  * Fired when `view` is tapped.
                  *
@@ -154,9 +157,13 @@ Custom property | Description | Default
                  * @param {Object} application [Application](https://developers.appsco.com/api/dashboard/id/icons/id)
                  *                              for which event is fired
                  */
-                this.fire('view', this.application);
+                this.fire('view', {
+                    application: this.application
+                });
             },
-            _open: function () {
+            _open: function (event) {
+                event.stopPropagation();
+
                 /**
                  * Fired when `open` is tapped.
                  *
@@ -164,7 +171,22 @@ Custom property | Description | Default
                  * @param {Object} application [Application](https://developers.appsco.com/api/dashboard/id/icons/id)
                  *                              for which event is fired
                  */
-                this.fire('open', this.application);
+                this.fire('open', {
+                    application: this.application
+                });
+            },
+
+            _onApplicationAction: function() {
+                /**
+                 * Fired when whole item is tapped.
+                 *
+                 * @event application
+                 * @param {Object} application [Application](https://developers.appsco.com/api/dashboard/id/icons/id)
+                 *                              for which event is fired
+                 */
+                this.fire('application', {
+                    application: this.application
+                });
             }
 
         });

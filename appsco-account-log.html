@@ -6,8 +6,9 @@
 <link rel="import" href="../iron-ajax/iron-ajax.html">
 <link rel="import" href="../paper-button/paper-button.html">
 <link rel="import" href="../paper-progress/paper-progress.html">
+<link rel="import" href="../app-localize-behavior/app-localize-behavior.html">
 
-<link rel="import" href="../appsco-components/appsco-list-item.html">
+<link rel="import" href="appsco-account-log-item.html">
 
 <!--
 `appsco-account-log`
@@ -30,8 +31,8 @@ Custom property | Description | Default
 ----------------|-------------|----------
 `--appsco-account-log` | Mixin for the root element | `{}`
 `--appsco-account-log-container` | Mixin for the log wrapper element | `{}`
-`--account-log-appsco-list-item` | Mixin applied to inner appsco-list-item element | `{}`
-`--account-log-appsco-list-item-first` | Mixin applied to first appsco-list-item element | `{}`
+`--appsco-account-log-item` | Mixin applied to inner appsco-account-log-item element | `{}`
+`--appsco-account-log-item-first` | Mixin applied to first appsco-account-log-item element | `{}`
 `--account-log-paper-progress` | Mixin applied to notifications paper-progress | `{}`
 
 @demo demo/appsco-account-log.html
@@ -50,11 +51,11 @@ Custom property | Description | Default
             @apply(--layout-vertical);
             @apply(--appsco-account-log-container);
             }
-            :host appsco-list-item {
-            @apply(--account-log-appsco-list-item);
+            :host appsco-account-log-item {
+            @apply(--appsco-account-log-item);
             }
-            :host appsco-list-item:first-of-type {
-            @apply(--account-log-appsco-list-item-first);
+            :host appsco-account-log-item:first-of-type {
+            @apply(--appsco-account-log-item-first);
             }
             :host .message {
                 color: var(--secondary-text-color);
@@ -92,9 +93,8 @@ Custom property | Description | Default
 
             <template is="dom-repeat"
                       items="[[ _logList ]]">
-                <appsco-list-item
-                        item="[[ _mapToListItem(item) ]]">
-                </appsco-list-item>
+                <appsco-account-log-item item="[[ _formatLogItem(item) ]]"
+                                         short-view="[[ shortView ]]"></appsco-account-log-item>
             </template>
 
             <template is="dom-if" if="{{ _message }}">
@@ -164,6 +164,14 @@ Custom property | Description | Default
                 },
 
                 /**
+                 * Indicates if short view should be displayed.
+                 */
+                shortView: {
+                    type: Boolean,
+                    value: false
+                },
+
+                /**
                  * Account log API link to load next log page.
                  */
                 _nextPage: {
@@ -205,7 +213,20 @@ Custom property | Description | Default
                  */
                 _message: {
                     type: String
+                },
+
+                language: {
+                    value: 'en',
+                    type: String
                 }
+            },
+
+            behaviors: [
+                Polymer.AppLocalizeBehavior
+            ],
+
+            attached: function() {
+                this.loadResources(this.resolveUrl('data/locales.json'));
             },
 
             /**
@@ -231,51 +252,164 @@ Custom property | Description | Default
                 }
             },
 
-            /**
-             * Returns log message dependent on item type.
-             *
-             * @param {Object} item
-             * @returns {{ message: string }}
-             * @private
-             */
-            _getLogMessage: function(item) {
-                var message = '';
+            _formatLogUserLogged: function(item) {
+                return {
+                    icon: 'icons:input',
+                    date: item.created_at.date,
+                    message: this.localize('account_log_user_logged'),
+                    address: item.ip
+                }
+            },
 
-                switch (item.type) {
-                    case 'application_shared':
-                        message = 'Shared to ' + item.account.display_name + '.';
-                        break;
-                    case 'modified':
-                        message = 'Modified by ' + item.account.display_name + '.';
-                        break;
-                    case 'logged_in':
-                        message = item.account.display_name + ' logged in.';
-                        break;
-                    case 'claims_changed':
-                        message = item.account.display_name + ' changed claims.';
-                        break;
-                    case 'deleted':
-                        message = item.account.display_name + ' removed application.';
-                        break;
+            _formatLogProfileChanged: function(item) {
+                var data = item.data,
+                        logItem = {},
+                        message = '';
+
+                for (property in data) {
+                    propertyValue = data[property];
+
+                    message += ' ' + this.localize(property) + ' ' + this.localize('account_log_profile_changed', 'fromValue', propertyValue.from, 'toValue', propertyValue.to);
                 }
 
-                return message;
+                return {
+                    icon: 'editor:mode-edit',
+                    date: item.created_at.date,
+                    message: message,
+                    address: item.ip
+                }
 
             },
 
+            _formatLogProfileImageChanged: function(item) {
+                return {
+                    image: item.data.photo,
+                    date: item.created_at.date,
+                    message: this.localize('account_log_profile_image_changed'),
+                    address: item.ip
+                }
+            },
+
+            _formatLogPasswordChanged: function(item) {
+                return {
+                    icon: 'hardware:security',
+                    date: item.created_at.date,
+                    message: this.localize('account_log_password_changed'),
+                    address: item.ip
+                }
+            },
+
+            _formatLogTokenGenerated: function(item) {
+                return {
+                    icon: 'communication:vpn-key',
+                    date: item.created_at.date,
+                    message: this.localize('account_log_token_generated'),
+                    address: item.ip
+                }
+            },
+
+            _formatLogApplicationRemoved: function(item) {
+                return {
+                    image: item.data.icon,
+                    date: item.created_at.date,
+                    message: this.localize('account_log_application_removed', 'application', item.data.title),
+                    address: item.ip
+                }
+            },
+
+            _formatLog2FAEnabled: function(item) {
+                return {
+                    icon: 'icons:check',
+                    date: item.created_at.date,
+                    message: this.localize('account_log_2fa_enabled'),
+                    address: item.ip
+                }
+            },
+
+            _formatLog2FADisabled: function(item) {
+                return {
+                    icon: 'icons:clear',
+                    date: item.created_at.date,
+                    message: this.localize('account_log_2fa_disabled'),
+                    address: item.ip
+                }
+            },
+
+            _formatLogOauthAppAuthorized: function(item) {
+                return {
+                    icon: 'icons:apps',
+                    date: item.created_at.date,
+                    message: this.localize('account_log_application_authorized', 'application', item.title),
+                    address: item.ip
+                }
+            },
+
+            _formatLogAuthorizedAppRevoked: function(item) {
+                return {
+                    icon: 'icons:undo',
+                    date: item.created_at.date,
+                    message: this.localize('account_log_application_revoked', 'application', item.title),
+                    address: item.ip
+                }
+            },
+
             /**
-             * Maps log object to list-item object.
+             * Maps log as object dependent on log type.
              *
              * @param {Object} item
              * @returns {{ item: object }}
              * @private
              */
-            _mapToListItem: function(item) {
-                return {
-                    icon: item.icon_url,
-                    date: item.date,
-                    message: this._getLogMessage(item)
+            _formatLogItem: function(item) {
+                var logItem = {};
+
+                switch (item.type) {
+                    case 'user_logged':
+                        logItem = this._formatLogUserLogged(item);
+                        break;
+
+                    case 'user_profile_info_changed':
+                        logItem = this._formatLogProfileChanged(item);
+                        break;
+
+                    case 'user_profile_photo_changed':
+                        logItem = this._formatLogProfileImageChanged(item);
+                        break;
+
+                    case 'user_changed_password':
+                        logItem = this._formatLogPasswordChanged(item);
+                        break;
+
+                    case 'user_generated_transfer_token':
+                        logItem = this._formatLogTokenGenerated(item);
+                        break;
+
+                    case 'user_removed_application':
+                        logItem = this._formatLogApplicationRemoved(item);
+                        break;
+
+                    case 'user_2fa_enabled':
+                        logItem = this._formatLog2FAEnabled(item);
+                        break;
+
+                    case 'user_2fa_disabled':
+                        logItem = this._formatLog2FADisabled(item);
+                        break;
+
+                    case 'user_oauth_app_authorized':
+                        logItem = this._formatLogOauthAppAuthorized(item);
+                        break;
+
+                    case 'user_oauth_app_authorization_revoked':
+                        logItem = this._formatLogAuthorizedAppRevoked(item);
+                        break;
+
+                    default:
+                        console.log(item.type + 'not supported yet.');
                 }
+
+                return logItem;
+
             },
 
             /**
@@ -284,6 +418,7 @@ Custom property | Description | Default
             loadLog: function() {
                 this.$.progress.hidden = false;
                 this._logList = [];
+                this._nextPage = 1;
 
                 this.$.ironAjaxLog.url = this._computeUrl(this.logApi);
                 this.$.ironAjaxLog.generateRequest();
@@ -332,7 +467,7 @@ Custom property | Description | Default
                             if (i === (logList.length - 1)) {
                                 this._hideProgressBar();
 
-                                if (logList.length < this.size) {
+                                if (this._logList.length === response.meta.total) {
                                     this.$.loadMore.disabled = true;
                                 }
                             }

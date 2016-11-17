@@ -15,6 +15,7 @@
 <link rel="import" href="../../bower_components/appsco-account/appsco-account-notifications.html">
 <link rel="import" href="../../bower_components/appsco-account/appsco-account-authorized-apps.html">
 <link rel="import" href="../../bower_components/appsco-account/appsco-account-log.html">
+<link rel="import" href="../../bower_components/appsco-account/appsco-account-partner.html">
 
 <link rel="import" href="../webkit-scrollbar-style.html">
 <link rel="import" href="../shared-styles.html">
@@ -60,6 +61,7 @@
 
                 --paper-card-content: {
                      min-height: 70px;
+                     box-sizing: border-box;
                  };
                 --paper-card-actions: {
                      padding: 0;
@@ -91,6 +93,7 @@
                      min-height: 70px;
                      padding-top: 0;
                      padding-bottom: 0;
+                     box-sizing: border-box;
                  };
             }
             appsco-account-notifications {
@@ -126,8 +129,13 @@
                 --account-log-paper-progress: {
                      top: 4px;
                  };
-                --account-log-appsco-list-item-first: {
+                --appsco-account-log-item-first: {
                      border-top: none;
+                 };
+            }
+            appsco-account-partner {
+                --partner-additional-info-value: {
+                     color: inherit;
                  };
             }
             .details-2fa, .notifications-authorized-apps, .log-partner {
@@ -189,6 +197,9 @@
             }
             .message {
                 @apply(--info-message);
+            }
+            .card-content-no-padding .message {
+                margin: 0;
             }
         </style>
 
@@ -290,7 +301,8 @@
                             account="[[ account ]]"
                             authorization-token="[[ authorizationToken ]]"
                             log-api="[[ logApi ]]"
-                            size="5">
+                            size="5"
+                            short-view>
                     </appsco-account-log>
                 </div>
 
@@ -302,11 +314,22 @@
             <paper-card heading="Partner"
                         id="appscoAccountPartnerCard"
                         class="appsco-account-partner">
-                <div class="card-content">
-                    <p class="message">
-                        You don't have partner.
-                    </p>
-                </div>
+
+                <template is="dom-if" if="[[ _partnerExists ]]">
+                    <div class="card-content">
+                        <appsco-account-partner
+                                id="appscoAccountPartner"
+                                partner="[[ partner ]]"></appsco-account-partner>
+                    </div>
+                </template>
+
+                <template is="dom-if" if="[[ !_partnerExists ]]">
+                    <div class="card-content card-content-no-padding">
+                        <p class="message">
+                            You don't have a partner.
+                        </p>
+                    </div>
+                </template>
 
                 <div class="card-actions">
                     <paper-button on-tap="_onManagePartner">Manage</paper-button>
@@ -329,6 +352,19 @@
                         return {};
                     },
                     notify: true
+                },
+
+                partner: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    },
+                    notify: true
+                },
+
+                _partnerExists: {
+                    type: Boolean,
+                    computed: '_computePartnerExists(partner)'
                 },
 
                 authorizationToken: {
@@ -355,6 +391,7 @@
                 logApi: {
                     type: String
                 },
+
                 /**
                  * Get 2fa status link.
                  */
@@ -440,7 +477,7 @@
 
             attached: function() {
                 this._loadNotifications();
-                this.$.appscoAccountLog.loadLog();
+                this.loadLog();
 
                 if (this._advancedSettings) {
                     this.$.appscoAccountAuthorizedApps.loadAuthorizedApps();
@@ -458,6 +495,16 @@
                 return {
                     'Authorization': 'token ' + authorizationToken
                 }
+            },
+
+            _computePartnerExists: function(partner) {
+
+                for (key in partner) {
+                    return true;
+                }
+
+                return false;
+
             },
 
             _setSharedElement: function(target) {
@@ -478,6 +525,14 @@
 
             _loadNotifications: function() {
                 this.$.appscoAccountNotifications.loadNotifications();
+            },
+
+            loadLog: function() {
+                this.$.appscoAccountLog.loadLog();
+            },
+
+            removeAuthorizedApplication: function(application) {
+                this.$.appscoAccountAuthorizedApps.removeApplication(application);
             },
 
             toggleAdvancedSettings: function() {

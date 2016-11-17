@@ -1,5 +1,4 @@
 <link rel="import" href="../polymer/polymer.html">
-<link rel="import" href="../iron-form/iron-form.html">
 <link rel="import" href="../paper-button/paper-button.html">
 <link rel="import" href="../iron-image/iron-image.html">
 <link rel="import" href="../iron-icon/iron-icon.html">
@@ -41,14 +40,10 @@ Custom property | Description | Default
             @apply(--appsco-account-image-settings);
             }
             .upload-container {
-                width: 96px;
-                height: 96px;
-                background-color: #fff;
-                -webkit-background-clip: padding-box;
-                padding: 8px;
+                width: 64px;
+                height: 64px;
                 margin-left: auto;
                 margin-right: auto;
-                border: 2px solid #34c2d7;
                 overflow: hidden;
                 position: relative;
             @apply(--account-image-upload-container);
@@ -65,8 +60,8 @@ Custom property | Description | Default
                 margin: auto;
             }
             .account-image {
-                width: 96px;
-                height: 96px;
+                width: 64px;
+                height: 64px;
             --iron-image-placeholder: {
                  background: #eeeeee;
              };
@@ -74,7 +69,7 @@ Custom property | Description | Default
             @apply(--account-image);
             }
             .account-image-upload {
-                background-color: rgba(250, 250, 250, 0.9);
+                background-color: rgba(250, 250, 250, 0.8);
                 display: block;
                 opacity: 0;
                 z-index: 5;
@@ -91,7 +86,6 @@ Custom property | Description | Default
             .icon-upload {
                 width: 32px;
                 height: 32px;
-                color: #273441;
             @apply(--account-image-upload-icon);
             }
             .upload-file {
@@ -103,38 +97,28 @@ Custom property | Description | Default
 
         <appsco-form-error message="[[ _error ]]"></appsco-form-error>
 
-        <form is="iron-form"
-              id="accountImageSettingsForm"
-              method="POST"
-              action="[[ imageSettingsApi ]]"
-              headers="{{ _computedHeaders }}"
-              on-iron-form-presubmit="_onFormPresubmit"
-              on-iron-form-error="_onFormError"
-              on-iron-form-response="_onFormResponse">
+        <div class="upload-container">
 
-            <div class="upload-container">
+            <appsco-loader active="[[ _loader ]]" loader-alt="Appsco is saving application" multi-color></appsco-loader>
 
-                <appsco-loader active="[[ _loader ]]" loader-alt="Appsco is saving application" multi-color></appsco-loader>
+            <iron-image class="account-image"
+                        src="[[ account.picture_url ]]"
+                        alt="Account image"
+                        class="sized"
+                        sizing="contain"></iron-image>
 
-                <iron-image class="account-image"
-                            src="[[ account.picture_url ]]"
-                            alt="Account image"
-                            class="sized"
-                            sizing="contain"></iron-image>
+            <label for="accountImage"
+                   class$="account-image-upload [[ _imagePreview ]]">
+                <iron-icon icon="file-upload" class="icon-upload"></iron-icon>
+            </label>
 
-                <label for="accountImage"
-                       class$="account-image-upload [[ _imagePreview ]]">
-                    <iron-icon icon="file-upload" class="icon-upload"></iron-icon>
-                </label>
-
-                <input type="file"
-                       accept="image/*"
-                       id="accountImage"
-                       name="profile[picture_blob][file]"
-                       class="upload-file"
-                       on-change="_onUploadImage">
-            </div>
-        </form>
+            <input type="file"
+                   accept="image/*"
+                   id="accountImage"
+                   name="account-image"
+                   class="upload-file"
+                   on-change="_onUploadImage">
+        </div>
 
         <content select="[info]"></content>
 
@@ -230,32 +214,47 @@ Custom property | Description | Default
 
             },
 
+            _setNewImage: function(file) {
+                var reader = new FileReader();
+
+                reader.onload = function(e) {
+                    this.account.picture_url = e.target.result;
+
+                    var account = JSON.parse(JSON.stringify(this.account));
+                    this.account = {};
+                    this.account = account;
+
+                }.bind(this);
+
+                reader.readAsDataURL(file);
+            },
+
             _onUploadImage: function(event) {
                 var input = event.target;
 
+                this._error = '';
+
                 if (input.files && input.files[0]) {
-                    var file = input.files[0];
+                    var file = input.files[0],
+                            formData = new FormData(),
+                            request = new XMLHttpRequest();
 
                     if (!this._validateImageFile(file)) {
                         return false;
                     }
 
-                    // Temporary - set preview of chosen image.
-                    var reader = new FileReader();
+                    formData.append('file', file, file.name);
 
-                    reader.onload = function(e) {
-                        this.account.picture_url = e.target.result;
-
-                        var account = JSON.parse(JSON.stringify(this.account));
-                        this.account = {};
-                        this.account = account;
-
+                    request.onreadystatechange = function()
+                    {
+                        if (request.readyState == 4 && request.status == 200) {
+                            this._setNewImage(file);
+                        }
                     }.bind(this);
 
-                    reader.readAsDataURL(input.files[0]);
-                    // Temporary - set preview of chosen image.
-
-                    this._submitForm();
+                    request.open('POST', this.imageSettingsApi, true);
+                    request.setRequestHeader('Authorization', this._computedHeaders);
+                    request.send(formData);
                 }
             },
 
@@ -267,59 +266,11 @@ Custom property | Description | Default
              * @private
              */
             _computeHeaders: function (authorizationToken) {
-                return {
-                    'Authorization': 'token ' + authorizationToken,
-                    'Content-Type': 'application/x-www-form-urlencoded'
-                }
+                return 'token ' + authorizationToken;
             },
 
             _computeImagePreviewClass: function(account) {
                 return account.picture_url ? 'has-image' : 'no-image';
-            },
-
-            _submitForm: function() {
-                this.$.accountImageSettingsForm.submit();
-            },
-
-            _onFormPresubmit: function() {
-                this._loader = true;
-//                this.$.accountSettingsForm.request.method = 'put';
-            },
-
-            /**
-             * Called on form error when trying to save settings.
-             *
-             * @param {Object} event
-             * @private
-             */
-            _onFormError: function(event) {
-                this._error = event.detail.error.message;
-                this._loader = false;
-            },
-
-            /**
-             * Called after settings have been submited.
-             *
-             * @param {Object} event
-             * @private
-             */
-            _onFormResponse: function(event) {
-//                this.account = event.detail.response.account;
-
-//                var account = JSON.parse(JSON.stringify(this.account));
-//
-//                this.account = {};
-//                this.account = account;
-
-                /**
-                 * Fired after successful image saving.
-                 *
-                 * @event image-settings-saved
-                 */
-                this.fire('image-settings-saved');
-
-                this._error = '';
-                this._loader = false;
             },
 
             /**

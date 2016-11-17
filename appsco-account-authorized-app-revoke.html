@@ -1,0 +1,137 @@
+<link rel="import" href="../polymer/polymer.html">
+<link rel="import" href="../paper-button/paper-button.html">
+<link rel="import" href="../iron-ajax/iron-request.html">
+<link rel="import" href="../paper-dialog/paper-dialog.html">
+<link rel="import" href="../neon-animation/animations/fade-out-animation.html">
+<link rel="import" href="../neon-animation/animations/scale-up-animation.html">
+
+<link rel="import" href="../appsco-components/appsco-loader.html">
+
+<!--
+`appsco-account-authorized-app-revoke`
+Shows dialog screen with confirmation for application revoke.
+
+    <appsco-account-authorized-app-revoke>
+    </appsco-account-authorized-app-revoke>
+
+### Styling
+
+`<appsco-account-authorized-app-revoke>` provides the following custom properties and mixins for styling:
+
+Custom property | Description | Default
+----------------|-------------|----------
+`--account-authorized-app-revoke` | Mixin for the root element | `{}`
+
+@demo demo/appsco-account-authorized-app-revoke.html
+-->
+
+<dom-module id="appsco-account-authorized-app-revoke">
+    <template>
+        <style>
+            :host {
+                display: block;
+                position: relative;
+                @apply(--account-authorized-app-revoke);
+            }
+            :host paper-dialog {
+                width: 670px;
+            }
+            :host .buttons paper-button {
+            @apply(--paper-dialog-button);
+            }
+            :host .buttons paper-button[dialog-confirm] {
+            @apply(--paper-dialog-confirm-button);
+            }
+            :host .buttons paper-button[dialog-dismiss] {
+            @apply(--paper-dialog-dismiss-button);
+            }
+        </style>
+        <paper-dialog
+                with-backdrop
+                id="revokeDialog"
+                entry-animation="scale-up-animation"
+                exit-animation="fade-out-animation">
+
+            <div class="revoke-container">
+
+                <appsco-loader active="[[ _loader ]]" loader-alt="Appsco is removing application" multi-color></appsco-loader>
+
+                <h2>Revoke application [[ application.title ]]</h2>
+                <p>By revoking [[ application.title ]] you revoke access to it.</p>
+
+            </div>
+
+            <div class="buttons">
+                <paper-button dialog-dismiss>Cancel</paper-button>
+                <paper-button dialog-confirm autofocus on-tap="_revokeApplication">Revoke</paper-button>
+            </div>
+        </paper-dialog>
+
+    </template>
+    <script>
+        Polymer({
+
+            is: 'appsco-account-authorized-app-revoke',
+
+            properties: {
+
+                /**
+                 * Application that is to be revoked.
+                 */
+                application: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    },
+                    notify: true
+                },
+
+                /**
+                 * Authorization token.
+                 */
+                authorizationToken: {
+                    type: String
+                },
+
+                _loader: {
+                    type: Boolean,
+                    value: false
+                }
+            },
+
+            open: function () {
+                this.$.revokeDialog.open();
+            },
+
+            _revokeApplication: function() {
+                var appRequest = document.createElement('iron-request');
+
+                this._loader = true;
+
+                appRequest.send({
+                    url: this.application.revoke,
+                    method: "DELETE",
+                    handleAs: 'json',
+                    headers: {
+                        "Authorization": "token " + this.authorizationToken
+                    }
+                }).then(function() {
+
+                    this._loader = false;
+
+                    /**
+                     * Fired when applicaiton is revoked
+                     *
+                     * @event application-revoked
+                     * @param {Object} application which is revoked
+                     */
+                    this.fire("application-revoked", {
+                        application: this.application
+                    });
+
+                    this.$.revokeDialog.close();
+                }.bind(this));
+            }
+        });
+    </script>
+</dom-module>

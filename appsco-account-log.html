@@ -87,6 +87,20 @@ Custom property | Description | Default
                 on-response="_handleResponse">
         </iron-ajax>
 
+        <iron-ajax
+                auto
+                url="data/timezone-list.json"
+                handle-as="json"
+                on-response="_onTimezoneListResponse">
+        </iron-ajax>
+
+        <iron-ajax
+                auto
+                url="data/country-list.json"
+                handle-as="json"
+                on-response="_onCountryListResponse">
+        </iron-ajax>
+
         <div class="account-log">
 
             <paper-progress id="progress" indeterminate></paper-progress>
@@ -208,6 +222,42 @@ Custom property | Description | Default
                     notify: true
                 },
 
+                _timezoneList: {
+                    type: Array,
+                    value: function() {
+                        return [];
+                    }
+                },
+
+                _genderList: {
+                    type: Array,
+                    value: function() {
+                        return [
+                            {
+                                name: 'Male',
+                                value: 'm'
+                            },
+                            {
+                                name: 'Female',
+                                value: 'f'
+                            }
+                        ];
+                    }
+                },
+
+                /**
+                 * Country list to get name of country from.
+                 * Country code = account.country.
+                 *
+                 * This is loaded from local data/country-list.json.
+                 */
+                _countryList: {
+                    type: Array,
+                    value: function() {
+                        return [];
+                    }
+                },
+
                 /**
                  * Message to display instead of log.
                  */
@@ -227,6 +277,31 @@ Custom property | Description | Default
 
             attached: function() {
                 this.loadResources(this.resolveUrl('data/locales.json'));
+            },
+
+            _onCountryListResponse: function(event, ironRequest) {
+                this._countryList = ironRequest.response;
+            },
+
+            _onTimezoneListResponse: function(event, ironRequest) {
+
+                ironRequest.response.forEach(function(zone, i) {
+
+                    if (zone.utc) {
+
+                        zone.utc.forEach(function(utc, index) {
+                            var item = {
+                                value: utc,
+                                text: utc.split('/')[1]
+                            };
+
+                            this.push('_timezoneList', item);
+                        }.bind(this));
+
+                    }
+
+                }.bind(this));
+
             },
 
             /**
@@ -267,9 +342,57 @@ Custom property | Description | Default
                         message = '';
 
                 for (property in data) {
-                    propertyValue = data[property];
+                    var propertyValue = data[property],
+                            from = propertyValue.from,
+                            to = propertyValue.to;
 
-                    message += ' ' + this.localize(property) + ' ' + this.localize('account_log_profile_changed', 'fromValue', propertyValue.from, 'toValue', propertyValue.to);
+                    switch (property) {
+                        case 'timezone':
+                            this._timezoneList.forEach(function(zone, index) {
+
+                                if (zone.value === from) {
+                                    from = zone.text;
+                                }
+
+                                if (zone.value === to) {
+                                    to = zone.text;
+                                }
+
+                            });
+
+                            break;
+                        case 'country':
+                            this._countryList.forEach(function(country, index) {
+
+                                if (country.code === from) {
+                                    from = country.name;
+                                }
+
+                                if (country.code === to) {
+                                    to = country.name;
+                                }
+
+                            });
+
+                            break;
+                        case 'gender':
+                            this._genderList.forEach(function(gender, index) {
+
+                                if (gender.value === from) {
+                                    from = gender.name;
+                                }
+
+                                if (gender.value === to) {
+                                    to = gender.name;
+                                }
+
+                            });
+
+                            break;
+                        default:
+                    }
+
+                    message += ' ' + this.localize(property) + ' ' + this.localize('account_log_profile_changed', 'fromValue', from, 'toValue', to);
                 }
 
                 return {

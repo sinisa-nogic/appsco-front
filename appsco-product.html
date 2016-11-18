@@ -39,10 +39,9 @@ Custom property | Description | Default
                 font-size: 16px;
                 position: relative;
 
-                @apply(--appsco-product);
+            @apply(--appsco-product);
             }
             :host .product-list-action {
-                line-height: 1.6;
                 cursor: pointer;
             }
             :host appsco-dropdown {
@@ -51,7 +50,7 @@ Custom property | Description | Default
                 top: 25px;
                 right: -9px;
 
-                @apply(--appsco-product-dropdown);
+            @apply(--appsco-product-dropdown);
             }
             :host paper-listbox {
                 padding: 0;
@@ -61,25 +60,21 @@ Custom property | Description | Default
                 height: 36px;
                 font-size: 14px;
             }
-            :host paper-listbox paper-item:first-child {
-                border-bottom: 1px solid var(--divider-color);
-            }
         </style>
 
-        <template is="dom-if" if="{{ partner }}">
+        <template is="dom-if" if="{{ _multiProducts }}"
+                  on-dom-change="_onMultiProductsChanged">
 
-            <div
-                    id="triggerDropdown"
-                    class="product-active product-list-action"
-                    on-tap="__toggleProductDropdown">
+            <div id="triggerDropdown"
+                 class="product-active product-list-action"
+                 on-tap="__toggleProductDropdown">
                 [[ _selectedProductLabel ]]
                 <iron-icon icon="arrow-drop-down"></iron-icon>
             </div>
 
             <appsco-dropdown
                     open="{{ _pressed }}"
-                    trigger="[[ _triggerDropdown ]]"
-                    close-outside>
+                    trigger="[[ _triggerDropdown ]]">
 
                 <paper-listbox id="productList" selected="appsco-product" attr-for-selected="value" on-iron-select="_onItemSelect">
 
@@ -97,7 +92,7 @@ Custom property | Description | Default
 
         </template>
 
-        <template is="dom-if" if="{{ !partner }}">
+        <template is="dom-if" if="{{ !_multiProducts }}">
 
             <span class="product-active">
                 [[ _selectedProductLabel ]]
@@ -117,26 +112,39 @@ Custom property | Description | Default
                 /** Indicates if user has access to Appsco Partner product. */
                 partner: {
                     type: Boolean,
-                    value: false
+                    value: false,
+                    notify: true,
+                    observer: '_onPartnerChanged'
+                },
+
+                /** Indicates if user has access to Appsco Business product. */
+                business: {
+                    type: Boolean,
+                    value: false,
+                    notify: true,
+                    observer: '_onBusinessChanged'
                 },
 
                 /** Appsco products. */
                 _products: {
                     type: Array,
-                    value: [{
-                        label: 'AppsCo',
-                        value: 'appsco-product'
-                    },
-                    {
-                        label: 'AppsCo Partner',
-                        value: 'appsco-partner-product'
-                    }]
+                    value: function() {
+                        return [{
+                            label: 'Personal',
+                            value: 'appsco-product'
+                        }];
+                    }
                 },
 
                 /** Label of selected product to display.*/
                 _selectedProductLabel: {
                     type: String,
-                    value: 'AppsCo'
+                    value: 'Personal'
+                },
+
+                _multiProducts: {
+                    type: Boolean,
+                    value: false
                 },
 
                 /**
@@ -159,7 +167,48 @@ Custom property | Description | Default
             },
 
             attached: function() {
-                this._triggerDropdown = this.$$('#triggerDropdown');
+
+                if (this.partner || this.business) {
+                    this._multiProducts = true;
+                }
+
+                this._onPartnerChanged(this.partner);
+                this._onBusinessChanged(this.business);
+            },
+
+            _onPartnerChanged: function(partner) {
+
+                if (this._products && partner) {
+
+                    this.push('_products', {
+                        label: 'Partner',
+                        value: 'appsco-partner-product'
+                    });
+
+                    this._multiProducts = true;
+                }
+
+            },
+
+            _onBusinessChanged: function(business) {
+
+                if (this._products && business) {
+                    this.push('_products', {
+                        label: 'Business',
+                        value: 'appsco-business-product'
+                    });
+
+                    this._multiProducts = true;
+                }
+
+            },
+
+            _onMultiProductsChanged: function() {
+
+                if (this._multiProducts) {
+                    this._triggerDropdown = this.$$('#triggerDropdown');
+                }
+
             },
 
             /**

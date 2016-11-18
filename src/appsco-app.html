@@ -39,9 +39,12 @@
 <link rel="import" href="application/appsco-application-page-actions.html">
 <link rel="import" href="account/appsco-account-page-actions.html">
 
+<link rel="import" href="shared-styles.html">
+<link rel="import" href="webkit-scrollbar-style.html">
+
 <dom-module id="appsco-app">
     <template>
-        <style>
+        <style include="shared-styles webkit-scrollbar-style">
             :host {
                 --app-primary-color: #279FBC;
                 /*--app-primary-color: #1183A4;*/
@@ -61,9 +64,6 @@
 
                 --paper-progress-active-color: #5AC099;
 
-                --paper-input-container-underline-focus: {
-                     height: 1px;
-                 };
                 --paper-input-container-label-focus: {
                      color: var(--secondary-text-color);
                  };
@@ -108,12 +108,10 @@
                 height: 64px;
                 padding: 16px 10px;
                 box-sizing: border-box;
-                /*color: var(--app-secondary-color);*/
                 color: #ffffff;
                 background-color: var(--app-primary-color);
 
                 --appsco-account-action-color: #ffffff;
-                /*--appsco-account-action-color: var(--app-primary-color);*/
 
                 --paper-listbox: {
                      color: var(--app-secondary-color);
@@ -127,8 +125,6 @@
 
             /* Bottom header style START */
             app-header {
-                /*color: #ffffff;*/
-                /*background-color: var(--app-primary-color);*/
                 background-color: #ffffff;
                 box-shadow: 0 3px 3px -2px rgba(0, 0, 0, 0.4);
             }
@@ -195,15 +191,6 @@
             .pages {
                 height: 100%;
             }
-            appsco-application-add, appsco-application-share {
-                --paper-input-container-underline: {
-                     background-color: var(--divider-color);
-                 };
-                --paper-input-container-underline-focus: {
-                     height: 1px;
-                     background-color: var(--app-primary-color);
-                 };
-            }
             .menuText {
                 display: inline-block;
                 vertical-align: middle;
@@ -233,7 +220,8 @@
                 logout-api="[[ api.logout ]]"
                 notifications-size="5"
                 on-account-chat="_onAccountChat"
-                on-account-settings="_onAccountSettingsAction"></appsco-header>
+                on-account-settings="_onAccountSettingsAction"
+                on-all-notifications="_onAllNotifications"></appsco-header>
 
         <app-drawer-layout fullbleed force-narrow>
 
@@ -311,6 +299,7 @@
                                     on-resource-section="_onResourceActionApplicationPage"></appsco-application-page-actions>
 
                             <appsco-account-page-actions
+                                    id="appscoAccountPageActions"
                                     name="account"
                                     on-back="_backToHome"
                                     on-resource-section="_onResourceActionAccountPage"
@@ -369,7 +358,9 @@
                             partner-api="[[ api.partner ]]"
                             on-settings-saved="_onAccountSettingsSaved"
                             on-password-changed="_onAccountPasswordChanged"
-                            on-revoke-authorized-application="_onRevokeAuthorizedApplication"></appsco-account-page>
+                            on-revoke-authorized-application="_onRevokeAuthorizedApplication"
+                            on-disable-advanced-settings="_onDisableAdvancedSettings"
+                            on-enable-advanced-settings="_onEnableAdvancedSettings"></appsco-account-page>
                     <appsco-404-page name="404"></appsco-404-page>
                 </neon-animated-pages>
             </app-header-layout>
@@ -552,6 +543,10 @@
                 this.$.appDrawer.close();
             },
 
+            _showAccountPage: function() {
+                this.set('routeData.page', 'account');
+            },
+
             _showPage404: function() {
                 this.page = '404';
             },
@@ -655,8 +650,13 @@
                 this.$.appscoAccountChat.toggleChat(event.target);
             },
 
-            _onAccountSettingsAction: function(event) {
-                this.set('routeData.page', 'account');
+            _onAccountSettingsAction: function() {
+                this._showAccountPage();
+            },
+
+            _onAllNotifications: function() {
+                this.$.appscoAccountPage.showAllNotifications = true;
+                this._showAccountPage();
             },
 
             _onGetAccountResponse: function(event) {
@@ -738,6 +738,14 @@
                 this._authorizedApplication = {};
                 this._notify(application.title + ' was successfully revoked.');
                 this.$.appscoAccountPage.onApplicationRevoked();
+            },
+
+            _onDisableAdvancedSettings: function() {
+                this.$.appscoAccountPageActions.disableAdvancedSettings();
+            },
+
+            _onEnableAdvancedSettings: function() {
+                this.$.appscoAccountPageActions.enableAdvancedSettings();
             },
 
             /**

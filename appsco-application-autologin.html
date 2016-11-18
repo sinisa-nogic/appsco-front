@@ -30,7 +30,7 @@ Custom property | Description | Default
             :host {
                 display: inline-block;
                 position: relative;
-                @apply(--appsco-application-autologin);
+            @apply(--appsco-application-autologin);
             }
         </style>
         <paper-toggle-button id="switch">Auto Login</paper-toggle-button>
@@ -58,14 +58,23 @@ Custom property | Description | Default
                 'change': "_switch",
                 'application-changed': "_processAuthType"
             },
+
+            attached: function() {
+                this._processAuthType();
+            },
+
             _processAuthType: function () {
-                if(this.application.icon) {
-                    this.$.switch.active = this.application.icon.auth_type == 'item';
+
+                if(this.application.application) {
+
+                    this.$.switch.active = this.application.auth_type == 'unpw';
                     this.$.switch.disabled = true;
+
                     var appRequest = document.createElement('iron-request'),
                             me = this;
+
                     appRequest.send({
-                        url: this.application.icon.application,
+                        url: this.application.application,
                         method: "GET",
                         handleAs: 'json',
                         headers: {
@@ -83,7 +92,9 @@ Custom property | Description | Default
             _switch: function() {
                 var request = document.createElement('iron-request'),
                         me = this;
+
                 this.$.switch.disabled = true;
+
                 var options = {
                     url: this.application.meta.autologin,
                     method: "POST",
@@ -93,9 +104,11 @@ Custom property | Description | Default
                     }
                 };
 
-                request.send(options).then(function(){
+                request.send(options).then(function() {
                     me.$.switch.disabled = false;
-                });
+
+                    this.fire('autologin-changed');
+                }.bind(this));
             }
         });
     </script>

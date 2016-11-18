@@ -17,12 +17,9 @@
 <link rel="import" href="account/appsco-account-transfer-token-page.html">
 <link rel="import" href="account/appsco-account-change-password-page.html">
 
-<link rel="import" href="shared-styles.html">
-<link rel="import" href="webkit-scrollbar-style.html">
-
 <dom-module id="appsco-account-page">
     <template>
-        <style include="shared-styles webkit-scrollbar-style">
+        <style>
             :host {
                 display: block;
                 color: #000;
@@ -440,6 +437,12 @@
                             }
                         }
                     }
+                },
+
+                showAllNotifications: {
+                    type: Boolean,
+                    value: false,
+                    observer: '_observeSeeAllNotifications'
                 }
             },
 
@@ -478,6 +481,14 @@
                 return {
                     'Authorization': 'token ' + authorizationToken
                 }
+            },
+
+            _observeSeeAllNotifications: function(seeAll) {
+
+                if (seeAll) {
+                    this.showAllApplications();
+                }
+
             },
 
             _onPartnerResponse: function(event) {
@@ -537,6 +548,15 @@
                 this._selected = 'appsco-account-components-page';
             },
 
+            showAllApplications: function() {
+                this.$.appscoAccountComponentsPage.setSharedElement('notifications');
+
+                setTimeout(function() {
+                    this._onAllNotifications();
+                    this.showAllNotifications = false;
+                }.bind(this), 50);
+            },
+
             initializePage: function() {
                 this.$.appscoAccountComponentsPage.hideAdvancedSettings();
                 this._showAccountComponentsPage();
@@ -588,6 +608,10 @@
                     toPage = event.detail.toPage;
 
                 switch(fromPage.getAttribute('name')) {
+                    case 'appsco-account-components-page':
+                        this.fire('disable-advanced-settings');
+                        break;
+
                     case 'appsco-account-settings-page':
                     case 'appsco-account-transfer-token-page':
                     case 'appsco-account-change-password-page':
@@ -599,6 +623,10 @@
                 }
 
                 switch(toPage.getAttribute('name')) {
+                    case 'appsco-account-components-page':
+                        this.fire('enable-advanced-settings');
+                        break;
+
                     case 'appsco-account-settings-page':
                     case 'appsco-account-change-password-page':
                         toPage.setPage();

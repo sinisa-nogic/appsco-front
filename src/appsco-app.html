@@ -46,6 +46,8 @@
     <template>
         <style include="shared-styles">
             :host {
+                display: block;
+
                 --app-primary-color: #279FBC;
                 --app-primary-color-1: #39C2D7;
                 /*--app-primary-color: #1183A4;*/
@@ -61,8 +63,6 @@
                 --primary-button-background-color: var(--app-primary-color);
 
                 --border-radius-base: 3px;
-
-                display: block;
 
                 --paper-progress-active-color: var(--success-color);
 
@@ -103,6 +103,13 @@
                  };
 
                 --resource-color: var(--primary-text-color);
+
+                --appsco-list-item-icon: {
+                     border-radius: 50%;
+                 };
+                --log-item-image-contain: {
+                     border-radius: 50%;
+                 };
             }
 
             /* Top header style START */
@@ -283,7 +290,7 @@
                 <app-header>
                     <app-toolbar class="flex-horizontal">
                         <paper-icon-button icon="menu" drawer-toggle></paper-icon-button>
-                        <div class="page-title" condense-title>[[ page ]]</div>
+                        <div class="page-title" condense-title>[[ _pageName ]]</div>
 
                         <neon-animated-pages
                                 id="animatedActions"
@@ -321,7 +328,7 @@
                         class="pages"
                         selected="[[page]]"
                         attr-for-selected="name"
-                        fallback-selection="not-found"
+                        fallback-selection="404"
                         role="main"
                         on-neon-animation-finish="_onPageAnimationFinish">
                     <appsco-home-page
@@ -331,6 +338,7 @@
                             application-log="[[ application.meta.log ]]"
                             authorization-token="[[ authorizationToken ]]"
                             applications-api="[[ applicationsApi ]]"
+                            on-loaded="_onLoadedApplications"
                             on-edit-application="_onEditApplication"
                             on-share-application="_onShareApplication">
                     </appsco-home-page>
@@ -347,7 +355,8 @@
                             on-remove-application="_onRemoveApplication"
                             on-application-settings-saved="_onApplicationSettingsSaved"
                             on-application-settings-no-changes="_onApplicationSettingsNoChanges"
-                            on-autologin-changed="_onAutologinChanged">
+                            on-autologin-changed="_onAutologinChanged"
+                            on-error="_onError">
                     </appsco-application-page>
 
                     <appsco-account-page
@@ -369,7 +378,7 @@
                             on-revoke-authorized-application="_onRevokeAuthorizedApplication"
                             on-disable-advanced-settings="_onDisableAdvancedSettings"
                             on-enable-advanced-settings="_onEnableAdvancedSettings"></appsco-account-page>
-                    <appsco-not-found-page name="not-found"></appsco-not-found-page>
+                    <appsco-not-found-page name="404"></appsco-not-found-page>
                 </neon-animated-pages>
             </app-header-layout>
         </app-drawer-layout>
@@ -386,7 +395,8 @@
                 authorization-token="[[ authorizationToken ]]"
                 applications-template-api="[[ api.applicationTemplates ]]"
                 dashboard-api="[[ addAppApi ]]"
-                on-application-added="_onApplicationAdded">
+                on-application-added="_onApplicationAdded"
+                on-link-added="_onApplicationAdded">
         </appsco-application-add>
 
         <appsco-application-share
@@ -437,6 +447,10 @@
                     type: String,
                     reflectToAttribute: true,
                     observer: '_pageChanged'
+                },
+
+                _pageName: {
+                    type: String
                 },
 
                 api: {
@@ -531,14 +545,9 @@
                 this.applicationsApi = this.api.applications +"?extended=1";
             },
 
-            _onDashboardsResponse: function(event) {
-
-                if (event.detail.response) {
-                    this.addAppApi = event.detail.response.dashboards[0].self;
-                }
-
-            },
-
+            /**
+             * Routing START
+             */
             _routePageChanged: function(page) {
                 this.page = page || 'home';
             },
@@ -546,7 +555,9 @@
             _pageChanged: function(page) {
                 // Load page import on demand. Show 404 page if fails
                 var resolvedPageUrl = this.resolveUrl('appsco-' + page + '-page.html');
+
                 this.importHref(resolvedPageUrl, null, this._showPage404, true);
+                this._pageName = page;
 
                 this.$.appDrawer.close();
             },
@@ -556,13 +567,20 @@
             },
 
             _showPage404: function() {
-                this.page = 'not-found';
+                this.page = '404';
+                this._pageName = 'Not Found';
             },
 
             _backToHome: function() {
                 this.set('routeData.page', 'home');
             },
+            /**
+             * Routing END
+             */
 
+            /**
+             * Ajax START
+             */
             /**
              * Computes authorization headers.
              *
@@ -576,97 +594,24 @@
                 }
             },
 
-            _onResourceActionApplicationPage: function() {
-                this.$.appscoApplicationPage.toggleResource();
+            _onGetAccountResponse: function(event) {
+                this.account = event.detail.response.account;
             },
 
-            _onResourceActionAccountPage: function() {
-                this.$.appscoAccountPage.toggleResource();
+            _onDashboardsResponse: function(event) {
+
+                if (event.detail.response) {
+                    this.addAppApi = event.detail.response.dashboards[0].self;
+                }
+
             },
+            /**
+             * Ajax END
+             */
 
-            _onInfoAction: function() {
-                this.$.appscoHomePage.toggleInfo();
-            },
-
-            _onEditApplication: function() {
-                var applicationLog = this.application.meta.log;
-
-                this.set('route.path', 'application/'+this.application.alias);
-                this.set('application.meta.log', applicationLog);
-            },
-
-            _onShareApplication: function() {
-                this.$.appscoApplicationShare.toggle();
-            },
-
-            _onApplicationShared: function(event) {
-                var application = event.detail.application,
-                    applicationLogApi = application.meta.log,
-                    message = 'You successfully shared ' + this.application.title + '.';
-
-                // In order to notify.
-                this.set('application', {});
-                this.set('application', application);
-
-                this._notifyAboutApplicationLogChange(applicationLogApi);
-                this._notify(message);
-            },
-
-            _onAddApplication: function() {
-                this.$.appscoApplicationAdd.toggle();
-            },
-
-            _onApplicationAdded: function(event) {
-                var application = event.detail.application,
-                    message = application.title + ' was successfully saved.';
-
-                this.$.appscoHomePage.addApplication(application);
-                this._notify(message);
-            },
-
-            _onRemoveApplication: function() {
-                this.$.appscoApplicationRemove.open();
-            },
-
-            _onApplicationRemoved: function(event) {
-                var application = event.detail.application,
-                    message = application.title + ' was successfully removed.';
-
-                this.$.appscoHomePage.removeApplication(application);
-                this.set('routeData.page', 'home');
-
-                this._notify(message);
-
-                this.$.appscoAccountPage.refreshLog();
-            },
-
-            _onApplicationSettingsSaved: function(event) {
-                var application = event.detail.application,
-                    applicationLogApi = application.meta.log,
-                    message = application.title + ' was successfully changed.';
-
-                this.$.appscoHomePage.reloadApplications();
-                this._notifyAboutApplicationLogChange(applicationLogApi);
-                this._notify(message);
-            },
-
-            _onApplicationSettingsNoChanges: function(event) {
-                this._notify('No changes have been made to ' + event.detail.application.title + '.');
-            },
-
-            _onAutologinChanged: function() {
-
-                this.$.appscoHomePage.reloadApplications();
-
-//                console.log(this.application);
-//
-//                this.$.appscoHomePage.reloadApplications(function() {
-//
-////                    this.$.appscoHomePage.getApplication(application);
-//
-//                }.bind(this));
-            },
-
+            /**
+             * Appsco header actions START
+             */
             _onAccountChat: function(event) {
                 this.$.appscoAccountChat.toggleChat(event.target);
             },
@@ -679,9 +624,23 @@
                 this.$.appscoAccountPage.showAllNotifications = true;
                 this._showAccountPage();
             },
+            /**
+             * Appsco header actions END
+             */
 
-            _onGetAccountResponse: function(event) {
-                this.account = event.detail.response.account;
+            /**
+             * Home page START
+             */
+            _onLoadedApplications: function() {
+
+                if (this.page === 'home') {
+                    this.$.appscoHomePage.setDefaultApplication();
+                }
+
+            },
+
+            _onInfoAction: function() {
+                this.$.appscoHomePage.toggleInfo();
             },
 
             _searchApplications: function(event) {
@@ -701,39 +660,109 @@
 
             },
 
-            _onPageAnimationFinish: function(event) {
-                var fromPage = event.detail.fromPage,
-                    toPage = event.detail.toPage;
+            _onAddApplication: function() {
+                this.$.appscoApplicationAdd.toggle();
+            },
 
-                switch(fromPage.getAttribute('name')) {
-                    case 'home':
-                        fromPage.hideInfo();
-                        break;
+            _onApplicationAdded: function(event) {
+                var application = event.detail.application,
+                    message = application.title + ' was successfully saved.';
 
-                    case 'application':
-                        fromPage.initializePage();
-                        break;
+                this.$.appscoHomePage.addApplication(application);
+                this._notify(message);
+            },
 
-                    case 'account':
-                        fromPage.initializePage();
-                        break;
+            _onEditApplication: function() {
+                this.set('route.path', 'application/' + this.application.alias);
+            },
+            /**
+             * Home page END
+             */
 
-                    default:
-                        break;
+            /**
+             * Application page START
+             */
+            _onResourceActionApplicationPage: function() {
+                this.$.appscoApplicationPage.toggleResource();
+            },
+
+            _onShareApplication: function() {
+                this.$.appscoApplicationShare.toggle();
+            },
+
+            _onApplicationShared: function(event) {
+                var application = event.detail.application,
+                    applicationLogApi = application.meta.log,
+                    message = 'You successfully shared ' + this.application.title + '.';
+
+                // In order to notify.
+                this.set('application', {});
+                this.set('application', application);
+
+                this._notifyAboutApplicationLogChange(applicationLogApi);
+                this._notify(message);
+            },
+
+            _onRemoveApplication: function() {
+                this.$.appscoApplicationRemove.open();
+            },
+
+            _onApplicationRemoved: function(event) {
+                var application = event.detail.application,
+                    message = application.title + ' was successfully removed.';
+
+                this.$.appscoHomePage.removeApplication(application);
+                this.set('routeData.page', 'home');
+
+                this._notify(message);
+            },
+
+            _onApplicationSettingsSaved: function(event) {
+                var application = event.detail.application,
+                    applicationLogApi = application.meta.log,
+                    message = application.title + ' was successfully changed.';
+
+                this._reloadApplications();
+                this._notifyAboutApplicationLogChange(applicationLogApi);
+                this._notify(message);
+            },
+
+            _onApplicationSettingsNoChanges: function(event) {
+                this._notify('No changes have been made to ' + event.detail.application.title + '.');
+            },
+
+            _onAutologinChanged: function() {
+                this._reloadApplications();
+            },
+
+            _reloadApplications: function() {
+
+                if (this.$.appscoHomePage.$) {
+                    this.$.appscoHomePage.reloadApplications();
                 }
 
-                switch(toPage.getAttribute('name')) {
-                    case 'home':
-                        toPage.setDefaultApplication();
-                        break;
+            },
 
-                    case 'application':
-                        break;
+            /**
+             * Notifies application log api change.
+             * Used to notify appsco-application-log to load log again.
+             *
+             * @param String applicationLogApi
+             * @private
+             */
+            _notifyAboutApplicationLogChange: function(applicationLogApi) {
+                this.set('application.meta.log', '');
+                this.set('application.meta.log', applicationLogApi);
+            },
+            /**
+             * Application page END
+             */
 
-                    default:
-                        break;
-                }
-
+            /**
+             * Account page START
+             */
+            _onResourceActionAccountPage: function() {
+                this.$.appscoAccountPage.toggleResource();
             },
 
             _onAccountAdvancedSettings: function() {
@@ -768,23 +797,63 @@
             _onEnableAdvancedSettings: function() {
                 this.$.appscoAccountPageActions.enableAdvancedSettings();
             },
+            /**
+             * Account page END
+             */
 
             /**
-             * Notifies application log api change.
-             * Used to notify appsco-application-log to load log again.
-             *
-             * @param String applicationLogApi
-             * @private
+             * Global START
              */
-            _notifyAboutApplicationLogChange: function(applicationLogApi) {
-                this.set('application.meta.log', '');
-                this.set('application.meta.log', applicationLogApi);
+            _onPageAnimationFinish: function(event) {
+                var fromPage = event.detail.fromPage,
+                    toPage = event.detail.toPage;
+
+                switch(fromPage.getAttribute('name')) {
+                    case 'home':
+                        fromPage.hideInfo();
+                        break;
+
+                    case 'application':
+                        fromPage.initializePage();
+                        break;
+
+                    case 'account':
+                        fromPage.initializePage();
+                        break;
+
+                    default:
+                        break;
+                }
+
+                switch(toPage.getAttribute('name')) {
+                    case 'home':
+
+//                        if (toPage.$ && !this.application) {
+                            toPage.setDefaultApplication();
+//                        }
+
+                        break;
+
+                    case 'application':
+                        break;
+
+                    default:
+                        break;
+                }
+
             },
 
             _notify: function(message) {
                 this._toastMessage = message;
                 this.$.toast.open();
+            },
+
+            _onError: function() {
+                this._showPage404();
             }
+            /**
+             * Global END
+             */
         });
     </script>
 </dom-module>

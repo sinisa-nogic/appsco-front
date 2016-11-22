@@ -153,7 +153,6 @@
                         load-more
                         authorization-token="[[ authorizationToken ]]"
                         applications-api="[[ applicationsApi ]]"
-                        on-loaded="_onLoadedApplications"
                         on-info="_onViewApplicationInfo"
                         on-edit="_onApplicationEdit"
                         on-application="_onApplication"
@@ -175,18 +174,20 @@
                     </template>
                 </div>
 
-                <template is="dom-if" if="[[ application.owner ]]">
+                <template is="dom-if" if="[[ !_shared ]]">
                     <appsco-application-subscribers
                             application="[[ application ]]"
                             authorization-token="[[ authorizationToken ]]">
                     </appsco-application-subscribers>
                 </template>
-                <template is="dom-if" if="[[ !application.owner ]]">
+
+                <template is="dom-if" if="[[ _shared ]]">
                     <p>This is shared application</p>
                 </template>
 
                 <div class="details-log flex-vertical">
-                    <template is="dom-if" if="[[ application.owner ]]">
+
+                    <template is="dom-if" if="[[ !_shared ]]">
                         <paper-tabs id="paperTabs" selected="{{ _selectedTab }}">
                             <paper-tab name="details">Details</paper-tab>
                             <paper-tab name="log">Log</paper-tab>
@@ -206,27 +207,29 @@
 
                             <div name="log" class="log">
                                 <appsco-application-log
-                                        application-log="[[ applicationLog ]]"
+                                        application="[[ application ]]"
                                         authorization-token="[[ authorizationToken ]]">
                                 </appsco-application-log>
                             </div>
 
                         </neon-animated-pages>
                     </template>
-                    <template is="dom-if" if="[[ !application.owner ]]">
+
+                    <template is="dom-if" if="[[ _shared ]]">
                         <div name="details">
                             <appsco-application-details
                                     application="[[ application ]]">
                             </appsco-application-details>
                         </div>
                     </template>
+
                 </div>
 
-                <template is="dom-if" if="[[ application.owner ]]">
+                <template is="dom-if" if="[[ !_shared ]]">
                     <div class="info-actions flex-horizontal">
                         <paper-button
                                 class="view-button flex"
-                                on-tap="_onApplicationEdit">
+                                on-tap="_onApplicationInfoEdit">
                             Edit
                         </paper-button>
 
@@ -255,11 +258,10 @@
                     notify: true
                 },
 
-                /**
-                 * [Application](https://developers.appsco.com/api/dashboard/id/icons/id/log) that log is to be rendered for
-                 */
-                applicationLog: {
-                    type: String
+                _shared: {
+                    type: Boolean,
+                    computed: '_computeApplicationShared(application)',
+                    notify: true
                 },
 
                 _infoShown: {
@@ -342,6 +344,10 @@
                 this.updateStyles();
             },
 
+            _computeApplicationShared: function(application) {
+                return application && !application.owner;
+            },
+
             _showInfo: function() {
                 this.$.appscoContent.showSection('info');
                 this._infoShown = true;
@@ -362,14 +368,6 @@
                 }
             },
 
-            _onLoadedApplications: function(event) {
-
-                if (!this.application) {
-                    this.set('application', event.detail.applications[0]);
-                }
-
-            },
-
             _onViewApplicationInfo: function(event) {
                 this.set('application', event.detail.application);
 
@@ -378,7 +376,12 @@
                 }
             },
 
-            _onApplicationEdit: function() {
+            _onApplicationEdit: function(event) {
+                this.set('application', event.detail.application);
+                this._onApplicationInfoEdit();
+            },
+
+            _onApplicationInfoEdit: function() {
                 this.fire('edit-application');
             },
 

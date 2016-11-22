@@ -61,29 +61,32 @@ Custom property | Description | Default
                 auto-validate
                 name="configure_application[url]"
                 ></paper-input>
-        <paper-input
-                id="username"
-                label="Username"
-                value="[[ application.claims.username ]]"
-                name="icon_claims[username]"
-                error-message="Please type in username."
-                on-value-changed="_onTypeIn"
-                ></paper-input>
-        <paper-input
-                id="password"
-                label="Password"
-                type="password"
-                value="[[ application.claims.password ]]"
-                name="icon_claims[password]"
-                error-message="Please type in password."
-                on-value-changed="_onTypeIn"
-                ></paper-input>
-        <paper-textarea
-                id="note"
-                label="Note"
-                value="[[ application.claims.note ]]"
-                name="icon_claims[note]"
-                ></paper-textarea>
+
+        <template is="dom-if" if="[[ _applicationClaims ]]">
+            <paper-input
+                    id="username"
+                    label="Username"
+                    value="[[ application.claims.username ]]"
+                    name="icon_claims[username]"
+                    error-message="Please type in username."
+                    on-value-changed="_onTypeIn"
+                    ></paper-input>
+            <paper-input
+                    id="password"
+                    label="Password"
+                    type="password"
+                    value="[[ application.claims.password ]]"
+                    name="icon_claims[password]"
+                    error-message="Please type in password."
+                    on-value-changed="_onTypeIn"
+                    ></paper-input>
+            <paper-textarea
+                    id="note"
+                    label="Note"
+                    value="[[ application.claims.note ]]"
+                    name="icon_claims[note]"
+                    ></paper-textarea>
+        </template>
 
         <paper-button on-tap="_submit" id="submit">Save</paper-button>
 
@@ -111,10 +114,19 @@ Custom property | Description | Default
                     value: ''
                 },
 
+                _applicationClaims: {
+                    tyoe: Boolean,
+                    computed: '_computeApplicationClaims(application)'
+                },
+
                 _loader: {
                     type: Boolean,
                     value: false
                 }
+            },
+
+            _computeApplicationClaims: function(application) {
+                return application.claims;
             },
 
             /**
@@ -191,9 +203,12 @@ Custom property | Description | Default
             _submitNewClaims: function (application) {
                 var me = this;
                 return new Promise(function (resolve, reject) {
-                    var username = me.$.username.value ? me.$.username.value : '',
-                            password = me.$.password.value ? me.$.password.value : '',
-                            note = me.$.note.value ? me.$.note.value : '',
+                    var usernameInput = me.$$('#username'),
+                            username = usernameInput.value ? usernameInput.value : '',
+                            passwordInput = me.$$('#password'),
+                            password = passwordInput.value ? passwordInput.value : '',
+                            noteInput = me.$$('#note'),
+                            note = noteInput.value ? noteInput.value : '',
                             body = '';
 
                     if (
@@ -203,19 +218,19 @@ Custom property | Description | Default
                             me.application.claims.note != note)
                     ) {
 
-                        me.$.username.invalid = (username == '');
-                        me.$.password.invalid = (password == '');
+                        usernameInput.invalid = (username == '');
+                        passwordInput.invalid = (password == '');
 
                         body =
-                                encodeURIComponent(me.$.username.name) + "=" + encodeURIComponent(username) +
+                                encodeURIComponent(usernameInput.name) + "=" + encodeURIComponent(username) +
                                 '&' +
-                                encodeURIComponent(me.$.password.name) + "=" + encodeURIComponent(password) +
+                                encodeURIComponent(passwordInput.name) + "=" + encodeURIComponent(password) +
                                 '&' +
-                                encodeURIComponent(me.$.note.name) + "=" + encodeURIComponent(note)
+                                encodeURIComponent(noteInput.name) + "=" + encodeURIComponent(note)
                         ;
                     }
 
-                    if (!me.$.username.invalid && !me.$.password.invalid) {
+                    if (!usernameInput.invalid && !passwordInput.invalid) {
                         if ('' != body) {
                             var options = {
                                 url: me.application.self,

@@ -25,6 +25,7 @@ Custom property | Description | Default
 ----------------|-------------|----------
 `--appsco-application-log` | Mixin for the root element | `{}`
 `--appsco-application-logs` | Mixin for the log wrapper element | `{}`
+`--load-more-button` | Mixin applied to Load More button | `{}`
 
 @demo demo/appsco-application-log.html
 -->
@@ -56,6 +57,7 @@ Custom property | Description | Default
                 width: 120px;
                 margin: 20px auto 0;
                 text-align: center;
+                @apply(--load-more-button);
             }
             :host .message {
                 color: var(--secondary-text-color);
@@ -100,7 +102,10 @@ Custom property | Description | Default
                 </p>
             </template>
 
-            <paper-button on-tap="loadMoreLogs" id="loadMore" hidden="[[ !loadMore ]]">Load More</paper-button>
+            <paper-button on-tap="loadMoreLogs"
+                          id="loadMore"
+                          class="load-more-button"
+                          hidden="[[ !loadMore ]]">Load More</paper-button>
         </div>
 
     </template>
@@ -126,6 +131,18 @@ Custom property | Description | Default
             _next: "",
 
             properties: {
+
+                /**
+                 * [Application](https://developers.appsco.com/api/dashboard/id/icons/id) for which log should be rendered
+                 */
+                application: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    },
+                    notify: true
+                },
+
                 /**
                  * [ApplicationLog]() that is to be rendered
                  */
@@ -152,15 +169,7 @@ Custom property | Description | Default
                     type: String,
                     value: ''
                 },
-                /**
-                 * [Application](https://developers.appsco.com/api/dashboard/id/icons/id/log) that log is to be rendered for
-                 */
-                applicationLog: {
-                    type: String,
-                    value: '',
-                    notify: true,
-                    reflectToAttribute: true
-                },
+
                 _currentUrl: {
                     type: String,
                     notify: true
@@ -186,11 +195,15 @@ Custom property | Description | Default
                 }
             },
             listeners: {
-                'application-log-changed': "_init",
+                'application-changed': "_init",
                 'on-request': "_loading"
             },
 
             attached: function() {
+                this.load();
+            },
+
+            load: function() {
                 this._init();
             },
 
@@ -201,8 +214,8 @@ Custom property | Description | Default
 
                 this.$.loadMore.disabled = false;
 
-                if(this.applicationLog) {
-                    this._next = this.applicationLog + "?page=1&limit=" + this.size;
+                if(this.application && this.application.owner && 'meta' in this.application) {
+                    this._next = tthis.application.meta.log + "?page=1&limit=" + this.size;
                     this._currentUrl = this._next;
                 }
             },

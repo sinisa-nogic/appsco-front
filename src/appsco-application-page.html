@@ -184,7 +184,6 @@
                                 id="appscoApplicationComponentsPage"
                                 name="appsco-application-components-page"
                                 application="{{ application }}"
-                                application-log="[[ applicationLog ]]"
                                 authorization-token="[[ authorizationToken ]]"
                                 on-application-settings="_onApplicationSettings"
                                 on-all-subscribers="_onAllSubscribers"
@@ -211,7 +210,7 @@
                         <appsco-application-log-page
                                 id="appscoApplicationSubscribersPage"
                                 name="appsco-application-log-page"
-                                application-log="[[ applicationLog ]]"
+                                application="[[ application ]]"
                                 authorization-token="[[ authorizationToken ]]"
                                 on-back="_onResourceBack">
                         </appsco-application-log-page>
@@ -221,6 +220,14 @@
 
             </div>
         </appsco-content>
+
+        <!--<iron-ajax-->
+                <!--id="ironAjaxGetApplication"-->
+                <!--url="[[ applicationApi ]]"-->
+                <!--on-error="_onApplicationError"-->
+                <!--on-response="_onApplicationResponse"-->
+                <!--headers="{{ _computedHeaders }}">-->
+        <!--</iron-ajax>-->
 
     </template>
 
@@ -239,13 +246,6 @@
                 },
 
                 /**
-                 * [Application](https://developers.appsco.com/api/dashboard/id/icons/id/log) that log is to be rendered for
-                 */
-                applicationLog: {
-                    type: String
-                },
-
-                /**
                  * Selected page.
                  * It has value of component's 'name' attribute.
                  */
@@ -255,9 +255,21 @@
                     notify: true
                 },
 
+                /**
+                 * Authorization token for logged account.
+                 */
                 authorizationToken: {
                     type: String,
                     value: ''
+                },
+
+                /**
+                 * Computed headers.
+                 * It contains authorization token.
+                 */
+                _computedHeaders: {
+                    type: Object,
+                    computed: "_computeHeaders(authorizationToken)"
                 },
 
                 /**
@@ -266,6 +278,14 @@
                 accountsApi: {
                     type: String,
                     value: ''
+                },
+
+                /**
+                 * Get accounts link.
+                 */
+                applicationApi: {
+                    type: String,
+                    notify: true
                 },
 
                 /**
@@ -346,6 +366,7 @@
                     this.updateStyles();
                 }
 
+                this._getApplication();
             },
 
             _updateScreen: function(medium, tablet, mobile) {
@@ -354,6 +375,42 @@
                 if (!tablet) {
                     this.$.appscoContent.showSection('resource');
                 }
+            },
+
+            /**
+             * Computes authorization headers.
+             *
+             * @param {Object} authorizationToken
+             * @returns {{ Authorization: string }}
+             * @private
+             */
+            _computeHeaders: function (authorizationToken) {
+                return {
+                    'Authorization': 'token ' + authorizationToken
+                }
+            },
+
+            _getApplication: function() {
+
+                if (!this.application.self) {
+                    this._onApplicationError();
+                }
+
+//                var windowPathname = window.location.pathname.split('/'),
+//                    applicationApi = this.applicationApi.replace('dashboard_id', 34).replace('icon_id', windowPathname[windowPathname.length -1]);
+//
+//                if (this.application && this.application.self != applicationApi) {
+//                    this.set('applicationApi', applicationApi);
+//                    this.$.ironAjaxGetApplication.generateRequest();
+//                }
+            },
+
+            _onApplicationResponse: function(event) {
+                this.application = event.detail.response.icon;
+            },
+
+            _onApplicationError: function(event) {
+                this.fire('error');
             },
 
             _onApplicationSettings: function() {

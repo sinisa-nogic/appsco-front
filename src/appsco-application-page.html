@@ -221,13 +221,13 @@
             </div>
         </appsco-content>
 
-        <!--<iron-ajax-->
-                <!--id="ironAjaxGetApplication"-->
-                <!--url="[[ applicationApi ]]"-->
-                <!--on-error="_onApplicationError"-->
-                <!--on-response="_onApplicationResponse"-->
-                <!--headers="{{ _computedHeaders }}">-->
-        <!--</iron-ajax>-->
+        <iron-ajax
+                id="ironAjaxGetApplication"
+                url="[[ applicationsApi ]]"
+                on-error="_onApplicationError"
+                on-response="_onApplicationResponse"
+                headers="{{ _computedHeaders }}">
+        </iron-ajax>
 
     </template>
 
@@ -236,6 +236,13 @@
             is: 'appsco-application-page',
 
             properties: {
+
+                route: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    }
+                },
 
                 application: {
                     type: Object,
@@ -283,7 +290,7 @@
                 /**
                  * Get accounts link.
                  */
-                applicationApi: {
+                applicationsApi: {
                     type: String,
                     notify: true
                 },
@@ -391,22 +398,24 @@
             },
 
             _getApplication: function() {
+                var applicationApi = this.applicationsApi + this.route.path;
 
                 if (!this.application.self) {
-                    this._onApplicationError();
+                    this.$.ironAjaxGetApplication.url = applicationApi;
+                    this.$.ironAjaxGetApplication.generateRequest();
                 }
 
-//                var windowPathname = window.location.pathname.split('/'),
-//                    applicationApi = this.applicationApi.replace('dashboard_id', 34).replace('icon_id', windowPathname[windowPathname.length -1]);
-//
-//                if (this.application && this.application.self != applicationApi) {
-//                    this.set('applicationApi', applicationApi);
-//                    this.$.ironAjaxGetApplication.generateRequest();
-//                }
             },
 
             _onApplicationResponse: function(event) {
-                this.application = event.detail.response.icon;
+                var icon = event.detail.response.icon;
+
+                if (icon.owner) {
+                    this.application = event.detail.response.icon;
+                }
+                else {
+                    this._onApplicationError();
+                }
             },
 
             _onApplicationError: function(event) {

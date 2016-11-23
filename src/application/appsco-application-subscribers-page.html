@@ -47,6 +47,16 @@
             :host .load-more-button {
                 @apply(--load-more-button);
             }
+            :host .subscriber {
+                @apply(--layout-horizontal);
+            }
+            :host .subscriber > appsco-list-item {
+                @apply(--layout-flex);
+            }
+            :host .subscriber paper-button {
+                font-size: 12px;
+                opacity: 0.6;
+            }
         </style>
 
         <appsco-application-subscribers
@@ -75,8 +85,16 @@
 
                 <template is="dom-repeat" items="{{ _subscribers }}">
 
-                    <appsco-list-item
-                            item="[[ _mapToListItem(item) ]]"></appsco-list-item>
+                    <div class="subscriber">
+                        <appsco-list-item
+                                item="[[ _mapToListItem(item) ]]"></appsco-list-item>
+                        <div class="actions" hidden$="[[ _owner(item) ]]">
+                            <paper-button
+                                    on-tap="_revoke"
+                            >Revoke</paper-button>
+                        </div>
+                    </div>
+
 
                 </template>
 
@@ -102,7 +120,12 @@
                  */
                 application: {
                     type: Object,
+                    value: function() { return {}; },
                     notify: true
+                },
+                account: {
+                    type: Object,
+                    value: function() { return {}; }
                 },
 
                 authorizationToken: {
@@ -183,6 +206,13 @@
                 this.set('_subscribers', []);
             },
 
+            _revoke: function(event) {
+                this.fire('subscription-revoke', {
+                    application: this.application,
+                    account: event.model.item
+                })
+            },
+
             _onSubscribersLoad: function(event) {
 
                 event.detail.subscribers.accounts.forEach(function(element, index) {
@@ -224,7 +254,11 @@
                     date: '',
                     message: item.name + ' - ' + item.email
                 };
-            }
+            },
+
+            _owner: function(item) {
+                return item.email == this.account.email;
+            },
         });
     </script>
 </dom-module>

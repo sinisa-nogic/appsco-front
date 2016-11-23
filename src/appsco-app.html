@@ -33,6 +33,7 @@
 <link rel="import" href="../bower_components/appsco-application/appsco-application-add.html">
 <link rel="import" href="../bower_components/appsco-application/appsco-application-share.html">
 <link rel="import" href="../bower_components/appsco-application/appsco-application-remove.html">
+<link rel="import" href="../bower_components/appsco-application/appsco-application-subscriber-revoke.html">
 <link rel="import" href="../bower_components/appsco-account/appsco-account-authorized-app-revoke.html">
 
 <link rel="import" href="application/appsco-home-page-actions.html">
@@ -355,6 +356,7 @@
                             account="{{ account }}"
                             on-share-application="_onShareApplication"
                             on-remove-application="_onRemoveApplication"
+                            on-subscription-revoke="_onSubscriptionRevoke"
                             on-application-settings-saved="_onApplicationSettingsSaved"
                             on-application-settings-no-changes="_onApplicationSettingsNoChanges"
                             on-autologin-changed="_onAutologinChanged"
@@ -420,6 +422,12 @@
                 application="[[ _authorizedApplication ]]"
                 authorization-token="[[ authorizationToken ]]"
                 on-application-revoked="_onAuthorizedApplicationRevoked"></appsco-account-authorized-app-revoke>
+
+        <appsco-application-subscriber-revoke
+                id="appscoApplicationSubscriberRevoke"
+                authorization-token="[[ authorizationToken ]]"
+                on-subscription-revoked="_onSubscriptionRevoked"
+        ></appsco-application-subscriber-revoke>
 
         <template is="dom-if" if="[[ api.me ]]">
             <iron-ajax
@@ -756,6 +764,20 @@
             _notifyAboutApplicationLogChange: function(applicationLogApi) {
                 this.set('application.meta.log', '');
                 this.set('application.meta.log', applicationLogApi);
+            },
+
+            _onSubscriptionRevoke: function(event) {
+                this.$.appscoApplicationSubscriberRevoke.application =   event.detail.application;
+                this.$.appscoApplicationSubscriberRevoke.revokeAccount = event.detail.account;
+
+                this.$.appscoApplicationSubscriberRevoke.open();
+            },
+
+            _onSubscriptionRevoked: function(event) {
+                this.set("application", {});
+                this.set("application", event.detail.application);
+                var msg = "You have successfully revoked access to " + event.detail.application.title + ' for ' + event.detail.account.name;
+                this._notify(msg);
             },
             /**
              * Application page END

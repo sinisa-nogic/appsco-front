@@ -36,9 +36,9 @@ Custom property | Description | Default
             :host {
                 display: inline-block;
                 position: relative;
-                @apply(--appsco-applications);
-                @apply(--layout-vertical);
-                @apply(--layout-center);
+            @apply(--appsco-applications);
+            @apply(--layout-vertical);
+            @apply(--layout-center);
 
             --appsco-applications-item: {
                  margin: 0 10px 10px 0;
@@ -49,15 +49,15 @@ Custom property | Description | Default
             }
 
             :host div[applications] {
-                @apply(--layout-horizontal);
-                @apply(--layout-wrap);
-                @apply(--layout-start);
+            @apply(--layout-horizontal);
+            @apply(--layout-wrap);
+            @apply(--layout-start);
                 margin-right: -10px;
-                @apply(--applications-container);
+            @apply(--applications-container);
             }
 
             :host appsco-application-item {
-                @apply(--appsco-applications-item);
+            @apply(--appsco-applications-item);
             }
 
             :host .applications-container {
@@ -143,7 +143,6 @@ Custom property | Description | Default
                 applicationsApi: {
                     type: String,
                     value: '',
-                    reflectToAttribute: true,
                     notify: true
                 },
                 /**
@@ -203,9 +202,11 @@ Custom property | Description | Default
                     value: 0
                 }
             },
+
             listeners: {
                 'applications-api-changed': "_loadApplications"
             },
+
             ready: function () {
                 this._currentUrl = this.applicationsApi + "?page=1&extended=1&limit=" + this.size;
             },
@@ -231,6 +232,12 @@ Custom property | Description | Default
                 this._totalApplications = meta.total;
                 this._next = meta.next + "&limit=" + this.size;
 
+                if (meta.total === 0) {
+                    this._applicationsEmpty = true;
+                    this._hideProgressBar();
+                    return;
+                }
+
                 icons.forEach(function (el, index) {
 
                     setTimeout( function() {
@@ -244,9 +251,7 @@ Custom property | Description | Default
                                 me._loadMore = false;
                             }
 
-                            setTimeout(function() {
-                                me.$$('#paperProgress').hidden = true;
-                            }, 300);
+                            me._hideProgressBar();
 
                             /**
                              * Fired when applications are loaded
@@ -313,10 +318,7 @@ Custom property | Description | Default
 
                     if (index === length - 1) {
                         this._applicationsEmpty = (this._applications.length === 0);
-
-                        setTimeout(function() {
-                            this.$$('#paperProgress').hidden = true;
-                        }.bind(this), 300);
+                        this._hideProgressBar();
                     }
 
                 }.bind(this));
@@ -326,6 +328,14 @@ Custom property | Description | Default
                 if (term.length < 3 && this._applications.length < this._totalApplications) {
                     this._loadMore = true;
                 }
+            },
+
+            _hideProgressBar: function() {
+
+                setTimeout(function() {
+                    this.$$('#paperProgress').hidden = true;
+                }.bind(this), 300);
+
             }
         });
     </script>

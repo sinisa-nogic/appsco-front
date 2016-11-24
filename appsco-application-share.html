@@ -1,5 +1,4 @@
 <link rel="import" href="../polymer/polymer.html">
-
 <link rel="import" href="../paper-styles/typography.html">
 <link rel="import" href="../paper-styles/shadow.html">
 <link rel="import" href="../paper-button/paper-button.html">
@@ -8,7 +7,6 @@
 <link rel="import" href="../paper-input/paper-input.html">
 <link rel="import" href="../iron-image/iron-image.html">
 <link rel="import" href="../iron-ajax/iron-request.html">
-
 <link rel="import" href="../paper-dialog/paper-dialog.html">
 <link rel="import" href="../neon-animation/neon-animation-runner-behavior.html">
 <link rel="import" href="../neon-animation/animations/fade-out-animation.html">
@@ -16,6 +14,7 @@
 <link rel="import" href="../neon-animation/animations/scale-up-animation.html">
 
 <link rel="import" href="../appsco-components/appsco-loader.html">
+<link rel="import" href="../appsco-components/appsco-form-error.html">
 
 <!--
 `appsco-application-share`
@@ -140,9 +139,12 @@ Custom property | Description | Default
                         loader-alt="Appsco is sharing application"
                         multi-color></appsco-loader>
 
-                <h2>Share application [[ application.icon.title ]]</h2>
+                <h2>Share application [[ application.title ]]</h2>
 
                 <div class="account-list">
+
+                    <appsco-form-error message="[[ _error ]]"></appsco-form-error>
+
                     <template is="dom-repeat" items="[[ _accounts ]]">
                         <div class="usercard none selected-user" id="accountItem_{{ index }}">
                             <paper-button raised class="user" on-tap="_removeFromAccounts">
@@ -190,7 +192,7 @@ Custom property | Description | Default
 
             <div class="buttons">
                 <paper-button dialog-dismiss>Cancel</paper-button>
-                <paper-button dialog-confirm autofocus on-tap="_shareApplicationAction">Share</paper-button>
+                <paper-button autofocus on-tap="_shareApplicationAction">Share</paper-button>
             </div>
         </paper-dialog>
 
@@ -212,6 +214,9 @@ Custom property | Description | Default
                 });
             },
             _share: function(e) {
+
+                this._error = '';
+
                 this.animationConfig.exit.node = this.$$("#searchItem_"+e.model.index);
                 this.playAnimation('exit', {
                     account: e.model,
@@ -259,7 +264,9 @@ Custom property | Description | Default
                  */
                 application: {
                     type: Object,
-                    value: {},
+                    value: function() {
+                        return {};
+                    },
                     notify: true
                 },
                 _computedHeaders: {
@@ -303,6 +310,13 @@ Custom property | Description | Default
                 _shareLoader: {
                     type: Boolean,
                     value: false
+                },
+
+                /**
+                 * Error message for share.
+                 */
+                _error: {
+                    type: String
                 }
             },
             listeners: {
@@ -352,11 +366,17 @@ Custom property | Description | Default
 
             _shareApplicationAction: function() {
 
-                this._shareLoader = true;
+                if (this._accounts.length > 0) {
+                    this._shareLoader = true;
 
-                setTimeout(function() {
-                    this._shareApplication();
-                }.bind(this), 500);
+                    setTimeout(function() {
+                        this._shareApplication();
+                    }.bind(this), 500);
+                }
+                else {
+                    this._error = 'Please add at least one user to share application to.';
+                    this.$.search.focus();
+                }
 
             },
 
@@ -383,6 +403,10 @@ Custom property | Description | Default
 
                 this._loader = true;
                 this.set('_message', '');
+
+                setTimeout(function() {
+                    this._error = '';
+                }.bind(this), 500);
 
                 if (
                         this.$.search.value.length < 3 || !(regexpAlphanumeric.test(e.key) || regexpBackspace.test(e.key))
@@ -451,6 +475,8 @@ Custom property | Description | Default
                 this.set('_searchList', []);
                 this.set('_accounts', []);
                 this.$.search.value = '';
+                this._shareLoader = false;
+                this._error = '';
             }
         });
     </script>

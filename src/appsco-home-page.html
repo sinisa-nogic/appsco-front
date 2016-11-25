@@ -137,11 +137,48 @@
             .log, .details {
                 overflow: auto;
             }
+            :host([laptop-screen]) {
+                --appsco-application-item: {
+                     width: 131px;
+                 };
+
+                --info-width: 290px;
+            }
+            :host([tablet-s1280-screen]) {
+                --appsco-application-item: {
+                     width: 141px;
+                 };
+
+                --info-width: 318px;
+            }
+            :host([tablet-s1024-screen]) {
+                --appsco-application-item: {
+                     width: 127px;
+                 };
+
+                --info-width: 290px;
+            }
+            :host([tablet-screen]) {
+                --appsco-application-item: {
+                     width: 134px;
+                 };
+            }
             :host([mobile-screen]) {
                 --info-width: 100%;
+
+                --applications-container: {
+                     margin-right: 0;
+                     display: block;
+                     @apply(--layout-horizontal);
+                     @apply(--layout-around-justified);
+                 };
             }
         </style>
 
+        <iron-media-query query="(max-width: 1366px)" query-matches="{{ laptopScreen }}"></iron-media-query>
+        <iron-media-query query="(max-width: 1280px)" query-matches="{{ tabletS1280Screen }}"></iron-media-query>
+        <iron-media-query query="(max-width: 1024px)" query-matches="{{ tabletS1024Screen }}"></iron-media-query>
+        <iron-media-query query="(max-width: 800px)" query-matches="{{ tabletScreen }}"></iron-media-query>
         <iron-media-query query="(max-width: 600px)" query-matches="{{ mobileScreen }}"></iron-media-query>
 
         <appsco-content id="appscoContent">
@@ -299,6 +336,30 @@
                     reflectToAttribute: true
                 },
 
+                tabletScreen: {
+                    type: Boolean,
+                    value: false,
+                    reflectToAttribute: true
+                },
+
+                tabletS1024Screen: {
+                    type: Boolean,
+                    value: false,
+                    reflectToAttribute: true
+                },
+
+                tabletS1280Screen: {
+                    type: Boolean,
+                    value: false,
+                    reflectToAttribute: true
+                },
+
+                laptopScreen: {
+                    type: Boolean,
+                    value: false,
+                    reflectToAttribute: true
+                },
+
                 /**
                  * Animation config.
                  */
@@ -329,18 +390,18 @@
             ],
 
             observers: [
-                '_isCSSChanged(mobileScreen)'
+                '_isCSSChanged(mobileScreen, tabletScreen, tabletS1024Screen, tabletS1280Screen, laptopScreen)'
             ],
 
             attached: function() {
 
-                if (this.mobileScreen) {
+                if (this.mobileScreen || this.tabletScreen || this.tabletS1024Screen || this.tabletS1280Screen || this.laptopScreen) {
                     this.updateStyles();
                 }
 
             },
 
-            _isCSSChanged: function(mobile) {
+            _isCSSChanged: function(mobile, tablet, tabletS1024Screen, tabletS1280Screen, laptop) {
                 this.updateStyles();
             },
 

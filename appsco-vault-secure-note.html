@@ -1,0 +1,190 @@
+<link rel="import" href="../polymer/polymer.html">
+
+<link rel="import" href="../iron-form/iron-form.html">
+<link rel="import" href="../iron-flex-layout/iron-flex-layout.html">
+
+<link rel="import" href="../paper-input/paper-input.html">
+<link rel="import" href="../paper-input/paper-textarea.html">
+<link rel="import" href="../paper-button/paper-button.html">
+
+<link rel="import" href="../appsco-components/appsco-loader.html">
+<link rel="import" href="../appsco-components/appsco-form-error.html">
+
+<!--
+`appsco-vault-secure-note`
+
+Contains form for new / edit vault item of type Secure Note.
+
+    <appsco-vault-secure-note>
+    </appsco-vault-secure-note>
+
+### Styling
+
+`<appsco-vault-secure-note>` provides the following custom properties and mixins for styling:
+
+Custom property | Description | Default
+----------------|-------------|----------
+`--appsco-vault-secure-note` | Mixin for the root element | `{}`
+
+@demo demo/appsco-vault-secure-note.html
+-->
+
+<dom-module id="appsco-vault-secure-note">
+    <template>
+        <style>
+            :host {
+                display: block;
+                position: relative;
+                @apply(--appsco-vault-secure-note);
+
+                --paper-dropdown-menu: {
+                    display: block;
+                };
+            }
+        </style>
+
+        <appsco-loader active="[[ _loader ]]" loader-alt="Appsco is saving vault item" multi-color></appsco-loader>
+
+        <appsco-form-error message="[[ _error ]]"></appsco-form-error>
+
+        <form is="iron-form"
+              id="vaultSecureNoteForm"
+              method="POST"
+              action="[[ vaultSecureNoteApi ]]"
+              headers="{{ _computedHeaders }}"
+              on-iron-form-presubmit="_onFormPresubmit"
+              on-iron-form-error="_onFormError"
+              on-iron-form-response="_onFormResponse">
+
+            <div class="input-container">
+                <paper-input
+                        id="title"
+                        name="vault_secure_note[title]"
+                        label="Title"
+                        required
+                        value="[[ item.title ]]"
+                ></paper-input>
+            </div>
+
+            <div class="input-container">
+                <paper-textarea
+                        id="note"
+                        label="Note"
+                        value="[[ item.note ]]"
+                        name="vault_secure_note[note]"
+                ></paper-textarea>
+            </div>
+        </form>
+
+        <paper-button
+                id="submit"
+                class="submit-button"
+                on-tap="_saveForm"
+        >Save</paper-button>
+
+    </template>
+    <script>
+        Polymer({
+
+            is: 'appsco-vault-secure-note',
+
+            properties: {
+
+                item: {
+                    type: Object,
+                    value: function() {
+                        return {
+                            title: '',
+                            note: ''
+                        };
+                    }
+                },
+
+                /**
+                 * Authorization token for the account.
+                 */
+                authorizationToken: {
+                    type: String,
+                    value: function() { return ''; }
+                },
+
+                /**
+                 * Computed headers.
+                 * It contains authorization token.
+                 */
+                _computedHeaders: {
+                    type: Object,
+                    computed: "_computeHeaders(authorizationToken)"
+                },
+
+                _loader: {
+                    type: Boolean,
+                    value: false
+                },
+
+                /**
+                 * Error message for settings form.
+                 */
+                _error: {
+                    type: String
+                },
+
+                vaultSecureNoteApi: {
+                    type: String,
+                    notify: true
+                }
+            },
+
+            /**
+             * Computes authorization headers.
+             *
+             * @param {Object} authorizationToken
+             * @returns {{Authorization: string}}
+             * @private
+             */
+            _computeHeaders: function (authorizationToken) {
+                return {
+                    'Authorization': 'token ' + authorizationToken,
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                }
+            },
+
+            _saveForm: function() {
+                this.$.vaultSecureNoteForm.submit();
+            },
+
+            _onFormPresubmit: function() {
+                this._loader = true;
+            },
+
+            /**
+             * Called on form error when trying to save settings.
+             *
+             * @param {Object} event
+             * @private
+             */
+            _onFormError: function(event) {
+                this._error = event.detail.error.message;
+                this._loader = false;
+            },
+
+            /**
+             * Called after settings have been submited.
+             *
+             * @param {Object} event
+             * @private
+             */
+            _onFormResponse: function(event) {
+
+                /**
+                 * Fired after vault item save success.
+                 *
+                 * @event vault-item-save
+                 */
+                this.fire('vault-item-saved');
+
+                this._loader = false;
+            }
+        });
+    </script>
+</dom-module>

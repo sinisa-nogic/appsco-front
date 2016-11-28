@@ -1,0 +1,152 @@
+<link rel="import" href="../polymer/polymer.html">
+<link rel="import" href="../iron-flex-layout/iron-flex-layout-classes.html">
+<link rel="import" href="../neon-animation/neon-animation-runner-behavior.html">
+<link rel="import" href="../neon-animation/animations/fade-in-animation.html">
+<link rel="import" href="../neon-animation/animations/fade-out-animation.html">
+<link rel="import" href="../iron-image/iron-image.html">
+
+<!--
+`appsco-list-item`
+Is used to represent list item such as application log, account-log and account notification.
+
+Example:
+
+    <body>
+      <appsco-list-item item="{}">
+     </appsco-list-item>
+
+ Custom property | Description | Default
+----------------|-------------|----------
+`--appsco-list-item` | Mixin applied to root element | `{}`
+`--appsco-list-item-icon` | Mixin applied to item image | `{}`
+`--ppsco-list-item-icon-contain` | Mixin applied to iron-image #sizedImgDiv | `{}`
+`--appsco-list-item-message` | Mixin applied to message | `{}`
+`--appsco-list-item-date` | Mixin applied to date | `{}`
+
+@demo demo/appsco-account-notification.html
+-->
+
+<dom-module id="appsco-list-item">
+    <template>
+        <style include="iron-flex iron-flex-alignment">
+            :host {
+                display: none;
+                padding: 20px 16px 10px 6px;
+                border-top: 1px solid var(--divider-color);
+                line-height: 1.4;
+                position: relative;
+
+                @apply(--appsco-list-item);
+            }
+            :host .item-icon {
+                width: 32px;
+                height: 32px;
+                margin-right: 10px;
+                @apply(--appsco-list-item-icon);
+            }
+            :host .item-icon::shadow #sizedImgDiv {
+                border-radius: 50%;
+                @apply(--appsco-list-item-icon-contain);
+            }
+            :host .item-date {
+                font-size: 11px;
+                position: absolute;
+                top: 5px;
+                right: 6px;
+                opacity: 0.5;
+                @apply(--appsco-list-item-date);
+            }
+            :host .item-message {
+                word-wrap: break-word;
+                @apply(--appsco-list-item-message);
+            }
+        </style>
+
+        <div class="item layout horizontal center">
+            <div class="item-date">[[ _dateFormat(item.date) ]]</div>
+
+            <iron-image
+                    src="[[ item.icon ]]"
+                    sizing="contain"
+                    class="item-icon"
+                    hidden$="[[ !item.icon ]]">
+            </iron-image>
+
+            <div class="item-message flex">[[ item.message ]]</div>
+        </div>
+
+    </template>
+
+    <script>
+        Polymer({
+
+            is: 'appsco-list-item',
+
+            properties: {
+
+                /**
+                 * Item to display.
+                 *
+                 * @type {Object}
+                 */
+                item: {
+                    type: Object
+                },
+
+                /**
+                 * Animation for loader appearance.
+                 */
+                animationConfig: {
+                    value: function() {
+                        return {
+                            'entry': {
+                                name: 'fade-in-animation',
+                                node: this,
+                                timing: {
+                                    duration: 200
+                                }
+                            },
+                            'exit': {
+                                name: 'fade-out-animation',
+                                node: this,
+                                timing: {
+                                    duration: 100
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+
+            behaviors: [
+                Polymer.NeonAnimationRunnerBehavior
+            ],
+
+            attached: function() {
+                this.style.display = 'block';
+                this.playAnimation('entry');
+            },
+
+            /**
+             * Formats date and returns formatted date as string.
+             *
+             * @param {String} value
+             * @returns {string}
+             * @private
+             */
+            _dateFormat: function(value) {
+
+                if (value) {
+
+                    var options = {
+                        weekday: "long", year: "numeric", month: "short",
+                        day: "numeric", hour: "2-digit", minute: "2-digit"
+                    };
+
+                    return (new Date(value)).toLocaleDateString('en', options);
+                }
+
+            }
+        });
+    </script>
+</dom-module>

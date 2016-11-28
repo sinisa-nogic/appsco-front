@@ -11,6 +11,7 @@
 <link rel="import" href="account/appsco-account-components-page.html">
 <link rel="import" href="account/appsco-account-settings-page.html">
 <link rel="import" href="account/appsco-account-2fa-page.html">
+<link rel="import" href="account/appsco-account-2fa-manage.html">
 <link rel="import" href="account/appsco-account-notifications-page.html">
 <link rel="import" href="account/appsco-account-authorized-apps-page.html">
 <link rel="import" href="account/appsco-account-log-page.html">
@@ -198,8 +199,10 @@
                                 authorized-apps-api="[[ authorizedAppsApi ]]"
                                 log-api="[[ logApi ]]"
                                 two-fa-api="[[ twoFaApi ]]"
+                                two-fa-qr-api="[[ twoFaQrApi ]]"
                                 on-account-settings="_onAccountSettings"
                                 on-2fa-enable="_on2FAEnable"
+                                on-2fa-manage="_on2FAManage"
                                 on-all-notifications="_onAllNotifications"
                                 on-manage-authorized-apps="_onManageAuthorizedApps"
                                 on-whole-log="_onWholeLog"
@@ -219,9 +222,22 @@
                         <appsco-account-2fa-page
                                 name="appsco-account-2fa-page"
                                 account="{{ account }}"
+                                two-fa-api="[[ twoFaApi ]]"
+                                two-fa-qr-api="[[ twoFaQrApi ]]"
                                 authorization-token="[[ authorizationToken ]]"
-                                on-back="_onResourceBack">
-                        </appsco-account-2fa-page>
+                                on-back="_onResourceBack"
+                                on-twofa-enabled="_onTwoFaEnabled"
+                        ></appsco-account-2fa-page>
+
+                        <appsco-account-2fa-manage
+                                name="appsco-account-2fa-manage"
+                                account="{{ account }}"
+                                two-fa-api="[[ twoFaApi ]]"
+                                two-fa-codes-api="[[ twoFaCodesApi ]]"
+                                authorization-token="[[ authorizationToken ]]"
+                                on-back="_onResourceBack"
+                                on-twofa-disabled="_onTwoFaDisabled"
+                        ></appsco-account-2fa-manage>
 
                         <appsco-account-notifications-page
                                 name="appsco-account-notifications-page"
@@ -326,6 +342,20 @@
                  * Get 2fa status link.
                  */
                 twoFaApi: {
+                    type: String
+                },
+
+                /**
+                 * Get 2fa qr code link.
+                 */
+                twoFaQrApi: {
+                    type: String
+                },
+
+                /**
+                 * Get 2fa backup codes.
+                 */
+                twoFaCodesApi: {
                     type: String
                 },
 
@@ -518,6 +548,12 @@
                 this._showAccountComponentsPage();
             },
 
+            _onTwoFaEnabled: function () {
+                this._showAccountComponentsPage();
+                this.refreshLog();
+                this.$.appscoAccountComponentsPage.load2FaApi();
+            },
+
             refreshLog: function() {
                 this.$.appscoAccountComponentsPage.loadLog();
                 this.$.appscoAccountLogPage.loadLog();
@@ -587,6 +623,11 @@
             _on2FAEnable: function() {
                 this._disableAdvancedSettings();
                 this._selected = 'appsco-account-2fa-page';
+            },
+
+            _on2FAManage: function() {
+                this._disableAdvancedSettings();
+                this._selected = 'appsco-account-2fa-manage';
             },
 
             _onAllNotifications: function() {

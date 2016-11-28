@@ -1,29 +1,43 @@
 <link rel="import" href="../../bower_components/polymer/polymer.html">
+
 <link rel="import" href="../../bower_components/iron-flex-layout/iron-flex-layout.html">
+
 <link rel="import" href="../../bower_components/neon-animation/neon-shared-element-animatable-behavior.html">
 <link rel="import" href="../../bower_components/neon-animation/animations/hero-animation.html">
 <link rel="import" href="../../bower_components/neon-animation/animations/fade-in-animation.html">
 <link rel="import" href="../../bower_components/neon-animation/animations/slide-right-animation.html">
+
 <link rel="import" href="../../bower_components/paper-card/paper-card.html">
 <link rel="import" href="../../bower_components/paper-icon-button/paper-icon-button.html">
+<link rel="import" href="../../bower_components/paper-button/paper-button.html">
+
+<link rel="import" href="../../bower_components/iron-icon/iron-icon.html">
 
 <link rel="import" href="../../bower_components/appsco-account/appsco-account-2fa-enable.html">
 
-<dom-module id="appsco-account-2fa-page">
+<dom-module id="appsco-account-2fa-manage">
     <template>
         <style include="webkit-scrollbar-style">
             :host {
                 @apply(--full-page);
 
                 --paper-card-header: {
-                     border-bottom: 1px solid var(--divider-color);
-                 };
+                    border-bottom: 1px solid var(--divider-color);
+                };
             }
             :host paper-card {
                 @apply(--full-page-paper-card);
             }
             .page-close-action {
                 @apply(--page-close-action);
+            }
+            :host .danger {
+                color: var(--app-danger-color);
+            }
+            :host ul li {
+                float: left;
+                margin-right:20px;
+                width: 70px;
             }
         </style>
 
@@ -36,12 +50,27 @@
 
             <div class="card-content layout vertical">
 
-                <appsco-account-2fa-enable
-                        id="appscoAccount2FA"
-                        authorization-token="[[ authorizationToken ]]"
-                        account2fa-api="[[ twoFaApi ]]"
-                        account2fa-qr-api="[[ twoFaQrApi ]]"
-                        ></appsco-account-2fa-enable>
+                <p>
+                    <iron-icon icon="icons:check"></iron-icon>Two-factor authentication is currently enabled
+                    <paper-button class="danger">Disable</paper-button>
+                </p>
+                <p>
+                    <h2>Recovery codes</h2>
+
+                    Recovery codes can be used to access your account in the event you lose access to your device and cannot
+                    receive two-factor authentication codes.
+                    Appsco Support cannot restore access to your accounts with
+                    two-factor authentication enabled for security reasons.
+                    Saving your recovery codes in a safe place can keep you from being locked out of your account.
+                </p>
+                <paper-button on-tap="_toggleRecoveryCodes">VIEW RECOVERY CODES</paper-button>
+                <div hidden="[[ recoveryCodes ]]">
+                    <ul>
+                        <template is="dom-repeat" items="{{ _codes }}">
+                            <li>[[ item ]]</li>
+                        </template>
+                    </ul>
+                </div>
             </div>
         </paper-card>
 
@@ -50,7 +79,7 @@
     <script>
         Polymer({
 
-            is: 'appsco-account-2fa-page',
+            is: 'appsco-account-2fa-manage',
 
             properties: {
 
@@ -80,6 +109,24 @@
                 twoFaQrApi: {
                     type: String,
                     notify: true
+                },
+
+                /**
+                 * Get 2fa backup codes.
+                 */
+                twoFaCodesApi: {
+                    type: String,
+                    notify: true
+                },
+
+                _codes: {
+                    type: Array,
+                    value: function() { return []; }
+                },
+
+                recoveryCodes: {
+                    type: Boolean,
+                    value: true
                 },
 
                 /**
@@ -131,6 +178,32 @@
 
             _back: function() {
                 this.fire('back');
+            },
+
+            _toggleRecoveryCodes: function() {
+                if(this._codes.length > 0) {
+                    this.recoveryCodes = !this.recoveryCodes;
+                    return;
+                }
+                var request = document.createElement('iron-request'),
+                        url = this.twoFaCodesApi,
+                        me = this;
+
+                var options = {
+                    url: url,
+                    method: 'GET',
+                    handleAs: 'json',
+                    headers: {
+                        'Authorization': 'token ' + this.authorizationToken
+                    }
+                };
+
+                request.send(options).then(function(e) {
+                    me.set("_codes", request.response);
+                    me.recoveryCodes = !me.recoveryCodes;
+                }, function () {
+                });
+
             }
         });
     </script>

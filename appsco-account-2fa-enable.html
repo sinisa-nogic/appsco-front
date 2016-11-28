@@ -269,12 +269,14 @@ Custom property | Description | Default
                     </p>
                     <div style="display: inline-block">
                         <paper-input
+                                id="verificationCode"
                                 label="Verification code"
                                 char-counter
                                 maxlength="6"
                                 auto-validate
                                 pattern="[0-9]*"
                                 error-message="Digits only!"
+                                on-focus="_inputFocused"
                         ></paper-input>
                     </div>
                     <!--{{ form_widget(form.submit, {attr: {class: 'btn-primary btn-sm btn-icon', icon: 'span-icon span-save' }}) }}-->
@@ -285,7 +287,7 @@ Custom property | Description | Default
                         <paper-button on-tap="_active2">Previous</paper-button>
                     </div>
                     <div class="flex-right">
-                        <paper-button on-tap="_active1" raised class="save">Save</paper-button>
+                        <paper-button on-tap="_activate" raised class="save">Save</paper-button>
                     </div>
                 </div>
             </div>
@@ -336,6 +338,7 @@ Custom property | Description | Default
 
                 this.$.authenticationWizard.classList.remove('step2');
                 this.$.authenticationWizard.classList.add('step3');
+
             },
             properties: {
 
@@ -343,6 +346,12 @@ Custom property | Description | Default
                     type: String,
                     value: ''
                 },
+
+                account2faQrApi: {
+                    type: String,
+                    value: ''
+                },
+
                 /**
                  * Authorization token.
                  */
@@ -368,7 +377,7 @@ Custom property | Description | Default
             },
             attached: function() {
                 var request = document.createElement('iron-request'),
-                        url = this.account2faApi,
+                        url = this.account2faQrApi,
                         me = this;
 
                 var options = {
@@ -385,20 +394,43 @@ Custom property | Description | Default
                     me.qrSecret = request.response.secret;
                 });
             },
-//            6369465888
             listeners: {
                 'neon-animation-finish': '_onAnimationFinish',
                 'account2fa-api-changed': "_refreshQR"
             },
+
             _onAnimationFinish: function(e) {
-                console.log(this, e, e.data)
-//                if (this._showing) {
-//                } else {
-//                    this.style.display = '';
-//                }
+            },
+
+            _activate: function() {
+                var request = document.createElement('iron-request'),
+                        url = this.account2faApi,
+                        me = this,
+                        key = this.$.verificationCode.value;
+
+                var options = {
+                    url: url,
+                    method: 'POST',
+                    handleAs: 'json',
+                    body: "two_factor%5BgoogleAuthenticatorSecret%5D="+ me.qrSecret + "&two_factor%5Bkey%5D="+ key,
+                    headers: {
+                        'Authorization': 'token ' + this.authorizationToken,
+                        "Content-Type": "application/x-www-form-urlencoded"
+                    }
+                };
+
+                request.send(options).then(function(e) {
+                    me.fire('twofa-enabled');
+                }, function () {
+                    me.$.verificationCode.errorMessage = "Invalid code please try again.";
+                    me.$.verificationCode.invalid= true;
+                });
+            },
+
+            _inputFocused: function () {
+                this.$.verificationCode.errorMessage = "Digits only!";
+                this.$.verificationCode.invalid= false;
             }
-
-
         });
     </script>
 </dom-module>

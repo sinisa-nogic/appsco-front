@@ -1,0 +1,594 @@
+<link rel="import" href="../polymer/polymer.html">
+<link rel="import" href="../iron-ajax/iron-ajax.html">
+<link rel="import" href="../iron-flex-layout/iron-flex-layout.html">
+<link rel="import" href="../paper-button/paper-button.html">
+<link rel="import" href="../paper-progress/paper-progress.html">
+
+<link rel="import" href="appsco-vault-item.html">
+
+<!--
+`appsco-vault-items`
+Contains application list and Load More action (if there are more applications then presented).
+Applications are loaded inside component through iron-ajax.
+Component listens for events which have influence on result and changes query in order to retrieve appropriate applications.
+
+
+    <appsco-vault-items>
+    </appsco-vault-items>
+
+### Styling
+
+`<appsco-vault-items>` provides the following custom properties and mixins for styling:
+
+Custom property | Description | Default
+----------------|-------------|----------
+`--appsco-vault-items` | Mixin for the root element | `{}`
+`--appsco-vault-item` | Mixin for item style | `{}`
+`--applications-container` | Mixin for the applications container | `{}`
+
+@demo demo/appsco-vault-items.html
+-->
+
+<dom-module id="appsco-vault-items">
+    <template>
+        <style>
+            :host {
+                display: inline-block;
+                position: relative;
+                @apply(--layout-vertical);
+                @apply(--layout-center);
+
+                --paper-progress-container-color: var(--body-background-color);
+                --paper-progress-height: 2px;
+
+                @apply(--appsco-vault-items);
+            }
+
+            :host div[items] {
+                @apply(--layout-horizontal);
+                @apply(--layout-wrap);
+                @apply(--layout-start);
+                margin-right: -10px;
+                @apply(--applications-container);
+            }
+
+            :host appsco-vault-item {
+                margin: 0 10px 10px 0;
+                @apply(--appsco-vault-item);
+            }
+
+            :host .applications-container {
+                width: 100%;
+                min-height: 160px;
+                padding-top: 10px;
+                position: relative;
+            }
+            :host appsco-loader {
+                background-color: rgba(255, 255, 255, 0.4);
+            }
+            :host .load-more-box {
+                margin-top: 10px;
+                padding-top: 4px;
+                position: relative;
+            }
+            :host paper-progress {
+                min-width: 100px;
+                width: 100%;
+                position: absolute;
+                top: 0;
+                left: 0;
+            }
+            :host paper-button {
+                padding: 6px 12px;
+                margin: 0;
+            }
+            :host .message {
+                font-style: italic;
+                opacity: 0.5;
+            }
+        </style>
+
+        <div class="applications-container">
+
+            <iron-ajax auto
+                       url="data/country-list.json"
+                       handle-as="json"
+                       on-response="_onCountryListResponse"></iron-ajax>
+
+            <iron-ajax auto
+                       url="data/credit-card-types.json"
+                       handle-as="json"
+                       on-response="_onCCTypesResponse"></iron-ajax>
+
+            <iron-ajax auto="[[ autoLoad ]]"
+                       id="loginItemsApiRequest"
+                       vault-type="login"
+                       next="creditCardItemsApiRequest"
+                       url="{{ _vaultLoginApi }}"
+                       on-response="_onVaultItemsResponse"
+                       headers="{{ _computedHeaders }}"></iron-ajax>
+
+            <iron-ajax id="creditCardItemsApiRequest"
+                       vault-type="credit-card"
+                       next="identityItemsApiRequest"
+                       url="{{ _vaultCreditCardApi }}"
+                       on-response="_onVaultItemsResponse"
+                       headers="{{ _computedHeaders }}"></iron-ajax>
+
+            <iron-ajax id="identityItemsApiRequest"
+                       vault-type="identity"
+                       next="softwareLicenceItemsApiRequest"
+                       url="{{ _vaultIdentityApi }}"
+                       on-response="_onVaultItemsResponse"
+                       headers="{{ _computedHeaders }}"></iron-ajax>
+
+            <iron-ajax id="softwareLicenceItemsApiRequest"
+                       vault-type="software-licence"
+                       next="passportItemsApiRequest"
+                       url="{{ _vaultSoftwareLicenceApi }}"
+                       on-response="_onVaultItemsResponse"
+                       headers="{{ _computedHeaders }}"></iron-ajax>
+
+            <iron-ajax id="passportItemsApiRequest"
+                       vault-type="passport"
+                       next="secureNoteItemsApiRequest"
+                       url="{{ _vaultPassportApi }}"
+                       on-response="_onVaultItemsResponse"
+                       headers="{{ _computedHeaders }}"></iron-ajax>
+
+            <iron-ajax id="secureNoteItemsApiRequest"
+                       vault-type="secure-note"
+                       url="{{ _vaultSecureNoteApi }}"
+                       on-response="_onVaultItemsResponse"
+                       headers="{{ _computedHeaders }}"></iron-ajax>
+
+            <paper-progress id="paperProgress" indeterminate hidden$="[[ !autoLoad ]]"></paper-progress>
+
+            <template is="dom-if" if="[[ _itemsEmpty ]]">
+                <p class="message">There are no vault items available.</p>
+            </template>
+
+            <template is="dom-if" if="[[ !_itemsEmpty ]]">
+                <div items>
+                    <template is="dom-repeat" items="{{ _items }}">
+                        <appsco-vault-item item="{{ _formatVaultItem(item) }}"></appsco-vault-item>
+                    </template>
+                </div>
+            </template>
+        </div>
+
+        <template is="dom-if" if="[[ !_itemsEmpty ]]">
+            <div class="load-more-box">
+                <paper-button on-tap="_loadMoreItems" id="loadMore" hidden$="[[ !_loadMore ]]">Load More</paper-button>
+            </div>
+        </template>
+
+        <paper-button on-tap="load">LOAD</paper-button>
+
+    </template>
+
+    <script>
+        Polymer({
+
+            is: 'appsco-vault-items',
+
+            properties: {
+
+                /**
+                 * Authorization token for current account.
+                 */
+                authorizationToken: {
+                    type: String
+                },
+
+                /**
+                 * Route to retrieve vault items of type Login.
+                 */
+                vaultLoginApi: {
+                    type: String
+                },
+
+                _vaultLoginApi: {
+                    type: String,
+                    computed: '_computeVaultApi(vaultLoginApi, _nextPage)'
+                },
+
+                /**
+                 * Route to retrieve vault items of type Credit Card.
+                 */
+                vaultCreditCardApi: {
+                    type: String
+                },
+
+                _vaultCreditCardApi: {
+                    type: String,
+                    computed: '_computeVaultApi(vaultCreditCardApi, _nextPage)'
+                },
+
+                /**
+                 * Route to retrieve vault items of type Identity.
+                 */
+                vaultIdentityApi: {
+                    type: String
+                },
+
+                _vaultIdentityApi: {
+                    type: String,
+                    computed: '_computeVaultApi(vaultIdentityApi, _nextPage)'
+                },
+
+                /**
+                 * Route to retrieve vault items of type Software Licence.
+                 */
+                vaultSoftwareLicenceApi: {
+                    type: String
+                },
+
+                _vaultSoftwareLicenceApi: {
+                    type: String,
+                    computed: '_computeVaultApi(vaultSoftwareLicenceApi, _nextPage)'
+                },
+
+                /**
+                 * Route to retrieve vault items of type Passport.
+                 */
+                vaultPassportApi: {
+                    type: String
+                },
+
+                _vaultPassportApi: {
+                    type: String,
+                    computed: '_computeVaultApi(vaultPassportApi, _nextPage)'
+                },
+
+                /**
+                 * Route to retrieve vault items of type Secure Note.
+                 */
+                vaultSecureNoteApi: {
+                    type: String
+                },
+
+                _vaultSecureNoteApi: {
+                    type: String,
+                    computed: '_computeVaultApi(vaultSecureNoteApi, _nextPage)'
+                },
+
+                /**
+                 * Indicates if vault items should load after component loads.
+                 */
+                autoLoad: {
+                    type: Boolean,
+                    value: false
+                },
+
+                /**
+                 * Number of application items to load and present
+                 */
+                size: {
+                    type: Number,
+                    value: 10
+                },
+
+                /**
+                 * Show load more button
+                 */
+                loadMore: {
+                    type: Boolean,
+                    value: false
+                },
+
+                _loadMore: {
+                    type: Boolean,
+                    value: false
+                },
+
+                _computedHeaders: {
+                    type: Object,
+                    computed: "_computeHeaders(authorizationToken)"
+                },
+
+                _items: {
+                    type: Array,
+                    value: function () {
+                        return [];
+                    },
+                    notify: true
+                },
+
+                _itemsTotal: {
+                    type: Number,
+                    value: 0
+                },
+
+                _countTotal: {
+                    type: Boolean,
+                    value: true
+                },
+
+                _itemsEmpty: {
+                    type: Boolean,
+                    value: false
+                },
+
+                /**
+                 * Next page number to load.
+                 */
+                _nextPage: {
+                    type: Number,
+                    value: 1
+                },
+
+                /**
+                 * Country list to get name of country from.
+                 *
+                 * This is loaded from local data/country-list.json.
+                 */
+                _countryList: {
+                    type: Array,
+                    value: function() {
+                        return [];
+                    }
+                },
+
+                /**
+                 * Credit Card type list.
+                 *
+                 * This is loaded from local data/credit-card-types.json.
+                 */
+                _creditCardTypes: {
+                    type: Array,
+                    value: function() {
+                        return [];
+                    }
+                }
+            },
+
+            _computeHeaders: function (authorizationToken) {
+                return {
+                    "Authorization": "token " + authorizationToken
+                }
+            },
+
+            _computeVaultApi: function(defaultApi, nextPage) {
+                return defaultApi + '?page=' + nextPage + '&extended=1&limit=' + this.size;
+            },
+
+            _onCountryListResponse: function(event, ironRequest) {
+                this._countryList = ironRequest.response;
+            },
+
+            _onCCTypesResponse: function(event, ironRequest) {
+                this._creditCardTypes = ironRequest.response;
+            },
+
+            load: function() {
+                this.$$('#paperProgress').hidden = false;
+                this._loadMore = false;
+                this.set('_items', []);
+                this._itemsTotal = 0;
+                this._countTotal = true;
+
+                if (this._nextPage === 1) {
+                    this.$.loginItemsApiRequest.generateRequest();
+                }
+                else {
+                    this._nextPage = 1;
+
+                    if (!this.autoLoad) {
+                        this.$.loginItemsApiRequest.generateRequest();
+                    }
+                }
+            },
+
+            _loadMoreItems: function () {
+                this.$$('#paperProgress').hidden = false;
+                this._nextPage += 1;
+
+                if (!this.autoLoad) {
+                    this.$.loginItemsApiRequest.generateRequest();
+                }
+            },
+
+            _onVaultLoaded: function() {
+                this._countTotal = false;
+
+                if (this._itemsTotal > this._items.length) {
+                    this._loadMore = this.loadMore;
+                }
+                else {
+                    this._loadMore = false;
+                }
+
+                this._hideProgressBar();
+
+                /**
+                 * Fired when applications are loaded
+                 *
+                 * @event loaded
+                 * @param {Object}
+                 */
+                this.fire('loaded', {
+                    items: this._items
+                });
+            },
+
+            _onVaultItemsResponse: function(event) {
+                var response = event.detail.response,
+                    items = response.items,
+                    meta = response.meta,
+                    itemsCount = items.length,
+                    vaultType = event.target.getAttribute('vault-type'),
+                    nextItemsLoad = event.target.getAttribute('next');
+
+                if (this._countTotal) {
+                    this._itemsTotal += meta.total;
+                }
+
+                if (itemsCount === 0 && !nextItemsLoad) {
+                    this._onVaultLoaded();
+                    return false;
+                }
+
+                if ((meta.total === 0 && nextItemsLoad) || (itemsCount === 0 && nextItemsLoad)) {
+                    this.$$('#' + nextItemsLoad).generateRequest();
+                    return false;
+                }
+
+                items.forEach(function (item, index) {
+
+                    item.vaultType = vaultType;
+
+                    setTimeout( function() {
+
+                        this.push('_items', item);
+
+                        if (index == itemsCount - 1) {
+
+                            if (nextItemsLoad) {
+                                this.$$('#' + nextItemsLoad).generateRequest();
+                                return false;
+                            }
+
+                            this._onVaultLoaded();
+                        }
+
+                    }.bind(this), (index + 1) * 50 );
+
+                }.bind(this));
+            },
+
+            /**
+             * Formats date and returns formatted date as string.
+             *
+             * @param {String} value
+             * @returns {string}
+             * @private
+             */
+            _dateFormat: function(value) {
+
+                if (value) {
+
+                    var options = {
+                        year: "numeric", month: "short", day: "numeric"
+                    };
+
+                    return (new Date(value)).toLocaleDateString('en', options);
+                }
+
+            },
+
+            _formatLoginItem: function(item) {
+                item.icon = 'icons:input';
+                item.title = item.name;
+
+                return item;
+            },
+
+            _formatCreditCardItem: function(item) {
+                item.icon = 'icons:credit-card';
+                item.type = this._creditCardTypes[item.type - 1];
+                item.expiryDate.date = this._dateFormat(item.expiryDate.date);
+
+                return item;
+            },
+
+            _formatIdentityItem: function(item) {
+                item.icon = 'icons:perm-identity';
+                item.title = item.name;
+                item.displayName = item.firstName + ' ' + item.lastName;
+
+                return item;
+            },
+
+            _formatSoftwareLicenceItem: function(item) {
+                item.icon = 'communication:vpn-key';
+                item.title = item.name;
+                item.purchaseDate.date = this._dateFormat(item.purchaseDate.date);
+
+                return item;
+            },
+
+            _computeCountry: function(code) {
+                var list = this._countryList,
+                    length = list.length - 1;
+
+                for (var i = 0; i < length; i++) {
+                    var country = list[i];
+
+                    if (country.code == code) {
+                        return country.name;
+                    }
+
+                }
+
+                return '';
+            },
+
+            _formatPassportItem: function(item) {
+                item.icon = 'icons:flight-takeoff';
+                item.title = this._computeCountry(item.country);
+                item.expirationDate.date = this._dateFormat(item.expirationDate.date);
+
+                return item;
+            },
+
+            _formatSecureNoteItem: function(item) {
+                item.icon = 'editor:insert-drive-file';
+
+                return item;
+            },
+
+            /**
+             * Maps vault item as object dependent on item type.
+             *
+             * @param {Object} item
+             * @returns {{ item: object }}
+             * @private
+             */
+            _formatVaultItem: function(item) {
+                var vaultItem = {};
+
+                switch (item.vaultType) {
+                    case 'login':
+                        vaultItem = this._formatLoginItem(item);
+                        break;
+
+                    case 'credit-card':
+                        vaultItem = this._formatCreditCardItem(item);
+                        break;
+
+                    case 'identity':
+                        vaultItem = this._formatIdentityItem(item);
+                        break;
+
+                    case 'software-licence':
+                        vaultItem = this._formatSoftwareLicenceItem(item);
+                        break;
+
+                    case 'passport':
+                        vaultItem = this._formatPassportItem(item);
+                        break;
+
+                    case 'secure-note':
+                        vaultItem = this._formatSecureNoteItem(item);
+                        break;
+
+                    default:
+                        console.log(item.type + 'not supported yet.');
+                }
+
+                return vaultItem;
+
+            },
+
+
+            _hideProgressBar: function() {
+
+                setTimeout(function() {
+                    this.$$('#paperProgress').hidden = true;
+                }.bind(this), 300);
+
+            }
+        });
+    </script>
+</dom-module>

@@ -1,0 +1,295 @@
+<link rel="import" href="../polymer/polymer.html">
+
+<link rel="import" href="../iron-form/iron-form.html">
+<link rel="import" href="../iron-flex-layout/iron-flex-layout.html">
+
+<link rel="import" href="../paper-input/paper-input.html">
+<link rel="import" href="../paper-input/paper-textarea.html">
+<link rel="import" href="../paper-button/paper-button.html">
+<link rel="import" href="../paper-dropdown-menu/paper-dropdown-menu.html">
+<link rel="import" href="../paper-listbox/paper-listbox.html">
+<link rel="import" href="../paper-item/paper-item.html">
+
+<link rel="import" href="../appsco-components/appsco-loader.html">
+<link rel="import" href="../appsco-components/appsco-form-error.html">
+
+<link rel="import" href="../vaadin-date-picker/vaadin-date-picker.html">
+
+<!--
+`appsco-vault-credit-card`
+Contains form for new / edit vault item of type Credit card.
+Form fields: title, card holder, type (predefined), card number, verification number, expiry date, valid from date, note.
+Upon success saving vault item it should show success message as paper-toast.
+
+    <appsco-vault-credit-card>
+
+    </appsco-vault-credit-card>
+
+### Styling
+
+`<appsco-vault-credit-card>` provides the following custom properties and mixins for styling:
+Custom property | Description | Default
+
+----------------|-------------|----------
+
+`--appsco-vault-credit-card` | Mixin for the root element | `{}`
+@demo demo/appsco-vault-credit-card.html
+-->
+
+<dom-module id="appsco-vault-credit-card">
+    <template>
+        <style>
+            :host {
+                display: block;
+                position: relative;
+            @apply(--appsco-vault-credit-card);
+            --paper-dropdown-menu: {
+                 display: block;
+             };
+            }
+        </style>
+
+        <appsco-loader active="[[ _loader ]]" loader-alt="Appsco is saving vault item" multi-color></appsco-loader>
+
+        <appsco-form-error message="[[ _error ]]"></appsco-form-error>
+
+        <form is="iron-form"
+              id="vaultCreditCardForm"
+              method="POST"
+              action="[[ _computedAction ]]"
+              headers="{{ _computedHeaders }}"
+              on-iron-form-presubmit="_onFormPresubmit"
+              on-iron-form-error="_onFormError"
+              on-iron-form-response="_onFormResponse">
+
+            <div class="input-container">
+                <paper-input
+                        name="vault_cc[title]"
+                        label="Title"
+                        value="[[ item.title ]]"
+                        ></paper-input>
+            </div>
+
+            <div class="input-container">
+                <paper-input
+                        name="vault_cc[cardHolder]"
+                        label="Card holder"
+                        value="[[ item.cardHolder ]]"
+                        ></paper-input>
+            </div>
+
+            <div class="input-container">
+                <iron-ajax
+                    auto
+                    url="data/credit-card-types.json"
+                    handle-as="json"
+                    on-response="_onTypeResponse">
+                </iron-ajax>
+
+                <paper-dropdown-menu id="dropdownType"
+                                      label="Credit card type"
+                                      horizontal-align="left">
+                    <paper-listbox id="paperListboxType"
+                                    class="dropdown-content filter"
+                                    attr-for-selected="value">
+                        <template is="dom-repeat" items="[[ _creditCardTypes ]]">
+                            <paper-item value="[[ index ]]">[[ item ]]</paper-item>
+                        </template>
+                    </paper-listbox>
+                </paper-dropdown-menu>
+            </div>
+
+            <div class="input-container">
+                <paper-input
+                        name="vault_cc[cardNumber]"
+                        label="Card number"
+                        value="[[ item.cardNumber ]]"
+                        ></paper-input>
+            </div>
+
+            <div class="input-container">
+                <paper-input
+                        name="vault_cc[verificationNumber]"
+                        label="Verification number"
+                        value="[[ item.verificationNumber ]]"
+                        ></paper-input>
+            </div>
+
+            <div class="input-container">
+                <vaadin-date-picker
+                        id="expiryDate"
+                        label="Expiry date"
+                        value="[[ item.expiryDate ]]"
+                        ></vaadin-date-picker>
+            </div>
+
+            <div class="input-container">
+                <vaadin-date-picker
+                        id="validFrom"
+                        label="Valid from date"
+                        value="[[ item.validFrom ]]"
+                        ></vaadin-date-picker>
+            </div>
+
+            <div class="input-container">
+                <paper-textarea
+                        label="Note"
+                        value="[[ item.note ]]"
+                        name="vault_cc[note]"
+                        ></paper-textarea>
+            </div>
+        </form>
+
+        <paper-button
+                id="submit"
+                class="submit-button"
+                on-tap="_saveForm"
+                >Save</paper-button>
+
+    </template>
+    <script>
+        Polymer({
+            is: 'appsco-vault-credit-card',
+            properties: {
+                item: {
+                    type: Object,
+                    value: function() {
+                        return {
+                            title: '',
+                            cardHolder: '',
+                            cardNumber: '',
+                            verificationNumber: '',
+                            note: ''
+                        };
+                    },
+                    notify: true
+                },
+                /**
+                 * Authorization token for the account.
+                 */
+                authorizationToken: {
+                    type: String,
+                    value: function() { return ''; }
+                },
+                /**
+                 * Computed headers.
+                 * It contains authorization token.
+                 */
+                _computedHeaders: {
+                    type: Object,
+                    computed: "_computeHeaders(authorizationToken)"
+                },
+
+                _computedAction: {
+                    type: String,
+                    computed: '_computeAction(item, vaultCreditCardApi)'
+                },
+
+                /**
+                 * Indicates if item should be updated or new one added.
+                 */
+                _updateAction: {
+                    type: Boolean,
+                    value: false
+                },
+
+                _loader: {
+                    type: Boolean,
+                    value: false
+                },
+                /**
+                 * Error message for settings form.
+                 */
+                _error: {
+                    type: String
+                },
+                vaultCreditCardApi: {
+                    type: String,
+                    notify: true
+                }
+            },
+
+            _onTypeResponse: function(event, ironRequest) {
+                this._creditCardTypes = ironRequest.response;
+            },
+
+            /**
+             * Computes authorization headers.
+             *
+             * @param {Object} authorizationToken
+             * @returns {{Authorization: string}}
+             * @private
+             */
+            _computeHeaders: function (authorizationToken) {
+                return {
+                    'Authorization': 'token ' + authorizationToken,
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                }
+            },
+
+            _computeAction: function(item, vaultApi) {
+                if (item.self) {
+                    this._updateAction = true;
+                    return item.self;
+                }
+
+                this._updateAction = false;
+                return vaultApi;
+            },
+
+            _saveForm: function() {
+                this.$.vaultCreditCardForm.submit();
+            },
+            _onFormPresubmit: function() {
+                this._loader = true;
+
+                if (this._updateAction) {
+                    this.$.vaultCreditCardForm.request.method = 'PATCH';
+                }
+
+                if(this.$.dropdownType.selectedItem) {
+                    this.$.vaultCreditCardForm.request.body['vault_cc[type]'] = this.$.dropdownType.selectedItem.value;
+                }
+
+                if(this.$.expiryDate.value) {
+                    var expiryDate = new Date(this.$.expiryDate.value);
+                    this.$.vaultCreditCardForm.request.body['vault_cc[expiryDate][day]'] = expiryDate.getDate();
+                    this.$.vaultCreditCardForm.request.body['vault_cc[expiryDate][month]'] = expiryDate.getMonth()+1;
+                    this.$.vaultCreditCardForm.request.body['vault_cc[expiryDate][year]'] = expiryDate.getFullYear();
+                }
+
+                if(this.$.validFrom.value) {
+                    var validFrom = new Date(this.$.validFrom.value);
+                    this.$.vaultCreditCardForm.request.body['vault_cc[validFrom][day]'] = validFrom.getDate();
+                    this.$.vaultCreditCardForm.request.body['vault_cc[validFrom][month]'] = validFrom.getMonth()+1;
+                    this.$.vaultCreditCardForm.request.body['vault_cc[validFrom][year]'] = validFrom.getFullYear();
+                }
+            },
+            /**
+             * Called on form error when trying to save settings.
+             *
+             * @param {Object} event
+             * @private
+             */
+            _onFormError: function(event) {
+                this._error = event.detail.error.message;
+                this._loader = false;
+            },
+            /**
+             * Called after settings have been submited.
+             *
+             * @param {Object} event
+             * @private
+             */
+            _onFormResponse: function(event) {
+                /**
+                 * Fired after vault item save success.
+                 *
+                 * @event vault-item-save
+                 */
+                this.fire('vault-item-saved');
+                this._loader = false;
+            }
+        });
+    </script>
+</dom-module>

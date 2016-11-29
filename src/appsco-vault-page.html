@@ -1,0 +1,352 @@
+<link rel="import" href="../bower_components/polymer/polymer.html">
+
+<link rel="import" href="../bower_components/paper-tabs/paper-tabs.html">
+
+<link rel="import" href="../bower_components/neon-animation/neon-animated-pages.html">
+<link rel="import" href="../bower_components/neon-animation/animations/fade-in-animation.html">
+<link rel="import" href="../bower_components/neon-animation/animations/fade-out-animation.html">
+
+<link rel="import" href="../bower_components/iron-flex-layout/iron-flex-layout.html">
+<link rel="import" href="../bower_components/iron-media-query/iron-media-query.html">
+
+<link rel="import" href="../bower_components/appsco-page/appsco-content.html">
+<link rel="import" href="../bower_components/appsco-vault/appsco-vault-items.html">
+<link rel="import" href="../bower_components/appsco-vault/appsco-vault-details.html">
+
+<dom-module id="appsco-vault-page">
+    <template>
+        <style>
+            ::-webkit-scrollbar {
+                height: 16px;
+                overflow: visible;
+                width: 16px;
+            }
+            ::-webkit-scrollbar-button {
+                height: 0;
+                width: 0;
+            }
+            ::-webkit-scrollbar-corner {
+                background: transparent;
+            }
+            ::-webkit-scrollbar-thumb {
+                background-color: rgba(0,0,0,.2);
+                background-clip: padding-box;
+                border: solid transparent;
+                border-width: 1px 1px 1px 6px;
+                min-height: 28px;
+                padding: 100px 0 0;
+                -webkit-box-shadow: inset 1px 1px 0 rgba(0,0,0,.1),inset 0 -1px 0 rgba(0,0,0,.07);
+                box-shadow: inset 1px 1px 0 rgba(0,0,0,.1),inset 0 -1px 0 rgba(0,0,0,.07);
+            }
+            :host {
+                display: block;
+
+                --paper-tabs-selection-bar-color: var(--app-primary-color);
+                --info-width: 318px;
+
+                --appsco-vault-details-content: {
+                    font-size: 14px;
+                }
+
+            }
+            :host div[content] > * {
+                padding: 0 10px 10px 10px;
+            }
+            :host div[info] > * {
+                padding: 10px;
+            }
+            :host div[info] {
+                height: 100%;
+            }
+            :host div[info] .info-actions {
+                padding: 0;
+                position: absolute;
+                bottom: 0;
+                left: 0;
+                right: 0;
+            }
+            :host div[info] .item-info {
+                border-bottom: 1px solid var(--divider-color);
+                height: 50px;
+                box-sizing: border-box;
+                @apply(--layout-flex-none);
+            }
+            :host .view-button, :host .remove-button {
+                color: #ffffff;
+                border-radius: 0;
+                margin: 0;
+                padding: 6px 12px;
+                font-size: 14px;
+                height: 34px;
+            }
+            :host .view-button {
+                margin-right: 1px;
+                background-color: var(--app-primary-color);
+            }
+            :host .remove-button {
+                background-color: var(--app-danger-color);
+            }
+            :host .flex-horizontal {
+                @apply(--layout-horizontal);
+                @apply(--layout-center);
+            }
+            :host .flex-vertical {
+                @apply(--layout-vertical);
+            }
+            :host .flex {
+                @apply(--layout-flex);
+            }
+            .details {
+                overflow: auto;
+            }
+            :host div[info] .details-log {
+                height: calc(100% - 95px);
+            }
+            :host([laptop-screen]) {
+                --appsco-application-item: {
+                    width: 131px;
+                };
+
+                --info-width: 290px;
+            }
+            :host([tablet-s1280-screen]) {
+                --appsco-application-item: {
+                    width: 141px;
+                };
+
+                --info-width: 318px;
+            }
+            :host([tablet-s1024-screen]) {
+                --appsco-application-item: {
+                    width: 127px;
+                };
+
+                --info-width: 290px;
+            }
+            :host([tablet-screen]) {
+                --appsco-application-item: {
+                    width: 134px;
+                };
+            }
+            :host([mobile-screen]) {
+                --info-width: 100%;
+
+                --applications-container: {
+                    margin-right: 0;
+                    display: block;
+                    @apply(--layout-horizontal);
+                    @apply(--layout-around-justified);
+                };
+            }
+        </style>
+
+        <iron-media-query query="(max-width: 1366px)" query-matches="{{ laptopScreen }}"></iron-media-query>
+        <iron-media-query query="(max-width: 1280px)" query-matches="{{ tabletS1280Screen }}"></iron-media-query>
+        <iron-media-query query="(max-width: 1024px)" query-matches="{{ tabletS1024Screen }}"></iron-media-query>
+        <iron-media-query query="(max-width: 800px)" query-matches="{{ tabletScreen }}"></iron-media-query>
+        <iron-media-query query="(max-width: 600px)" query-matches="{{ mobileScreen }}"></iron-media-query>
+
+        <appsco-content id="appscoContent">
+
+            <div content>
+                <appsco-vault-items
+                        id="appscoVaultItems"
+                        size="100"
+                        load-more
+                        auto-load
+                        authorization-token="[[ authorizationToken ]]"
+                        vault-login-api="[[ api.vaultLogin ]]"
+                        vault-credit-card-api="[[ api.vaultCreditCard ]]"
+                        vault-identity-api="[[ api.vaultIdentity ]]"
+                        vault-software-licence-api="[[ api.vaultSoftwareLicence ]]"
+                        vault-passport-api="[[ api.vaultPassport ]]"
+                        vault-secure-note-api="[[ api.vaultSecureNote ]]"
+                        on-info="_onViewVaultItemInfo"
+                ></appsco-vault-items>
+            </div>
+
+            <div class="flex-vertical" info>
+
+                <div class="item-info flex-horizontal">
+                    Vault Item Details
+                </div>
+
+                <div class="details-log flex-vertical">
+                        <div name="details" class="details">
+                            <appsco-vault-details
+                                    item="[[ item ]]">
+                            </appsco-vault-details>
+                        </div>
+                </div>
+
+                <div class="info-actions flex-horizontal">
+                    <paper-button
+                            class="view-button flex"
+                            on-tap="_onApplicationInfoEdit">
+                        Edit
+                    </paper-button>
+
+                    <paper-button
+                            class="remove-button flex"
+                            on-tap="_onRemoveVaultItem">
+                        Remove
+                    </paper-button>
+                </div>
+            </div>
+
+        </appsco-content>
+
+    </template>
+
+    <script>
+        Polymer({
+            is: 'appsco-vault-page',
+
+            properties: {
+
+                api: {
+                    type: Object,
+                    notify: true
+                },
+
+                item: {
+                    type: Object,
+                    notify: true
+                },
+
+                _infoShown: {
+                    type: Boolean,
+                    value: false
+                },
+
+                authorizationToken: {
+                    type: String,
+                    value: ''
+                },
+
+                _items: {
+                    type: Array,
+                    value: function () {
+                        return [];
+                    }
+                },
+
+                mobileScreen: {
+                    type: Boolean,
+                    value: false,
+                    reflectToAttribute: true
+                },
+
+                tabletScreen: {
+                    type: Boolean,
+                    value: false,
+                    reflectToAttribute: true
+                },
+
+                tabletS1024Screen: {
+                    type: Boolean,
+                    value: false,
+                    reflectToAttribute: true
+                },
+
+                tabletS1280Screen: {
+                    type: Boolean,
+                    value: false,
+                    reflectToAttribute: true
+                },
+
+                laptopScreen: {
+                    type: Boolean,
+                    value: false,
+                    reflectToAttribute: true
+                },
+
+                /**
+                 * Animation config.
+                 */
+                animationConfig: {
+                    value: function() {
+                        return {
+                            'entry': {
+                                name: 'fade-in-animation',
+                                node: this,
+                                timing: {
+                                    duration: 300
+                                }
+                            },
+                            'exit': {
+                                name: 'fade-out-animation',
+                                node: this,
+                                timing: {
+                                    duration: 200
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+
+            behaviors: [
+                Polymer.NeonAnimatableBehavior
+            ],
+
+            observers: [
+                '_isCSSChanged(mobileScreen, tabletScreen, tabletS1024Screen, tabletS1280Screen, laptopScreen)'
+            ],
+
+            attached: function() {
+
+                if (this.mobileScreen || this.tabletScreen || this.tabletS1024Screen || this.tabletS1280Screen || this.laptopScreen) {
+                    this.updateStyles();
+                }
+
+            },
+
+            _isCSSChanged: function(mobile, tablet, tabletS1024Screen, tabletS1280Screen, laptop) {
+                this.updateStyles();
+            },
+
+            _showInfo: function() {
+                this.$.appscoContent.showSection('info');
+                this._infoShown = true;
+                this._selectedTab = 0;
+            },
+
+            hideInfo: function() {
+                this.$.appscoContent.hideSection('info');
+                this._infoShown = false;
+            },
+
+            toggleInfo: function() {
+                this.$.appscoContent.toggleSection('info');
+                this._infoShown = !this._infoShown;
+
+                if (this._infoShown) {
+                    this._selectedTab = 0;
+                }
+            },
+
+            _onViewVaultItemInfo: function(event) {
+                this.set('item', event.detail.item);
+
+                if (!this._infoShown) {
+                    this._showInfo();
+                }
+            },
+
+            _onRemoveVaultItem: function() {
+                this.fire('remove-vault-item', {
+                    item: this.item
+                })
+            },
+
+            setDefaultItem: function() {
+                this.set('item', this.$.appscoVaultItems.getFirstVaultItem());
+            },
+
+            removeItem: function(item) {
+                this.$.appscoVaultItems.remove(item)
+            }
+        });
+    </script>
+</dom-module>

@@ -30,15 +30,22 @@
 <link rel="import" href="../bower_components/appsco-header/appsco-header.html">
 <link rel="import" href="../bower_components/appsco-header/appsco-account-chat.html">
 <link rel="import" href="../bower_components/appsco-components/appsco-api.html">
+
 <link rel="import" href="../bower_components/appsco-application/appsco-application-add.html">
 <link rel="import" href="../bower_components/appsco-application/appsco-application-share.html">
 <link rel="import" href="../bower_components/appsco-application/appsco-application-remove.html">
 <link rel="import" href="../bower_components/appsco-application/appsco-application-subscriber-revoke.html">
+
 <link rel="import" href="../bower_components/appsco-account/appsco-account-authorized-app-revoke.html">
 
 <link rel="import" href="application/appsco-home-page-actions.html">
 <link rel="import" href="application/appsco-application-page-actions.html">
+
 <link rel="import" href="account/appsco-account-page-actions.html">
+
+<link rel="import" href="vault/appsco-vault-page-actions.html">
+<link rel="import" href="vault/appsco-vault-manage-item.html">
+<link rel="import" href="../bower_components/appsco-vault/appsco-vault-remove.html">
 
 <link rel="import" href="shared-styles.html">
 <link rel="import" href="webkit-scrollbar-style.html">
@@ -252,9 +259,9 @@
                     <a name="account" href="/account">
                         <iron-icon icon="icons:perm-identity"></iron-icon> <span class="menuText">Account</span>
                     </a>
-                    <div name="vault" href="/vault" disabled>
+                    <a name="vault" href="/vault">
                         <iron-icon icon="icons:work"></iron-icon> <span class="menuText">Vault</span>
-                    </div>
+                    </a>
                     <div>
                         <br>
                     </div>
@@ -320,6 +327,10 @@
                                     on-resource-section="_onResourceActionAccountPage"
                                     on-advanced-settings="_onAccountAdvancedSettings"></appsco-account-page-actions>
 
+                            <appsco-vault-page-actions
+                                    name="vault"
+                                    authorization-token="[[ authorizationToken ]]"
+                                    on-page-global-info="_onInfoVaultAction"></appsco-vault-page-actions>
                         </neon-animated-pages>
 
                     </app-toolbar>
@@ -387,6 +398,17 @@
                             on-twofa-enabled="_onTwoFaEnabled"
                             on-twofa-disabled="_onTwoFaDisabled"
                     ></appsco-account-page>
+
+                    <appsco-vault-page
+                            id="appscoVaultPage"
+                            name="vault"
+                            authorization-token="[[ authorizationToken ]]"
+                            api="[[ api ]]"
+                            on-loaded="_onLoadedVaultItems"
+                            on-edit="_onEditVaultItem"
+                            on-remove-vault-item="_onRemoveVaultItem">
+                    </appsco-vault-page>
+
                     <appsco-not-found-page name="404"></appsco-not-found-page>
                 </neon-animated-pages>
             </app-header-layout>
@@ -433,6 +455,18 @@
                 authorization-token="[[ authorizationToken ]]"
                 on-subscription-revoked="_onSubscriptionRevoked"
         ></appsco-application-subscriber-revoke>
+
+        <appsco-vault-remove
+                id="appscoVaultItemRemove"
+                authorization-token="[[ authorizationToken ]]"
+                on-vault-item-removed="_onVaultItemRemoved"
+        ></appsco-vault-remove>
+
+        <appsco-vault-manage-item
+                id="appscoVaultItemManage"
+                authorization-token="[[ authorizationToken ]]"
+                api="[[ api ]]"
+        ></appsco-vault-manage-item>
 
         <template is="dom-if" if="[[ api.me ]]">
             <iron-ajax
@@ -659,6 +693,10 @@
                 this.$.appscoHomePage.toggleInfo();
             },
 
+            _onInfoVaultAction: function() {
+                this.$.appscoVaultPage.toggleInfo();
+            },
+
             _searchApplications: function(event) {
                 this.$.appscoHomePage.filterApplicationsByTerm(event.detail.term);
             },
@@ -837,6 +875,40 @@
             },
             /**
              * Account page END
+             */
+
+            /**
+             * Vault page START
+             */
+            _onLoadedVaultItems: function() {
+
+                if (this.page === 'vault') {
+                    this.$.appscoVaultPage.setDefaultItem();
+                }
+
+            },
+
+            _onRemoveVaultItem: function(e) {
+
+                this.$.appscoVaultItemRemove.item = e.detail.item;
+
+                this.$.appscoVaultItemRemove.open();
+            },
+
+            _onVaultItemRemoved: function(e) {
+                this.$.appscoVaultPage.removeItem(e.detail.item);
+                this.$.appscoVaultPage.hideInfo();
+                this.$.appscoVaultPage.setDefaultItem();
+                this._notify('Vault item ' + e.detail.item.displayTitle + ' removed.');
+
+            },
+
+            _onEditVaultItem: function(e) {
+                this.$.appscoVaultItemManage.item = e.detail.item;
+                this.$.appscoVaultItemManage.open();
+            },
+            /**
+             * Vault page END
              */
 
             /**

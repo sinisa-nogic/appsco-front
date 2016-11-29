@@ -466,6 +466,7 @@
                 id="appscoVaultItemManage"
                 authorization-token="[[ authorizationToken ]]"
                 api="[[ api ]]"
+                on-item-saved="_onItemSaved"
         ></appsco-vault-manage-item>
 
         <template is="dom-if" if="[[ api.me ]]">
@@ -888,24 +889,37 @@
 
             },
 
-            _onRemoveVaultItem: function(e) {
+            _onRemoveVaultItem: function(event) {
+                var appscoVaultItemRemove = this.$.appscoVaultItemRemove;
 
-                this.$.appscoVaultItemRemove.item = e.detail.item;
-
-                this.$.appscoVaultItemRemove.open();
+                appscoVaultItemRemove.item = event.detail.item;
+                appscoVaultItemRemove.open();
             },
 
-            _onVaultItemRemoved: function(e) {
-                this.$.appscoVaultPage.removeItem(e.detail.item);
-                this.$.appscoVaultPage.hideInfo();
-                this.$.appscoVaultPage.setDefaultItem();
-                this._notify('Vault item ' + e.detail.item.displayTitle + ' removed.');
+            _onItemSaved: function(event) {
+                var item = event.detail.item,
+                    appscoVaultPage = this.$.appscoVaultPage;
+
+                appscoVaultPage.item = item;
+                appscoVaultPage.setItem(item);
+                this._notify('Vault item ' + item.displayTitle + ' has been successfully saved.');
+            },
+
+            _onVaultItemRemoved: function(event) {
+                var appscoVaultPage = this.$.appscoVaultPage;
+
+                appscoVaultPage.removeItem(event.detail.item);
+                appscoVaultPage.hideInfo();
+                appscoVaultPage.setDefaultItem();
+                this._notify('Vault item ' + event.detail.item.displayTitle + ' removed.');
 
             },
 
-            _onEditVaultItem: function(e) {
-                this.$.appscoVaultItemManage.item = e.detail.item;
-                this.$.appscoVaultItemManage.open();
+            _onEditVaultItem: function(event) {
+                var appscoVaultItemManage = this.$.appscoVaultItemManage;
+
+                appscoVaultItemManage.set('item', event.detail.item);
+                appscoVaultItemManage.open();
             },
             /**
              * Vault page END

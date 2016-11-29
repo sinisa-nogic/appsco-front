@@ -43,11 +43,11 @@ Custom property | Description | Default
             :host {
                 display: block;
                 position: relative;
-                @apply(--appsco-vault-identity);
+            @apply(--appsco-vault-identity);
 
-                --paper-dropdown-menu: {
-                     display: block;
-                 };
+            --paper-dropdown-menu: {
+                 display: block;
+             };
             }
             :host .submit-button {
                 margin: 20px 0 0 0;
@@ -395,11 +395,11 @@ Custom property | Description | Default
                 this.$.vaultIdentityForm.request.body['vault_identities[sex]'] = this.$.dropdownGender.selectedItem ? this.$.dropdownGender.selectedItem.value : '';
 
                 if (this.$.birthDate.value) {
-                    var birthDate = this.$.birthDate.value.split('-');
+                    var date = new Date(this.$.birthDate.value);
 
-                    this.$.vaultIdentityForm.request.body['vault_identities[birthDate][year]'] = birthDate[0];
-                    this.$.vaultIdentityForm.request.body['vault_identities[birthDate][month]'] = birthDate[1].replace(/^0+/, '');
-                    this.$.vaultIdentityForm.request.body['vault_identities[birthDate][day]'] = birthDate[2].replace(/^0+/, '');
+                    this.$.vaultIdentityForm.request.body['vault_identities[birthDate][year]'] = date.getFullYear();
+                    this.$.vaultIdentityForm.request.body['vault_identities[birthDate][month]'] = date.getMonth() + 1;
+                    this.$.vaultIdentityForm.request.body['vault_identities[birthDate][day]'] = date.getDate();
                 }
             },
 
@@ -421,15 +421,20 @@ Custom property | Description | Default
              * @private
              */
             _onFormResponse: function(event) {
-//                this.set('identity', event.detail.response.item);
+                var item = event.detail.response.item;
+
+                item.displayTitle = item.title ? item.title : item.name;
+                item.vaultType = this.identity.vaultType;
+
+//                this.set('identity', item);
 
                 /**
                  * Fired after successful response.
                  *
-                 * @event identity-saved
+                 * @event vault-item-saved
                  */
-                this.fire('identity-saved', {
-                    item: event.detail.response.item
+                this.fire('vault-item-saved', {
+                    item: item
                 });
 
                 this.reset();
@@ -450,7 +455,6 @@ Custom property | Description | Default
             reset: function() {
                 this.$.vaultIdentityForm.reset();
                 this._error = '';
-
             }
         });
     </script>

@@ -35,26 +35,26 @@ Custom property | Description | Default
             :host {
                 display: inline-block;
                 position: relative;
-                @apply(--layout-vertical);
-                @apply(--layout-center);
+            @apply(--layout-vertical);
+            @apply(--layout-center);
 
                 --paper-progress-container-color: var(--body-background-color);
                 --paper-progress-height: 2px;
 
-                @apply(--appsco-vault-items);
+            @apply(--appsco-vault-items);
             }
 
             :host div[items] {
-                @apply(--layout-horizontal);
-                @apply(--layout-wrap);
-                @apply(--layout-start);
+            @apply(--layout-horizontal);
+            @apply(--layout-wrap);
+            @apply(--layout-start);
                 margin-right: -10px;
-                @apply(--applications-container);
+            @apply(--applications-container);
             }
 
             :host appsco-vault-item {
                 margin: 0 10px 10px 0;
-                @apply(--appsco-vault-item);
+            @apply(--appsco-vault-item);
             }
 
             :host .applications-container {
@@ -412,11 +412,11 @@ Custom property | Description | Default
 
             _onVaultItemsResponse: function(event) {
                 var response = event.detail.response,
-                    items = response.items,
-                    meta = response.meta,
-                    itemsCount = items.length,
-                    vaultType = event.target.getAttribute('vault-type'),
-                    nextItemsLoad = event.target.getAttribute('next');
+                        items = response.items,
+                        meta = response.meta,
+                        itemsCount = items.length,
+                        vaultType = event.target.getAttribute('vault-type'),
+                        nextItemsLoad = event.target.getAttribute('next');
 
                 if (this._countTotal) {
                     this._itemsTotal += meta.total;
@@ -486,7 +486,10 @@ Custom property | Description | Default
                 item.icon = 'icons:credit-card';
                 item.type = this._creditCardTypes[item.type - 1];
                 item.displayTitle = item.title;
-                item.expiryDate.date = this._dateFormat(item.expiryDate.date);
+
+                if (item.expiryDate) {
+                    item.displayDate = this._dateFormat(item.expiryDate.date);
+                }
 
                 return item;
             },
@@ -502,14 +505,17 @@ Custom property | Description | Default
             _formatSoftwareLicenceItem: function(item) {
                 item.icon = 'communication:vpn-key';
                 item.displayTitle = item.name;
-                item.purchaseDate.date = this._dateFormat(item.purchaseDate.date);
+
+                if (item.purchaseDate) {
+                    item.displayDate = this._dateFormat(item.purchaseDate.date);
+                }
 
                 return item;
             },
 
             _computeCountry: function(code) {
                 var list = this._countryList,
-                    length = list.length - 1;
+                        length = list.length - 1;
 
                 for (var i = 0; i < length; i++) {
                     var country = list[i];
@@ -526,7 +532,10 @@ Custom property | Description | Default
             _formatPassportItem: function(item) {
                 item.icon = 'icons:flight-takeoff';
                 item.displayTitle = this._computeCountry(item.country);
-                item.expirationDate.date = this._dateFormat(item.expirationDate.date);
+
+                if (item.expirationDate) {
+                    item.displayDate = this._dateFormat(item.expirationDate.date);
+                }
 
                 return item;
             },
@@ -590,10 +599,40 @@ Custom property | Description | Default
 
             },
 
+            /**
+             * Returns first item in list.
+             *
+             * @returns {Object}
+             */
             getFirstVaultItem: function() {
                 return this._items[0];
             },
 
+            /**
+             * Finds item in list and sets given item instead.
+             *
+             * @param item
+             */
+            setItem: function(item) {
+                var items = JSON.parse(JSON.stringify(this._items)),
+                    length = items.length;
+
+                for (var i = 0; i < length; i++) {
+                    if (items[i].self === item.self) {
+                        items[i] = item;
+
+                        this.set('_items', []);
+                        this.set('_items', items);
+                        break;
+                    }
+                }
+            },
+
+            /**
+             * Removes given item from the list
+             *
+             * @param item
+             */
             remove: function(item) {
                 var index = this._items.indexOf(item);
                 this.splice('_items', index, 1);

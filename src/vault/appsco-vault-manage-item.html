@@ -27,12 +27,14 @@
                 with-backdrop
                 id="manageDialog"
                 entry-animation="scale-up-animation"
-                exit-animation="fade-out-animation">
+                exit-animation="fade-out-animation"
+                on-iron-overlay-closed="_onDialogClosed">
 
             <h2>Manage [[ item.displayTitle ]]</h2>
 
             <template is="dom-if" if="[[ login ]]">
                 <appsco-vault-login
+                        id="appscoVaultLogin"
                         item="[[ item ]]"
                         authorization-token="[[ authorizationToken ]]"
                         vault-login-api="[[ api.vaultLogin ]]"
@@ -42,6 +44,7 @@
 
             <template is="dom-if" if="[[ identity ]]">
                 <appsco-vault-identity
+                        id="appscoVaultIdentity"
                         identity="[[ item ]]"
                         authorization-token="[[ authorizationToken ]]"
                         vault-identity-api="[[ api.vaultIdentity ]]"
@@ -51,6 +54,7 @@
 
             <template is="dom-if" if="[[ softwareLicence ]]">
                 <appsco-vault-software-license
+                        id="appscoVaultSoftwareLicense"
                         item="[[ item ]]"
                         authorization-token="[[ authorizationToken ]]"
                         vault-software-license-api="[[ api.vaultSoftwareLicence ]]"
@@ -60,6 +64,7 @@
 
             <template is="dom-if" if="[[ passport ]]">
                 <appsco-vault-passport
+                        id="appscoVaultPassport"
                         item="[[ item ]]"
                         authorization-token="[[ authorizationToken ]]"
                         vault-passport-api="[[ api.vaultPassport ]]"
@@ -69,6 +74,7 @@
 
             <template is="dom-if" if="[[ secureNote ]]">
                 <appsco-vault-secure-note
+                        id="appscoVaultSecureNote"
                         item="[[ item ]]"
                         authorization-token="[[ authorizationToken ]]"
                         vault-secure-note-api="[[ api.vaultSecureNote ]]"
@@ -97,7 +103,8 @@
                     value: function() {
                         return {};
                     },
-                    notify: true
+                    notify: true,
+                    observer: '_onItemChange'
                 },
 
                 api: {
@@ -110,7 +117,7 @@
                  */
                 login: {
                     type: Boolean,
-                    computed: '_computeLoginType(item)'
+                    value: false
                 },
 
                 /**
@@ -118,7 +125,7 @@
                  */
                 creditCard: {
                     type: Boolean,
-                    computed: '_computeCreditCardType(item)'
+                    value: false
                 },
 
                 /**
@@ -126,7 +133,7 @@
                  */
                 identity: {
                     type: Boolean,
-                    computed: '_computeIdentityType(item)'
+                    value: false
                 },
 
                 /**
@@ -134,7 +141,7 @@
                  */
                 softwareLicence: {
                     type: Boolean,
-                    computed: '_computeSoftwareLicenceType(item)'
+                    value: false
                 },
 
                 /**
@@ -142,7 +149,7 @@
                  */
                 passport: {
                     type: Boolean,
-                    computed: '_computePassportType(item)'
+                    value: false
                 },
 
                 /**
@@ -150,32 +157,21 @@
                  */
                 secureNote: {
                     type: Boolean,
-                    computed: '_computeSecureNoteType(item)'
+                    value: false
                 }
             },
 
-            _computeLoginType: function(item) {
-                return item.vaultType === 'login';
+            _onItemChange: function() {
+                this.setDialog(this.item.vaultType);
             },
 
-            _computeCreditCardType: function(item) {
-                return item.vaultType === 'credit-card';
-            },
-
-            _computeIdentityType: function(item) {
-                return item.vaultType === 'identity';
-            },
-
-            _computeSoftwareLicenceType: function(item) {
-                return item.vaultType === 'software-licence';
-            },
-
-            _computePassportType: function(item) {
-                return item.vaultType === 'passport';
-            },
-
-            _computeSecureNoteType: function(item) {
-                return item.vaultType === 'secure-note';
+            setDialog: function(action) {
+                this.login = (action === 'login');
+                this.creditCard = (action === 'credit-card');
+                this.identity = (action === 'identity');
+                this.softwareLicence = (action === 'software-licence');
+                this.passport = (action === 'passport');
+                this.secureNote = (action === 'secure-note');
             },
 
             open: function () {
@@ -192,6 +188,37 @@
                 });
 
                 this.close();
+            },
+
+            _onDialogClosed: function() {
+                this.set('item', {});
+
+                this.login = false;
+                this.creditCard = false;
+                this.identity = false;
+                this.softwareLicence = false;
+                this.passport = false;
+                this.secureNote = false;
+
+                if (this.login) {
+                    this.$$('#appscoVaultLogin').reset();
+                }
+
+                if (this.identity) {
+                    this.$$('#appscoVaultIdentity').reset();
+                }
+
+                if (this.softwareLicence) {
+                    this.$$('#appscoVaultSoftwareLicense').reset();
+                }
+
+                if (this.passport) {
+                    this.$$('#appscoVaultPassport').reset();
+                }
+
+                if (this.secureNote) {
+                    this.$$('#appscoVaultSecureNote').reset();
+                }
             }
         });
     </script>

@@ -1,11 +1,18 @@
 <link rel="import" href="../../bower_components/polymer/polymer.html">
-
 <link rel="import" href="../../bower_components/iron-flex-layout/iron-flex-layout.html">
 <link rel="import" href="../../bower_components/iron-media-query/iron-media-query.html">
-
+<link rel="import" href="../../bower_components/neon-animation/neon-animation-runner-behavior.html">
 <link rel="import" href="../../bower_components/neon-animation/neon-animatable-behavior.html">
 <link rel="import" href="../../bower_components/neon-animation/animations/fade-in-animation.html">
 <link rel="import" href="../../bower_components/neon-animation/animations/fade-out-animation.html">
+<link rel="import" href="../../bower_components/paper-dropdown-menu/paper-dropdown-menu.html">
+<link rel="import" href="../../bower_components/paper-listbox/paper-listbox.html">
+<link rel="import" href="../../bower_components/paper-item/paper-item.html">
+<link rel="import" href="../../bower_components/paper-styles/shadow.html">
+<link rel="import" href="../../bower_components/iron-icon/iron-icon.html">
+<link rel="import" href="../../bower_components/iron-icons/iron-icons.html">
+<link rel="import" href="../../bower_components/iron-icons/communication-icons.html">
+<link rel="import" href="../../bower_components/iron-icons/editor-icons.html">
 
 <link rel="import" href="../../bower_components/appsco-page/appsco-page-global.html">
 
@@ -23,6 +30,71 @@
                     padding: 0;
                     color: var(--primary-text-color);
                 };
+
+                --paper-dropdown-menu-button: {
+                     padding: 0 0 0 8px;
+                 };
+
+                --paper-icon-button: {
+                     width: 24px;
+                     height: 24px;
+                     padding: 0;
+                     color: var(--primary-text-color);
+                 };
+                --paper-listbox: {
+                     padding: 0;
+                 };
+                --paper-item: {
+                     cursor: pointer;
+                     color: var(--secondary-text-color);
+                 };
+                --paper-item-selected-weight: normal;
+                --paper-item-selected: {
+                     color: var(--primary-text-color);
+                     background-color: transparent;
+                 };
+
+                --paper-input-container-color: var(--secondary-text-color);
+                --paper-input-container-input-color: var(--primary-text-color);
+                --paper-input-container-focus-color: var(--primary-text-color);
+                --paper-input-container: {
+                     padding: 0;
+                     height: 32px;
+                     line-height: 28px;
+                 };
+                --paper-input-container-label: {
+                     font-size: 14px;
+                     bottom: 0;
+                     top: initial;
+                     color: var(--primary-text-color);
+                 };
+                --paper-input-container-underline: {
+                     display: none;
+                 };
+                --paper-input-container-underline-focus: {
+                     display: none;
+                 };
+                --paper-dropdown-menu-ripple: {
+                     display: none;
+                 };
+                --paper-input-container-input: {
+                     vertical-align: middle;
+                     cursor: pointer;
+                     color: var(--primary-text-color);
+                     font-size: 14px;
+                     line-height: 1.5;
+                 };
+                --paper-dropdown-menu-icon: {
+                     color: var(--primary-text-color);
+                     width: 22px;
+                     height: 22px;
+                 };
+            }
+            paper-dropdown-menu {
+                width: 130px;
+                background-color: var(--body-background-color);
+                border-radius: var(--border-radius-base);
+                @apply(--layout-flex-none);
             }
             :host > * {
                 height: 100%;
@@ -33,6 +105,30 @@
                 margin-left: 16px;
                 border-left: 1px solid var(--app-primary-color);
                 text-align: right;
+            }
+            :host .add-action {
+                @apply(--layout-horizontal);
+                @apply(--layout-center);
+                @apply(--layout-end-justified);
+                position: relative;
+            }
+            :host .add-item-button {
+                width: 120px;
+                text-align: center;
+                @apply(--primary-button);
+            }
+            :host .dropdown-content {
+                position: absolute;
+                top: 50px;
+                right: 0;
+                width: 200px;
+                @apply(--shadow-elevation-2dp);
+                display: none;
+            }
+            :host .vault-item-icon {
+                width: 18px;
+                height: 18px;
+                margin-right: 8px;
             }
             :host([tablet-screen]) {
             }
@@ -45,6 +141,23 @@
 
         <iron-media-query query="(max-width: 800px)" query-matches="{{ tabletScreen }}"></iron-media-query>
         <iron-media-query query="(max-width: 600px)" query-matches="{{ mobileScreen }}"></iron-media-query>
+
+        <div class="add-action">
+
+            <paper-button id="addItemAction" class="add-item-button" on-tap="_toggleActionList">Add item</paper-button>
+
+            <!--<template is="dom-if" if="[[ _actionsVisible ]]">-->
+                <paper-listbox id="paperListboxAddItem"
+                               class="dropdown-content"
+                               on-iron-select="_onActionSelect">
+                    <template is="dom-repeat" items="[[ _actionList ]]">
+                        <paper-item value="[[ item.value ]]">
+                            <iron-icon icon="[[ item.icon ]]" class="vault-item-icon"></iron-icon>
+                            [[ item.name ]]</paper-item>
+                    </template>
+                </paper-listbox>
+            <!--</template>-->
+        </div>
 
         <appsco-page-global
                 id="appscoPageGlobal"
@@ -61,6 +174,51 @@
 
                 authorizationToken: {
                     type: String
+                },
+
+                _actionList: {
+                    type: Array,
+                    value: function() {
+                        return [
+                            {
+                                value: 'login',
+                                name: 'Login',
+                                icon: 'icons:input'
+                            },
+                            {
+                                value: 'credit-card',
+                                name: 'Credit Card',
+                                icon: 'icons:credit-card'
+                            },
+                            {
+                                value: 'identity',
+                                name: 'Identity',
+                                icon: 'icons:perm-identity'
+                            },
+                            {
+                                value: 'software-licence',
+                                name: 'Software Licence',
+                                icon: 'communication:vpn-key'
+                            },
+                            {
+                                value: 'passport',
+                                name: 'Passport',
+                                icon: 'icons:flight-takeoff'
+                            },
+                            {
+                                value: 'secure-note',
+                                name: 'Secure Note',
+                                icon: 'editor:insert-drive-file'
+                            }
+                        ]
+                    },
+                    notify: true
+                },
+
+                _actionsVisible: {
+                    type: Boolean,
+                    value: false,
+                    notify: true
                 },
 
                 mobileScreen: {
@@ -81,7 +239,7 @@
                 animationConfig: {
                     value: function() {
                         return {
-                            'entry': {
+                            'entry': [{
                                 name: 'fade-in-animation',
                                 node: this,
                                 timing: {
@@ -89,27 +247,49 @@
                                     duration: 300
                                 }
                             },
-                            'exit': {
+                            {
+                                name: 'fade-in-animation',
+                                node: this.$$('#paperListboxAddItem'),
+                                timing: {
+                                    duration: 300
+                                }
+                            }],
+                            'exit': [{
                                 name: 'fade-out-animation',
                                 node: this,
                                 timing: {
                                     duration: 200
                                 }
-                            }
+                            },
+                                {
+                                    name: 'fade-out-animation',
+                                    node: this.$$('#paperListboxAddItem'),
+                                    timing: {
+                                        duration: 200
+                                    }
+                                }]
                         }
                     }
                 }
             },
 
             behaviors: [
-                Polymer.NeonAnimatableBehavior
+                Polymer.NeonAnimatableBehavior,
+                Polymer.NeonAnimationRunnerBehavior
             ],
 
             observers: [
                 '_isCSSChanged(mobileScreen, tabletScreen, laptopScreen)'
             ],
 
+            listeners: {
+                '_actions-visible-changed': '_actionsVisibleChanged',
+                'neon-animation-finish': '_onAnimationFinish'
+            },
+
             attached: function() {
+
+                Polymer.Gestures.add(document, 'tap', this._handleDocumentClick.bind(this));
 
                 if (this.mobileScreen || this.tabletScreen || this.laptopScreen) {
                     this.updateStyles();
@@ -119,6 +299,81 @@
 
             _isCSSChanged: function(mobile, tablet, laptop) {
                 this.updateStyles();
+            },
+
+            /**
+             * Evaluates if item is in given path.
+             *
+             * @param {HTMLElement} element The element to be evaluated.
+             * @param {Array<HTMLElements>=} path Elements in path to be checked against item element.
+             * @return {Boolean}
+             *
+             * @private
+             */
+            _isInPath: function(path, element) {
+                path = path || [];
+
+                for (var i = 0; i < path.length; i++) {
+
+                    if (path[i] == element) {
+                        return true;
+
+                        break;
+                    }
+                }
+
+                return false;
+            },
+
+            /**
+             * Listens for click outside of dropdown in order to close it.
+             * @private
+             */
+            _handleDocumentClick: function(event) {
+                var path = Polymer.dom(event).path;
+
+                if (!this._isInPath(path, this.$.addItemAction)) {
+                    this._actionsVisible = false;
+                }
+
+            },
+
+            _onActionSelect: function(event) {
+
+                this.fire('add-vault-action', {
+                    action: event.detail.item.value
+                });
+
+                this._actionsVisible = false;
+
+                this.$$('#paperListboxAddItem').selected = -1;
+            },
+
+            _toggleActionList: function() {
+                this._actionsVisible = !this._actionsVisible;
+            },
+
+            _actionsVisibleChanged: function() {
+                if (this._actionsVisible) {
+                    this.$$('#paperListboxAddItem').style.display = 'block';
+//                    this.playAnimation('entry');
+                }
+                else {
+                    this.$$('#paperListboxAddItem').style.display = 'none';
+//                    this.playAnimation('exit');
+                }
+            },
+
+            /**
+             * It is called after dropdown animation is finished.
+             * @private
+             */
+            _onAnimationFinish: function() {
+
+//                if (!this._actionsVisible) {
+//                    this.$$('#paperListboxAddItem').style.display = 'none';
+//                }
+
             }
         });
     </script>

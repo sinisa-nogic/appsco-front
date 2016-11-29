@@ -4,7 +4,11 @@
 <link rel="import" href="../../bower_components/neon-animation/animations/fade-out-animation.html">
 <link rel="import" href="../../bower_components/neon-animation/animations/scale-up-animation.html">
 
+<link rel="import" href="../../bower_components/appsco-vault/appsco-vault-login.html">
 <link rel="import" href="../../bower_components/appsco-vault/appsco-vault-identity.html">
+<link rel="import" href="../../bower_components/appsco-vault/appsco-vault-software-license.html">
+<link rel="import" href="../../bower_components/appsco-vault/appsco-vault-passport.html">
+<link rel="import" href="../../bower_components/appsco-vault/appsco-vault-secure-note.html">
 
 <dom-module id="appsco-vault-manage-item">
     <template>
@@ -16,6 +20,7 @@
             }
             :host paper-dialog {
                 width: 670px;
+                padding-bottom: 20px;
             }
         </style>
         <paper-dialog
@@ -24,15 +29,52 @@
                 entry-animation="scale-up-animation"
                 exit-animation="fade-out-animation">
 
-            <appsco-vault-identity
-                    identity="[[ item ]]"
-                    authorization-token="[[ authorizationToken ]]"
-                    vault-identity-api="[[ api.vaultIdentity ]]"
-            ></appsco-vault-identity>
+            <h2>Manage [[ item.displayTitle ]]</h2>
 
-            <div class="buttons">
-                <paper-button dialog-dismiss>Cancel</paper-button>
-            </div>
+            <template is="dom-if" if="[[ login ]]">
+                <appsco-vault-login
+                        item="[[ item ]]"
+                        authorization-token="[[ authorizationToken ]]"
+                        vault-login-api="[[ api.vaultLogin ]]"
+                        on-vault-item-saved="_onItemSaved"
+                        ></appsco-vault-login>
+            </template>
+
+            <template is="dom-if" if="[[ identity ]]">
+                <appsco-vault-identity
+                        identity="[[ item ]]"
+                        authorization-token="[[ authorizationToken ]]"
+                        vault-identity-api="[[ api.vaultIdentity ]]"
+                        on-vault-item-saved="_onItemSaved"
+                ></appsco-vault-identity>
+            </template>
+
+            <template is="dom-if" if="[[ softwareLicence ]]">
+                <appsco-vault-software-license
+                        item="[[ item ]]"
+                        authorization-token="[[ authorizationToken ]]"
+                        vault-software-license-api="[[ api.vaultSoftwareLicence ]]"
+                        on-vault-item-saved="_onItemSaved"
+                        ></appsco-vault-software-license>
+            </template>
+
+            <template is="dom-if" if="[[ passport ]]">
+                <appsco-vault-passport
+                        item="[[ item ]]"
+                        authorization-token="[[ authorizationToken ]]"
+                        vault-passport-api="[[ api.vaultPassport ]]"
+                        on-vault-item-saved="_onItemSaved"
+                        ></appsco-vault-passport>
+            </template>
+
+            <template is="dom-if" if="[[ secureNote ]]">
+                <appsco-vault-secure-note
+                        item="[[ item ]]"
+                        authorization-token="[[ authorizationToken ]]"
+                        vault-secure-note-api="[[ api.vaultSecureNote ]]"
+                        on-vault-item-saved="_onItemSaved"
+                        ></appsco-vault-secure-note>
+            </template>
         </paper-dialog>
 
     </template>
@@ -52,17 +94,104 @@
                  */
                 item: {
                     type: Object,
-                    value: {},
+                    value: function() {
+                        return {};
+                    },
                     notify: true
                 },
 
                 api: {
                     type: Object,
                     notify: true
+                },
+
+                /**
+                 * Indicates if item is has Login type.
+                 */
+                login: {
+                    type: Boolean,
+                    computed: '_computeLoginType(item)'
+                },
+
+                /**
+                 * Indicates if item is has Credit Card type.
+                 */
+                creditCard: {
+                    type: Boolean,
+                    computed: '_computeCreditCardType(item)'
+                },
+
+                /**
+                 * Indicates if item is has Identity type.
+                 */
+                identity: {
+                    type: Boolean,
+                    computed: '_computeIdentityType(item)'
+                },
+
+                /**
+                 * Indicates if item is has Software Licence type.
+                 */
+                softwareLicence: {
+                    type: Boolean,
+                    computed: '_computeSoftwareLicenceType(item)'
+                },
+
+                /**
+                 * Indicates if item is has Passport type.
+                 */
+                passport: {
+                    type: Boolean,
+                    computed: '_computePassportType(item)'
+                },
+
+                /**
+                 * Indicates if item is has Secure Note type.
+                 */
+                secureNote: {
+                    type: Boolean,
+                    computed: '_computeSecureNoteType(item)'
                 }
             },
+
+            _computeLoginType: function(item) {
+                return item.vaultType === 'login';
+            },
+
+            _computeCreditCardType: function(item) {
+                return item.vaultType === 'credit-card';
+            },
+
+            _computeIdentityType: function(item) {
+                return item.vaultType === 'identity';
+            },
+
+            _computeSoftwareLicenceType: function(item) {
+                return item.vaultType === 'software-licence';
+            },
+
+            _computePassportType: function(item) {
+                return item.vaultType === 'passport';
+            },
+
+            _computeSecureNoteType: function(item) {
+                return item.vaultType === 'secure-note';
+            },
+
             open: function () {
                 this.$.manageDialog.open();
+            },
+
+            close: function () {
+                this.$.manageDialog.close();
+            },
+
+            _onItemSaved: function(event) {
+                this.fire('item-saved', {
+                   item: event.detail.item
+                });
+
+                this.close();
             }
         });
     </script>

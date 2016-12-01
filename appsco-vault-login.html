@@ -115,10 +115,12 @@ Custom property | Description | Default
             </div>
         </form>
 
-        <paper-button
-                id="submit"
-                class="submit-button"
-                on-tap="_submitForm">Save</paper-button>
+        <template is="dom-if" if="[[ !noSubmitAction ]]">
+            <paper-button
+                    id="submit"
+                    class="submit-button"
+                    on-tap="_submitForm">Save</paper-button>
+        </template>
 
         <iron-a11y-keys
                 target="[[ _target ]]"
@@ -134,17 +136,23 @@ Custom property | Description | Default
 
             properties: {
 
+                /**
+                 * Item to update.
+                 */
                 item: {
                     type: Object,
                     value: function() {
-                        return {
-                            name: '',
-                            url: '',
-                            username: '',
-                            password: '',
-                            note: ''
-                        };
-                    }
+                        return {};
+                    },
+                    observer: "_onItemChange"
+                },
+
+                /**
+                 * Indicates if submit button should be present or not.
+                 */
+                noSubmitAction: {
+                    type: Boolean,
+                    value: false
                 },
 
                 /**
@@ -209,6 +217,22 @@ Custom property | Description | Default
                 }
             },
 
+            _onItemChange: function() {
+
+                for (key in this.item) {
+                    return false;
+                }
+
+                this.item = {
+                    name: '',
+                    url: '',
+                    username: '',
+                    password: '',
+                    note: ''
+                };
+
+            },
+
             /**
              * Computes authorization headers.
              *
@@ -241,6 +265,10 @@ Custom property | Description | Default
              * @private
              */
             _onEnter: function() {
+                this._submitForm();
+            },
+
+            save: function() {
                 this._submitForm();
             },
 
@@ -277,7 +305,7 @@ Custom property | Description | Default
                 var item = event.detail.response.item;
 
                 item.displayTitle = item.title ? item.title : item.name;
-                item.vaultType = this.item.vaultType;
+                item.vaultType = 'login';
 
                 /**
                  * Fired after vault item save success.
@@ -297,8 +325,11 @@ Custom property | Description | Default
              * Resets component.
              */
             reset: function() {
-                this.$.vaultLoginForm.reset();
+                this.$.name.invalid = false;
+                this.$.username.invalid = false;
+                this.$.password.invalid = false;
                 this._error = '';
+                this._loader = false;
             }
         });
     </script>

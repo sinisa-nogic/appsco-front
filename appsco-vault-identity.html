@@ -43,11 +43,14 @@ Custom property | Description | Default
             :host {
                 display: block;
                 position: relative;
-            @apply(--appsco-vault-identity);
+                @apply(--appsco-vault-identity);
 
-            --paper-dropdown-menu: {
-                 display: block;
-             };
+                --paper-dropdown-menu: {
+                     display: block;
+                 };
+            }
+            :host paper-item:hover {
+                @apply(--paper-item-hover);
             }
             :host .submit-button {
                 margin: 20px 0 0 0;
@@ -62,7 +65,12 @@ Custom property | Description | Default
             }
             :host form .form-left, :host form .form-right {
                 @apply(--layout-flex);
-                padding-right: 20px;
+            }
+            :host form .form-left {
+                padding-right: 10px;
+            }
+            :host form .form-right {
+                padding-left: 10px;
             }
         </style>
 
@@ -86,7 +94,7 @@ Custom property | Description | Default
                             id="name"
                             name="vault_identities[name]"
                             label="Name"
-                            value="[[ identity.name ]]"
+                            value="[[ item.name ]]"
                             required
                             auto-validate
                             error-message="Please enter identity name."></paper-input>
@@ -97,7 +105,7 @@ Custom property | Description | Default
                             id="firstName"
                             name="vault_identities[firstName]"
                             label="First name"
-                            value="[[ identity.firstName ]]"
+                            value="[[ item.firstName ]]"
                             required
                             auto-validate
                             error-message="Please enter first name."></paper-input>
@@ -108,7 +116,7 @@ Custom property | Description | Default
                             id="lastName"
                             name="vault_identities[lastName]"
                             label="Last name"
-                            value="[[ identity.lastName ]]"
+                            value="[[ item.lastName ]]"
                             required
                             auto-validate
                             error-message="Please enter last name."></paper-input>
@@ -139,7 +147,7 @@ Custom property | Description | Default
                             id="cellPhone"
                             name="vault_identities[cell]"
                             label="Cell phone"
-                            value$="[[ identity.cell ]]"></paper-input>
+                            value$="[[ item.cell ]]"></paper-input>
                 </div>
 
                 <div class="input-container">
@@ -147,7 +155,7 @@ Custom property | Description | Default
                             id="email"
                             name="vault_identities[email]"
                             label="Email"
-                            value$="[[ identity.email ]]"
+                            value$="[[ item.email ]]"
                             auto-validate
                             error-message="Please type correct email address."></gold-email-input>
                 </div>
@@ -161,7 +169,7 @@ Custom property | Description | Default
                             id="company"
                             name="vault_identities[company]"
                             label="Company"
-                            value$="[[ identity.company ]]"></paper-input>
+                            value$="[[ item.company ]]"></paper-input>
                 </div>
 
                 <div class="input-container">
@@ -169,7 +177,7 @@ Custom property | Description | Default
                             id="jobTitle"
                             name="vault_identities[jobTitle]"
                             label="Job title"
-                            value$="[[ identity.jobTitle ]]"></paper-input>
+                            value$="[[ item.jobTitle ]]"></paper-input>
                 </div>
 
                 <div class="input-container">
@@ -177,7 +185,7 @@ Custom property | Description | Default
                             id="department"
                             name="vault_identities[department]"
                             label="Department"
-                            value$="[[ identity.department ]]"></paper-input>
+                            value$="[[ item.department ]]"></paper-input>
                 </div>
 
                 <div class="input-container">
@@ -185,7 +193,7 @@ Custom property | Description | Default
                             id="phoneHome"
                             name="vault_identities[phoneHome]"
                             label="Phone home"
-                            value$="[[ identity.phoneHome ]]"></paper-input>
+                            value$="[[ item.phoneHome ]]"></paper-input>
                 </div>
 
                 <div class="input-container">
@@ -193,7 +201,7 @@ Custom property | Description | Default
                             id="phoneBusiness"
                             name="vault_identities[phoneBusiness]"
                             label="Phone business"
-                            value$="[[ identity.phoneBusiness ]]"></paper-input>
+                            value$="[[ item.phoneBusiness ]]"></paper-input>
                 </div>
 
                 <div class="input-container">
@@ -201,7 +209,7 @@ Custom property | Description | Default
                             id="website"
                             name="vault_identities[website]"
                             label="Website"
-                            value$="[[ identity.website ]]"
+                            value$="[[ item.website ]]"
                             pattern="https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)"
                             auto-validate
                             error-message="Url is invalid."></paper-input>
@@ -212,14 +220,17 @@ Custom property | Description | Default
                             id="note"
                             name="vault_identities[note]"
                             label="Note"
-                            value="[[ _note ]]"></paper-textarea>
+                            value="[[ item.note ]]"></paper-textarea>
                 </div>
             </div>
         </form>
 
-        <paper-button id="submit"
-                      class="submit-button"
-                      on-tap="_submitForm">Save</paper-button>
+        <template is="dom-if" if="[[ !noSubmitAction ]]">
+            <paper-button
+                    id="submit"
+                    class="submit-button"
+                    on-tap="_submitForm">Save</paper-button>
+        </template>
 
         <iron-a11y-keys
                 target="[[ _target ]]"
@@ -238,13 +249,20 @@ Custom property | Description | Default
                 /**
                  * Item to update.
                  */
-                identity: {
+                item: {
                     type: Object,
                     value: function() {
                         return {};
                     },
-                    notify: true,
-                    observer: '_onItemChange'
+                    observer: "_onItemChange"
+                },
+
+                /**
+                 * Indicates if submit button should be present or not.
+                 */
+                noSubmitAction: {
+                    type: Boolean,
+                    value: false
                 },
 
                 /**
@@ -291,7 +309,7 @@ Custom property | Description | Default
                  */
                 _computedAction: {
                     type: Object,
-                    computed: "_computeAction(identity, vaultIdentityApi)"
+                    computed: "_computeAction(item, vaultIdentityApi)"
                 },
 
                 /**
@@ -300,11 +318,6 @@ Custom property | Description | Default
                 _updateAction: {
                     type: Boolean,
                     value: false
-                },
-
-                _note: {
-                    type: String,
-                    computed: '_computeNote(identity)'
                 },
 
                 _loader: {
@@ -333,13 +346,33 @@ Custom property | Description | Default
 
             _onItemChange: function() {
 
-                if (this.identity.birthDate) {
-                    var birthDate = this.identity.birthDate.date.split(' ');
+                for (key in this.item) {
 
-                    this.$.birthDate.value = birthDate[0];
+                    if (this.item.birthDate) {
+                        var birthDate = this.item.birthDate.date.split(' ');
+
+                        this.$.birthDate.value = birthDate[0];
+                    }
+
+                    this.$.paperListboxGender.select(this.item.sex);
+
+                    return false;
                 }
 
-                this.$.paperListboxGender.select(this.identity.sex);
+                this.item = {
+                    name: '',
+                    firstName: '',
+                    lastName: '',
+                    cell: '',
+                    email: '',
+                    company: '',
+                    jobTitle: '',
+                    department: '',
+                    phoneHome: '',
+                    phoneBusiness: '',
+                    website: '',
+                    note: ''
+                };
             },
 
             /**
@@ -356,20 +389,16 @@ Custom property | Description | Default
                 }
             },
 
-            _computeAction: function(identity, vaultApi) {
+            _computeAction: function(item, vaultApi) {
 
-                for (key in identity) {
+                for (key in item) {
                     this._updateAction = true;
-                    return identity.self;
+                    return item.self;
                 }
 
                 this._updateAction = false;
                 return vaultApi;
 
-            },
-
-            _computeNote: function(identity) {
-                return identity.note ? identity.note : '';
             },
 
             /**
@@ -378,6 +407,10 @@ Custom property | Description | Default
              * @private
              */
             _onEnter: function() {
+                this._submitForm();
+            },
+
+            save: function() {
                 this._submitForm();
             },
 
@@ -424,9 +457,7 @@ Custom property | Description | Default
                 var item = event.detail.response.item;
 
                 item.displayTitle = item.title ? item.title : item.name;
-                item.vaultType = this.identity.vaultType;
-
-//                this.set('identity', item);
+                item.vaultType = 'identity';
 
                 /**
                  * Fired after successful response.
@@ -453,8 +484,11 @@ Custom property | Description | Default
              * Resets component.
              */
             reset: function() {
-                this.$.vaultIdentityForm.reset();
+                this.$.name.invalid = false;
+                this.$.firstName.invalid = false;
+                this.$.lastName.invalid = false;
                 this._error = '';
+                this._loader = false;
             }
         });
     </script>

@@ -1,10 +1,11 @@
 <link rel="import" href="../../bower_components/polymer/polymer.html">
-
 <link rel="import" href="../../bower_components/paper-dialog/paper-dialog.html">
+<link rel="import" href="../../bower_components/paper-dialog-scrollable/paper-dialog-scrollable.html">
 <link rel="import" href="../../bower_components/neon-animation/animations/fade-out-animation.html">
 <link rel="import" href="../../bower_components/neon-animation/animations/scale-up-animation.html">
 
 <link rel="import" href="../../bower_components/appsco-vault/appsco-vault-login.html">
+<link rel="import" href="../../bower_components/appsco-vault/appsco-vault-credit-card.html">
 <link rel="import" href="../../bower_components/appsco-vault/appsco-vault-identity.html">
 <link rel="import" href="../../bower_components/appsco-vault/appsco-vault-software-license.html">
 <link rel="import" href="../../bower_components/appsco-vault/appsco-vault-passport.html">
@@ -12,75 +13,229 @@
 
 <dom-module id="appsco-vault-manage-item">
     <template>
-        <style>
+        <style include="webkit-scrollbar-style">
             :host {
                 display: block;
                 position: relative;
                 @apply(--appsco-vault-manage-item);
+
+                --paper-dialog-scrollable: {
+                     max-width: none !important;
+                     padding-top: 15px;
+                     padding-bottom: 15px;
+                 };
+            }
+            :host paper-dialog-scrollable {
+                margin-top: 0 !important;
+            }
+            :host paper-dialog-scrollable > *[hidden] {
+                display: none;
             }
             :host paper-dialog {
                 width: 670px;
-                padding-bottom: 20px;
+            }
+            :host .buttons paper-button {
+                @apply(--paper-dialog-button);
+            }
+            :host .buttons paper-button.add-action {
+                margin: 0 0 0 10px;
+                @apply(--paper-dialog-confirm-button);
+            }
+            :host .buttons paper-button[dialog-dismiss] {
+                @apply(--paper-dialog-dismiss-button);
             }
         </style>
+
         <paper-dialog
                 with-backdrop
-                id="manageDialog"
+                id="manageVaultLogin"
                 entry-animation="scale-up-animation"
                 exit-animation="fade-out-animation"
                 on-iron-overlay-closed="_onDialogClosed">
 
             <h2>Manage [[ item.displayTitle ]]</h2>
 
-            <template is="dom-if" if="[[ login ]]">
+            <paper-dialog-scrollable>
+
                 <appsco-vault-login
                         id="appscoVaultLogin"
+                        component
                         item="[[ item ]]"
                         authorization-token="[[ authorizationToken ]]"
                         vault-login-api="[[ api.vaultLogin ]]"
                         on-vault-item-saved="_onItemSaved"
-                        ></appsco-vault-login>
-            </template>
+                        no-submit-action></appsco-vault-login>
 
-            <template is="dom-if" if="[[ identity ]]">
+            </paper-dialog-scrollable>
+
+            <div class="buttons">
+                <paper-button dialog-dismiss>Cancel</paper-button>
+                <paper-button id="addApplicationAction"
+                              class="add-action"
+                              on-tap="_onSaveVaultItem">
+                    Save
+                </paper-button>
+            </div>
+        </paper-dialog>
+
+        <paper-dialog
+                with-backdrop
+                id="manageVaultCreditCard"
+                entry-animation="scale-up-animation"
+                exit-animation="fade-out-animation"
+                on-iron-overlay-closed="_onDialogClosed">
+
+            <h2>Manage [[ item.displayTitle ]]</h2>
+
+            <paper-dialog-scrollable>
+
+                <appsco-vault-credit-card
+                        id="appscoVaultCreditCard"
+                        component
+                        item="[[ item ]]"
+                        authorization-token="[[ authorizationToken ]]"
+                        vault-credit-card-api="[[ api.vaultCreditCard ]]"
+                        on-vault-item-saved="_onItemSaved"
+                        no-submit-action></appsco-vault-credit-card>
+
+            </paper-dialog-scrollable>
+
+            <div class="buttons">
+                <paper-button dialog-dismiss>Cancel</paper-button>
+                <paper-button id="addApplicationAction"
+                              class="add-action"
+                              on-tap="_onSaveVaultItem">
+                    Save
+                </paper-button>
+            </div>
+        </paper-dialog>
+
+        <paper-dialog
+                with-backdrop
+                id="manageVaultIdentity"
+                entry-animation="scale-up-animation"
+                exit-animation="fade-out-animation"
+                on-iron-overlay-closed="_onDialogClosed">
+
+            <h2>Manage [[ item.displayTitle ]]</h2>
+
+            <paper-dialog-scrollable>
+
                 <appsco-vault-identity
                         id="appscoVaultIdentity"
-                        identity="[[ item ]]"
+                        component
+                        item="[[ item ]]"
                         authorization-token="[[ authorizationToken ]]"
                         vault-identity-api="[[ api.vaultIdentity ]]"
                         on-vault-item-saved="_onItemSaved"
-                ></appsco-vault-identity>
-            </template>
+                        no-submit-action></appsco-vault-identity>
 
-            <template is="dom-if" if="[[ softwareLicence ]]">
+            </paper-dialog-scrollable>
+
+            <div class="buttons">
+                <paper-button dialog-dismiss>Cancel</paper-button>
+                <paper-button id="addApplicationAction"
+                              class="add-action"
+                              on-tap="_onSaveVaultItem">
+                    Save
+                </paper-button>
+            </div>
+        </paper-dialog>
+
+        <paper-dialog
+                with-backdrop
+                id="manageVaultSoftwareLicense"
+                entry-animation="scale-up-animation"
+                exit-animation="fade-out-animation"
+                on-iron-overlay-closed="_onDialogClosed">
+
+            <h2>Manage [[ item.displayTitle ]]</h2>
+
+            <paper-dialog-scrollable>
+
                 <appsco-vault-software-license
                         id="appscoVaultSoftwareLicense"
+                        component
                         item="[[ item ]]"
                         authorization-token="[[ authorizationToken ]]"
                         vault-software-license-api="[[ api.vaultSoftwareLicence ]]"
                         on-vault-item-saved="_onItemSaved"
-                        ></appsco-vault-software-license>
-            </template>
+                        no-submit-action></appsco-vault-software-license>
 
-            <template is="dom-if" if="[[ passport ]]">
+            </paper-dialog-scrollable>
+
+            <div class="buttons">
+                <paper-button dialog-dismiss>Cancel</paper-button>
+                <paper-button id="addApplicationAction"
+                              class="add-action"
+                              on-tap="_onSaveVaultItem">
+                    Save
+                </paper-button>
+            </div>
+        </paper-dialog>
+
+        <paper-dialog
+                with-backdrop
+                id="manageVaultPassport"
+                entry-animation="scale-up-animation"
+                exit-animation="fade-out-animation"
+                on-iron-overlay-closed="_onDialogClosed">
+
+            <h2>Manage [[ item.displayTitle ]]</h2>
+
+            <paper-dialog-scrollable>
+
                 <appsco-vault-passport
                         id="appscoVaultPassport"
+                        component
                         item="[[ item ]]"
                         authorization-token="[[ authorizationToken ]]"
                         vault-passport-api="[[ api.vaultPassport ]]"
                         on-vault-item-saved="_onItemSaved"
-                        ></appsco-vault-passport>
-            </template>
+                        no-submit-action></appsco-vault-passport>
 
-            <template is="dom-if" if="[[ secureNote ]]">
+            </paper-dialog-scrollable>
+
+            <div class="buttons">
+                <paper-button dialog-dismiss>Cancel</paper-button>
+                <paper-button id="addApplicationAction"
+                              class="add-action"
+                              on-tap="_onSaveVaultItem">
+                    Save
+                </paper-button>
+            </div>
+        </paper-dialog>
+
+        <paper-dialog
+                with-backdrop
+                id="manageVaultSecureNote"
+                entry-animation="scale-up-animation"
+                exit-animation="fade-out-animation"
+                on-iron-overlay-closed="_onDialogClosed">
+
+            <h2>Manage [[ item.displayTitle ]]</h2>
+
+            <paper-dialog-scrollable>
+
                 <appsco-vault-secure-note
                         id="appscoVaultSecureNote"
+                        component
                         item="[[ item ]]"
                         authorization-token="[[ authorizationToken ]]"
                         vault-secure-note-api="[[ api.vaultSecureNote ]]"
                         on-vault-item-saved="_onItemSaved"
-                        ></appsco-vault-secure-note>
-            </template>
+                        no-submit-action></appsco-vault-secure-note>
+
+            </paper-dialog-scrollable>
+
+            <div class="buttons">
+                <paper-button dialog-dismiss>Cancel</paper-button>
+                <paper-button id="addApplicationAction"
+                              class="add-action"
+                              on-tap="_onSaveVaultItem">
+                    Save
+                </paper-button>
+            </div>
         </paper-dialog>
 
     </template>
@@ -110,76 +265,45 @@
                 api: {
                     type: Object,
                     notify: true
-                },
-
-                /**
-                 * Indicates if item is has Login type.
-                 */
-                login: {
-                    type: Boolean,
-                    value: false
-                },
-
-                /**
-                 * Indicates if item is has Credit Card type.
-                 */
-                creditCard: {
-                    type: Boolean,
-                    value: false
-                },
-
-                /**
-                 * Indicates if item is has Identity type.
-                 */
-                identity: {
-                    type: Boolean,
-                    value: false
-                },
-
-                /**
-                 * Indicates if item is has Software Licence type.
-                 */
-                softwareLicence: {
-                    type: Boolean,
-                    value: false
-                },
-
-                /**
-                 * Indicates if item is has Passport type.
-                 */
-                passport: {
-                    type: Boolean,
-                    value: false
-                },
-
-                /**
-                 * Indicates if item is has Secure Note type.
-                 */
-                secureNote: {
-                    type: Boolean,
-                    value: false
                 }
             },
 
+
             _onItemChange: function() {
-                this.setDialog(this.item.vaultType);
+
             },
 
-            setDialog: function(action) {
-                this.login = (action === 'login');
-                this.creditCard = (action === 'credit-card');
-                this.identity = (action === 'identity');
-                this.softwareLicence = (action === 'software-licence');
-                this.passport = (action === 'passport');
-                this.secureNote = (action === 'secure-note');
+            open: function (action) {
+
+                switch (action) {
+                    case 'login':
+                        this.$.manageVaultLogin.open();
+                        break;
+
+                    case 'credit-card':
+                        this.$.manageVaultCreditCard.open();
+                        break;
+
+                    case 'identity':
+                        this.$.manageVaultIdentity.open();
+                        break;
+
+                    case 'software-licence':
+                        this.$.manageVaultSoftwareLicense.open();
+                        break;
+
+                    case 'passport':
+                        this.$.manageVaultPassport.open();
+                        break;
+
+                    case 'secure-note':
+                        this.$.manageVaultSecureNote.open();
+                        break;
+                }
             },
 
-            open: function () {
-                this.$.manageDialog.open();
-            },
-
-            close: function () {
-                this.$.manageDialog.close();
+            _onSaveVaultItem: function(event) {
+                Polymer.dom(event.target.parentNode.parentNode).querySelector('[component]').save();
             },
 
             _onItemSaved: function(event) {
@@ -187,36 +311,20 @@
                    item: event.detail.item
                 });
 
-                this.close();
+                event.target.parentNode.parentNode.close();
             },
 
-            _onDialogClosed: function() {
-                this.set('item', {});
+            _onDialogClosed: function(event) {
+                var tagName = event.target.tagName;
 
-                this.login = false;
-                this.creditCard = false;
-                this.identity = false;
-                this.softwareLicence = false;
-                this.passport = false;
-                this.secureNote = false;
+                if (tagName && (tagName.toLowerCase() == 'paper-dialog')) {
+                    this.set('item', {});
 
-                if (this.login) {
                     this.$$('#appscoVaultLogin').reset();
-                }
-
-                if (this.identity) {
+                    this.$$('#appscoVaultCreditCard').reset();
                     this.$$('#appscoVaultIdentity').reset();
-                }
-
-                if (this.softwareLicence) {
                     this.$$('#appscoVaultSoftwareLicense').reset();
-                }
-
-                if (this.passport) {
                     this.$$('#appscoVaultPassport').reset();
-                }
-
-                if (this.secureNote) {
                     this.$$('#appscoVaultSecureNote').reset();
                 }
             }

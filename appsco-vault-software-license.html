@@ -26,6 +26,7 @@ Contains form for new / edit vault item of type Software License.
 Custom property | Description | Default
 ----------------|-------------|----------
 `--appsco-vault-software-license` | Mixin for the root element | `{}`
+`--vault-software-license-form` | Mixin for the inner form | `{}`
 
 @demo demo/appsco-vault-software-license.html
 -->
@@ -36,22 +37,31 @@ Custom property | Description | Default
             :host {
                 display: block;
                 position: relative;
-                @apply(--appsco-vault-software-license);
+            @apply(--appsco-vault-software-license);
 
-                --paper-dropdown-menu: {
-                    display: block;
-                };
+            --paper-dropdown-menu: {
+                 display: block;
+             };
             }
             :host .submit-button {
                 margin: 20px 0 0 0;
             }
             :host form {
-                @apply(--layout-horizontal);
-                @apply(--vault-identity-form);
+            @apply(--layout-horizontal);
+            @apply(--vault-software-license-form);
             }
             :host form .form-left, :host form .form-right {
-                @apply(--layout-flex);
-                padding-right: 20px;
+            @apply(--layout-flex);
+            }
+            :host form .form-left {
+                padding-right: 10px;
+            }
+            :host form .form-right {
+                padding-left: 10px;
+            }
+            :host .date-container {
+                height: 62px;
+                cursor: pointer;
             }
         </style>
 
@@ -70,12 +80,12 @@ Custom property | Description | Default
 
             <div class="form-left">
                 <div class="input-container">
-                    <paper-input
-                            name="vault_software_license[name]"
-                            label="Name"
-                            required
-                            value="[[ item.name ]]"
-                    ></paper-input>
+                    <paper-input id="name"
+                                 name="vault_software_license[name]"
+                                 label="Name"
+                                 required
+                                 value="[[ item.name ]]"
+                            ></paper-input>
                 </div>
 
                 <div class="input-container">
@@ -83,7 +93,7 @@ Custom property | Description | Default
                             label="Licence key"
                             value="[[ item.licenceKey ]]"
                             name="vault_software_license[licenceKey]"
-                    ></paper-textarea>
+                            ></paper-textarea>
                 </div>
 
                 <div class="input-container">
@@ -91,7 +101,7 @@ Custom property | Description | Default
                             label="Licence"
                             value="[[ item.licence ]]"
                             name="vault_software_license[licence]"
-                    ></paper-textarea>
+                            ></paper-textarea>
                 </div>
 
                 <div class="input-container">
@@ -99,7 +109,7 @@ Custom property | Description | Default
                             name="vault_software_license[version]"
                             label="Version"
                             value="[[ item.version ]]"
-                    ></paper-input>
+                            ></paper-input>
                 </div>
 
                 <div class="input-container">
@@ -107,7 +117,7 @@ Custom property | Description | Default
                             name="vault_software_license[publisher]"
                             label="Publisher"
                             value="[[ item.publisher ]]"
-                    ></paper-input>
+                            ></paper-input>
                 </div>
 
                 <div class="input-container">
@@ -115,7 +125,7 @@ Custom property | Description | Default
                             name="vault_software_license[supportEmail]"
                             label="Support email"
                             value="[[ item.supportEmail ]]"
-                    ></paper-input>
+                            ></paper-input>
                 </div>
 
                 <div class="input-container">
@@ -136,14 +146,14 @@ Custom property | Description | Default
                             name="vault_software_license[price]"
                             label="Price"
                             value="[[ item.price ]]"
-                    ></paper-input>
+                            ></paper-input>
                 </div>
 
-                <div class="input-container">
+                <div class="input-container date-container">
                     <vaadin-date-picker
                             id="purchaseDate"
                             label="Purchase date"
-                    ></vaadin-date-picker>
+                            value="[[ item.purchaseDate ]]"></vaadin-date-picker>
                 </div>
 
                 <div class="input-container">
@@ -151,7 +161,7 @@ Custom property | Description | Default
                             name="vault_software_license[orderNumber]"
                             label="Order number"
                             value="[[ item.orderNumber ]]"
-                    ></paper-input>
+                            ></paper-input>
                 </div>
 
                 <div class="input-container">
@@ -162,7 +172,7 @@ Custom property | Description | Default
                             auto-validate
                             pattern="[0-9]*"
                             error-message="Digits only!"
-                    ></paper-input>
+                            ></paper-input>
                 </div>
 
                 <div class="input-container">
@@ -170,7 +180,7 @@ Custom property | Description | Default
                             name="vault_software_license[orderTotal]"
                             label="Order total"
                             value="[[ item.orderTotal ]]"
-                    ></paper-input>
+                            ></paper-input>
                 </div>
 
                 <div class="input-container">
@@ -178,15 +188,17 @@ Custom property | Description | Default
                             label="Note"
                             value="[[ item.note ]]"
                             name="vault_software_license[note]"
-                    ></paper-textarea>
+                            ></paper-textarea>
                 </div>
             </div>
         </form>
 
-        <paper-button
-                id="submit"
-                class="submit-button"
-                on-tap="_submitForm">Save</paper-button>
+        <template is="dom-if" if="[[ !noSubmitAction ]]">
+            <paper-button
+                    id="submit"
+                    class="submit-button"
+                    on-tap="_submitForm">Save</paper-button>
+        </template>
 
         <iron-a11y-keys
                 target="[[ _target ]]"
@@ -202,25 +214,23 @@ Custom property | Description | Default
 
             properties: {
 
+                /**
+                 * Item to update.
+                 */
                 item: {
                     type: Object,
                     value: function() {
-                        return {
-                            name: '',
-                            licenceKey: '',
-                            licence: '',
-                            version: '',
-                            publisher: '',
-                            supportEmail: '',
-                            website: '',
-                            price: '',
-                            orderNumber: '',
-                            numberOfLicences: '',
-                            orderTotal: '',
-                            note: ''
-                        };
+                        return {};
                     },
-                    observer: '_onItemChange'
+                    observer: "_onItemChange"
+                },
+
+                /**
+                 * Indicates if submit button should be present or not.
+                 */
+                noSubmitAction: {
+                    type: Boolean,
+                    value: false
                 },
 
                 /**
@@ -287,11 +297,31 @@ Custom property | Description | Default
 
             _onItemChange: function() {
 
-                if (this.item.purchaseDate) {
-                    var purchaseDate = this.item.purchaseDate.date.split(' ');
+                for (key in this.item) {
 
-                    this.$.purchaseDate.value = purchaseDate[0];
+                    if (this.item.purchaseDate) {
+                        var purchaseDate = this.item.purchaseDate.date.split(' ');
+
+                        this.$.purchaseDate.value = purchaseDate[0];
+                    }
+
+                    return false;
                 }
+
+                this.item = {
+                    name: '',
+                    licenceKey: '',
+                    licence: '',
+                    version: '',
+                    publisher: '',
+                    supportEmail: '',
+                    website: '',
+                    price: '',
+                    orderNumber: '',
+                    numberOfLicences: '',
+                    orderTotal: '',
+                    note: ''
+                };
 
             },
 
@@ -327,6 +357,10 @@ Custom property | Description | Default
              * @private
              */
             _onEnter: function() {
+                this._submitForm();
+            },
+
+            save: function() {
                 this._submitForm();
             },
 
@@ -375,7 +409,7 @@ Custom property | Description | Default
                 var item = event.detail.response.item;
 
                 item.displayTitle = item.title ? item.title : item.name;
-                item.vaultType = this.item.vaultType;
+                item.vaultType = 'software-licence';
 
                 /**
                  * Fired after vault item save success.
@@ -395,8 +429,9 @@ Custom property | Description | Default
              * Resets component.
              */
             reset: function() {
-                this.$.vaultSoftwareLicenseForm.reset();
+                this.$.name.invalid = false;
                 this._error = '';
+                this._loader = false;
             }
         });
     </script>

@@ -3,6 +3,8 @@
 <link rel="import" href="../iron-flex-layout/iron-flex-layout.html">
 <link rel="import" href="../paper-button/paper-button.html">
 <link rel="import" href="../paper-progress/paper-progress.html">
+<link rel="import" href="../neon-animation/neon-animation-runner-behavior.html">
+<link rel="import" href="../neon-animation/animations/transform-animation.html">
 
 <link rel="import" href="appsco-vault-item.html">
 
@@ -48,15 +50,14 @@ Custom property | Description | Default
             @apply(--layout-horizontal);
             @apply(--layout-wrap);
             @apply(--layout-start);
-                margin-right: -10px;
-            @apply(--applications-container);
+                margin-right: -30px;
+            @apply(--vault-container);
             }
 
             :host appsco-vault-item {
                 margin: 0 10px 10px 0;
-            @apply(--appsco-vault-item);
+            @apply(--appsco-vault-list-item);
             }
-
             :host .applications-container {
                 width: 100%;
                 min-height: 160px;
@@ -150,7 +151,9 @@ Custom property | Description | Default
 
             <template is="dom-if" if="[[ !_itemsEmpty ]]">
                 <div items>
-                    <template is="dom-repeat" items="{{ _items }}">
+                    <template is="dom-repeat" id="itemsList"
+                              items="{{ _items }}"
+                              on-dom-change="_onItemsDomChange">
                         <appsco-vault-item item="{{ _formatVaultItem(item) }}"></appsco-vault-item>
                     </template>
                 </div>
@@ -338,8 +341,38 @@ Custom property | Description | Default
                     value: function() {
                         return [];
                     }
+                },
+
+                _renderedIndex: {
+                    type: Number,
+                    value: -1
+                },
+
+                /**
+                 * Animation for loader appearance.
+                 */
+                animationConfig: {
+                    value: function() {
+                        return {
+                            'entry': {
+                                name: 'transform-animation',
+                                transformOrigin: '1 1',
+                                transformFrom: 'scale(1)',
+                                transformTo: 'scale(1.08)',
+                                node: {},
+                                timing: {
+                                    delay: 200,
+                                    duration: 500
+                                }
+                            }
+                        }
+                    }
                 }
             },
+
+            behaviors: [
+                Polymer.NeonAnimationRunnerBehavior
+            ],
 
             _computeHeaders: function (authorizationToken) {
                 return {
@@ -482,9 +515,27 @@ Custom property | Description | Default
                 return item;
             },
 
+            _computeCreditCardType: function(code) {
+                var list = this._creditCardTypes,
+                        length = list.length - 1;
+
+                for (var i = 0; i < length; i++) {
+                    var type = list[i];
+
+                    if (type.code == code) {
+                        return type.title;
+
+                        break;
+                    }
+
+                }
+
+                return '';
+            },
+
             _formatCreditCardItem: function(item) {
                 item.icon = 'icons:credit-card';
-                item.type = this._creditCardTypes[item.type - 1];
+                item.cardType = this._computeCreditCardType(item.type);
                 item.displayTitle = item.title;
 
                 if (item.expiryDate) {
@@ -522,6 +573,8 @@ Custom property | Description | Default
 
                     if (country.code == code) {
                         return country.name;
+
+                        break;
                     }
 
                 }
@@ -610,22 +663,55 @@ Custom property | Description | Default
 
             /**
              * Finds item in list and sets given item instead.
+             * If item doesn't exist it adds item to the list.
              *
              * @param item
              */
             setItem: function(item) {
                 var items = JSON.parse(JSON.stringify(this._items)),
-                    length = items.length;
+                        length = items.length;
+
+                this._renderedIndex = -1;
 
                 for (var i = 0; i < length; i++) {
-                    if (items[i].self === item.self) {
+                    var currentItem = items[i],
+                            nextItem = items[i + 1];
+
+                    if (currentItem.self === item.self) {
                         items[i] = item;
 
                         this.set('_items', []);
                         this.set('_items', items);
+                        this._renderedIndex = i;
+                        break;
+                    }
+
+                    if (!nextItem) {
+                        this.push('_items', item);
+                        this._renderedIndex = length;
+                        break;
+                    }
+
+                    if (currentItem.vaultType === item.vaultType && nextItem.vaultType !== item.vaultType) {
+                        this.splice('_items', i + 1, 0, item);
+                        this._renderedIndex = i + 1;
                         break;
                     }
                 }
+            },
+
+            _onItemsDomChange: function() {
+
+                if (-1 != this._renderedIndex) {
+                    var index = this._renderedIndex+ 1,
+                            addedItem = Polymer.dom(this.root).querySelector('appsco-vault-item:nth-child(' + index + ')');
+
+                    this.animationConfig.entry.node = addedItem;
+                    this.playAnimation('entry');
+
+                    this._renderedIndex = -1;
+                }
+
             },
 
             /**

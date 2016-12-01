@@ -74,6 +74,30 @@
 
                 --paper-progress-active-color: var(--success-color);
 
+
+                --paper-listbox: {
+                     padding: 0;
+                     border-radius: 2px;
+                 };
+
+                --paper-item: {
+                     cursor: pointer;
+                     color: var(--primary-text-color);
+                 };
+
+                --paper-item-selected: {
+                     color: var(--primary-text-color);
+                     background-color: transparent;
+                 };
+
+                --paper-item-focused-before: {
+                     background-color: var(--body-background-color);
+                 };
+
+                --paper-item-hover: {
+                     background-color: var(--body-background-color);
+                 };
+
                 --paper-input-container-label-focus: {
                      color: var(--secondary-text-color);
                  };
@@ -84,6 +108,12 @@
                     height: 24px;
                     margin-right: 6px;
                     color: var(--primary-text-color);
+                 };
+
+                --appsco-copy-action: {
+                     padding: 4px;
+                     width: 24px;
+                     height: 24px;
                  };
 
                 --paper-progress-height: 2px;
@@ -330,7 +360,9 @@
                             <appsco-vault-page-actions
                                     name="vault"
                                     authorization-token="[[ authorizationToken ]]"
-                                    on-page-global-info="_onInfoVaultAction"></appsco-vault-page-actions>
+                                    on-page-global-info="_onInfoVaultAction"
+                                    on-add-vault-action="_onAddVaultAction"></appsco-vault-page-actions>
+
                         </neon-animated-pages>
 
                     </app-toolbar>
@@ -466,6 +498,7 @@
                 id="appscoVaultItemManage"
                 authorization-token="[[ authorizationToken ]]"
                 api="[[ api ]]"
+                on-item-saved="_onItemSaved"
         ></appsco-vault-manage-item>
 
         <template is="dom-if" if="[[ api.me ]]">
@@ -888,24 +921,44 @@
 
             },
 
-            _onRemoveVaultItem: function(e) {
+            _onAddVaultAction: function(event) {
+                var appscoVaultItemManage = this.$.appscoVaultItemManage;
 
-                this.$.appscoVaultItemRemove.item = e.detail.item;
-
-                this.$.appscoVaultItemRemove.open();
+                appscoVaultItemManage.set('item', {});
+                appscoVaultItemManage.open(event.detail.action);
             },
 
-            _onVaultItemRemoved: function(e) {
-                this.$.appscoVaultPage.removeItem(e.detail.item);
-                this.$.appscoVaultPage.hideInfo();
-                this.$.appscoVaultPage.setDefaultItem();
-                this._notify('Vault item ' + e.detail.item.displayTitle + ' removed.');
+            _onEditVaultItem: function(event) {
+                var appscoVaultItemManage = this.$.appscoVaultItemManage;
 
+                appscoVaultItemManage.set('item', event.detail.item);
+                appscoVaultItemManage.open(event.detail.item.vaultType);
             },
 
-            _onEditVaultItem: function(e) {
-                this.$.appscoVaultItemManage.item = e.detail.item;
-                this.$.appscoVaultItemManage.open();
+            _onRemoveVaultItem: function(event) {
+                var appscoVaultItemRemove = this.$.appscoVaultItemRemove;
+
+                appscoVaultItemRemove.item = event.detail.item;
+                appscoVaultItemRemove.open();
+            },
+
+            _onItemSaved: function(event) {
+                var item = event.detail.item,
+                    appscoVaultPage = this.$.appscoVaultPage;
+
+                appscoVaultPage.item = item;
+                appscoVaultPage.setItem(item);
+                this._notify('Vault item ' + item.displayTitle + ' has been successfully saved.');
+            },
+
+            _onVaultItemRemoved: function(event) {
+                var appscoVaultPage = this.$.appscoVaultPage;
+
+                appscoVaultPage.removeItem(event.detail.item);
+                appscoVaultPage.hideInfo();
+                appscoVaultPage.setDefaultItem();
+                this._notify('Vault item ' + event.detail.item.displayTitle + ' removed.');
+
             },
             /**
              * Vault page END

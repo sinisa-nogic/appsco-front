@@ -129,7 +129,7 @@ Custom property | Description | Default
                 <div label>Gender</div>
                 <div content>
                     <div class="flex">
-                        [[ item.sex ]]
+                        [[ _gender ]]
                     </div>
                 </div>
             </div>
@@ -162,7 +162,7 @@ Custom property | Description | Default
                 <div label>Country</div>
                 <div content>
                     <div class="flex">
-                        [[ item.country ]]
+                        [[ _passportCountry ]]
                     </div>
                 </div>
             </div>
@@ -634,6 +634,16 @@ Custom property | Description | Default
                     computed: '_computeCreditCardType(item, _creditCardTypes)'
                 },
 
+                _passportCountry: {
+                    type: String,
+                    computed: '_computePassportCountry(item, _countryList)'
+                },
+
+                _gender: {
+                    type: String,
+                    computed: '_computeGender(item)'
+                },
+
                 _cardNumber: {
                     type: String,
                     computed: '_computeCardNumber(item)'
@@ -673,22 +683,55 @@ Custom property | Description | Default
                 var list = this._creditCardTypes,
                         length = list.length - 1;
 
-                for (var i = 0; i < length; i++) {
-                    var type = list[i];
+                if (item) {
+                    for (var i = 0; i < length; i++) {
+                        var type = list[i];
 
-                    if (type.code == item.type) {
-                        return type.title;
+                        if (type.code == item.type) {
+                            return type.title;
 
-                        break;
+                            break;
+                        }
+
                     }
-
                 }
 
                 return '';
             },
 
+            _computePassportCountry: function(item) {
+                var list = this._countryList,
+                        length = list.length - 1;
+
+                if (item) {
+                    for (var i = 0; i < length; i++) {
+                        var country = list[i];
+
+                        if (country.code == item.country) {
+                            return country.name;
+                        }
+
+                    }
+                }
+
+                return '';
+            },
+
+            _computeGender: function(item) {
+
+                if (item && item.sex && item.sex == 'm') {
+                    return 'Male';
+                }
+                else if (item && item.sex && item.sex == 'f') {
+                    return 'Female';
+                }
+
+                return '';
+
+            },
+
             _computeCardNumber: function(item) {
-                if(item.cardNumber) {
+                if (item && item.cardNumber) {
                     return '**********' + item.cardNumber.substr(item.cardNumber.length - 4);
                 }
                 return "";

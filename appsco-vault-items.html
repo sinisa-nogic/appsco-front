@@ -441,6 +441,10 @@ Custom property | Description | Default
                 this.fire('loaded', {
                     items: this._items
                 });
+
+                if (this._itemsTotal === 0) {
+                    this._itemsEmpty = true;
+                }
             },
 
             _onVaultItemsResponse: function(event) {
@@ -465,6 +469,8 @@ Custom property | Description | Default
                     return false;
                 }
 
+                this._itemsEmpty = false;
+
                 items.forEach(function (item, index) {
 
                     item.vaultType = vaultType;
@@ -486,6 +492,8 @@ Custom property | Description | Default
                     }.bind(this), (index + 1) * 50 );
 
                 }.bind(this));
+
+
             },
 
             /**
@@ -672,32 +680,39 @@ Custom property | Description | Default
                         length = items.length;
 
                 this._renderedIndex = -1;
+                this._itemsEmpty = false;
 
-                for (var i = 0; i < length; i++) {
-                    var currentItem = items[i],
-                            nextItem = items[i + 1];
+                if (length > 0) {
+                    for (var i = 0; i < length; i++) {
+                        var currentItem = items[i],
+                                nextItem = items[i + 1];
 
-                    if (currentItem.self === item.self) {
-                        items[i] = item;
+                        if (currentItem.self === item.self) {
+                            items[i] = item;
+                            this.set('_items', []);
+                            this.set('_items', items);
+                            this._renderedIndex = i;
+                            break;
+                        }
 
-                        this.set('_items', []);
-                        this.set('_items', items);
-                        this._renderedIndex = i;
-                        break;
-                    }
+                        if (!nextItem) {
+                            this.push('_items', item);
+                            this._renderedIndex = length;
+                            break;
+                        }
 
-                    if (!nextItem) {
-                        this.push('_items', item);
-                        this._renderedIndex = length;
-                        break;
-                    }
-
-                    if (currentItem.vaultType === item.vaultType && nextItem.vaultType !== item.vaultType) {
-                        this.splice('_items', i + 1, 0, item);
-                        this._renderedIndex = i + 1;
-                        break;
+                        if (currentItem.vaultType === item.vaultType && nextItem.vaultType !== item.vaultType) {
+                            this.splice('_items', i + 1, 0, item);
+                            this._renderedIndex = i + 1;
+                            break;
+                        }
                     }
                 }
+                else {
+                    this.push('_items', item);
+                    this._renderedIndex = 0;
+                }
+
             },
 
             _onItemsDomChange: function() {
@@ -722,6 +737,10 @@ Custom property | Description | Default
             remove: function(item) {
                 var index = this._items.indexOf(item);
                 this.splice('_items', index, 1);
+
+                if (this._items.length === 0) {
+                    this._itemsEmpty = true;
+                }
             }
         });
     </script>

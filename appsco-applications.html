@@ -95,6 +95,7 @@ Custom property | Description | Default
                     auto
                     id="applicationsApiRequest"
                     url="{{ _currentUrl }}"
+                    on-error="_onError"
                     on-response="_handleResponse"
                     headers="{{ _computedHeaders }}"
                     debounce-duration="300"
@@ -103,7 +104,7 @@ Custom property | Description | Default
             <paper-progress id="paperProgress" indeterminate></paper-progress>
 
             <template is="dom-if" if="[[ _applicationsEmpty ]]">
-                <p class="message">There are no applications with asked term.</p>
+                <p class="message">There are no asked applications.</p>
             </template>
 
             <template is="dom-if" if="[[ !_applicationsEmpty ]]">
@@ -221,6 +222,16 @@ Custom property | Description | Default
                 this.$$('#paperProgress').hidden = false;
                 this._currentUrl = this._next;
             },
+
+            _onError: function(event) {
+                this._applicationsEmpty = true;
+                this._hideProgressBar();
+
+                this.fire('load-failed', {
+                    error: event.detail.error
+                });
+            },
+
             _handleResponse: function (e) {
                 var me = this,
                         response = e.detail.response,

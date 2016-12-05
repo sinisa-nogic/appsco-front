@@ -196,7 +196,8 @@
                         on-edit="_onApplicationEdit"
                         on-application="_onApplication"
                         on-application-removed="_onApplicationRemoved"
-                        ></appsco-applications>
+                        on-loaded="_pageLoaded"
+                        on-load-failed="_pageLoaded"></appsco-applications>
             </div>
 
             <div class="flex-vertical" info>
@@ -384,6 +385,11 @@
                             }
                         }
                     }
+                },
+
+                pageLoaded: {
+                    type: Boolean,
+                    value: false
                 }
             },
 
@@ -397,6 +403,8 @@
 
             attached: function() {
 
+                this.pageLoaded = false;
+
                 if (this.mobileScreen || this.tabletScreen || this.tabletS1024Screen || this.tabletS1280Screen || this.laptopScreen) {
                     this.updateStyles();
                 }
@@ -409,6 +417,11 @@
 
             _computeApplicationShared: function(application) {
                 return application && !application.owner;
+            },
+
+            _pageLoaded: function() {
+                this.pageLoaded = true;
+                this.fire('page-loaded');
             },
 
             _showInfo: function() {
@@ -441,11 +454,11 @@
 
             _onApplicationEdit: function(event) {
                 this.set('application', event.detail.application);
-                this._onApplicationInfoEdit();
+                this.fire('edit-application');
             },
 
             _onApplicationInfoEdit: function() {
-                this.fire('edit-application');
+                this.fire('info-edit-application');
             },
 
             _onApplication: function(event) {

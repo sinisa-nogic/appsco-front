@@ -114,7 +114,7 @@
         <iron-media-query query="(max-width: 800px)" query-matches="{{ mobileScreen }}"></iron-media-query>
 
         <div class="details-subscribers">
-            <paper-card heading="Details" class="appsco-application-details">
+            <paper-card heading="Settings" class="appsco-application-details">
                 <div class="card-content">
                     <appsco-application-details
                             application="{{ application }}">
@@ -122,7 +122,7 @@
                 </div>
 
                 <div class="card-actions">
-                    <paper-button on-tap="_onApplicationSettings">SETTINGS</paper-button>
+                    <paper-button on-tap="_onManageApplicationSettings">Manage</paper-button>
                 </div>
             </paper-card>
 
@@ -162,10 +162,24 @@
                     <appsco-application-autologin
                             application="[[ application ]]"
                             authorization-token="[[ authorizationToken ]]"
+                            on-autologin-unavailable="_onAutologinUnavailable"
                             on-autologin-changed="_onAutologinChanged"></appsco-application-autologin>
-                    <p>
-                        To set up Appsco to use an alternate sign on method turn on Auto Login for this application.
-                    </p>
+
+                    <template is="dom-if" if="[[ _autologinUnavailable ]]">
+                        <p>Auto Login sign on method for this application is unavailable.</p>
+                    </template>
+
+                    <template is="dom-if" if="[[ !_autologinUnavailable ]]">
+
+                        <template is="dom-if" if="[[ _autologinItem ]]">
+                            <p>Turn on Auto Login to automate sign-in process.</p>
+                        </template>
+
+                        <template is="dom-if" if="[[ !_autologinItem ]]">
+                            <p>Turn off Auto Login if you prefer to choose login account manually after application opens in browser.</p>
+                        </template>
+
+                    </template>
                 </div>
             </paper-card>
         </div>
@@ -176,8 +190,7 @@
                         id="appscoApplicationLog"
                         size="5"
                         application="[[ application ]]"
-                        authorization-token="[[ authorizationToken ]]">
-                </appsco-application-log>
+                        authorization-token="[[ authorizationToken ]]"></appsco-application-log>
             </div>
 
             <div class="card-actions">
@@ -223,7 +236,18 @@
                     value: function() {
                         return {};
                     },
-                    notify: true
+                    notify: true,
+                    observer: '_onApplicationChanged'
+                },
+
+                _autologinUnavailable: {
+                    type: Boolean,
+                    value: false
+                },
+
+                _autologinItem: {
+                    type: Boolean,
+                    value: false
                 },
 
                 /**
@@ -278,7 +302,12 @@
                 };
             },
 
-            _onApplicationSettings: function(event) {
+            _onApplicationChanged: function() {
+                this._autologinUnavailable = false;
+                this._autologinItem = this.application.auth_type == 'item';
+            },
+
+            _onManageApplicationSettings: function(event) {
                 this._setSharedElement(event.target);
                 this.fire('application-settings');
             },
@@ -293,7 +322,13 @@
                 this.fire('all-log');
             },
 
+            _onAutologinUnavailable: function() {
+                this._autologinUnavailable = true;
+            },
+
             _onAutologinChanged: function() {
+                this._autologinItem = !this._autologinItem;
+
                 this.$.appscoApplicationLog.load();
             }
         });

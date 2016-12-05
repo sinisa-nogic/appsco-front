@@ -26,6 +26,7 @@
 <link rel="import" href="../bower_components/paper-item/paper-item.html">
 <link rel="import" href="../bower_components/paper-dropdown-menu/paper-dropdown-menu.html">
 <link rel="import" href="../bower_components/paper-toast/paper-toast.html">
+<link rel="import" href="../bower_components/paper-progress/paper-progress.html">
 
 <link rel="import" href="../bower_components/appsco-header/appsco-header.html">
 <link rel="import" href="../bower_components/appsco-header/appsco-account-chat.html">
@@ -73,7 +74,6 @@
                 --border-radius-base: 3px;
 
                 --paper-progress-active-color: var(--success-color);
-
 
                 --paper-listbox: {
                      padding: 0;
@@ -148,6 +148,14 @@
                 --log-item-image-contain: {
                      border-radius: 50%;
                  };
+
+                --application-action: {
+                     height: 32px;
+                 };
+
+                --applications-progress-bar: {
+                     display: none;
+                 };
             }
 
             /* Top header style START */
@@ -160,9 +168,12 @@
 
                 --appsco-account-action-color: #ffffff;
 
+                --appsco-brand: {
+                     display: block;
+                 };
                 --appsco-product: {
                      height: 32px;
-                     line-height: 36px;
+                     line-height: 35px;
                  };
 
                 --paper-listbox: {
@@ -243,10 +254,16 @@
             .pages {
                 height: 100%;
             }
-            .menuText {
+            .menu-text {
                 display: inline-block;
                 vertical-align: middle;
-                padding-left:8px;
+                padding-left: 8px;
+            }
+            :host paper-progress {
+                width: 100%;
+                position: absolute;
+                top: 64px;
+                left: 0;
             }
         </style>
 
@@ -281,43 +298,43 @@
             <app-drawer id="appDrawer">
                 <iron-selector selected="[[page]]" attr-for-selected="name" class="drawer-list" role="navigation">
                     <div head>
-                        <span class="menuText">Personal</span>
+                        <span class="menu-text">Personal</span>
                     </div>
                     <a name="home" href="/home">
-                        <iron-icon icon="icons:home"></iron-icon> <span class="menuText">Home</span>
+                        <iron-icon icon="icons:home"></iron-icon> <span class="menu-text">Home</span>
                     </a>
                     <a name="account" href="/account">
-                        <iron-icon icon="icons:perm-identity"></iron-icon> <span class="menuText">Account</span>
+                        <iron-icon icon="icons:perm-identity"></iron-icon> <span class="menu-text">Account</span>
                     </a>
                     <a name="vault" href="/vault">
-                        <iron-icon icon="icons:work"></iron-icon> <span class="menuText">Vault</span>
+                        <iron-icon icon="icons:work"></iron-icon> <span class="menu-text">Vault</span>
                     </a>
                     <div>
                         <br>
                     </div>
                     <div head>
-                        <span class="menuText">Business</span>
+                        <span class="menu-text">Business</span>
                     </div>
                     <div name="vault" href="/vault" disabled>
-                        <iron-icon icon="icons:apps"></iron-icon> <span class="menuText">Applications</span>
+                        <iron-icon icon="icons:apps"></iron-icon> <span class="menu-text">Applications</span>
                     </div>
                     <div name="vault" href="/vault" disabled>
-                        <iron-icon icon="icons:supervisor-account"></iron-icon> <span class="menuText">Directory</span>
+                        <iron-icon icon="icons:supervisor-account"></iron-icon> <span class="menu-text">Directory</span>
                         <!--icons:folder-shared-->
                     </div>
                     <div name="vault" href="/vault" disabled>
-                        <iron-icon icon="icons:compare-arrows"></iron-icon> <span class="menuText">Provisioning</span>
+                        <iron-icon icon="icons:compare-arrows"></iron-icon> <span class="menu-text">Provisioning</span>
                     </div>
                     <div name="vault" href="/vault" disabled>
-                        <iron-icon icon="icons:reorder"></iron-icon> <span class="menuText">Audit</span>
+                        <iron-icon icon="icons:reorder"></iron-icon> <span class="menu-text">Audit</span>
                     </div>
                     <div name="vault" href="/vault" disabled>
-                        <iron-icon icon="icons:donut-large"></iron-icon> <span class="menuText">Statistics</span>
+                        <iron-icon icon="icons:donut-large"></iron-icon> <span class="menu-text">Statistics</span>
                         <!--icons:track-changes-->
                         <!--icons:trending-up-->
                     </div>
                     <div name="vault" href="/vault" disabled>
-                        <iron-icon icon="icons:payment"></iron-icon> <span class="menuText">Billing</span>
+                        <iron-icon icon="icons:payment"></iron-icon> <span class="menu-text">Billing</span>
                     </div>
                 </iron-selector>
             </app-drawer>
@@ -368,6 +385,8 @@
                     </app-toolbar>
                 </app-header>
 
+                <paper-progress id="pageProgress" indeterminate></paper-progress>
+
                 <neon-animated-pages
                         class="pages"
                         selected="[[page]]"
@@ -384,8 +403,9 @@
                             applications-api="[[ applicationsApi ]]"
                             on-loaded="_onLoadedApplications"
                             on-edit-application="_onEditApplication"
-                            on-share-application="_onShareApplication">
-                    </appsco-home-page>
+                            on-info-edit-application="_onInfoEditApplication"
+                            on-share-application="_onShareApplication"
+                            on-page-loaded="_onPageLoaded"></appsco-home-page>
 
                     <appsco-application-page
                             id="appscoApplicationPage"
@@ -403,8 +423,8 @@
                             on-application-settings-saved="_onApplicationSettingsSaved"
                             on-application-settings-no-changes="_onApplicationSettingsNoChanges"
                             on-autologin-changed="_onAutologinChanged"
-                            on-error="_onError">
-                    </appsco-application-page>
+                            on-error="_onError"
+                            on-page-loaded="_onPageLoaded"></appsco-application-page>
 
                     <appsco-account-page
                             id="appscoAccountPage"
@@ -429,7 +449,7 @@
                             on-enable-advanced-settings="_onEnableAdvancedSettings"
                             on-twofa-enabled="_onTwoFaEnabled"
                             on-twofa-disabled="_onTwoFaDisabled"
-                    ></appsco-account-page>
+                            on-page-loaded="_onPageLoaded"></appsco-account-page>
 
                     <appsco-vault-page
                             id="appscoVaultPage"
@@ -437,8 +457,9 @@
                             authorization-token="[[ authorizationToken ]]"
                             api="[[ api ]]"
                             on-loaded="_onLoadedVaultItems"
-                            on-edit="_onEditVaultItem"
-                            on-remove-vault-item="_onRemoveVaultItem">
+                            on-edit="_onEditVaultAction"
+                            on-remove-vault-item="_onRemoveVaultAction"
+                            on-page-loaded="_onPageLoaded">
                     </appsco-vault-page>
 
                     <appsco-not-found-page name="404"></appsco-not-found-page>
@@ -636,6 +657,9 @@
             },
 
             _pageChanged: function(page) {
+
+                this._setProgressBar(page);
+
                 // Load page import on demand. Show 404 page if fails
                 var resolvedPageUrl = this.resolveUrl('appsco-' + page + '-page.html');
 
@@ -682,8 +706,9 @@
             },
 
             _onDashboardsResponse: function(event) {
+                var response = event.detail.response;
 
-                if (event.detail.response) {
+                if (response && response.meta.total > 0) {
                     this.addAppApi = event.detail.response.dashboards[0].self;
                 }
 
@@ -761,6 +786,10 @@
 
             _onEditApplication: function() {
                 this.set('route.path', 'application/' + this.application.alias);
+            },
+
+            _onInfoEditApplication: function() {
+                this._onEditApplication();
             },
             /**
              * Home page END
@@ -924,18 +953,17 @@
             _onAddVaultAction: function(event) {
                 var appscoVaultItemManage = this.$.appscoVaultItemManage;
 
-                appscoVaultItemManage.set('item', {});
                 appscoVaultItemManage.open(event.detail.action);
             },
 
-            _onEditVaultItem: function(event) {
+            _onEditVaultAction: function(event) {
                 var appscoVaultItemManage = this.$.appscoVaultItemManage;
 
                 appscoVaultItemManage.set('item', event.detail.item);
                 appscoVaultItemManage.open(event.detail.item.vaultType);
             },
 
-            _onRemoveVaultItem: function(event) {
+            _onRemoveVaultAction: function(event) {
                 var appscoVaultItemRemove = this.$.appscoVaultItemRemove;
 
                 appscoVaultItemRemove.item = event.detail.item;
@@ -967,6 +995,47 @@
             /**
              * Global START
              */
+            _setProgressBar: function(page) {
+
+                switch (page) {
+                    case 'home':
+//                        // Hide it because appsco-application component has its own progress bar.
+//                        this._hideProgressBar();
+
+                        this.$.appscoHomePage.pageLoaded ? this._hideProgressBar() : this._showProgressBar();
+                        break;
+
+                    case 'application':
+                        this.$.appscoApplicationPage.pageLoaded ? this._hideProgressBar() : this._showProgressBar();
+                        break;
+
+                    case 'account':
+                        this.$.appscoAccountPage.pageLoaded ? this._hideProgressBar() : this._showProgressBar();
+                        break;
+
+                    case 'vault':
+                        this.$.appscoVaultPage.pageLoaded ? this._hideProgressBar() : this._showProgressBar();
+                        break;
+                }
+
+            },
+
+            _onPageLoaded: function() {
+                this._hideProgressBar();
+            },
+
+            _showProgressBar: function() {
+                this.$.pageProgress.hidden = false;
+            },
+
+            _hideProgressBar: function() {
+
+                setTimeout(function() {
+                    this.$.pageProgress.hidden = true;
+                }.bind(this), 1000);
+
+            },
+
             _onPageAnimationFinish: function(event) {
                 var fromPage = event.detail.fromPage,
                     toPage = event.detail.toPage;
@@ -995,9 +1064,6 @@
                             toPage.setDefaultApplication();
                         }
 
-                        break;
-
-                    case 'application':
                         break;
 
                     default:

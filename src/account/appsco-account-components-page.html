@@ -75,6 +75,15 @@
                 --account-detail-container: {
                      margin: 4px 0;
                  };
+
+                --account-details-label: {
+                     font-size: 12px;
+                     line-height: 16px;
+                 };
+                --account-details-value: {
+                     font-size: 14px;
+                     line-height: 22px;
+                 };
             }
             .icon-enabled {
                 --iron-icon-fill-color: var(--icon-success-color, #0f9d58);
@@ -100,8 +109,14 @@
                 --appsco-account-notifications-paper-progress: {
                      top: 4px;
                  };
+                --account-notifications-appsco-list-item: {
+                     padding: 16px 6px 6px 6px;
+                 };
                 --account-notifications-appsco-list-item-first: {
                      border-top: none;
+                 };
+                --appsco-list-item-date: {
+                     top: 2px;
                  };
             }
             appsco-account-authorized-apps {
@@ -126,8 +141,14 @@
                 --account-log-paper-progress: {
                      top: 4px;
                  };
+                --appsco-account-log-item: {
+                     padding: 16px 6px 8px 6px;
+                 };
                 --appsco-account-log-item-first: {
                      border-top: none;
+                 };
+                --log-item-date: {
+                     top: 2px;
                  };
             }
             appsco-account-partner {
@@ -150,10 +171,31 @@
             :host([medium-screen]) .notifications-authorized-apps {
                 margin-right: 0;
             }
-            :host([mobile-screen]) > * {
+            :host([medium-screen]) > .log-partner {
+                @apply(--layout-horizontal);
+                @apply(--layout-start);
                 width: 100%;
             }
-            :host([mobile-screen]) .details-2fa {
+            :host([medium-screen]) > .log-partner paper-card {
+                @apply(--layout-flex);
+            }
+            :host([medium-screen]) > .log-partner .appsco-account-log {
+                margin-right: 20px;
+            }
+            :host([tablet-screen]) > .log-partner {
+                @apply(--layout-vertical);
+            }
+            :host([tablet-screen]) > .log-partner paper-card {
+                @apply(--layout-flex-none);
+                width: 100%;
+            }
+            :host([tablet-screen]) > .log-partner .appsco-account-log {
+                margin-right: 0;
+            }
+            :host([tablet-screen]) > * {
+                width: 100%;
+            }
+            :host([tablet-screen]) .details-2fa {
                 margin-right: 0;
             }
             .appsco-account-authorized-apps, .appsco-account-partner {
@@ -196,7 +238,7 @@
         </style>
 
         <iron-media-query query="(max-width: 1200px)" query-matches="{{ mediumScreen }}"></iron-media-query>
-        <iron-media-query query="(max-width: 800px)" query-matches="{{ mobileScreen }}"></iron-media-query>
+        <iron-media-query query="(max-width: 800px)" query-matches="{{ tabletScreen }}"></iron-media-query>
 
         <iron-ajax
                 auto
@@ -207,7 +249,7 @@
         </iron-ajax>
 
         <div class="details-2fa">
-            <paper-card heading="Details"
+            <paper-card heading="Settings"
                         class="appsco-account-details">
                 <div class="card-content">
                     <appsco-account-details
@@ -216,7 +258,7 @@
                 </div>
 
                 <div class="card-actions">
-                    <paper-button on-tap="_onAccountSettings">Settings</paper-button>
+                    <paper-button on-tap="_onAccountManageSettings">Manage</paper-button>
                 </div>
             </paper-card>
 
@@ -432,7 +474,7 @@
                     reflectToAttribute: true
                 },
 
-                mobileScreen: {
+                tabletScreen: {
                     type: Boolean,
                     value: false,
                     reflectToAttribute: true
@@ -474,13 +516,26 @@
                 Polymer.NeonSharedElementAnimatableBehavior
             ],
 
+            observers: [
+                '_updateScreen(tabletScreen, mediumScreen)'
+            ],
+
             attached: function() {
+
+                if (this.tabletScreen || this.mediumScreen) {
+                    this.updateStyles();
+                }
+
                 this._loadNotifications();
                 this.loadLog();
 
                 if (this._advancedSettings) {
                     this.loadAuthorizedApps();
                 }
+            },
+
+            _updateScreen: function(tablet, medium) {
+                this.updateStyles();
             },
 
             /**
@@ -577,7 +632,7 @@
                 this._twoFAEnabled = event.detail.response.enabled;
             },
 
-            _onAccountSettings: function(event) {
+            _onAccountManageSettings: function(event) {
                 this._setSharedElement(event.target);
                 this.fire('account-settings');
             },

@@ -30,7 +30,7 @@ Custom property | Description | Default
             :host {
                 display: inline-block;
                 position: relative;
-                @apply(--appsco-application-autologin);
+            @apply(--appsco-application-autologin);
             }
             :host paper-toggle-button {
                 cursor: pointer;
@@ -49,7 +49,9 @@ Custom property | Description | Default
                  */
                 application: {
                     type: Object,
-                    value: {},
+                    value: function() {
+                        return {};
+                    },
                     notify: true
                 },
                 authorizationToken: {
@@ -83,12 +85,16 @@ Custom property | Description | Default
                         headers: {
                             "Authorization": "token " + this.authorizationToken
                         }
-                    }).then(function () {
-                        if("item" in appRequest.response.application.auth_types &&
+                    }).then(function() {
+
+                        if ("item" in appRequest.response.application.auth_types &&
                                 "unpw" in appRequest.response.application.auth_types
                         ) {
                             me.$.switch.disabled = false;
+                            return false;
                         }
+
+                        me.fire('autologin-unavailable');
                     });
                 }
             },
@@ -109,7 +115,6 @@ Custom property | Description | Default
 
                 request.send(options).then(function() {
                     me.$.switch.disabled = false;
-
                     this.fire('autologin-changed');
                 }.bind(this));
             }

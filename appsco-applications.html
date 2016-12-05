@@ -26,6 +26,7 @@ Custom property | Description | Default
 `--appsco-applications-item` | Mixin for item style | `{}`
 `--appsco-applications` | Mixin for the root element | `{}`
 `--applications-container` | Mixin for the applications container | `{}`
+`--applications-progress-bar` | Mixin applied to paper-progress for application list | `{}`
 
 @demo demo/appsco-applications.html
 -->
@@ -36,25 +37,25 @@ Custom property | Description | Default
             :host {
                 display: inline-block;
                 position: relative;
-                @apply(--appsco-applications);
-                @apply(--layout-vertical);
-                @apply(--layout-center);
+            @apply(--appsco-applications);
+            @apply(--layout-vertical);
+            @apply(--layout-center);
 
                 --paper-progress-container-color: var(--body-background-color);
                 --paper-progress-height: 2px;
             }
 
             :host div[applications] {
-                @apply(--layout-horizontal);
-                @apply(--layout-wrap);
-                @apply(--layout-start);
+            @apply(--layout-horizontal);
+            @apply(--layout-wrap);
+            @apply(--layout-start);
                 margin-right: -10px;
-                @apply(--applications-container);
+            @apply(--applications-container);
             }
 
             :host appsco-application-item {
                 margin: 0 10px 10px 0;
-                @apply(--appsco-applications-item);
+            @apply(--appsco-applications-item);
             }
 
             :host .applications-container {
@@ -77,6 +78,7 @@ Custom property | Description | Default
                 position: absolute;
                 top: 0;
                 left: 0;
+            @apply(--applications-progress-bar);
             }
             :host paper-button {
                 padding: 6px 12px;
@@ -93,6 +95,7 @@ Custom property | Description | Default
                     auto
                     id="applicationsApiRequest"
                     url="{{ _currentUrl }}"
+                    on-error="_onError"
                     on-response="_handleResponse"
                     headers="{{ _computedHeaders }}"
                     debounce-duration="300"
@@ -101,7 +104,7 @@ Custom property | Description | Default
             <paper-progress id="paperProgress" indeterminate></paper-progress>
 
             <template is="dom-if" if="[[ _applicationsEmpty ]]">
-                <p class="message">There are no applications with asked term.</p>
+                <p class="message">There are no asked applications.</p>
             </template>
 
             <template is="dom-if" if="[[ !_applicationsEmpty ]]">
@@ -219,12 +222,22 @@ Custom property | Description | Default
                 this.$$('#paperProgress').hidden = false;
                 this._currentUrl = this._next;
             },
+
+            _onError: function(event) {
+                this._applicationsEmpty = true;
+                this._hideProgressBar();
+
+                this.fire('load-failed', {
+                    error: event.detail.error
+                });
+            },
+
             _handleResponse: function (e) {
                 var me = this,
-                    response = e.detail.response,
-                    icons = response.icons,
-                    meta = response.meta,
-                    iconsCount = icons.length - 1;
+                        response = e.detail.response,
+                        icons = response.icons,
+                        meta = response.meta,
+                        iconsCount = icons.length - 1;
 
                 this._totalApplications = meta.total;
                 this._next = meta.next + "&limit=" + this.size;
@@ -236,7 +249,7 @@ Custom property | Description | Default
                 }
 
                 me._applicationsEmpty = false;
-                
+
                 icons.forEach(function (el, index) {
 
                     setTimeout( function() {

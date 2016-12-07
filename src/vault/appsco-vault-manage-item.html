@@ -3,6 +3,7 @@
 <link rel="import" href="../../bower_components/paper-dialog-scrollable/paper-dialog-scrollable.html">
 <link rel="import" href="../../bower_components/neon-animation/animations/fade-out-animation.html">
 <link rel="import" href="../../bower_components/neon-animation/animations/scale-up-animation.html">
+<link rel="import" href="../../bower_components/iron-media-query/iron-media-query.html">
 
 <link rel="import" href="../../bower_components/appsco-vault/appsco-vault-login.html">
 <link rel="import" href="../../bower_components/appsco-vault/appsco-vault-credit-card.html">
@@ -44,7 +45,26 @@
             :host .buttons paper-button[dialog-dismiss] {
                 @apply(--paper-dialog-dismiss-button);
             }
+            :host([tablet-screen]) paper-dialog {
+                width: 90%;
+            }
+            :host([mobile-screen]) {
+                --vault-form-responsive: {
+                    @apply(--layout-vertical);
+                 };
+
+                --form-responsive-section-left: {
+                     padding-right: 0;
+                 };
+
+                --form-responsive-section-right: {
+                     padding-left: 0;
+                 };
+            }
         </style>
+
+        <iron-media-query query="(max-width: 800px)" query-matches="{{ tabletScreen }}"></iron-media-query>
+        <iron-media-query query="(max-width: 600px)" query-matches="{{ mobileScreen }}"></iron-media-query>
 
         <paper-dialog
                 with-backdrop
@@ -264,7 +284,35 @@
                 api: {
                     type: Object,
                     notify: true
+                },
+
+                tabletScreen: {
+                    type: Boolean,
+                    value: false,
+                    reflectToAttribute: true
+                },
+
+                mobileScreen: {
+                    type: Boolean,
+                    value: false,
+                    reflectToAttribute: true
                 }
+            },
+
+            observers: [
+                '_updateScreen(mobileScreen, tabletScreen)'
+            ],
+
+            attached: function() {
+
+                if (this.mobileScreen || this.tabletScreen) {
+                    this.updateStyles();
+                }
+
+            },
+
+            _updateScreen: function(mobile, tablet) {
+                this.updateStyles();
             },
 
             open: function (action) {

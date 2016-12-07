@@ -14,6 +14,7 @@
 <link rel="import" href="../bower_components/iron-selector/iron-selector.html">
 <link rel="import" href="../bower_components/iron-flex-layout/iron-flex-layout.html">
 <link rel="import" href="../bower_components/iron-ajax/iron-ajax.html">
+<link rel="import" href="../bower_components/iron-media-query/iron-media-query.html">
 
 <link rel="import" href="../bower_components/neon-animation/neon-animated-pages.html">
 <link rel="import" href="../bower_components/neon-animation/animations/fade-in-animation.html">
@@ -108,6 +109,12 @@
                     height: 24px;
                     margin-right: 6px;
                     color: var(--primary-text-color);
+                 };
+
+                --application-details-icon-button: {
+                     padding: 4px;
+                     width: 24px;
+                     height: 24px;
                  };
 
                 --appsco-copy-action: {
@@ -241,6 +248,9 @@
                      background: var(--body-background-color);
                  };
             }
+            app-drawer iron-icon {
+                --iron-icon-fill-color: var(--app-primary-color-dark);
+            }
             app-toolbar {
                 padding: 0 10px;
             }
@@ -265,7 +275,18 @@
                 top: 64px;
                 left: 0;
             }
+            :host([mobile-screen]) {
+                --appsco-account-notifications-dropdown: {
+                     width: 300px;
+                 };
+
+                --appsco-account-info-dropdown: {
+                     width: 300px;
+                 };
+            }
         </style>
+
+        <iron-media-query query="(max-width: 600px)" query-matches="{{ mobileScreen }}"></iron-media-query>
 
         <appsco-api id="api" domain="https://my-dev.appsco.com" index="" name="{{ api }}"></appsco-api>
         <app-location route="{{route}}"></app-location>
@@ -405,6 +426,7 @@
                             on-edit-application="_onEditApplication"
                             on-info-edit-application="_onInfoEditApplication"
                             on-share-application="_onShareApplication"
+                            on-filter-done="_onPageLoaded"
                             on-page-loaded="_onPageLoaded"></appsco-home-page>
 
                     <appsco-application-page
@@ -634,15 +656,34 @@
                 _toastMessage: {
                     type: String,
                     value: ''
+                },
+
+                mobileScreen: {
+                    type: Boolean,
+                    value: false,
+                    reflectToAttribute: true
                 }
             },
 
             observers: [
+                '_updateScreen(mobileScreen)',
                 '_routePageChanged(routeData.page)'
             ],
 
             listeners: {
                 'api-changed': "_apiChanged"
+            },
+
+            attached: function() {
+
+                if (this.mobileScreen) {
+                    this.updateStyles();
+                }
+
+            },
+
+            _updateScreen: function(mobile) {
+                this.updateStyles();
             },
 
             _apiChanged: function() {
@@ -756,11 +797,14 @@
             },
 
             _searchApplications: function(event) {
+                this._showProgressBar();
                 this.$.appscoHomePage.filterApplicationsByTerm(event.detail.term);
             },
 
             _onGroupSelected: function(event) {
                 var id = parseInt(event.detail.id);
+
+                this._showProgressBar();
 
                 switch(id) {
                     case 0:

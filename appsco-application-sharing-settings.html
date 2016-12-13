@@ -1,0 +1,402 @@
+<link rel="import" href="../polymer/polymer.html">
+<link rel="import" href="../iron-flex-layout/iron-flex-layout.html">
+<link rel="import" href="../paper-input/paper-textarea.html">
+<link rel="import" href="../paper-button/paper-button.html">
+<link rel="import" href="../iron-ajax/iron-request.html">
+<link rel="import" href="../iron-form/iron-form.html">
+<link rel="import" href="../paper-input/paper-input.html">
+<link rel="import" href="../paper-toggle-button/paper-toggle-button.html">
+<link rel="import" href="../iron-a11y-keys/iron-a11y-keys.html">
+<link rel="import" href="../neon-animation/neon-animation-runner-behavior.html">
+<link rel="import" href="../neon-animation/animations/scale-down-animation.html">
+<link rel="import" href="../neon-animation/animations/scale-up-animation.html">
+
+<link rel="import" href="../appsco-components/appsco-loader.html">
+<link rel="import" href="../appsco-components/appsco-form-error.html">
+
+<!--
+`appsco-application-sharing-settings`
+Is used to present application sharing settings.
+
+Example:
+    <body>
+        <appsco-application-sharing-settings
+            application="{}"></appsco-application-sharing-settings>
+
+
+### Styling
+
+`<appsco-application-sharing-settings>` provides the following custom properties and mixins for styling:
+
+Custom property | Description | Default
+----------------|-------------|----------
+`--appsco-application-sharing-settings` | Mixin for the root element | `{}`
+
+@demo demo/appsco-application-sharing-settings.html
+-->
+
+<dom-module id="appsco-application-sharing-settings">
+    <template>
+        <style>
+            :host {
+                display: block;
+                @apply(--appsco-application-sharing-settings);
+            }
+            :host paper-toggle-button {
+                cursor: pointer;
+            }
+            :host paper-toggle-button[disabled] {
+                opacity: 0.6;
+            }
+            :host .sharing-settings-form {
+                display: none;
+                margin-top: 10px;
+            }
+            :host .submit-button {
+                margin: 20px 0 0 0;
+            }
+            :host .info {
+                margin-top: 10px;
+            }
+            :host p {
+                margin-top: 4px;
+                margin-bottom: 4px;
+            }
+        </style>
+
+        <appsco-loader active="[[ _loader ]]" loader-alt="Appsco is saving settings" multi-color></appsco-loader>
+
+        <appsco-form-error message="[[ _error ]]"></appsco-form-error>
+
+        <paper-toggle-button id="setByUser"
+                             active$="[[ _setByUser ]]"
+                             disabled$="[[ !_computedAuthTypes ]]"
+                             on-change="_onChangeSetByUser">Set by user</paper-toggle-button>
+
+        <div class="info">
+            <template is="dom-if" if="[[ _setByUser ]]">
+                <p>Every user sets its own configuration.</p>
+                <p>Disable it in order to manage application configuration for all users.</p>
+            </template>
+
+            <template is="dom-if" if="[[ !_computedAuthTypes ]]">
+                <p>This application can't be set by user.</p>
+            </template>
+        </div>
+
+        <!--action="{{ _computedAction }}"-->
+        <form is="iron-form"
+              id="saveSharingSettingsForm"
+              class="sharing-settings-form"
+              method="POST"
+              action="[[ application.self ]]"
+              headers="{{ _computedHeaders }}"
+              on-iron-form-presubmit="_onFormPresubmit"
+              on-iron-form-error="_onFormError"
+              on-iron-form-response="_onFormResponse"
+              on-keyup="_onInputKeyUp">
+
+            <paper-input
+                    id="username"
+                    label="username"
+                    value="{{ application.claims.username }}"
+                    name="icon_claims[username]"></paper-input>
+            <paper-input
+                    id="password"
+                    label="password"
+                    type="password"
+                    value="{{ application.claims.password }}"
+                    name="icon_claims[password]"></paper-input>
+            <paper-textarea
+                    id="note"
+                    label="note"
+                    value="{{ application.claims.note }}"
+                    name="icon_claims[note]"></paper-textarea>
+
+            <paper-button class="submit-button"
+                          on-tap="_submit">Save</paper-button>
+
+        </form>
+
+        <iron-a11y-keys target="[[ _target ]]"
+                        keys="enter"
+                        on-keys-pressed="_onEnter"></iron-a11y-keys>
+
+    </template>
+
+    <script>
+        Polymer({
+
+            is: 'appsco-application-sharing-settings',
+
+            properties: {
+
+                /**
+                 * Application to add.
+                 */
+                application: {
+                    type: Object,
+                    notify: true
+                },
+
+                /**
+                 * Authorization token.
+                 */
+                authorizationToken: {
+                    type: String
+                },
+
+                /**
+                 * Computed action to call in order to save application as icon.
+                 */
+                _computedAction: {
+                    type: String,
+                    computed: "_computeAction(application)"
+                },
+
+                /**
+                 * Computed headers.
+                 * It contains authorization token.
+                 */
+                _computedHeaders: {
+                    type: Object,
+                    computed: "_computeHeaders(authorizationToken)"
+                },
+
+                _setByUser: {
+                    type: Boolean,
+                    value: false,
+                    observer: '_handleClaimsForm'
+                },
+
+                /**
+                 * Computed auth types.
+                 * It returns true if application has auth type: item or unpw.
+                 */
+                _computedAuthTypes: {
+                    type: Boolean,
+                    computed: "_computeAuthTypes(application)"
+                },
+
+                /**
+                 * Target for iron-a11y-keys component.
+                 * Submit form on enter.
+                 */
+                _target: {
+                    type: Object,
+                    value: function() {
+                        return this.$.saveSharingSettingsForm
+                    }
+                },
+
+                /**
+                 * Indicates if appsco loader should be displayed.
+                 */
+                _loader: {
+                    type: Boolean,
+                    value: false
+                },
+
+                /**
+                 * Error message for settings form.
+                 */
+                _error: {
+                    type: String
+                },
+
+                /**
+                 * Animation config with hero animation.
+                 */
+                animationConfig: {
+                    value: function() {
+                        return {
+                            'entry': {
+                                name: 'scale-up-animation',
+                                node: this.$.saveSharingSettingsForm,
+                                transformOrigin: '0 0',
+                                axis: 'y',
+                                timing: {
+                                    duration: 200
+                                }
+                            },
+                            'exit': {
+                                name: 'scale-down-animation',
+                                node: this.$.saveSharingSettingsForm,
+                                transformOrigin: '0 0',
+                                axis: 'y',
+                                timing: {
+                                    duration: 100
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+
+            behaviors: [
+                Polymer.NeonAnimationRunnerBehavior
+            ],
+
+            listeners: {
+                'application-changed': '_onApplicationChanged',
+                'neon-animation-finish': '_onNeonAnimationFinish'
+            },
+
+            /**
+             * Computes action for saving application as icon.
+             *
+             * @param {Object} application
+             * @returns {string}
+             * @private
+             */
+            _computeAction: function(application) {
+                return application.self;
+            },
+
+            /**
+             * Computes authorization headers.
+             *
+             * @param {Object} authorizationToken
+             * @returns {{Authorization: string}}
+             * @private
+             */
+            _computeHeaders: function(authorizationToken) {
+                return {
+                    'Authorization': 'token ' + authorizationToken
+                }
+            },
+
+            /**
+             * Computes auth types of application.
+             *
+             * @param {Object} application
+             * @returns Boolean
+             * @private
+             */
+            _computeAuthTypes: function(application) {
+                return (application.auth_type === 'item' || application.auth_type === 'unpw');
+            },
+
+            _onApplicationChanged: function(application) {
+                this._setByUser = (application.claimType === 'individual');
+            },
+
+            _onChangeSetByUser: function() {
+                var request = document.createElement('iron-request');
+
+                this._loader = true;
+                this.$.setByUser.disabled = true;
+
+                var options = {
+                    url: this.application.meta.setByUser,
+                    method: "POST",
+                    handleAs: 'json',
+                    headers: this._computedHeaders
+                };
+
+                request.send(options).then(function() {
+
+                    this._setByUser = !this._setByUser;
+                    this.$.setByUser.disabled = false;
+                    this._loader = false;
+
+                }.bind(this));
+            },
+
+            _handleClaimsForm: function() {
+
+                if (this._setByUser) {
+                    this.reset();
+                    this._hideClaimsForm();
+                }
+                else {
+                    this._showClaimsForm();
+                }
+
+            },
+
+            _showClaimsForm: function() {
+                this.$.saveSharingSettingsForm.style.display = 'block';
+                this.playAnimation('entry');
+            },
+
+            _hideClaimsForm: function() {
+                this.playAnimation('exit');
+            },
+
+            _onNeonAnimationFinish: function() {
+
+                if (this._setByUser) {
+                    this.$.saveSharingSettingsForm.style.display = 'none';
+                }
+
+            },
+
+            /**
+             * Submits form on ENTER key using iron-a11y-keys component.
+             *
+             * @private
+             */
+            _onEnter: function() {
+                this._submit();
+            },
+
+            /**
+             * Saves application configuration and claims.
+             *
+             * @private
+             */
+            _submit: function() {
+                this.$.saveSharingSettingsForm.submit();
+            },
+
+            _onFormPresubmit: function() {
+                this._loader = true;
+                this.$.saveSharingSettingsForm.request.method = 'PATCH';
+            },
+
+            /**
+             * Called on form error when trying to save settings.
+             *
+             * @param {Object} event
+             * @private
+             */
+            _onFormError: function(event) {
+                this._error = event.detail.error.message;
+                this._loader = false;
+            },
+
+            /**
+             * Called after settings have been submitted.
+             *
+             * @param {Object} event
+             * @private
+             */
+            _onFormResponse: function(event) {
+                this.set('application', event.detail.response.icon);
+
+                /**
+                 * Fired after sharing settings has been saved.
+                 *
+                 * @event sharing-settings-saved
+                 */
+                this.fire('sharing-settings-saved', {
+                    application: this.application
+                });
+
+                this._loader = false;
+            },
+
+            _onInputKeyUp: function() {
+                this._error = '';
+            },
+
+            /**
+             * Resets component.
+             */
+            reset: function() {
+                this.$.saveSharingSettingsForm.reset();
+            }
+        });
+    </script>
+</dom-module>

@@ -18,7 +18,9 @@ Actions are not tightly coupled to page content, page is delegated to react on t
 
 Custom property | Description | Default
 ----------------|-------------|----------
+`--appsco-page-global-action-color` | Color for action icons | `{}`
 `--appsco-page-global` | Mixin applied to host container | `{}`
+`--global-action` | Mixin applied to action's container | `{}`
 `--appsco-icon-active` | Mixin applied to active icons | `{}`
 
 @demo demo/appsco-page-global.html
@@ -29,25 +31,36 @@ Custom property | Description | Default
         <style is="custom-style">
             :host {
                 display: inline-block;
+                margin-right: -10px;
                 @apply(--layout-horizontal);
                 @apply(--layout-center);
                 @apply(--layout-end-justified);
 
                 --paper-icon-button-ink-color: var(--appsco-page-global-action-color);
 
-            @apply(--appsco-page-global);
+                @apply(--appsco-page-global);
+            }
+            :host .action {
+                margin-right: 10px;
+                position: relative;
+                @apply(--layout-vertical);
+                @apply(--layout-center);
+                @apply(--global-action);
             }
             :host paper-icon-button {
                 color: var(--appsco-page-global-action-color);
             }
             :host paper-icon-button[active] {
-            @apply(--appsco-icon-active);
+                @apply(--appsco-icon-active);
             }
             :host paper-icon-button::shadow paper-ripple {
                 width: 150%;
                 height: 150%;
                 top: -25%;
                 left: -25%;
+            }
+            .flex-none {
+                @apply(--layout-flex-none);
             }
         </style>
 
@@ -57,9 +70,19 @@ Custom property | Description | Default
         <!--<template is="dom-if" if="[[ settings ]]">-->
         <!--<paper-icon-button icon="icons:settings" on-tap="_settings" toggles></paper-icon-button>-->
         <!--</template>-->
-        <template is="dom-if" if="[[ info ]]">
-            <paper-icon-button icon="icons:info-outline" on-tap="_info" toggles></paper-icon-button>
+
+        <template is="dom-if" if="[[ filters ]]">
+            <div class="action flex-none">
+                <paper-icon-button icon="icons:filter-list" on-tap="_onFilters" toggles></paper-icon-button>
+            </div>
         </template>
+
+        <template is="dom-if" if="[[ info ]]">
+            <div class="action flex-none">
+                <paper-icon-button icon="icons:info-outline" on-tap="_info" toggles></paper-icon-button>
+            </div>
+        </template>
+
         <!--<template is="dom-if" if="[[ help ]]">-->
         <!--<paper-icon-button icon="icons:help-outline" on-tap="_help" toggles></paper-icon-button>-->
         <!--</template>-->
@@ -79,8 +102,7 @@ Custom property | Description | Default
                  */
                 info: {
                     type: Boolean,
-                    value: false,
-                    reflectToAttribute: true
+                    value: false
                 },
 
                 /**
@@ -90,8 +112,7 @@ Custom property | Description | Default
                  */
                 help: {
                     type: Boolean,
-                    value: false,
-                    reflectToAttribute: true
+                    value: false
                 },
 
                 /**
@@ -101,8 +122,7 @@ Custom property | Description | Default
                  */
                 settings: {
                     type: Boolean,
-                    value: false,
-                    reflectToAttribute: true
+                    value: false
                 },
 
                 /**
@@ -112,8 +132,17 @@ Custom property | Description | Default
                  */
                 sort: {
                     type: Boolean,
-                    value: false,
-                    reflectToAttribute: true
+                    value: false
+                },
+
+                /**
+                 * Show filters action
+                 *
+                 * @type Boolean
+                 */
+                filters: {
+                    type: Boolean,
+                    value: false
                 }
             },
 
@@ -121,7 +150,7 @@ Custom property | Description | Default
                 /**
                  * Fired when `info` is tapped.
                  *
-                 * @event on-info
+                 * @event page-global-info
                  * @param {Boolean} active Is element active
                  */
                 this.fire('page-global-info', {
@@ -133,7 +162,7 @@ Custom property | Description | Default
                 /**
                  * Fired when `settings` is tapped.
                  *
-                 * @event on-settings
+                 * @event page-global-settings
                  * @param {Boolean} active Is element active
                  */
                 this.fire('page-global-settings', {
@@ -145,7 +174,7 @@ Custom property | Description | Default
                 /**
                  * Fired when `sort` is tapped.
                  *
-                 * @event on-sort
+                 * @event page-global-sort
                  * @param {Boolean} active Is element active
                  */
                 this.fire('page-global-sort', {
@@ -157,12 +186,22 @@ Custom property | Description | Default
                 /**
                  * Fired when `help` is tapped.
                  *
-                 * @event on-help
+                 * @event page-global-help
                  * @param {Boolean} active Is element active
                  */
                 this.fire('page-global-help', {
                     active: e.currentTarget.active
                 });
+            },
+
+            _onFilters: function() {
+
+                /**
+                 * Fired when filters action is tapped.
+                 *
+                 * @event page-global-filters
+                 */
+                this.fire('page-global-filters');
             }
         });
     </script>

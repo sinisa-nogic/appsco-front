@@ -1,0 +1,478 @@
+<link rel="import" href="../bower_components/polymer/polymer.html">
+<link rel="import" href="../bower_components/paper-tabs/paper-tabs.html">
+<link rel="import" href="../bower_components/neon-animation/neon-animated-pages.html">
+<link rel="import" href="../bower_components/neon-animation/animations/fade-in-animation.html">
+<link rel="import" href="../bower_components/neon-animation/animations/fade-out-animation.html">
+<link rel="import" href="../bower_components/iron-flex-layout/iron-flex-layout.html">
+<link rel="import" href="../bower_components/iron-media-query/iron-media-query.html">
+
+<link rel="import" href="../bower_components/appsco-page/appsco-content.html">
+<link rel="import" href="../bower_components/appsco-vault/appsco-vault-items.html">
+<link rel="import" href="../bower_components/appsco-vault/appsco-vault-details.html">
+<link rel="import" href="../bower_components/appsco-vault/appsco-vault-info.html">
+
+<dom-module id="appsco-upgrade-page">
+    <template>
+        <style>
+            ::-webkit-scrollbar {
+                height: 16px;
+                overflow: visible;
+                width: 16px;
+            }
+            ::-webkit-scrollbar-button {
+                height: 0;
+                width: 0;
+            }
+            ::-webkit-scrollbar-corner {
+                background: transparent;
+            }
+            ::-webkit-scrollbar-thumb {
+                background-color: rgba(0,0,0,.2);
+                background-clip: padding-box;
+                border: solid transparent;
+                border-width: 1px 1px 1px 6px;
+                min-height: 28px;
+                padding: 100px 0 0;
+                -webkit-box-shadow: inset 1px 1px 0 rgba(0,0,0,.1),inset 0 -1px 0 rgba(0,0,0,.07);
+                box-shadow: inset 1px 1px 0 rgba(0,0,0,.1),inset 0 -1px 0 rgba(0,0,0,.07);
+            }
+            :host {
+                display: block;
+
+                --paper-tabs-selection-bar-color: var(--app-primary-color);
+                --info-width: 380px;
+
+                --appsco-vault-details-content: {
+                    font-size: 14px;
+                };
+            }
+            :host div[content] > * {
+                padding: 0 10px 10px 10px;
+                color: var(--primary-text-color);
+            }
+            :host div[info] > * {
+                padding: 10px;
+            }
+            :host div[info] {
+                height: 100%;
+                color: var(--primary-text-color);
+            }
+            :host div[info] .info-actions {
+                padding: 0;
+                position: absolute;
+                bottom: 0;
+                left: 0;
+                right: 0;
+            }
+            :host div[info] .item-info {
+                border-bottom: 1px solid var(--divider-color);
+                height: 50px;
+                box-sizing: border-box;
+                @apply(--layout-flex-none);
+            }
+            :host div[info] .item-details {
+                position: absolute;
+                left: calc(50% - 47px);
+            }
+            :host .upgrade-button {
+                color: #ffffff;
+                border-radius: 0;
+                margin: 0;
+                padding: 6px 12px;
+                font-size: 14px;
+                height: 34px;
+                /*background-color: var(--success-color);*/
+                background-color: #39c1d7;
+            }
+            :host .flex-horizontal {
+                @apply(--layout-horizontal);
+                @apply(--layout-center);
+            }
+            :host .flex-vertical {
+                @apply(--layout-vertical);
+            }
+            :host .flex {
+                @apply(--layout-flex);
+            }
+            :host([s1600-screen]) {
+                --appsco-vault-item: {
+                    width: 180px;
+                };
+
+                --info-width: 390px;
+            }
+            :host([laptop-s1440-screen]) {
+                --appsco-vault-item: {
+                    width: 184px;
+                };
+
+                --info-width: 390px;
+            }
+            :host([laptop-screen]) {
+                --appsco-vault-item: {
+                    width: 173px;
+                };
+
+                --info-width: 372px;
+            }
+            :host([tablet-s1280-screen]) {
+                --appsco-vault-item: {
+                    width: 162px;
+                };
+
+                --info-width: 360px;
+            }
+            :host([tablet-s1024-screen]) {
+                --appsco-vault-item: {
+                    width: 184px;
+                };
+
+                --info-width: 390px;
+            }
+            :host([tablet-screen]) {
+                --appsco-vault-item: {
+                    width: 178px;
+                };
+
+                --info-width: 198px;
+            }
+            :host([tablet-s768-screen]) {
+                --appsco-vault-item: {
+                    width: 172px;
+                };
+
+                --info-width: 180px;
+            }
+            :host([mobile-screen]) {
+                --appsco-vault-item: {
+                    width: 170px;
+                };
+
+                --info-width: 100%;
+
+                --vault-container: {
+                    margin-right: -25px;
+                    display: block;
+                    @apply(--layout-horizontal);
+                    @apply(--layout-around-justified);
+                };
+            }
+
+            .price {
+                width: 74px;
+                height: 94px;
+                background-color: #39c1d7;
+                border: 1px solid #39c1d7;
+                border-radius: 50%;
+                line-height: 94px;
+                color: #fff;
+                font-family: "OpenSansBold", sans-serif;
+                font-size: 60px;
+                margin-left: auto;
+                margin-right: auto;
+                padding-left: 20px;
+            }
+            .price-currency {
+                font-size: 32px;
+                position: absolute;
+            }
+            .info-pricing-logo {
+                padding-top: 96px !important;
+                padding-bottom: 28px !important;
+                background-color: #eceff1;
+                text-align: center;
+                /*margin-top: 60px;*/
+            }
+
+            :host div[content] .upgrade-info {
+                @apply(--layout-vertical);
+                @apply(--layout-center);
+
+            }
+
+            :host div[content] .upgrade-info > img {
+                padding: 20px 0;
+            }
+
+            :host div[content] .upgrade-info > div {
+                width: 80%;
+                color: var(--primary-text-color);
+            }
+
+        </style>
+
+        <iron-media-query query="(max-width: 1600px)" query-matches="{{ s1600Screen }}"></iron-media-query>
+        <iron-media-query query="(max-width: 1440px)" query-matches="{{ laptopS1440Screen }}"></iron-media-query>
+        <iron-media-query query="(max-width: 1366px)" query-matches="{{ laptopScreen }}"></iron-media-query>
+        <iron-media-query query="(max-width: 1280px)" query-matches="{{ tabletS1280Screen }}"></iron-media-query>
+        <iron-media-query query="(max-width: 1024px)" query-matches="{{ tabletS1024Screen }}"></iron-media-query>
+        <iron-media-query query="(max-width: 800px)" query-matches="{{ tabletScreen }}"></iron-media-query>
+        <iron-media-query query="(max-width: 768px)" query-matches="{{ tabletS768Screen }}"></iron-media-query>
+        <iron-media-query query="(max-width: 600px)" query-matches="{{ mobileScreen }}"></iron-media-query>
+
+        <appsco-content id="appscoContent">
+
+            <div content>
+                <div class="upgrade-info">
+                    <img src="../images/appsco-logo-business.png">
+                    <div style="text-align: center">
+                        <p>AppsCo Business enables users to access company applications trough secure and centrally managed portal.</p>
+
+                        <p>As an employer you can easily manage and protect your company data in user friendly and centralized environment.</p>
+                    </div>
+                    <div>
+                        <h3>Applications</h3>
+                        <p>From your Business Dashboard you can organize your company applications,
+                            grant or revoke access rights to your employees and easily manage applications for
+                            single user or a group of users.
+                            In application catalog, you can find pre-integrated apps where you can easily setup SSO and
+                            improve your and your employees' work routines.
+                        </p>
+                    </div>
+                    <div>
+                        <h3>Directory</h3>
+                        <p>
+                            AppsCo Business provides Directory where you will have overview over all your employees and
+                            actions regarding user management.
+                        </p>
+                        <ul>
+                            <li>Manage employees</li>
+                            <li>Setup access level for each employee</li>
+                            <li>Control over user password</li>
+                            <li>Force two-factor authentication</li>
+                            <li>Monitor if employees are following your applied security policies</li>
+                            <li>Activity log per each employee</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h3>Provisioning</h3>
+                        <p>
+                            Provisioning helps you create and manage new users, accounts and access to company data and resources.
+                            Provisioning ensures that the managing of accounts and access to data is secure and simple to administer.
+                            You can grant immediate access to apps and services your employees need,
+                            manage the level of access for each group or revoke and deactivate users from your
+                            centralized dashboard while keeping your data safe and your workflow simple.
+                        </p>
+                        <p>
+                            Appsco supports seamless directory integration with Google Suit and Microsoft Office 365.
+                            Your employees can access all of their company apps and services using AppsCo,
+                            with the same credentials they use to access Google Suit or Microsoft Office 365.
+                        </p>
+                        <p>
+                            Integration helps you instantly import and sync all users and grant them access to a set of
+                            specific company applications.
+                        </p>
+                    </div>
+                    <div>
+                        <h3>Audit</h3>
+                        <p>
+                            AppsCo Business audit log enables you to follow and have better overview over all important
+                            system events in chronological record.
+                            Auditing will improve the visibility over company data flow and everyday security procedures.
+                        </p>
+                    </div>
+                    <div>
+                        <h3>Statistics</h3>
+                        <p>
+                            On your centralized AppsCo Business Dashboard you will have the direct insight into
+                            statistics on applications usage and an up-to-date overview over predominant or the
+                            least used apps and services.
+                        </p>
+                        <p>
+                            Statistics and real-time reporting will help you monitor all digital activity in your
+                            company and have control over data flow.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex-vertical" info>
+
+                <div class="item-details flex-vertical">
+                    <span class="price">
+                        2
+                        <span class="price-currency">$</span>
+                    </span>
+                </div>
+
+                <div class="info-pricing-logo">
+                    <img src="../images/appsco-logo-business.png">
+                </div>
+
+                <div>
+                    Monthly<br/>
+                    $2.5 /mo/user<br/>
+                    Billed monthly<br/>
+                    <br/>
+                    Annual<br/>
+                    $2 /mo/user<br/>
+                    $24 billed annually<br/>
+                </div>
+                <div class="info-actions flex-horizontal">
+                    <paper-button
+                            class="upgrade-button flex"
+                            on-tap="_onRemoveVaultItem">
+                        Upgrade to Appsco Business
+                    </paper-button>
+                </div>
+            </div>
+
+        </appsco-content>
+
+    </template>
+
+    <script>
+        Polymer({
+            is: 'appsco-upgrade-page',
+
+            properties: {
+
+                api: {
+                    type: Object,
+                    notify: true
+                },
+
+                _infoShown: {
+                    type: Boolean,
+                    value: true
+                },
+
+                authorizationToken: {
+                    type: String,
+                    value: ''
+                },
+
+                mobileScreen: {
+                    type: Boolean,
+                    value: false,
+                    reflectToAttribute: true
+                },
+
+                tabletS768Screen: {
+                    type: Boolean,
+                    value: false,
+                    reflectToAttribute: true
+                },
+
+                tabletScreen: {
+                    type: Boolean,
+                    value: false,
+                    reflectToAttribute: true
+                },
+
+                tabletS1024Screen: {
+                    type: Boolean,
+                    value: false,
+                    reflectToAttribute: true
+                },
+
+                tabletS1280Screen: {
+                    type: Boolean,
+                    value: false,
+                    reflectToAttribute: true
+                },
+
+                laptopScreen: {
+                    type: Boolean,
+                    value: false,
+                    reflectToAttribute: true
+                },
+
+                laptopS1440Screen: {
+                    type: Boolean,
+                    value: false,
+                    reflectToAttribute: true
+                },
+
+                s1600Screen: {
+                    type: Boolean,
+                    value: false,
+                    reflectToAttribute: true
+                },
+
+                /**
+                 * Animation config.
+                 */
+                animationConfig: {
+                    value: function() {
+                        return {
+                            'entry': {
+                                name: 'fade-in-animation',
+                                node: this,
+                                timing: {
+                                    duration: 300
+                                }
+                            },
+                            'exit': {
+                                name: 'fade-out-animation',
+                                node: this,
+                                timing: {
+                                    duration: 200
+                                }
+                            }
+                        }
+                    }
+                },
+
+                pageLoaded: {
+                    type: Boolean,
+                    value: false
+                }
+            },
+
+            behaviors: [
+                Polymer.NeonAnimatableBehavior
+            ],
+
+            observers: [
+                '_isCSSChanged(mobileScreen, tabletS768Screen, tabletScreen, tabletS1024Screen, tabletS1280Screen, laptopScreen, laptopS1440Screen, s1600Screen)'
+            ],
+
+            attached: function() {
+
+                this.pageLoaded = false;
+
+                if (this.mobileScreen || this.tabletS768Screen || this.tabletScreen
+                        || this.tabletS1024Screen || this.tabletS1280Screen || this.laptopScreen
+                        || this.laptopS1440Screen || this.s1600Screen) {
+                    this.updateStyles();
+                }
+            },
+
+            ready: function() {
+                this._pageLoaded();
+            },
+
+            _isCSSChanged: function(mobile, tabletS768Screen, tablet, tabletS1024Screen, tabletS1280Screen, laptop, laptopS1440Screen, s1600Screen) {
+                this.updateStyles();
+            },
+
+
+            _pageLoaded: function() {
+                this.$.appscoContent.showSection('info');
+                this.pageLoaded = true;
+                this.fire('page-loaded');
+            },
+
+//            _showInfo: function() {
+//                this.$.appscoContent.showSection('info');
+//                this._infoShown = true;
+//                this._selectedTab = 0;
+//            },
+//
+//            hideInfo: function() {
+//                this.$.appscoContent.hideSection('info');
+//                this._infoShown = false;
+//            },
+//
+//            toggleInfo: function() {
+//                this.$.appscoContent.toggleSection('info');
+//                this._infoShown = !this._infoShown;
+//
+//                if (this._infoShown) {
+//                    this._selectedTab = 0;
+//                }
+//            },
+        });
+    </script>
+</dom-module>

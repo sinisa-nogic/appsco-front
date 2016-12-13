@@ -566,7 +566,7 @@ Custom property | Description | Default
             _handleError: function(event) {
                 this.$.loadMore.disabled = true;
                 this._message = 'We couldn\'t load log at the moment. Please try again in a minute. If error continues contact us.';
-                this._hideProgressBar();
+                this._handleEmptyLog();
             },
 
             /**
@@ -591,13 +591,12 @@ Custom property | Description | Default
                             this.push('_logList', logList[i]);
 
                             if (i === (logList.length - 1)) {
-                                this._hideProgressBar();
 
                                 if (this._logList.length === response.meta.total) {
                                     this.$.loadMore.disabled = true;
                                 }
 
-                                this.fire('log-loaded');
+                                this._handleEmptyLog();
                             }
 
                         }.bind(this), (i + 1) * 50 );
@@ -614,9 +613,7 @@ Custom property | Description | Default
                         this.$.loadMore.disabled = true;
                     }
 
-                    this._hideProgressBar();
-
-                    this.fire('log-empty');
+                    this._handleEmptyLog();
                 }
                 else if (!currentLength) {
                     this._message = 'We couldn\'t load log at the moment.';
@@ -624,6 +621,11 @@ Custom property | Description | Default
 
                     this.fire('log-empty');
                 }
+            },
+
+            _handleEmptyLog: function() {
+                this._hideProgressBar();
+                this.fire('log-empty');
             },
 
             _hideProgressBar: function() {

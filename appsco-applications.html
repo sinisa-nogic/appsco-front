@@ -96,7 +96,7 @@ Custom property | Description | Default
                     id="applicationsApiRequest"
                     url="{{ _currentUrl }}"
                     on-error="_onError"
-                    on-response="_handleResponse"
+                    on-response="_onResponse"
                     headers="{{ _computedHeaders }}"
                     debounce-duration="300"
                     ></iron-ajax>
@@ -223,29 +223,36 @@ Custom property | Description | Default
                 this._currentUrl = this._next;
             },
 
-            _onError: function(event) {
-                this._applicationsEmpty = true;
-                this._hideProgressBar();
-
-                this.fire('load-failed', {
-                    error: event.detail.error
-                });
+            _onError: function() {
+                this._handleEmptyLoad();
             },
 
-            _handleResponse: function (e) {
+            _handleEmptyLoad: function() {
+                this._applicationsEmpty = true;
+
+                /**
+                 * Fired when there are no applications.
+                 *
+                 * @event empty-load
+                 */
+                this.fire('empty-load');
+
+                this._hideProgressBar();
+            },
+
+            _onResponse: function (e) {
                 var me = this,
-                        response = e.detail.response,
-                        icons = response.icons,
-                        meta = response.meta,
-                        iconsCount = icons.length - 1;
+                    response = e.detail.response,
+                    icons = response.icons,
+                    meta = response.meta,
+                    iconsCount = icons.length - 1;
 
                 this._totalApplications = meta.total;
                 this._next = meta.next + "&limit=" + this.size;
 
                 if (meta.total === 0) {
-                    this._applicationsEmpty = true;
-                    this._hideProgressBar();
-                    return;
+                    this._handleEmptyLoad();
+                    return false;
                 }
 
                 me._applicationsEmpty = false;
@@ -273,13 +280,14 @@ Custom property | Description | Default
                              */
                             me.fire('loaded', {
                                 applications: e.detail.response.icons
-                            })
+                            });
                         }
 
                     }.bind(this), (index + 1) * 50 );
 
                 });
             },
+
             _computeHeaders: function (authorizationToken) {
                 return {
                     "Authorization": "token " + authorizationToken

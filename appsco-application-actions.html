@@ -1,25 +1,28 @@
 <link rel="import" href="../polymer/polymer.html">
-
 <link rel="import" href="../iron-ajax/iron-ajax.html">
 <link rel="import" href="../iron-flex-layout/iron-flex-layout.html">
 <link rel="import" href="../paper-input/paper-input.html">
 <link rel="import" href="../paper-icon-button/paper-icon-button.html">
 <link rel="import" href="../iron-icon/iron-icon.html">
 <link rel="import" href="../iron-icons/iron-icons.html">
+<link rel="import" href="../iron-icons/social-icons.html">
 <link rel="import" href="../paper-styles/typography.html">
-
 <link rel="import" href="../paper-listbox/paper-listbox.html">
 <link rel="import" href="../paper-item/paper-item.html">
+<link rel="import" href="../paper-tooltip/paper-tooltip.html">
+<link rel="import" href="../neon-animation/neon-animation-runner-behavior.html">
+<link rel="import" href="../neon-animation/animations/cascaded-animation.html">
+<link rel="import" href="../neon-animation/animations/fade-in-animation.html">
+<link rel="import" href="../neon-animation/animations/fade-out-animation.html">
 
 <link rel="import" href="../paper-dropdown-menu/paper-dropdown-menu.html">
 
 <!--
 `appsco-application-actions`
-Actions related to applications page: New Application, Search, Filter, Edit (mode).
+Actions related to applications page: New Application, Search, Filter.
 - New Application - adding new app <appsco-application-add>.
 - Search: search added applications.
 - Filter: filter added applications.
-- Edit mode: make added applications in edit mode for reorder (drag and drop), select grouping.
 
 
     <appsco-application-actions>
@@ -36,6 +39,7 @@ Custom property | Description | Default
 `--application-action` | Mixin for the action div container | `{}`
 `--add-application-button` | Mixin for add application action button | `{}`
 `--paper-input-focused-prefix` | Mixin for input prefix when input is in focused state | `{}`
+`--application-actions-tooltip` | Mixin for action's tooltip | `{}`
 
 @demo demo/appsco-application-actions.html
 -->
@@ -46,55 +50,64 @@ Custom property | Description | Default
             :host {
                 display: inline-block;
                 position: relative;
-            @apply(--layout-horizontal);
-            @apply(--layout-center);
-            @apply(--layout-end-justified);
-            @apply(--appsco-application-actions);
+                margin-right: -10px;
+                @apply(--layout-horizontal);
+                @apply(--layout-center);
+                @apply(--layout-end-justified);
+                @apply(--appsco-application-actions);
 
-            --paper-dropdown-menu-button: {
-                 display: block;
-                 padding: 0 0 0 8px;
-             @apply(--applications-actions-paper-dropdown-menu-button);
-             };
+                --paper-dropdown-menu-button: {
+                     display: block;
+                     padding: 0 0 0 8px;
+                     @apply(--applications-actions-paper-dropdown-menu-button);
+                 };
+
+                --iron-icon-fill-color: var(--application-action-icon-color);
+            }
+            :host .action {
+                margin-right: 10px;
+                position: relative;
+                @apply(--layout-vertical);
+                @apply(--layout-center);
+                @apply(--application-action);
+            }
+            :host .bulk-action {
+                display: none;
+            }
+            :host([bulk-actions]) .bulk-action {
+                display: flex;
             }
             :host .action-search {
-            @apply(--paper-input-search-container);
+                @apply(--paper-input-search-container);
             }
             :host .action-search paper-input {
                 max-width: 184px;
             }
             paper-dropdown-menu {
-            --paper-input-container-underline: {
-                 display: none;
-             };
-            --paper-input-container-underline-focus: {
-                 display: none;
-             };
-            --paper-dropdown-menu-ripple: {
-                 display: none;
-             };
-            --paper-input-container-input: {
-                 vertical-align: middle;
-                 cursor: pointer;
-             @apply(--application-actions-paper-dropdown-menu-input);
-             };
+                --paper-input-container-underline: {
+                     display: none;
+                 };
+                --paper-input-container-underline-focus: {
+                     display: none;
+                 };
+                --paper-dropdown-menu-ripple: {
+                     display: none;
+                 };
+                --paper-input-container-input: {
+                     vertical-align: middle;
+                     cursor: pointer;
+                     @apply(--application-actions-paper-dropdown-menu-input);
+                 };
             }
             paper-input[focused] div[prefix] {
-            @apply(--paper-input-focused-prefix);
+                @apply(--paper-input-focused-prefix);
             }
             paper-input[focused] paper-icon-button[suffix] {
-            @apply(--paper-input-focused-sufix);
+                @apply(--paper-input-focused-sufix);
             }
             :host paper-listbox {
                 max-width: 230px;
                 overflow: hidden;
-            }
-            :host .action {
-                margin-right: 10px;
-                @apply(--application-action);
-            }
-            :host .add-application-action {
-                margin-right: 0;
             }
             :host div[prefix] iron-icon {
                 width: 18px;
@@ -107,19 +120,17 @@ Custom property | Description | Default
                 padding: 0;
             }
             :host .add-application-button {
-            @apply(--add-application-button);
+                @apply(--add-application-button);
             }
             .add-application-icon-button {
                 display: none;
-            @apply(--add-application-icon-button);
-
-                --iron-icon-fill-color: var(--add-application-icon-color);
+                @apply(--add-application-icon-button);
             }
             :host .flex-none {
-            @apply(--layout-flex-none);
+                @apply(--layout-flex-none);
             }
             :host .action-search paper-input {
-            @apply(--paper-input-search);
+                @apply(--paper-input-search);
             }
             :host paper-icon-button::shadow paper-ripple {
                 width: 150%;
@@ -127,9 +138,16 @@ Custom property | Description | Default
                 top: -25%;
                 left: -25%;
             }
+            :host paper-tooltip {
+                top: 100% !important;
+                font-weight: 500;
+                min-width: 100px;
+                text-align: center;
+                @apply(--application-actions-tooltip);
+            }
         </style>
 
-        <div action-item class="action action-search flex-none">
+        <div class="action action-search flex-none">
             <paper-input label="Filter applications"
                          on-keyup="_search"
                          id="search"
@@ -147,37 +165,67 @@ Custom property | Description | Default
 
             </paper-input>
         </div>
-        <div action-item class="action flex-none">
-            <iron-ajax
-                    auto
-                    id="filterRequest"
-                    url="[[ filterApi ]]"
-                    on-response="_handleResponse"
-                    headers="{{ _computedHeaders }}"
-                    debounce-duration="300"
-                    ></iron-ajax>
-            <paper-dropdown-menu on-iron-select="_selected" horizontal-align="left" no-label-float>
-                <paper-listbox class="dropdown-content filter" selected="0">
-                    <template is="dom-repeat" items="[[ _filterItems ]]">
-                        <paper-item value$="[[ item.value ]]" name$="[[ item.name ]]">[[ item.name ]]</paper-item>
-                    </template>
-                </paper-listbox>
-            </paper-dropdown-menu>
-        </div>
 
-        <!--<div action-item class="action flex-none">-->
-        <!--<paper-icon-button id="edit" class="action-icon" icon="icons:flip-to-back" on-tap="_editMode"-->
-        <!--toggles></paper-icon-button>-->
-        <!--</div>-->
+        <template is="dom-if" if="[[ !business ]]">
+            <div class="action flex-none">
+                <iron-ajax
+                        auto
+                        id="filterRequest"
+                        url="[[ filterApi ]]"
+                        on-response="_handleResponse"
+                        headers="{{ _computedHeaders }}"
+                        debounce-duration="300"
+                        ></iron-ajax>
+                <paper-dropdown-menu on-iron-select="_selected" horizontal-align="left" no-label-float>
+                    <paper-listbox class="dropdown-content filter" selected="0">
+                        <template is="dom-repeat" items="[[ _filterItems ]]">
+                            <paper-item value$="[[ item.value ]]" name$="[[ item.name ]]">[[ item.name ]]</paper-item>
+                        </template>
+                    </paper-listbox>
+                </paper-dropdown-menu>
+            </div>
+        </template>
 
-        <div action-item class="action add-application-action flex-none">
+        <template is="dom-if" if="[[ business ]]">
+            <div class="action bulk-action flex-none">
+                <paper-icon-button id="organizationUnitsAction"
+                                   icon="icons:group-work"
+                                   alt="Organization units"
+                                   on-tap="_onOrganizationUnitsAction"></paper-icon-button>
+                <paper-tooltip for="organizationUnitsAction"
+                               position="bottom">Organization units</paper-tooltip>
+            </div>
+
+            <div class="action bulk-action flex-none">
+                <paper-icon-button id="shareAction"
+                                   icon="social:share"
+                                   alt="Share applications"
+                                   on-tap="_onShareAction"></paper-icon-button>
+                <paper-tooltip for="shareAction"
+                               position="bottom">Share</paper-tooltip>
+            </div>
+
+            <div class="action bulk-action flex-none">
+                <paper-icon-button id="deleteAction"
+                                   icon="icons:delete"
+                                   alt="Delete applications"
+                                   on-tap="_onDeleteAction"></paper-icon-button>
+                <paper-tooltip for="deleteAction"
+                               position="bottom">Delete</paper-tooltip>
+            </div>
+        </template>
+
+        <div class="action flex-none">
             <paper-button
                     class="add-application-button"
                     on-tap="_onAddApplicationAction">Add application</paper-button>
-            <paper-icon-button
-                    icon="add-circle-outline"
-                    class="add-application-icon-button"
-                    on-tap="_onAddApplicationAction">Add application</paper-icon-button>
+            <paper-icon-button id="addApplicationAction"
+                               icon="icons:add-circle"
+                               class="add-application-icon-button"
+                               alt="Add application"
+                               on-tap="_onAddApplicationAction"></paper-icon-button>
+            <paper-tooltip for="addApplicationAction"
+                           position="bottom">Add application</paper-tooltip>
         </div>
 
     </template>
@@ -213,10 +261,65 @@ Custom property | Description | Default
                 _clear: {
                     type: Boolean,
                     value: false
+                },
+
+                /**
+                 * Indicates if appsco-business actions should be available or not.
+                 * Currently, business actions are bulk action and Add application action.
+                 */
+                business: {
+                    type: Boolean,
+                    value: false
+                },
+
+                /**
+                 * Indicates if bulk actions for applications are visible or not.
+                 * Used to show / hide bulk actions.
+                 */
+                bulkActions: {
+                    type: Boolean,
+                    value: false,
+                    observer: '_onBulkActionsChanged'
+                },
+
+                /**
+                 * Animation config for bulk actions.
+                 */
+                animationConfig: {
+                    value: function() {
+                        return {
+                            'entry': {
+                                name: 'cascaded-animation',
+                                animation: 'fade-in-animation',
+                                nodes: [],
+                                nodeDelay: 50,
+                                timing: {
+                                    duration: 300
+                                }
+                            },
+                            'exit': {
+                                name: 'cascaded-animation',
+                                animation: 'fade-out-animation',
+                                nodes: [],
+                                nodeDelay: 0,
+                                timing: {
+                                    duration: 200
+                                }
+                            }
+                        }
+                    }
                 }
             },
 
-            ready: function () {
+            behaviors: [
+                Polymer.NeonAnimationRunnerBehavior
+            ],
+
+            listeners: {
+                'neon-animation-finish': '_onNeonAnimationFinish'
+            },
+
+            ready: function() {
                 Polymer.Gestures.add(document, 'tap', this._handleDocumentClick.bind(this));
             },
 
@@ -294,18 +397,7 @@ Custom property | Description | Default
                 this.$.search.value = "";
                 this._search();
             },
-            _editMode: function () {
-                this.$.edit.icon = this.$.edit.active ? "icons:flip-to-front" : "icons:flip-to-back";
-                /**
-                 * Fired when edit mode is on/off
-                 *
-                 * @event edit-mode
-                 * @param {Object} edit {active: edit_mode_active}
-                 */
-                this.fire("edit-mode", {
-                    active: this.$.edit.active
-                });
-            },
+
             _handleResponse: function (e) {
                 var me = this,
                         response = e.detail.response;
@@ -336,20 +428,120 @@ Custom property | Description | Default
             _onAddApplicationAction: function() {
 
                 /**
-                 * Fired when filter is selected
+                 * Fired when add application action is tapped.
                  *
-                 * @event filtered
-                 * @param {Object} filter {id: filter_id, name: filter_name}
+                 * @event add-application
                  */
                 this.fire('add-application');
+            },
+
+            /**
+             * Called on share action tap.
+             * It fires an event.
+             *
+             * @private
+             */
+            _onShareAction: function() {
+
+                /**
+                 * Fired when share action is triggered.
+                 *
+                 * @event share
+                 */
+                this.fire('share');
+            },
+
+            /**
+             * Called on remove action tap.
+             * It fires an event.
+             *
+             * @private
+             */
+            _onDeleteAction: function() {
+
+                /**
+                 * Fired when remove action is triggered.
+                 *
+                 * @event remove
+                 */
+                this.fire('remove');
+            },
+
+            /**
+             * Called on add organization units action tap.
+             * It fires an event.
+             *
+             * @private
+             */
+            _onOrganizationUnitsAction: function() {
+
+                /**
+                 * Fired when organization units action is triggered.
+                 *
+                 * @event orgunits
+                 */
+                this.fire('orgunits');
             },
 
             _onSearchIcon: function() {
                 this.fire('search-icon');
             },
 
+            /**
+             * Sets focus on search input field.
+             */
             focusSearch: function() {
                 this.$.search.$.input.focus();
+            },
+
+            _onBulkActionsChanged: function() {
+                var bulkActions = Polymer.dom(this.root).querySelectorAll('.bulk-action');
+
+                if (this.animationConfig) {
+                    this.animationConfig.entry.nodes = bulkActions;
+                    this.animationConfig.exit.nodes = bulkActions;
+                }
+
+                if (this.bulkActions) {
+                    var length = bulkActions.length;
+
+                    for (var i = 0; i < length; i++) {
+                        bulkActions[i].style.display = 'flex';
+                    }
+
+                    this.playAnimation('entry');
+                }
+                else {
+                    this.playAnimation('exit');
+                }
+
+            },
+
+            /**
+             * Shows bulk actions.
+             */
+            showBulkActions: function() {
+                this.bulkActions = true;
+            },
+
+            /**
+             * Hides bulk actions.
+             */
+            hideBulkActions: function() {
+                this.bulkActions = false;
+            },
+
+            _onNeonAnimationFinish: function() {
+
+                if (!this.bulkActions) {
+                    var bulkActions = Polymer.dom(this.root).querySelectorAll('.bulk-action'),
+                            length = bulkActions.length;
+
+                    for (var i = 0; i < length; i++) {
+                        bulkActions[i].style.display = 'none';
+                    }
+                }
+
             }
         });
     </script>

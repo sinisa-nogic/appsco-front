@@ -33,19 +33,19 @@ Custom property | Description | Default
         <style>
             :host {
                 display: block;
-                @apply(--appsco-application-analytics-security);
+            @apply(--appsco-application-analytics-security);
             }
             .security-score {
-                @apply(--paper-font-code1);
-                @apply(--layout);
-                @apply(--layout-center);
-                @apply(--layout-center-justified);
+            @apply(--paper-font-code1);
+            @apply(--layout);
+            @apply(--layout-center);
+            @apply(--layout-center-justified);
                 width: 40px;
                 height: 40px;
                 box-sizing: border-box;
                 border-radius: 50%;
                 color: #ffffff;
-                @apply(--security-score);
+            @apply(--security-score);
             }
             :host([_strong]) .security-score {
                 background-color: var(--strong-color, #0f9d58);
@@ -68,16 +68,16 @@ Custom property | Description | Default
                 font-weight: normal;
             }
             .policy-info {
-                @apply(--layout-horizontal);
-                @apply(--layout-center);
+            @apply(--layout-horizontal);
+            @apply(--layout-center);
                 opacity: 0.8;
             }
             .policy-description {
-                @apply(--layout-flex);
+            @apply(--layout-flex);
             }
             .policy-score {
-                @apply(--layout-flex-none);
-                @apply(--paper-font-subhead);
+            @apply(--layout-flex-none);
+            @apply(--paper-font-subhead);
                 margin-left: 20px;
             }
             .policy-score.weak {
@@ -91,13 +91,15 @@ Custom property | Description | Default
             }
         </style>
 
-        <div class="security-score">
-            [[ _score ]]%
-        </div>
+        <template is="dom-if" if="[[ _score ]]">
+            <div class="security-score">
+                [[ _score ]]%
+            </div>
+        </template>
 
         <template is="dom-if" if="[[ info ]]">
             <div class="policies">
-                <template is="dom-repeat" items="[[ security.policy ]]">
+                <template is="dom-repeat" items="[[ _security.policy ]]">
                     <div class="policy">
                         <h3 class="policy-name">[[ item.name ]]</h3>
                         <div class="policy-info">
@@ -117,10 +119,18 @@ Custom property | Description | Default
 
             properties: {
 
+                application: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    },
+                    observer: '_onApplicationChanged'
+                },
+
                 /**
                  * Object that contains info about security.
                  */
-                security: {
+                _security: {
                     type: Object,
                     value: function() {
                         return {};
@@ -160,10 +170,36 @@ Custom property | Description | Default
                 }
             },
 
-            _onSecurityChanged: function () {
+            _onApplicationChanged: function(application) {
 
-                if (this.security) {
-                    var score = Math.round(this.security.score);
+                application.security = {
+                    score: Math.random()*100
+                };
+                
+                application.security.policy = [{
+                    name: 'Policy 1',
+                    description: 'Description for policy 1.',
+                    score: '21'
+                },
+                    {
+                        name: 'Policy 2',
+                        description: 'Description for policy 2.',
+                        score: '93'
+                    },
+                    {
+                        name: 'Policy 3',
+                        description: 'Description for policy 3.',
+                        score: '79'
+                    }
+                ];
+
+                this.set('_security', application.security);
+            },
+
+            _onSecurityChanged: function (security) {
+
+                if (security) {
+                    var score = Math.round(security.score);
 
                     this._score = score;
 

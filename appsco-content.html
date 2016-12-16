@@ -50,7 +50,7 @@ Custom property | Description | Default
                 overflow: hidden;
             }
             :host .flex-horizontal {
-                @apply(--layout-horizontal);
+            @apply(--layout-horizontal);
                 height: 100%;
             }
             :host .resource,
@@ -61,7 +61,7 @@ Custom property | Description | Default
                 overflow: hidden;
                 position: relative;
                 box-sizing: border-box;
-                @apply(--appsco-content-sections);
+            @apply(--appsco-content-sections);
             }
             :host .content {
                 overflow-x: hidden;
@@ -75,7 +75,7 @@ Custom property | Description | Default
                 display: none;
             }
             :host .content {
-                @apply(--layout-flex);
+            @apply(--layout-flex);
                 background-color: var(--content-background-color, transparent);
                 color: var(--content-color, #000);
             }
@@ -117,32 +117,16 @@ Custom property | Description | Default
                     type: Object,
                     value: function() {
                         return {
-                            'entry': [{
-                                name: 'slide-from-left-animation',
-                                node: this.$.resource,
+                            entry: {
                                 timing: {
                                     "duration": 200
                                 }
-                            }, {
-                                name: 'slide-from-right-animation',
-                                node: this.$.info,
-                                timing: {
-                                    "duration": 200
-                                }
-                            }],
-                            'exit': [{
-                                name: 'slide-left-animation',
-                                node: this.$.resource,
+                            },
+                            exit: {
                                 timing: {
                                     "duration": 100
                                 }
-                            }, {
-                                name: 'slide-right-animation',
-                                node: this.$.info,
-                                timing: {
-                                    "duration": 100
-                                }
-                            }]
+                            }
                         }
                     }
                 },
@@ -152,7 +136,8 @@ Custom property | Description | Default
                  */
                 resourceActive: {
                     type: Boolean,
-                    value: false
+                    value: false,
+                    observer: '_onResourceActiveChanged'
                 },
 
                 /**
@@ -160,11 +145,8 @@ Custom property | Description | Default
                  */
                 infoActive: {
                     type: Boolean,
-                    value: false
-                },
-
-                _activeSection: {
-                    type: String
+                    value: false,
+                    observer: '_onInfoActiveChanged'
                 }
             },
 
@@ -172,26 +154,35 @@ Custom property | Description | Default
                 'neon-animation-finish': '_onAnimationFinish'
             },
 
-            _onAnimationFinish: function() {
+            _onResourceActiveChanged: function(active) {
+                this.animationConfig.entry.node = this.$.resource;
+                this.animationConfig.exit.node = this.$.resource;
+                this.animationConfig.entry.name = 'slide-from-left-animation';
+                this.animationConfig.exit.name = 'slide-left-animation';
 
-                if (this._activeSection === 'info' && !this.infoActive) {
-                    this.$.info.style.display = 'none';
-                }
-                else if (this._activeSection === 'resource' && !this.resourceActive) {
-                    this.$.resource.style.display = 'none';
-                }
-
-                this.fire('animation-finished', {});
+                active ? this.showSection('resource') : this.hideSection('resource');
             },
 
+            _onInfoActiveChanged: function(active) {
+                this.animationConfig.entry.node = this.$.info;
+                this.animationConfig.exit.node = this.$.info;
+                this.animationConfig.entry.name = 'slide-from-right-animation';
+                this.animationConfig.exit.name = 'slide-right-animation';
 
+                active ? this.showSection('info') : this.hideSection('info');
+            },
+
+            /**
+             * Shows section - info or resource.
+             *
+             * @param section
+             */
             showSection: function(section) {
-                this._activeSection = section;
 
-                if (section === 'info') {
+                if (section === 'info' && !this.infoActive) {
                     this.infoActive = true;
                 }
-                else if (section === 'resource') {
+                else if (section === 'resource' && !this.resourceActive) {
                     this.resourceActive = true;
                 }
 
@@ -199,13 +190,17 @@ Custom property | Description | Default
                 this.playAnimation('entry');
             },
 
+            /**
+             * Hides section - info or resource.
+             *
+             * @param section
+             */
             hideSection: function(section) {
-                this._activeSection = section;
 
-                if (section === 'info') {
+                if (section === 'info' && this.infoActive) {
                     this.infoActive = false;
                 }
-                else if (section === 'resource') {
+                else if (section === 'resource' && this.resourceActive) {
                     this.resourceActive = false;
                 }
 
@@ -214,9 +209,10 @@ Custom property | Description | Default
 
             /**
              * Toggles section - info or resource.
+             *
+             * @param section
              */
             toggleSection: function(section) {
-                this._activeSection = section;
 
                 if (section === 'info') {
                     this.infoActive = !this.infoActive;
@@ -225,7 +221,18 @@ Custom property | Description | Default
                     this.resourceActive = !this.resourceActive;
                 }
 
-                (this.infoActive || this.resourceActive) ? this.showSection(section) : this.hideSection(section);
+            },
+
+            _onAnimationFinish: function() {
+
+                if (!this.infoActive) {
+                    this.$.info.style.display = 'none';
+                }
+
+                if (!this.resourceActive) {
+                    this.$.resource.style.display = 'none';
+                }
+
             }
 
         });

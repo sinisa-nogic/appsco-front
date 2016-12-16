@@ -45,6 +45,7 @@
 <link rel="import" href="application/appsco-application-page-actions.html">
 <link rel="import" href="account/appsco-account-page-actions.html">
 <link rel="import" href="upgrade/appsco-upgrade-page-actions.html">
+<link rel="import" href="applications/appsco-applications-page-actions.html">
 
 <link rel="import" href="vault/appsco-vault-page-actions.html">
 <link rel="import" href="vault/appsco-vault-manage-item.html">
@@ -367,12 +368,13 @@
                     <a name="vault" href="/vault">
                         <iron-icon icon="icons:work"></iron-icon> <span class="menu-text">Vault</span>
                     </a>
+
                     <div head class="business">
                         <span class="menu-text">Business</span>
                     </div>
-                    <div name="vault" href="/vault" disabled>
+                    <a name="applications" href="/applications">
                         <iron-icon icon="icons:apps"></iron-icon> <span class="menu-text">Applications</span>
-                    </div>
+                    </a>
                     <div name="vault" href="/vault" disabled>
                         <iron-icon icon="icons:supervisor-account"></iron-icon> <span class="menu-text">Directory</span>
                         <!--icons:folder-shared-->
@@ -425,7 +427,7 @@
                                     authorization-token="[[ authorizationToken ]]"
                                     filter-api="[[ api.dashboards ]]?extended=1"
                                     on-add-application="_onAddApplication"
-                                    on-search="_searchApplications"
+                                    on-search="_onSearchApplications"
                                     on-group-selected="_onGroupSelected"
                                     on-page-global-info="_onInfoAction"></appsco-home-page-actions>
 
@@ -451,6 +453,15 @@
                                     name="upgrade"
                                     authorization-token="[[ authorizationToken ]]"
                                     on-toggle-pricing="_onUpgradeTogglePricing"></appsco-upgrade-page-actions>
+
+                            <appsco-applications-page-actions id="appscoApplicationsPageActions"
+                                    name="applications"
+                                    authorization-token="[[ authorizationToken ]]"
+                                    filter-api="[[ api.dashboards ]]?extended=1"
+                                    on-add-application="_onAddApplication"
+                                    on-search="_onSearchApplications"
+                                    on-page-global-info="_onInfoAction"
+                                    on-page-global-filters="_onApplicationsFiltersAction"></appsco-applications-page-actions>
 
                         </neon-animated-pages>
 
@@ -542,6 +553,22 @@
                             on-page-loaded="_onPageLoaded"
                     ></appsco-upgrade-page>
 
+                    <appsco-applications-page
+                            id="appscoApplicationsPage"
+                            name="applications"
+                            application="{{ application }}"
+                            application-log="[[ application.meta.log ]]"
+                            authorization-token="[[ authorizationToken ]]"
+                            company-applications-api="[[ companyApplicationsApi ]]"
+                            on-loaded="_onLoadedApplications"
+                            on-edit-application="_onEditApplication"
+                            on-info-edit-application="_onInfoEditApplication"
+                            on-share-application="_onShareApplication"
+                            on-filter-done="_onPageLoaded"
+                            on-page-loaded="_onPageLoaded"
+                            on-show-bulk-actions="_onShowApplicationsBulkActions"
+                            on-hide-bulk-actions="_onHideApplicationsBulkActions"></appsco-applications-page>
+
                     <appsco-not-found-page name="404"></appsco-not-found-page>
                 </neon-animated-pages>
             </app-header-layout>
@@ -603,21 +630,24 @@
         ></appsco-vault-manage-item>
 
         <template is="dom-if" if="[[ api.me ]]">
-            <iron-ajax
-                    auto
-                    url="[[ api.me ]]"
-                    on-response="_onGetAccountResponse"
-                    headers="{{ _computedHeaders }}">
-            </iron-ajax>
+            <iron-ajax auto
+                       url="[[ api.me ]]"
+                       on-response="_onGetAccountResponse"
+                       headers="{{ _computedHeaders }}"></iron-ajax>
         </template>
 
         <template is="dom-if" if="[[ api.dashboards ]]">
-            <iron-ajax
-                    auto
-                    url="[[ api.dashboards ]]?extended=1"
-                    on-response="_onDashboardsResponse"
-                    headers="{{ _computedHeaders }}">
-            </iron-ajax>
+            <iron-ajax auto
+                       url="[[ api.dashboards ]]?extended=1"
+                       on-response="_onDashboardsResponse"
+                       headers="{{ _computedHeaders }}"></iron-ajax>
+        </template>
+
+        <template is="dom-if" if="[[ api.companies ]]">
+            <iron-ajax auto
+                       url="[[ api.companies ]]"
+                       on-response="_onCompaniesResponse"
+                       headers="{{ _computedHeaders }}"></iron-ajax>
         </template>
     </template>
 
@@ -626,6 +656,12 @@
             is: 'appsco-app',
 
             properties: {
+
+                _business: {
+                    type: Boolean,
+                    computed: '_computeBusiness(page)'
+                },
+
                 page: {
                     type: String,
                     observer: '_pageChanged'
@@ -707,6 +743,11 @@
                     type: String,
                     value: '',
                     notify: true
+                },
+
+                companyApplicationsApi: {
+                    type: String,
+                    value: ''
                 },
 
                 _globalActions: {
@@ -817,9 +858,17 @@
                 var response = event.detail.response;
 
                 if (response && response.meta.total > 0) {
-                    this.addAppApi = event.detail.response.dashboards[0].self;
+                    this.addAppApi = response.dashboards[0].self;
                 }
 
+            },
+
+            _onCompaniesResponse: function(event) {
+                var response = event.detail.response;
+
+                if (response && response.meta.total > 0) {
+                    this.companyApplicationsApi = response.companies[0] + '/applications?extended=1';
+                }
             },
             /**
              * Ajax END
@@ -852,20 +901,25 @@
                 if (this.page === 'home') {
                     this.$.appscoHomePage.setDefaultApplication();
                 }
+                else if (this.page === 'applications') {
+                    this.$.appscoApplicationsPage.setDefaultApplication();
+                }
 
             },
 
             _onInfoAction: function() {
-                this.$.appscoHomePage.toggleInfo();
+                this._business ?  this.$.appscoApplicationsPage.toggleInfo() : this.$.appscoHomePage.toggleInfo();
             },
 
             _onInfoVaultAction: function() {
                 this.$.appscoVaultPage.toggleInfo();
             },
 
-            _searchApplications: function(event) {
+            _onSearchApplications: function(event) {
+                var term = event.detail.term;
+
                 this._showProgressBar();
-                this.$.appscoHomePage.filterApplicationsByTerm(event.detail.term);
+                this._business ? this.$.appscoApplicationsPage.filterApplicationsByTerm(term) : this.$.appscoHomePage.filterApplicationsByTerm(term);
             },
 
             _onGroupSelected: function(event) {
@@ -891,7 +945,7 @@
                 var application = event.detail.application,
                     message = application.title + ' was successfully saved.';
 
-                this.$.appscoHomePage.addApplication(application);
+                this._business ? this.$.appscoApplicationsPage.addApplication(application) : this.$.appscoHomePage.addApplication(application);
                 this._notify(message);
             },
 
@@ -1114,6 +1168,24 @@
              */
 
             /**
+             * Applications page START
+             */
+            _onApplicationsFiltersAction: function() {
+                this.$.appscoApplicationsPage.toggleResource();
+            },
+
+            _onShowApplicationsBulkActions: function() {
+                this.$.appscoApplicationsPageActions.showBulkActions();
+            },
+
+            _onHideApplicationsBulkActions: function() {
+                this.$.appscoApplicationsPageActions.hideBulkActions();
+            },
+            /**
+             * Applications page END
+             */
+
+            /**
              * Global START
              */
             _setProgressBar: function(page) {
@@ -1133,6 +1205,10 @@
 
                     case 'vault':
                         this.$.appscoVaultPage.pageLoaded ? this._hideProgressBar() : this._showProgressBar();
+                        break;
+
+                    case 'applications':
+                        this.$.appscoApplicationsPage.pageLoaded ? this._hideProgressBar() : this._showProgressBar();
                         break;
 
                     default:
@@ -1155,6 +1231,10 @@
                     this.$.pageProgress.hidden = true;
                 }.bind(this), 1000);
 
+            },
+
+            _computeBusiness: function(page) {
+                return page === 'applications';
             },
 
             _onPageAnimationFinish: function(event) {

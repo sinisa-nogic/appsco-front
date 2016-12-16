@@ -1,0 +1,468 @@
+<link rel="import" href="../bower_components/polymer/polymer.html">
+<link rel="import" href="../bower_components/paper-tabs/paper-tabs.html">
+<link rel="import" href="../bower_components/neon-animation/neon-animated-pages.html">
+<link rel="import" href="../bower_components/neon-animation/animations/fade-in-animation.html">
+<link rel="import" href="../bower_components/neon-animation/animations/fade-out-animation.html">
+<link rel="import" href="../bower_components/iron-flex-layout/iron-flex-layout.html">
+<link rel="import" href="../bower_components/iron-media-query/iron-media-query.html">
+
+<link rel="import" href="../bower_components/appsco-page/appsco-content.html">
+<link rel="import" href="../bower_components/appsco-application/appsco-applications.html">
+<link rel="import" href="../bower_components/appsco-application/appsco-application-info.html">
+<link rel="import" href="../bower_components/appsco-application/appsco-application-analytics-security.html">
+<link rel="import" href="../bower_components/appsco-application/appsco-application-subscribers.html">
+<link rel="import" href="../bower_components/appsco-application/appsco-application-analytics-info.html">
+<link rel="import" href="../bower_components/appsco-application/appsco-application-log.html">
+
+<dom-module id="appsco-applications-page">
+    <template>
+        <style include="shared-styles webkit-scrollbar-style">
+            :host {
+                display: block;
+
+                --paper-tabs-selection-bar-color: var(--app-primary-color);
+                --resource-width: 318px;
+                --info-width: 318px;
+
+                --appsco-application-item: {
+                     color: var(--primary-text-color);
+                 };
+
+                --appsco-list-item-message: {
+                    font-size: 14px;
+                    @apply(--paper-font-common-nowrap);
+                };
+                
+                --account-log-appsco-list-item: {
+                    padding-top: 14px;
+                    padding-bottom: 8px;
+                };
+
+                --application-details-label: {
+                    font-size: 12px;
+                };
+                --application-details-value: {
+                    font-size: 14px;
+                };
+
+                --applications-container: {
+                     margin-right: -30px;
+                 };
+            }
+            :host .resource-header {
+                border-bottom: 1px solid var(--divider-color);
+            }
+            :host div[content] > * {
+                padding: 0 10px 10px 10px;
+            }
+            :host div[resource] > *, :host div[info] > * {
+                padding: 10px;
+            }
+            :host div[info] {
+                height: 100%;
+            }
+            :host div[info] .application-info {
+                border-bottom: 1px solid var(--divider-color);
+                height: 50px;
+                box-sizing: border-box;
+                @apply(--layout-flex-none);
+            }
+            appsco-application-security {
+                --security-score: {
+                     width: 32px;
+                     height: 32px;
+                     font-size: 14px;
+                 };
+            }
+            :host div[info] appsco-application-subscribers {
+                height: 90px;
+                padding-top: 14px;
+                color: var(--primary-text-color);
+                box-sizing: border-box;
+                @apply(--layout-flex-none);
+            }
+            :host div[info] .details-log {
+                height: calc(100% - 50px - 65px);
+            }
+            :host .details-log paper-tabs {
+                height: 38px;
+                color: var(--primary-text-color);
+            }
+            :host div[info] .info-details-section {
+                margin-top: 6px;
+                height: calc(100% - 48px - 35px - 6px);
+            }
+            .tab-content {
+                margin-right: -10px;
+                padding-right: 10px;
+                overflow: auto;
+            }
+            :host div[info] .info-actions {
+                padding: 0;
+                position: absolute;
+                bottom: 0;
+                left: 0;
+                right: 0;
+            }
+            :host .view-button, :host .share-button {
+                color: #ffffff;
+                border-radius: 0;
+                margin: 0;
+                padding: 6px 12px;
+                font-size: 14px;
+                height: 34px;
+            }
+            :host .view-button {
+                margin-right: 1px;
+                background-color: var(--app-primary-color);
+            }
+            :host .share-button {
+                background-color: var(--app-secondary-color);
+            }
+            appsco-application-share {
+                --appsco-application-share-button: {
+                     border-radius: 0;
+                     margin: 0;
+                     padding: 6px 12px;
+                     background-color: var(--app-secondary-color);
+                     color: #ffffff;
+                     font-size: 14px;
+                     height: 34px;
+                 };
+            }
+            appsco-application-details {
+                --appsco-application-icons-color: var(--primary-text-color);
+            }
+            :host .flex-horizontal {
+                @apply(--layout-horizontal);
+                @apply(--layout-center);
+            }
+            :host .flex-vertical {
+                @apply(--layout-vertical);
+            }
+            :host .flex {
+                @apply(--layout-flex);
+            }
+            :host([tablet-screen]) {
+                --resource-width: 250px;
+                --info-width: 250px;
+            }
+            :host([mobile-screen]) {
+                --resource-width: 100%;
+                --info-width: 100%;
+            }
+        </style>
+
+        <iron-media-query query="(max-width: 800px)" query-matches="{{ tabletScreen }}"></iron-media-query>
+        <iron-media-query query="(max-width: 600px)" query-matches="{{ mobileScreen }}"></iron-media-query>
+
+        <appsco-content id="appscoContent" resource-active>
+
+            <div class="flex-vertical" resource>
+
+                <div class="resource-header">
+                    Filters
+                </div>
+
+            </div>
+
+            <div content>
+                <appsco-applications
+                        id="appscoApplications"
+                        size="10"
+                        load-more
+                        company
+                        authorization-token="[[ authorizationToken ]]"
+                        applications-api="[[ companyApplicationsApi ]]"
+                        on-info="_onViewApplicationInfo"
+                        on-edit="_onApplicationEdit"
+                        on-application="_onApplication"
+                        on-application-removed="_onApplicationRemoved"
+                        on-loaded="_pageLoaded"
+                        on-empty-load="_pageLoaded"></appsco-applications>
+            </div>
+
+            <div class="flex-vertical" info>
+
+                <div class="application-info flex-horizontal">
+                    <appsco-application-info class="flex"
+                                             application="[[ application ]]"
+                                             company>
+                    </appsco-application-info>
+
+                    <appsco-application-analytics-security
+                            application="[[ application ]]"></appsco-application-analytics-security>
+                </div>
+
+                <appsco-application-subscribers
+                        application="[[ application ]]"
+                        authorization-token="[[ authorizationToken ]]">
+                </appsco-application-subscribers>
+
+                <div class="details-log flex-vertical">
+
+                    <paper-tabs id="paperTabs" selected="{{ _selectedTab }}">
+                        <paper-tab name="info">Info</paper-tab>
+                        <paper-tab name="log">Log</paper-tab>
+                    </paper-tabs>
+
+                    <neon-animated-pages
+                            selected="{{ _selectedTab }}"
+                            entry-animation="fade-in-animation"
+                            exit-animation="fade-out-animation"
+                            class="info-details-section">
+
+                        <div name="info" class="tab-content details">
+                            <appsco-application-analytics-info
+                                    application="[[ application ]]"
+                                    authorization-token="[[ authorizationToken ]]"></appsco-application-analytics-info>
+                        </div>
+
+                        <div name="log" class="tab-content log">
+                            <appsco-application-log
+                                    application="[[ application ]]"
+                                    authorization-token="[[ authorizationToken ]]">
+                            </appsco-application-log>
+                        </div>
+
+                    </neon-animated-pages>
+
+                </div>
+
+                <div class="info-actions flex-horizontal">
+                    <paper-button
+                            class="view-button flex"
+                            on-tap="_onApplicationInfoEdit">
+                        Edit
+                    </paper-button>
+
+                    <paper-button
+                            class="share-button flex"
+                            on-tap="_onShareApplication">
+                        Share
+                    </paper-button>
+                </div>
+
+            </div>
+
+        </appsco-content>
+
+    </template>
+
+    <script>
+        Polymer({
+            is: 'appsco-applications-page',
+
+            properties: {
+
+                application: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    },
+                    notify: true
+                },
+
+                _selectedApplications: {
+                    type: Array,
+                    value: function() {
+                        return [];
+                    }
+                },
+
+                _bulkActions: {
+                    type: Boolean,
+                    value: false,
+                    notify: true
+                },
+
+                _infoShown: {
+                    type: Boolean,
+                    value: false
+                },
+
+                _selectedTab: {
+                    type: Number
+                },
+
+                authorizationToken: {
+                    type: String,
+                    value: ''
+                },
+
+                /**
+                 * Get company applications.
+                 */
+                companyApplicationsApi: {
+                    type: String,
+                    value: ''
+                },
+
+                _applications: {
+                    type: Array,
+                    value: function () {
+                        return [];
+                    }
+                },
+
+                mobileScreen: {
+                    type: Boolean,
+                    value: false,
+                    reflectToAttribute: true
+                },
+
+                tabletScreen: {
+                    type: Boolean,
+                    value: false,
+                    reflectToAttribute: true
+                },
+
+                /**
+                 * Animation config.
+                 */
+                animationConfig: {
+                    value: function() {
+                        return {
+                            'entry': {
+                                name: 'fade-in-animation',
+                                node: this,
+                                timing: {
+                                    duration: 300
+                                }
+                            },
+                            'exit': {
+                                name: 'fade-out-animation',
+                                node: this,
+                                timing: {
+                                    duration: 200
+                                }
+                            }
+                        }
+                    }
+                },
+
+                pageLoaded: {
+                    type: Boolean,
+                    value: false
+                }
+            },
+
+            behaviors: [
+                Polymer.NeonAnimatableBehavior
+            ],
+
+            observers: [
+                '_updateScreen(mobileScreen, tabletScreen)'
+            ],
+
+            attached: function() {
+
+                this.pageLoaded = false;
+
+                if (this.mobileScreen || this.tabletScreen) {
+                    this.updateStyles();
+                }
+
+            },
+
+            _updateScreen: function(mobile, tablet) {
+                this.updateStyles();
+            },
+
+            _pageLoaded: function() {
+                this.pageLoaded = true;
+                this.fire('page-loaded');
+            },
+
+            _showInfo: function() {
+                this.$.appscoContent.showSection('info');
+                this._infoShown = true;
+                this._selectedTab = 0;
+            },
+
+            hideInfo: function() {
+                this.$.appscoContent.hideSection('info');
+                this._infoShown = false;
+            },
+
+            toggleInfo: function() {
+                this.$.appscoContent.toggleSection('info');
+                this._infoShown = !this._infoShown;
+
+                if (this._infoShown) {
+                    this._selectedTab = 0;
+                }
+            },
+
+            toggleResource: function() {
+                this.$.appscoContent.toggleSection('resource');
+            },
+
+            _onViewApplicationInfo: function(event) {
+                this.set('application', event.detail.application);
+
+                if (!this._infoShown) {
+                    this._showInfo();
+                }
+            },
+
+            _onApplicationEdit: function(event) {
+                this.set('application', event.detail.application);
+                this.fire('edit-application');
+            },
+
+            _onApplicationInfoEdit: function() {
+                this.fire('info-edit-application');
+            },
+
+            _onApplication: function(event) {
+                var application = event.detail.application,
+                    index = this._selectedApplications.indexOf(application);
+
+                if (index > -1) {
+                    this.splice('_selectedApplications', index, 1);
+                }
+                else {
+                    this.push('_selectedApplications', application);
+                }
+
+                if (this._selectedApplications.length > 1) {
+                    this.fire('show-bulk-actions');
+                }
+                else {
+                    this.fire('hide-bulk-actions');
+                }
+
+                this._onViewApplicationInfo(event);
+            },
+
+            _onShareApplication: function() {
+                this.fire('share-application');
+            },
+
+            reloadApplications: function(callback) {
+                this.$.appscoApplications.reloadApplications(callback);
+            },
+
+            addApplication: function(application) {
+                this.$.appscoApplications.addApplication(application);
+            },
+
+            removeApplication: function(application) {
+                this.$.appscoApplications.removeApplication(application);
+            },
+
+            _onApplicationRemoved: function() {
+                this.setDefaultApplication();
+            },
+
+            setDefaultApplication: function() {
+                this.set('application', this.$.appscoApplications.getFirstApplication());
+            },
+
+            filterApplicationsByTerm: function(term) {
+                this.$.appscoApplications.filterApplicationsByTerm(term);
+            }
+        });
+    </script>
+</dom-module>

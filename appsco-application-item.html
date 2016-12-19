@@ -34,7 +34,6 @@ Custom property | Description | Default
             :host {
                 display: none;
             }
-
             :host .item {
                 text-align: center;
                 width: 141px;
@@ -48,34 +47,32 @@ Custom property | Description | Default
                 cursor: pointer;
             @apply(--appsco-application-item);
             }
-
             :host .item:hover {
             @apply(--shadow-elevation-4dp);
             }
-
-            :host iron-image {
+            :host .application-icon {
                 width: 52px;
                 height: 52px;
                 margin: 24px 0 8px 0;
             }
-
+            :host .application-title {
+                display: block;
+                height: 32px;
+                line-height: 16px;
+            @apply(--paper-font-common-base);
+                font-size: 14px;
+                font-weight: 400;
+                overflow: hidden;
+            }
+            :host .application-org-units {
+                display: none;
+            }
             :host .actions {
             @apply(--layout-horizontal);
             @apply(--layout-center);
                 position: absolute;
                 bottom: 2px;
             }
-
-            :host .application-title {
-                display: block;
-                height: 32px;
-                line-height: 16px;
-                @apply(--paper-font-common-base);
-                font-size: 14px;
-                font-weight: 400;
-                overflow: hidden;
-            }
-
             :host paper-button {
             @apply(--paper-font-common-base);
             @apply(--paper-font-common-nowrap);
@@ -90,14 +87,73 @@ Custom property | Description | Default
             :host paper-button[disabled] {
                 background: transparent;
             }
+            :host([company][active]) .item {
+                background: var(--app-primary-color);
+                color: #ffffff;
+                transition: all 0.3s ease-in;
+            }
+            :host([company]) .item {
+                width: 100%;
+                height: 70px;
+                padding: 0 10px;
+                box-sizing: border-box;
+                border-radius: 3px;
+                text-align: left;
+            @apply(--layout-horizontal);
+            @apply(--layout-center);
+                transition: all 0.2s ease-out;
+            }
+            :host([company]) .application-icon {
+                margin: 0;
+            @apply(--layout-flex-none);
+            }
+            :host([company]) .application-info {
+            @apply(--layout-vertical);
+            @apply(--layout-start);
+                padding: 0 10px;
+                /*margin-right: 20px;*/
+            }
+            :host([company]) .application-info-auth-type {
+                border-left: 1px solid var(--divider-color);
+            }
+            :host([company]) .info-label {
+                font-size: 16px;
+                height: auto;
+                line-height: normal;
+            }
+            :host([company]) .info-value {
+                display: block;
+                font-size: 12px;
+            }
+            :host([company]) .actions {
+                right: 4px;
+                bottom: 4px;
+            }
         </style>
 
         <div class="item" on-tap="_onApplicationAction">
-            <iron-image placeholder="data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACwAAAAAAQABAAACAkQBADs=" sizing="cover"
-                        preload fade src="[[ application.icon_url ]]"></iron-image>
-            <span class="application-title">[[ application.title ]]</span>
+            <iron-image class="application-icon"
+                        placeholder="data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACwAAAAAAQABAAACAkQBADs="
+                        sizing="cover"
+                        preload fade src="[[ _applicationIcon ]]"></iron-image>
+
+            <div class="application-info">
+                <span class="info-label application-title">[[ application.title ]]</span>
+                <span class="info-value"
+                      hidden$="[[ !company ]]">Organization units: AppsCo, GIPS, Rotary</span>
+            </div>
+
+            <div class="application-info application-info-auth-type"
+                 hidden$="[[ !company ]]">
+                <span class="info-label">Auth type</span>
+                <span class="info-value">[[ application.auth_type ]]</span>
+            </div>
+
             <div class="actions">
-                <paper-button on-tap="_onInfo">Info</paper-button>
+                <template is="dom-if" if="[[ !company ]]">
+                    <paper-button on-tap="_onInfo">Info</paper-button>
+                </template>
+
                 <paper-button on-tap="_onEdit"
                               disabled$="[[ _shared ]]">Edit</paper-button>
             </div>
@@ -111,6 +167,16 @@ Custom property | Description | Default
             is: 'appsco-application-item',
 
             properties: {
+
+                /**
+                 * Indicates if user manages company applications or not.
+                 */
+                company: {
+                    type: Boolean,
+                    value: false,
+                    reflectToAttribute: true
+                },
+
                 /**
                  * [Application](https://developers.appsco.com/api/dashboard/id/icons/id) that is to be rendered
                  */
@@ -119,9 +185,20 @@ Custom property | Description | Default
                     value: {}
                 },
 
+                active: {
+                    type: Boolean,
+                    value: false,
+                    reflectToAttribute: true
+                },
+
+                _applicationIcon: {
+                    type: String,
+                    computed: '_computeApplicationIcon(company, application)'
+                },
+
                 _shared: {
                     type: Boolean,
-                    computed: '_computeApplicationShared(application)'
+                    computed: '_computeApplicationShared(company, application)'
                 },
 
                 /**
@@ -158,8 +235,12 @@ Custom property | Description | Default
                 this.playAnimation('entry');
             },
 
-            _computeApplicationShared: function(application) {
-                return !application.owner;
+            _computeApplicationIcon: function(company, application) {
+                return company ? application.application_url : application.icon_url;
+            },
+
+            _computeApplicationShared: function(company, application) {
+                return (!company && !application.owner);
             },
 
             _onInfo: function (event) {
@@ -193,6 +274,8 @@ Custom property | Description | Default
             },
 
             _onApplicationAction: function() {
+                this.active = !this.active;
+
                 /**
                  * Fired when whole item is tapped.
                  *

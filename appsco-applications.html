@@ -52,9 +52,18 @@ Custom property | Description | Default
                 margin-right: -10px;
             @apply(--applications-container);
             }
-
+            :host([company]) div[applications] {
+            @apply(--layout-vertical);
+            @apply(--layout-start);
+                margin-right: 0;
+            }
             :host appsco-application-item {
                 margin: 0 10px 10px 0;
+            @apply(--appsco-applications-item);
+            }
+            :host([company]) appsco-application-item {
+                width: 100%;
+                margin: 0 0 10px 0;
             @apply(--appsco-applications-item);
             }
 
@@ -108,13 +117,14 @@ Custom property | Description | Default
             </template>
 
             <template is="dom-if" if="[[ !_applicationsEmpty ]]">
-                <div applications>
+                <div applications company$="[[ company ]]">
                     <template is="dom-repeat" items="{{ _applications }}">
-                        <appsco-application-item
-                                id="appscoApplicationItem_[[ index ]]"
-                                class="applicationitem"
-                                application="{{ item }}"
-                                ></appsco-application-item>
+
+                        <appsco-application-item id="appscoApplicationItem_[[ index ]]"
+                                                 class="applicationitem"
+                                                 application="{{ item }}"
+                                                 company="[[ company ]]"></appsco-application-item>
+
                     </template>
                 </div>
             </template>
@@ -133,6 +143,19 @@ Custom property | Description | Default
             is: 'appsco-applications',
 
             properties: {
+
+                /**
+                 * Indicates if user manages company applications or not.
+                 */
+                company: {
+                    type: Boolean,
+                    value: false,
+                    reflectToAttribute: true
+                },
+
+                /**
+                 * Authorization token.
+                 */
                 authorizationToken: {
                     type: String,
                     value: ''
@@ -240,12 +263,12 @@ Custom property | Description | Default
                 this._hideProgressBar();
             },
 
-            _onResponse: function (e) {
+            _onResponse: function(e) {
                 var me = this,
-                    response = e.detail.response,
-                    icons = response.icons,
-                    meta = response.meta,
-                    iconsCount = icons.length - 1;
+                        response = e.detail.response,
+                        icons = response.icons ? response.icons : response.applications,
+                        meta = response.meta,
+                        iconsCount = icons.length - 1;
 
                 this._totalApplications = meta.total;
                 this._next = meta.next + "&limit=" + this.size;

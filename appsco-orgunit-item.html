@@ -1,0 +1,174 @@
+<link rel="import" href="../polymer/polymer.html">
+
+<link rel="import" href="../paper-item/paper-item.html">
+<link rel="import" href="../paper-item/paper-item.html">
+<link rel="import" href="../paper-styles/typography.html">
+<link rel="import" href="../paper-material/paper-material.html">
+
+<link rel="import" href="../iron-icon/iron-icon.html">
+<link rel="import" href="../iron-icons/iron-icons.html">
+<link rel="import" href="../iron-flex-layout/iron-flex-layout.html">
+
+
+<!--
+`appsco-orgunit-item`
+Representation of organization unit item
+
+    <appsco-orgunit-item>
+    </appsco-orgunit-item>
+
+### Styling
+
+`<appsco-orgunit-item>` provides the following custom properties and mixins for styling:
+
+Custom property | Description | Default
+----------------|-------------|----------
+`--appsco-orgunit-item-selected` | Mixin for the root element if it is selected | `{}`
+`--appsco-orgunit-item` | Mixin for the root element | `{}`
+
+@demo demo/appsco-orgunit-item.html
+-->
+
+<dom-module id="appsco-orgunit-item">
+    <template>
+        <style>
+            :host {
+                display: block;
+                @apply(--appsco-orgunit-item);
+                position: relative;
+                @apply(--paper-font-body1);
+                width: 100%;
+                @apply(--layout-horizontal);
+                height: 24px;
+            }
+            :host([selected]) {
+                @apply(--appsco-orgunit-item-selected);
+            }
+            :host .flex {
+                @apply(--layout-flex);
+            }
+            :host .layout-horizontal {
+                @apply(--layout-horizontal);
+            }
+            :host #options {
+                z-index: 10;
+                overflow: auto;
+                position: absolute;
+                right: 0;
+                background-color: white;
+                min-width: 150px;
+            }
+            :host paper-item {
+                border-bottom: 1px solid rgba(0,0,0, 0.1);
+                @apply(--paper-font-caption);
+            }
+            :host paper-item:last-child {
+                border-bottom: 0;
+            }
+        </style>
+
+        <div class="flex" on-tap="_organizationUnitTapped">
+            [[ orgUnit.name ]]
+        </div>
+        <div id="iconOptions" hidden="true">
+            <iron-icon icon="icons:more-vert" on-tap="_toggleOptions"></iron-icon>
+            <paper-material id="options" hidden >
+                <paper-item on-tap="_modify" hidden="[[ !modify ]]">Modify</paper-item>
+                <paper-item on-tap="_add" hidden="[[ !add ]]">Add sub organization</paper-item>
+                <paper-item on-tap="_delete" hidden="[[ !remove ]]">Delete</paper-item>
+            </paper-material>
+        </div>
+    </template>
+
+    <script>
+        Polymer({
+
+            is: 'appsco-orgunit-item',
+
+            properties: {
+                /**
+                 * [OrgUnit]() that is to be rendered
+                 */
+                orgUnit: {
+                    type: Object,
+                    value: function () { return {}; }
+                },
+
+                modify: {
+                    type: Boolean,
+                    value: false
+                },
+
+                add: {
+                    type: Boolean,
+                    value: false
+                },
+
+                remove: {
+                    type: Boolean,
+                    value: false
+                },
+
+                selected: {
+                    type: Boolean,
+                    value: false,
+                    reflectToAttribute: true
+                }
+            },
+
+            listeners: {
+                'mouseenter': "_showIcon",
+                'mouseleave': "_hideIcon"
+            },
+
+            _showIcon: function() {
+                if(!this.modify && !this.add && !this.remove) {
+                    return;
+                }
+                this.$.iconOptions.hidden = false;
+            },
+
+            _hideIcon: function() {
+                this.$.iconOptions.hidden = true;
+                this.$.options.hidden = true;
+            },
+
+            _toggleOptions: function() {
+                this.$.options.hidden = !this.$.options.hidden;
+            },
+
+            _modify: function() {
+                this.$.options.hidden = true;
+                this.fire('modify', {
+                    orgUnit: this.orgUnit
+                })
+            },
+
+            _add: function() {
+                this.$.options.hidden = true;
+                this.fire('add', {
+                    orgUnit: this.orgUnit
+                })
+            },
+
+            _delete: function() {
+                this.$.options.hidden = true;
+                this.fire('delete', {
+                    orgUnit: this.orgUnit
+                })
+            },
+
+            _organizationUnitTapped: function() {
+                this.selected = !this.selected;
+                this.fire('selected', {
+                    orgUnit: this.orgUnit,
+                    selected: this.selected
+                })
+            },
+
+            deSelect: function() {
+                this.selected = false;
+            }
+        });
+    </script>
+</dom-module>

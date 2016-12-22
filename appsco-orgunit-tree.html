@@ -1,0 +1,202 @@
+<link rel="import" href="../polymer/polymer.html">
+
+<link rel="import" href="../iron-icon/iron-icon.html">
+<link rel="import" href="../iron-icons/iron-icons.html">
+<link rel="import" href="../iron-flex-layout/iron-flex-layout.html">
+
+<link rel="import" href="../paper-styles/typography.html">
+
+<link rel="import" href="appsco-orgunit-item.html">
+
+
+<!--
+`appsco-orgunit-tree`
+Representation of organization unit item
+
+    <appsco-orgunit-tree>
+    </appsco-orgunit-tree>
+
+### Styling
+
+`<appsco-orgunit-tree>` provides the following custom properties and mixins for styling:
+
+Custom property | Description | Default
+----------------|-------------|----------
+`--appsco-orgunit-tree` | Mixin for the root element | `{}`
+
+@demo demo/appsco-orgunit-tree.html
+-->
+
+<dom-module id="appsco-orgunit-tree">
+    <template>
+        <style>
+            :host {
+                display: block;
+                @apply(--appsco-orgunit-tree);
+            }
+            :host .flex {
+                @apply(--layout-flex);
+            }
+            :host .layout-horizontal {
+                @apply(--layout-horizontal);
+            }
+            :host .node {
+                margin: 5px 0 5px 20px;
+            }
+            :host .nodeIcon {
+                width: 24px;
+            }
+            :host div.nodeContainer {
+            }
+            :host div.hide {
+                display: none;
+            }
+        </style>
+
+        <template is="dom-repeat" items="{{ _treeNodes }}" id="tree" index-as="rootIndex">
+            <div class="layout-horizontal">
+                <div class="nodeIcon">
+                    <template is="dom-if" if="[[ _hasChildren(item.children) ]]">
+                        <iron-icon icon="icons:expand-more" on-tap="_toggleOptions" for$="root_[[ rootIndex ]]"></iron-icon>
+                    </template>
+                </div>
+                <div class="parentNode flex">
+                    <appsco-orgunit-item org-unit="{{ item }}" modify add></appsco-orgunit-item>
+                    <div id$="root_[[ rootIndex ]]" class="nodeContainer" hidden>
+                        <template is="dom-repeat" items="{{ item.children }}" as="child" index-as="childIndex">
+                            <div class="layout-horizontal node" >
+                                <div class="nodeIcon">
+                                    <template is="dom-if" if="[[ _hasChildren(child.children) ]]">
+                                        <iron-icon icon="icons:expand-more" on-tap="_toggleOptions" for$="child_[[ childIndex ]]"></iron-icon>
+                                    </template>
+                                </div>
+                                <div class="childNode flex">
+                                    <appsco-orgunit-item org-unit="{{ child }}" modify add remove></appsco-orgunit-item>
+                                    <div id$="child_[[ childIndex ]]" class="nodeContainer" hidden>
+                                        <template is="dom-repeat" items="{{ child.children }}" as="child1">
+                                            <div class="child1Node node flex" >
+                                                <appsco-orgunit-item org-unit="{{ child1 }}" modify remove></appsco-orgunit-item>
+                                            </div>
+                                        </template>
+                                    </div>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+            </div>
+        </template>
+    </template>
+
+    <script>
+        Polymer({
+
+            is: 'appsco-orgunit-tree',
+
+            properties: {
+                _treeNodes: {
+                    type: Array,
+                    value: function () {
+                        return [];
+                    },
+                    notify: true
+                },
+
+                /**
+                 * [OrgUnit]() that is to be rendered
+                 */
+                orgUnits: {
+                    type: Array,
+                    value: function () {
+                        return [];
+                    },
+                    notify: true
+                },
+
+                multipleSelect: {
+                    type: Boolean,
+                    value: false
+                }
+            },
+
+            listeners: {
+                "selected": "_selectedNode"
+            },
+
+            observers: [
+                "orgUnitsChanged(orgUnits.*)"
+            ],
+
+            _toggleOptions: function(e) {
+                var item = e.target.getAttribute('for');
+                var dom = Polymer.dom(this.root).querySelector('#'+item);
+//                true == dom.hidden ? dom.classList.add('hide') : dom.classList.remove('hide');
+                e.target.icon = true == dom.hidden ? 'icons:expand-less' : 'icons:expand-more';
+                dom.hidden = !dom.hidden;
+            },
+
+            _hasChildren: function(arr) {
+                return arr.length > 0;
+            },
+
+            orgUnitsChanged: function() {
+                this._treeNodes = [];
+                this._treeNodes = JSON.parse(JSON.stringify(this.unflatten(this.orgUnits)));
+            },
+
+            unflatten: function (arr) {
+                var tree = [],
+                        mappedArr = {},
+                        arrElem,
+                        mappedElem;
+
+                // First map the nodes of the array to an object -> create a hash table.
+                for(var i = 0, len = arr.length; i < len; i++) {
+                    arrElem = arr[i];
+                    mappedArr[arrElem.self] = arrElem;
+                    mappedArr[arrElem.self]['children'] = [];
+                }
+                for (var id in mappedArr) {
+                    if (mappedArr.hasOwnProperty(id)) {
+                        mappedElem = mappedArr[id];
+                        // If the element is not at the root level, add it to its parent array of children.
+                        if (mappedElem.parent) {
+                            mappedArr[mappedElem['parent']]['children'].push(mappedElem);
+                        }
+                        // If the element is at the root level, add it to first level elements array.
+                        else {
+                            tree.push(mappedElem);
+                        }
+                    }
+                }
+                return tree;
+            },
+
+            _selectedNode: function(e) {
+                var orgUnit = e.detail.orgUnit;
+                if(!this.multipleSelect) {
+                    Polymer.dom(this.root).querySelectorAll('appsco-orgunit-item').forEach(function (item) {
+                        if (item.orgUnit.alias != orgUnit.alias) {
+                            item.deSelect();
+                        }
+                    });
+                }
+                this.fire('node-selected', {
+                    orgUnit: orgUnit,
+                    selected: e.detail.selected
+                })
+            },
+
+            selectedNodes: function() {
+                var selectedNodes = [];
+                Polymer.dom(this.root).querySelectorAll('appsco-orgunit-item').forEach(function (item) {
+                    if (item.selected) {
+                        selectedNodes.push(item.orgUnit);
+                    }
+                });
+
+                return selectedNodes;
+            }
+        });
+    </script>
+</dom-module>

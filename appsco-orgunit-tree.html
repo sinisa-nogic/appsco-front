@@ -94,6 +94,11 @@ Custom property | Description | Default
             is: 'appsco-orgunit-tree',
 
             properties: {
+                /**
+                 * List of parsed orgUnits structure into tree
+                 *
+                 * @private
+                 */
                 _treeNodes: {
                     type: Array,
                     value: function () {
@@ -113,6 +118,9 @@ Custom property | Description | Default
                     notify: true
                 },
 
+                /**
+                 * If set to true this option will allow multiple node selection
+                 */
                 multipleSelect: {
                     type: Boolean,
                     value: false
@@ -127,6 +135,11 @@ Custom property | Description | Default
                 "orgUnitsChanged(orgUnits.*)"
             ],
 
+            /**
+             * Toggle children
+             *
+             * @private
+             */
             _toggleOptions: function(e) {
                 var item = e.target.getAttribute('for');
                 var dom = Polymer.dom(this.root).querySelector('#'+item);
@@ -135,15 +148,30 @@ Custom property | Description | Default
                 dom.hidden = !dom.hidden;
             },
 
+            /**
+             * Check if children exists
+             *
+             * @private
+             */
             _hasChildren: function(arr) {
                 return arr.length > 0;
             },
 
+            /**
+             * Observer that will re render tree nodes when orgUnits array is changed
+             *
+             * @private
+             */
             orgUnitsChanged: function() {
                 this._treeNodes = [];
                 this._treeNodes = JSON.parse(JSON.stringify(this.unflatten(this.orgUnits)));
             },
 
+            /**
+             * Creates tree structure from flat structure
+             *
+             * @private
+             */
             unflatten: function (arr) {
                 var tree = [],
                         mappedArr = {},
@@ -172,6 +200,11 @@ Custom property | Description | Default
                 return tree;
             },
 
+            /**
+             * On select if multiple select param is set do nothing, if not deselect previously selected node
+             *
+             * @private
+             */
             _selectedNode: function(e) {
                 var orgUnit = e.detail.orgUnit;
                 if(!this.multipleSelect) {
@@ -181,12 +214,26 @@ Custom property | Description | Default
                         }
                     });
                 }
+
+                /**
+                 * Fired when organization unit is selected
+                 *
+                 * @event node-selected
+                 * @param {Object} orgUnit [OrgUnit](https://developers.appsco.com/api/dashboard/id/icons/id)
+                 *                              for which event is fired
+                 * @param {Boolean} selected is element selected or not
+                 */
                 this.fire('node-selected', {
                     orgUnit: orgUnit,
                     selected: e.detail.selected
                 })
             },
 
+            /**
+             * Retrieves all selected nodes
+             *
+             * @returns {Array}
+             */
             selectedNodes: function() {
                 var selectedNodes = [];
                 Polymer.dom(this.root).querySelectorAll('appsco-orgunit-item').forEach(function (item) {

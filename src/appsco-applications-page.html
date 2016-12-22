@@ -13,6 +13,7 @@
 <link rel="import" href="../bower_components/appsco-application/appsco-application-subscribers.html">
 <link rel="import" href="../bower_components/appsco-application/appsco-application-analytics-info.html">
 <link rel="import" href="../bower_components/appsco-application/appsco-application-log.html">
+<link rel="import" href="../bower_components/appsco-orgunit/appsco-orgunit-tree.html">
 
 <dom-module id="appsco-applications-page">
     <template>
@@ -57,6 +58,7 @@
             }
             :host div[resource] > *, :host div[info] > * {
                 padding: 10px;
+                box-sizing: border-box;
             }
             :host div[info] {
                 height: 100%;
@@ -64,10 +66,9 @@
             :host div[info] .application-info {
                 border-bottom: 1px solid var(--divider-color);
                 height: 50px;
-                box-sizing: border-box;
                 @apply(--layout-flex-none);
             }
-            appsco-application-security {
+            appsco-application-analytics-security {
                 --security-score: {
                      width: 32px;
                      height: 32px;
@@ -78,11 +79,10 @@
                 height: 90px;
                 padding-top: 14px;
                 color: var(--primary-text-color);
-                box-sizing: border-box;
                 @apply(--layout-flex-none);
             }
             :host div[info] .details-log {
-                height: calc(100% - 50px - 65px);
+                height: calc(100% - 50px - 90px - 34px);
             }
             :host .details-log paper-tabs {
                 height: 38px;
@@ -156,6 +156,11 @@
         <iron-media-query query="(max-width: 800px)" query-matches="{{ tabletScreen }}"></iron-media-query>
         <iron-media-query query="(max-width: 600px)" query-matches="{{ mobileScreen }}"></iron-media-query>
 
+        <iron-ajax auto
+                   url="[[ companyOrgunitsApi ]]"
+                   on-response="_onOrgunitsResponse"
+                   headers="{{ computedHeaders }}"></iron-ajax>
+
         <appsco-content id="appscoContent" resource-active>
 
             <div class="flex-vertical" resource>
@@ -163,6 +168,9 @@
                 <div class="resource-header">
                     Filters
                 </div>
+
+                <appsco-orgunit-tree id="appscoOrgunitTree"
+                                     org-units='[[ _orgUnits ]]'></appsco-orgunit-tree>
 
             </div>
 
@@ -270,6 +278,13 @@
                     }
                 },
 
+                _orgUnits: {
+                    type: Array,
+                    value: function() {
+                        return [];
+                    }
+                },
+
                 _bulkActions: {
                     type: Boolean,
                     value: false,
@@ -291,9 +306,28 @@
                 },
 
                 /**
+                 * Computed headers.
+                 * It contains authorization token.
+                 */
+                computedHeaders: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    }
+                },
+
+                /**
                  * Get company applications.
                  */
                 companyApplicationsApi: {
+                    type: String,
+                    value: ''
+                },
+
+                /**
+                 * Get company organization units.
+                 */
+                companyOrgunitsApi: {
                     type: String,
                     value: ''
                 },
@@ -398,6 +432,22 @@
                 this.$.appscoContent.toggleSection('resource');
             },
 
+            _onOrgunitsResponse: function(event) {
+                this._orgUnits = event.detail.response.orgunits
+            },
+
+            addOrgunit: function(orgunit) {
+                this.$.appscoOrgunitTree.addOrgunit(orgunit);
+            },
+
+            modifyOrgunit: function(orgunit) {
+                this.$.appscoOrgunitTree.setOrgunit(orgunit);
+            },
+
+            removeOrgunit: function(orgunit) {
+                this.$.appscoOrgunitTree.removeOrgunit(orgunit);
+            },
+
             _onViewApplicationInfo: function(event) {
                 this.set('application', event.detail.application);
 
@@ -427,11 +477,13 @@
                     this.push('_selectedApplications', application);
                 }
 
-                if (this._selectedApplications.length > 1) {
+                if (this._selectedApplications.length > 0) {
                     this.fire('show-bulk-actions');
                 }
                 else {
                     this.fire('hide-bulk-actions');
+//                    this.hideInfo();
+                    this.setDefaultApplication();
                 }
 
             },

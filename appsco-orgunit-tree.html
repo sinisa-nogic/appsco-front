@@ -1,10 +1,11 @@
 <link rel="import" href="../polymer/polymer.html">
-
 <link rel="import" href="../iron-icon/iron-icon.html">
 <link rel="import" href="../iron-icons/iron-icons.html">
 <link rel="import" href="../iron-flex-layout/iron-flex-layout.html">
-
 <link rel="import" href="../paper-styles/typography.html">
+<link rel="import" href="../neon-animation/neon-animation-runner-behavior.html">
+<link rel="import" href="../neon-animation/animations/scale-up-animation.html">
+<link rel="import" href="../neon-animation/animations/scale-down-animation.html">
 
 <link rel="import" href="appsco-orgunit-item.html">
 
@@ -32,49 +33,58 @@ Custom property | Description | Default
         <style>
             :host {
                 display: block;
-                @apply(--appsco-orgunit-tree);
+            @apply(--appsco-orgunit-tree);
             }
             :host .flex {
-                @apply(--layout-flex);
+            @apply(--layout-flex);
             }
             :host .layout-horizontal {
-                @apply(--layout-horizontal);
+            @apply(--layout-horizontal);
             }
-            :host .node {
-                margin: 5px 0 5px 20px;
+            :host appsco-orgunit-item {
+                margin-left: -4px;
             }
-            :host .nodeIcon {
+            :host iron-icon {
+                transition: transform 0.2s linear;
+                cursor: pointer;
+            }
+            :host iron-icon[opened] {
+                transform: rotate(180deg);
+                transition: transform 0.3s linear;
+            }
+            :host .node-icon {
                 width: 24px;
             }
-            :host div.nodeContainer {
+            :host .node {
+                margin: 5px 0;
             }
-            :host div.hide {
-                display: none;
+            :host .child-node-1 {
+                margin: 0 0 0 16px;
             }
         </style>
 
         <template is="dom-repeat" items="{{ _treeNodes }}" id="tree" index-as="rootIndex">
             <div class="layout-horizontal">
-                <div class="nodeIcon">
+                <div class="node-icon">
                     <template is="dom-if" if="[[ _hasChildren(item.children) ]]">
                         <iron-icon icon="icons:expand-more" on-tap="_toggleOptions" for$="root_[[ rootIndex ]]"></iron-icon>
                     </template>
                 </div>
-                <div class="parentNode flex">
-                    <appsco-orgunit-item org-unit="{{ item }}" modify add></appsco-orgunit-item>
-                    <div id$="root_[[ rootIndex ]]" class="nodeContainer" hidden>
+                <div class="parent-node flex">
+                    <appsco-orgunit-item org-unit="{{ item }}" modify add$="[[ _addAction ]]"></appsco-orgunit-item>
+                    <div id$="root_[[ rootIndex ]]" class="node-container" hidden>
                         <template is="dom-repeat" items="{{ item.children }}" as="child" index-as="childIndex">
-                            <div class="layout-horizontal node" >
-                                <div class="nodeIcon">
+                            <div class="layout-horizontal node">
+                                <div class="node-icon">
                                     <template is="dom-if" if="[[ _hasChildren(child.children) ]]">
                                         <iron-icon icon="icons:expand-more" on-tap="_toggleOptions" for$="child_[[ childIndex ]]"></iron-icon>
                                     </template>
                                 </div>
-                                <div class="childNode flex">
-                                    <appsco-orgunit-item org-unit="{{ child }}" modify add remove></appsco-orgunit-item>
-                                    <div id$="child_[[ childIndex ]]" class="nodeContainer" hidden>
+                                <div class="child-node flex">
+                                    <appsco-orgunit-item org-unit="{{ child }}" modify add$="[[ _addAction ]]" remove></appsco-orgunit-item>
+                                    <div id$="child_[[ childIndex ]]" class="node-container" hidden>
                                         <template is="dom-repeat" items="{{ child.children }}" as="child1">
-                                            <div class="child1Node node flex" >
+                                            <div class="child-node-1 node flex" >
                                                 <appsco-orgunit-item org-unit="{{ child1 }}" modify remove></appsco-orgunit-item>
                                             </div>
                                         </template>
@@ -94,11 +104,6 @@ Custom property | Description | Default
             is: 'appsco-orgunit-tree',
 
             properties: {
-                /**
-                 * List of parsed orgUnits structure into tree
-                 *
-                 * @private
-                 */
                 _treeNodes: {
                     type: Array,
                     value: function () {
@@ -119,59 +124,111 @@ Custom property | Description | Default
                 },
 
                 /**
-                 * If set to true this option will allow multiple node selection
+                 * Number of organization units allowed.
                  */
+                size: {
+                    type: Number,
+                    value: 100
+                },
+
                 multipleSelect: {
                     type: Boolean,
                     value: false
+                },
+
+                /**
+                 * Indicates id Add Org Unit action should be available or not.
+                 */
+                _addAction: {
+                    type: Boolean,
+                    value: false
+                },
+
+                /**
+                 * Animation for loader appearance.
+                 */
+                animationConfig: {
+                    value: function() {
+                        return {
+                            'entry': {
+                                name: 'scale-up-animation',
+                                axis: 'y',
+                                transformOrigin: '0 0',
+                                timing: {
+                                    duration: 300
+                                }
+                            },
+                            'exit': {
+                                name: 'scale-down-animation',
+                                axis: 'y',
+                                transformOrigin: '0 0',
+                                timing: {
+                                    duration: 200
+                                }
+                            }
+                        }
+                    }
                 }
             },
 
+            behaviors: [
+                Polymer.NeonAnimationRunnerBehavior
+            ],
+
             listeners: {
-                "selected": "_selectedNode"
+                "selected": "_selectedNode",
+                'neon-animation-finish': '_onAnimationFinish'
             },
 
             observers: [
                 "orgUnitsChanged(orgUnits.*)"
             ],
 
-            /**
-             * Toggle children
-             *
-             * @private
-             */
+            _computeAddAction: function() {
+                this._addAction = this.orgUnits.length < this.size;
+            },
+
             _toggleOptions: function(e) {
-                var item = e.target.getAttribute('for');
-                var dom = Polymer.dom(this.root).querySelector('#'+item);
-//                true == dom.hidden ? dom.classList.add('hide') : dom.classList.remove('hide');
-                e.target.icon = true == dom.hidden ? 'icons:expand-less' : 'icons:expand-more';
+                var target = e.target,
+                        item = target.getAttribute('for'),
+                        dom = Polymer.dom(this.root).querySelector('#'+item);
+
+                this.animationConfig.entry.node = null;
+                this.animationConfig.exit.node = null;
+
+                this.animationConfig.entry.node = dom;
+
+                if (dom.hidden) {
+                    dom.style.display = 'block';
+                    this.playAnimation('entry');
+                }
+                else {
+                    this.animationConfig.exit.node = dom;
+                    this.playAnimation('exit');
+                }
+
+                dom.hidden ? target.setAttribute('opened', true) : target.removeAttribute('opened');
                 dom.hidden = !dom.hidden;
             },
 
-            /**
-             * Check if children exists
-             *
-             * @private
-             */
+            _onAnimationFinish: function() {
+
+                if (this.animationConfig.exit.node) {
+                    this.animationConfig.exit.node.style.display = 'none';
+                }
+
+            },
+
             _hasChildren: function(arr) {
                 return arr.length > 0;
             },
 
-            /**
-             * Observer that will re render tree nodes when orgUnits array is changed
-             *
-             * @private
-             */
             orgUnitsChanged: function() {
+                this._computeAddAction();
                 this._treeNodes = [];
                 this._treeNodes = JSON.parse(JSON.stringify(this.unflatten(this.orgUnits)));
             },
 
-            /**
-             * Creates tree structure from flat structure
-             *
-             * @private
-             */
             unflatten: function (arr) {
                 var tree = [],
                         mappedArr = {},
@@ -200,11 +257,6 @@ Custom property | Description | Default
                 return tree;
             },
 
-            /**
-             * On select if multiple select param is set do nothing, if not deselect previously selected node
-             *
-             * @private
-             */
             _selectedNode: function(e) {
                 var orgUnit = e.detail.orgUnit;
                 if(!this.multipleSelect) {
@@ -214,26 +266,12 @@ Custom property | Description | Default
                         }
                     });
                 }
-
-                /**
-                 * Fired when organization unit is selected
-                 *
-                 * @event node-selected
-                 * @param {Object} orgUnit [OrgUnit](https://developers.appsco.com/api/dashboard/id/icons/id)
-                 *                              for which event is fired
-                 * @param {Boolean} selected is element selected or not
-                 */
                 this.fire('node-selected', {
                     orgUnit: orgUnit,
                     selected: e.detail.selected
                 })
             },
 
-            /**
-             * Retrieves all selected nodes
-             *
-             * @returns {Array}
-             */
             selectedNodes: function() {
                 var selectedNodes = [];
                 Polymer.dom(this.root).querySelectorAll('appsco-orgunit-item').forEach(function (item) {
@@ -243,6 +281,37 @@ Custom property | Description | Default
                 });
 
                 return selectedNodes;
+            },
+
+            addOrgunit: function(orgunit) {
+                this.push('orgUnits', orgunit);
+            },
+
+            /**
+             * Finds orgunit in list and modifies it.
+             * If item doesn't exist it adds item to the list.
+             *
+             * @param orgunit
+             */
+            setOrgunit: function(orgunit) {
+                var orgunits = JSON.parse(JSON.stringify(this.orgUnits)),
+                        length = orgunits.length;
+
+                for (var i = 0; i < length; i++) {
+                    var currentOrgunit = orgunits[i];
+
+                    if (currentOrgunit.self === orgunit.self) {
+                        orgunits[i] = orgunit;
+                        this.set('orgUnits', []);
+                        this.set('orgUnits', orgunits);
+                        break;
+                    }
+                }
+            },
+
+            removeOrgunit: function(orgunit) {
+                var index = this.orgUnits.indexOf(orgunit);
+                this.splice('orgUnits', index, 1);
             }
         });
     </script>

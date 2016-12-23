@@ -44,6 +44,11 @@ Custom property | Description | Default
             @apply(--paper-font-caption);
                 opacity: 0.6;
             }
+            :host .message {
+                color: var(--secondary-text-color);
+                font-style: italic;
+            @apply(--paper-font-body2);
+            }
         </style>
         <iron-ajax
                 on-request="_loading"
@@ -69,6 +74,13 @@ Custom property | Description | Default
         <div hidden$="[[ !_totalSubscribers ]]">
             <span class="total">Total subscribers: [[ _totalSubscribers ]]</span>
         </div>
+
+        <template is="dom-if" if="{{ _message }}">
+            <p class="message">
+                [[ _message ]]
+            </p>
+        </template>
+
     </template>
 
     <script>
@@ -124,6 +136,13 @@ Custom property | Description | Default
                 },
                 _totalSubscribers: {
                     type: Number
+                },
+
+                /**
+                 * Message to display instead of subscribers.
+                 */
+                _message: {
+                    type: String
                 }
             },
             listeners: {
@@ -136,11 +155,12 @@ Custom property | Description | Default
             },
 
             _init: function (all) {
+                this.set('_message', '');
                 this.set('_accounts', []);
                 this.set('_currentUrl', '');
                 this.set('_totalSubscribers', null);
 
-                if (this.application && this.application.owner && 'meta' in this.application) {
+                if (this.application && this.application.meta) {
                     this._next = this.application.meta.subscribers + "?page=1&extended=1&limit=";
 
                     if (all != 'all' ) {
@@ -156,35 +176,41 @@ Custom property | Description | Default
                 }
             },
             _handleResponse: function (e) {
-                var me = this;
-                if (null == e.detail.response) {
-                    return;
+                var me = this,
+                        response = e.detail.response;
+
+                if (response && response.accounts.length > 0) {
+                    response.accounts.forEach(function(el, index) {
+
+                        setTimeout(function() {
+                            me.push('_accounts', el);
+
+                            if (index === e.detail.response.accounts.length - 1) {
+                                me._totalSubscribers = e.detail.response.meta.total;
+
+                                me.fire('subscribers-load', {
+                                    subscribers: e.detail.response
+                                });
+                            }
+
+                        }, (index + 1) * 50);
+
+                    });
+
+                    this._next = e.detail.response.meta.next + "&limit=" + this.size;
+                    // Wait for a bit longer so that loading looks nice
+                    setTimeout(function() {
+                        me.$.progress.hidden = true;
+                    }, 600 + (e.detail.response.accounts.length * 100))
                 }
-
-                e.detail.response.accounts.forEach(function (el, index) {
-
-                    setTimeout(function () {
-                        me.push('_accounts', el);
-
-                        if (index === e.detail.response.accounts.length -1) {
-                            me._totalSubscribers = e.detail.response.meta.total;
-
-                            me.fire('subscribers-load', {
-                                subscribers: e.detail.response
-                            });
-                        }
-
-                    }, (index + 1) * 50);
-
-                });
-
-                this._next = e.detail.response.meta.next + "&limit=" + this.size;
-                // Wait for a bit longer so that loading looks nice
-                setTimeout(function () {
-                    me.$.progress.hidden = true;
-                }, 600 + (e.detail.response.accounts.length * 100))
+                else {
+                    this._message = 'There are no subscribers for this application.';
+                    this.$.progress.hidden = true;
+                }
             },
+
             _handleError: function () {
+                this._message = 'We couldn\'t load subscribers at the moment. Please try again in a minute.';
                 this.$.progress.hidden = true;
             },
             _loading: function () {

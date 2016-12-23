@@ -63,53 +63,31 @@ Custom property | Description | Default
                 margin-top: 5px;
                 margin-bottom: 5px;
             }
-            .policy-name {
-                margin: 0;
-                font-weight: normal;
-            }
-            .policy-info {
-            @apply(--layout-horizontal);
-            @apply(--layout-center);
-                opacity: 0.8;
-            }
-            .policy-description {
-            @apply(--layout-flex);
-            }
-            .policy-score {
-            @apply(--layout-flex-none);
-            @apply(--paper-font-subhead);
-                margin-left: 20px;
-            }
-            .policy-score.weak {
-                color: var(--weak-color, #db4437);
-            }
-            .policy-score.medium {
-                color: var(--medium-color, #4285f4);
-            }
-            .policy-score.strong {
-                color: var(--strong-color, #0f9d58);
-            }
         </style>
 
-        <template is="dom-if" if="[[ _score ]]">
+        <template is="dom-if" if="[[ !_message ]]">
             <div class="security-score">
                 [[ _score ]]%
             </div>
+
+            <template is="dom-if" if="[[ info ]]">
+                <div class="policies">
+                    <div class="policy">
+                        [[ _security.info.configured ]] configured instances.
+                    </div>
+                    <div class="policy">
+                        [[ _security.info.not-configured ]] unconfigured instances.
+                    </div>
+                </div>
+            </template>
         </template>
 
-        <template is="dom-if" if="[[ info ]]">
-            <div class="policies">
-                <template is="dom-repeat" items="[[ _security.policy ]]">
-                    <div class="policy">
-                        <h3 class="policy-name">[[ item.name ]]</h3>
-                        <div class="policy-info">
-                            <div class="policy-description">[[ item.description ]]</div>
-                            <div class$="policy-score[[ _policyScore(item) ]]">[[ item.score ]]%</div>
-                        </div>
-                    </div>
-                </template>
-            </div>
+        <template is="dom-if" if="[[ _message ]]">
+            <template is="dom-if" if="[[ info ]]">
+                <p>[[ _message ]]</p>
+            </template>
         </template>
+
     </template>
 
     <script>
@@ -167,38 +145,27 @@ Custom property | Description | Default
                     type: Boolean,
                     value: false,
                     reflectToAttribute: true
+                },
+
+                _message: {
+                    type: String
                 }
             },
 
             _onApplicationChanged: function(application) {
-
-                application.security = {
-                    score: Math.random()*100
-                };
-                
-                application.security.policy = [{
-                    name: 'Policy 1',
-                    description: 'Description for policy 1.',
-                    score: '21'
-                },
-                    {
-                        name: 'Policy 2',
-                        description: 'Description for policy 2.',
-                        score: '93'
-                    },
-                    {
-                        name: 'Policy 3',
-                        description: 'Description for policy 3.',
-                        score: '79'
-                    }
-                ];
-
                 this.set('_security', application.security);
             },
 
-            _onSecurityChanged: function (security) {
+            _onSecurityChanged: function(security) {
 
-                if (security) {
+                if (0 === security.score) {
+                    this._message = 'You haven\'t assigned this application to anyone yet. Go and share it to your employees.';
+                    return false;
+                }
+
+                this._message = null;
+
+                if (security.score) {
                     var score = Math.round(security.score);
 
                     this._score = score;
@@ -219,21 +186,6 @@ Custom property | Description | Default
 
                     this._weak = true;
                 }
-
-            },
-
-            _policyScore: function(item) {
-                var score = item.score;
-
-                if (score > 80) {
-                    return ' strong';
-                }
-
-                if (score > 60) {
-                    return ' medium';
-                }
-
-                return ' weak';
 
             }
         });

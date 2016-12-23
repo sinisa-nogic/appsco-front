@@ -1,6 +1,10 @@
 <link rel="import" href="../polymer/polymer.html">
 <link rel="import" href="../iron-flex-layout/iron-flex-layout.html">
 <link rel="import" href="../paper-styles/typography.html">
+<link rel="import" href="../iron-icon/iron-icon.html">
+<link rel="import" href="../iron-icons/iron-icons.html">
+<link rel="import" href="../iron-icons/social-icons.html">
+<link rel="import" href="../iron-icons/editor-icons.html">
 <link rel="import" href="../neon-animation/neon-animation-runner-behavior.html">
 <link rel="import" href="../neon-animation/animations/fade-in-animation.html">
 <link rel="import" href="../neon-animation/animations/fade-out-animation.html">
@@ -28,59 +32,91 @@ Custom property | Description | Default
     <template>
         <style>
             :host {
-                display: block;
+                display: none;
+                color: var(--primary-text-color);
             @apply(--appsco-application-analytics-info);
             }
             .info {
             @apply(--paper-font-body1);
-                line-height: 24px;
+            @apply(--layout-horizontal);
+                margin-top: 10px;
             @apply(--analytics-info);
+            }
+            .info-content {
+            @apply(--layout-flex);
+            }
+            .info-icon {
+                width: 16px;
+                height: 18px;
+                margin-right: 10px;
+            }
+            .info-lead {
+                margin-bottom: 4px;
+                font-size: 14px;
+                font-weight: 500;
+                line-height: 18px;
+                text-transform: uppercase;
+            }
+            .info p {
+                margin: 0;
+                font-size: 12px;
+                opacity: 0.8;
+            }
+            .message {
+            @apply(--paper-font-body1);
+                margin-top: 20px;
+                font-weight: 500;
             }
         </style>
 
-        <iron-ajax auto
-                   url="[[ _computedAction ]]"
-                   on-response="_onResponse"
-                   on-error="_onError"
-                   headers="{{ _computedHeaders }}"></iron-ajax>
-
-        <template is="dom-if" if="[[ _analyticsExists ]]">
+        <template is="dom-if" if="{{ !_message }}">
             <div class="info">
-                Configured [[ _analytics.instances.configured ]] out of [[ _analytics.number_of_assignees ]] instances.
-            </div>
-
-            <div class="info">
-                Edited on [[ _lastEditedDate ]] by [[ _analytics.last_edited.displayName ]].
-            </div>
-
-            <div class="info">
-                Last used by [[ _analytics.last_used.displayName ]].
-            </div>
-
-            <div class="info">
-                Daily usage: [[ _analytics.daily_usage ]]%.
-            </div>
-
-            <template is="dom-if" if="[[ _analytics.share_settings.configured_by_user ]]">
-                <div class="info">
-                    Application is set to be configured by users.
+                <iron-icon icon="icons:build" class="info-icon"></iron-icon>
+                <div class="info-content">
+                    <div class="info-lead">Configured instances:</div>
+                    <p>[[ application.security.info.configured ]] out of [[ _totalInstances ]]</p>
                 </div>
-            </template>
-
-            <template is="dom-if" if="[[ !_analytics.share_settings.configured_by_user ]]">
-                <div class="info">
-                    Application is set to be configured by admin for all users.
-                </div>
-            </template>
+            </div>
         </template>
 
+        <div class="info">
+            <iron-icon icon="icons:create" class="info-icon"></iron-icon>
+            <div class="info-content">
+                <div class="info-lead">Modified:</div>
+                <p>[[ _lastEditedDate ]] by [[ application.last_modified.account ]]</p>
+            </div>
+        </div>
 
-        <template is="dom-if" if="[[ !_analyticsExists ]]">
-            <template is="dom-if" if="{{ _message }}">
-                <p class="message">
-                    [[ _message ]]
-                </p>
-            </template>
+        <div class="info">
+            <iron-icon icon="social:person" class="info-icon"></iron-icon>
+            <div class="info-content">
+                <div class="info-lead">Last used by:</div>
+                <p>[[ application.last_login ]]</p>
+            </div>
+        </div>
+
+        <template is="dom-if" if="{{ !_message }}">
+            <div class="info">
+                <iron-icon icon="editor:pie-chart" class="info-icon"></iron-icon>
+                <div class="info-content">
+                    <div class="info-lead">Daily usage:</div>
+                    <p>[[ _dailyUsage ]]</p>
+                </div>
+            </div>
+        </template>
+
+        <div class="info set-by-info">
+            <iron-icon icon="icons:info-outline" class="info-icon"></iron-icon>
+            <div class="info-content">
+                <p>[[ _setByInfo ]]</p>
+            </div>
+        </div>
+
+
+        <template is="dom-if" if="{{ _message }}">
+            <p class="message">
+                [[ _message ]]
+            </p>
         </template>
 
     </template>
@@ -100,51 +136,27 @@ Custom property | Description | Default
                     value: function() {
                         return {};
                     },
-                    notify: true
+                    observer: '_onApplicationChanged'
                 },
 
-                /**
-                 * Analytics object that contains info.
-                 */
-                _analytics: {
-                    type: Object,
-                    value: function() {
-                        return {};
-                    }
+                _totalInstances: {
+                    type: Number,
+                    computed: '_computeTotalInstances(application)'
                 },
 
-                _analyticsExists: {
-                    type: Boolean,
-                    value: false
+                _setByInfo: {
+                    type: String,
+                    value: 'Application is set to be configured by admin for all users.'
                 },
 
                 _lastEditedDate: {
                     type: String,
-                    computed: '_computeLastEditedDate(_analytics)'
+                    computed: '_computeLastEditedDate(application)'
                 },
 
-                /**
-                 * Authorization token.
-                 */
-                authorizationToken: {
-                    type: String
-                },
-
-                /**
-                 * Computed action to call in order to get analytics for application.
-                 */
-                _computedAction: {
+                _dailyUsage: {
                     type: String,
-                    computed: "_computeAction(application)"
-                },
-
-                /**
-                 * Computed headers.
-                 * It contains authorization token.
-                 */
-                _computedHeaders: {
-                    type: Object,
-                    computed: "_computeHeaders(authorizationToken)"
+                    computed: '_computeDailyUsage(application)'
                 },
 
                 /**
@@ -183,37 +195,44 @@ Custom property | Description | Default
                 Polymer.NeonAnimationRunnerBehavior
             ],
 
-            /**
-             * Computes action for analytics.
-             *
-             * @param {String} analyticsApi
-             * @returns {string}
-             * @private
-             */
-            _computeAction: function(application) {
-                return application.meta ? 'meta.analytics/' : '/analytics';
-//                return application.meta ? application.meta.analytics : '/analytics';
-            },
+            _onApplicationChanged: function(application) {
 
-            /**
-             * Computes authorization headers.
-             *
-             * @param {Object} authorizationToken
-             * @returns {{Authorization: string}}
-             * @private
-             */
-            _computeHeaders: function(authorizationToken) {
-                return {
-                    'Authorization': 'token ' + authorizationToken
+                this._message = null;
+
+                if (application.security && (0 == this._totalInstances)) {
+                    this._message = 'Application is not assigned to anyone yet.';
                 }
+
+                if ('individual' === application.claim_type) {
+                    this._setByInfo = 'Application is set to be configured by users.';
+                }
+
+                if (application.self) {
+                    this._showAnalytics();
+                }
+
             },
 
-            _computeLastEditedDate: function(analytics) {
-                return analytics.last_edited ? this._dateFormat(analytics.last_edited.date) : '';
+            _computeTotalInstances: function(application) {
+                return application.security ? application.security.info.configured + application.security.info.not_configured : 0;
+            },
+
+            _computeLastEditedDate: function(application) {
+                return application.last_modified ? this._dateFormat(application.last_modified.date.date) : '';
+            },
+
+            _computeDailyUsage: function(application) {
+
+                if (application.security) {
+                    var usage = Math.round(application.daily_usage / this._totalInstances * 100);
+
+                    return (0 === usage) ? 'There is no activity today' : usage + '%';
+                }
+
+                return '';
             },
 
             _showAnalytics: function() {
-                this._analyticsExists = true;
                 this.style.display = 'block';
                 this.playAnimation('entry');
             },
@@ -228,95 +247,14 @@ Custom property | Description | Default
             _dateFormat: function(value) {
 
                 if (value) {
-
                     var options = {
-                        year: "numeric", month: "short", day: "numeric"
+                        year: 'numeric', month: 'short', day: 'numeric',
+                        hour: 'numeric', minute: 'numeric', second: 'numeric'
                     };
 
                     return (new Date(value)).toLocaleDateString('en', options);
                 }
 
-            },
-
-            _onError: function() {
-//                this._analyticsExists = false;
-//                this._message = 'We couldn\'t load analytics at the moment. Please try again in a minute.';
-
-                /**
-                 * Present for testing purposes.
-                 * When API call implements remove it.
-                 *
-                 * START
-                 */
-                this._analytics = {
-                    number_of_assignees: 17,
-                    instances: {
-                        configured: 14,
-                        unconfigured: 3
-                    },
-                    last_edited: {
-                        date: '2016-12-08 00:00:00.000000',
-                        displayName: 'Boris Vujicic'
-                    },
-                    last_used: {
-                        displayName: 'Nikola Vucinic'
-                    },
-                    daily_usage: 84,
-                    share_settings: {
-                        configured_by_user: true
-                    }
-                };
-
-                this._showAnalytics();
-                /**
-                 * Present for testing purposes.
-                 * When API call implements remove it.
-                 *
-                 * END
-                 */
-            },
-
-            _onResponse: function(event) {
-                var response = event.detail.response;
-
-                /**
-                 * Present for testing purposes.
-                 * When API call implements remove it.
-                 *
-                 * START
-                 */
-                this._analytics = {
-                    number_of_assignees: 17,
-                    instances: {
-                        configured: 14,
-                        unconfigured: 3
-                    },
-                    last_edited: {
-                        date: '2016-12-08 00:00:00.000000',
-                        displayName: 'Boris Vujicic'
-                    },
-                    last_used: {
-                        displayName: 'Nikola Vucinic'
-                    },
-                    daily_usage: 84,
-                    share_settings: {
-                        configured_by_user: true
-                    }
-                };
-
-                this._showAnalytics();
-                /**
-                 * Present for testing purposes.
-                 * When API call implements remove it.
-                 *
-                 * END
-                 */
-
-//                if (response && response.analytics) {
-//                    this._analytics = response.analytics;
-//
-//                    this._showAnalytics();
-//                }
             }
         });
     </script>

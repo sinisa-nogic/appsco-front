@@ -113,6 +113,9 @@ Custom property | Description | Default
                 padding: 0 10px;
                 /*margin-right: 20px;*/
             }
+            :host([company]) .application-basic-info {
+                min-width: 210px;
+            }
             :host([company]) .application-info-auth-type {
                 border-left: 1px solid var(--divider-color);
             }
@@ -137,10 +140,10 @@ Custom property | Description | Default
                         sizing="cover"
                         preload fade src="[[ _applicationIcon ]]"></iron-image>
 
-            <div class="application-info">
+            <div class="application-info application-basic-info">
                 <span class="info-label application-title">[[ application.title ]]</span>
                 <span class="info-value"
-                      hidden$="[[ !company ]]">Organization units: AppsCo, GIPS, Rotary</span>
+                      hidden$="[[ !company ]]">[[ _orgUnits ]]</span>
             </div>
 
             <div class="application-info application-info-auth-type"
@@ -183,6 +186,11 @@ Custom property | Description | Default
                 application: {
                     type: Object,
                     value: {}
+                },
+
+                _orgUnits: {
+                    type: String,
+                    computed: '_computeOrganizationUnits(company, application)'
                 },
 
                 active: {
@@ -233,6 +241,25 @@ Custom property | Description | Default
             attached: function() {
                 this.style.display = 'inline-block';
                 this.playAnimation('entry');
+            },
+
+            _computeOrganizationUnits: function(company, application) {
+
+                if (company) {
+                    var result = '',
+                            orgUnits = application.org_units,
+                            length = orgUnits.length;
+
+                    for (var i = 0; i < length; i++) {
+                        result += orgUnits[i].name;
+                        result += (i === length -1) ? '' : ', ';
+                    }
+
+                    return result;
+                }
+
+                return '';
+
             },
 
             _computeApplicationIcon: function(company, application) {

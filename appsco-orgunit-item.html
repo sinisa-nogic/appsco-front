@@ -33,22 +33,34 @@ Custom property | Description | Default
     <template>
         <style>
             :host {
-                display: block;
-                @apply(--appsco-orgunit-item);
+            @apply(--paper-font-body1);
+            @apply(--layout-horizontal);
                 position: relative;
-                @apply(--paper-font-body1);
                 width: 100%;
-                @apply(--layout-horizontal);
                 height: 24px;
+                line-height: 24px;
+                padding-left: 4px;
+                box-sizing: border-box;
+                cursor: pointer;
+                -webkit-touch-callout: none;
+                -webkit-user-select: none;
+                -moz-user-select: none;
+                -ms-user-select: none;
+                user-select: none;
+            @apply(--appsco-orgunit-item);
             }
             :host([selected]) {
-                @apply(--appsco-orgunit-item-selected);
+                background-color: #e8e8e8;
+            @apply(--appsco-orgunit-item-selected);
+            }
+            :host *[hidden] {
+                display: none;
             }
             :host .flex {
-                @apply(--layout-flex);
+            @apply(--layout-flex);
             }
             :host .layout-horizontal {
-                @apply(--layout-horizontal);
+            @apply(--layout-horizontal);
             }
             :host #options {
                 z-index: 10;
@@ -60,7 +72,8 @@ Custom property | Description | Default
             }
             :host paper-item {
                 border-bottom: 1px solid rgba(0,0,0, 0.1);
-                @apply(--paper-font-caption);
+            @apply(--paper-font-caption);
+                min-height: 32px;
             }
             :host paper-item:last-child {
                 border-bottom: 0;
@@ -70,12 +83,12 @@ Custom property | Description | Default
         <div class="flex" on-tap="_organizationUnitTapped">
             [[ orgUnit.name ]]
         </div>
-        <div id="iconOptions" hidden="true">
+        <div id="iconOptions" hidden>
             <iron-icon icon="icons:more-vert" on-tap="_toggleOptions"></iron-icon>
-            <paper-material id="options" hidden >
-                <paper-item on-tap="_modify" hidden="[[ !modify ]]">Modify</paper-item>
-                <paper-item on-tap="_add" hidden="[[ !add ]]">Add sub organization</paper-item>
-                <paper-item on-tap="_delete" hidden="[[ !remove ]]">Delete</paper-item>
+            <paper-material id="options" hidden>
+                <paper-item on-tap="_modify" hidden$="[[ !modify ]]">Modify</paper-item>
+                <paper-item on-tap="_add" hidden$="[[ !add ]]">Add sub organization</paper-item>
+                <paper-item on-tap="_remove" hidden$="[[ !remove ]]">Remove</paper-item>
             </paper-material>
         </div>
     </template>
@@ -94,35 +107,21 @@ Custom property | Description | Default
                     value: function () { return {}; }
                 },
 
-                /**
-                 * Should modify option show
-                 */
                 modify: {
                     type: Boolean,
                     value: false
                 },
 
-                /**
-                 * Should add option show
-                 */
                 add: {
                     type: Boolean,
                     value: false
                 },
 
-                /**
-                 * Should remove option show
-                 */
                 remove: {
                     type: Boolean,
                     value: false
                 },
 
-                /**
-                 * Is this selected? On tap event will trigger this node to be in selected or deselected state
-                 *
-                 * @private
-                 */
                 selected: {
                     type: Boolean,
                     value: false,
@@ -135,11 +134,6 @@ Custom property | Description | Default
                 'mouseleave': "_hideIcon"
             },
 
-            /**
-             * Should we display option icon? Icon will be displayed if at least one option is available
-             *
-             * @private
-             */
             _showIcon: function() {
                 if(!this.modify && !this.add && !this.remove) {
                     return;
@@ -147,106 +141,44 @@ Custom property | Description | Default
                 this.$.iconOptions.hidden = false;
             },
 
-            /**
-             * Hide options icon
-             *
-             * @private
-             */
             _hideIcon: function() {
                 this.$.iconOptions.hidden = true;
                 this.$.options.hidden = true;
             },
 
-            /**
-             * Toggle options
-             *
-             * @private
-             */
             _toggleOptions: function() {
                 this.$.options.hidden = !this.$.options.hidden;
             },
 
-            /**
-             * Used when modify option is tapped
-             *
-             * @private
-             */
             _modify: function() {
                 this.$.options.hidden = true;
-                /**
-                 * Fired when modify option is tapped
-                 *
-                 * @event modify
-                 * @param {Object} orgUnit [OrgUnit](https://developers.appsco.com/api/dashboard/id/icons/id)
-                 *                              for which event is fired
-                 */
-                this.fire('modify', {
+                this.fire('modify-orgunit', {
                     orgUnit: this.orgUnit
                 })
             },
 
-            /**
-             * Used when add option is tapped
-             *
-             * @private
-             */
             _add: function() {
                 this.$.options.hidden = true;
-                /**
-                 * Fired when add option is tapped
-                 *
-                 * @event add
-                 * @param {Object} orgUnit [OrgUnit](https://developers.appsco.com/api/dashboard/id/icons/id)
-                 *                              for which event is fired
-                 */
-                this.fire('add', {
+                this.fire('add-orgunit', {
                     orgUnit: this.orgUnit
                 })
             },
 
-            /**
-             * Used when delete option is tapped
-             *
-             * @private
-             */
-            _delete: function() {
+            _remove: function() {
                 this.$.options.hidden = true;
-                /**
-                 * Fired when delete option is tapped
-                 *
-                 * @event delete
-                 * @param {Object} orgUnit [OrgUnit](https://developers.appsco.com/api/dashboard/id/icons/id)
-                 *                              for which event is fired
-                 */
-                this.fire('delete', {
+                this.fire('remove-orgunit', {
                     orgUnit: this.orgUnit
                 })
             },
 
-            /**
-             * Used when organization unit name is tapped. This is used for selected options
-             *
-             * @private
-             */
             _organizationUnitTapped: function() {
                 this.selected = !this.selected;
-                /**
-                 * Fired when organization unit is tapped
-                 *
-                 * @event selected
-                 * @param {Object} orgUnit [OrgUnit](https://developers.appsco.com/api/dashboard/id/icons/id)
-                 *                              for which event is fired
-                 * @param {Boolean} selected is organization unit selected
-                 */
                 this.fire('selected', {
                     orgUnit: this.orgUnit,
                     selected: this.selected
-                })
+                });
             },
 
-            /**
-             * Deselect organization unit
-             */
             deSelect: function() {
                 this.selected = false;
             }

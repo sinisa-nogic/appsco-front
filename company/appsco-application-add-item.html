@@ -1,0 +1,162 @@
+<link rel="import" href="../../polymer/polymer.html">
+<link rel="import" href="../../iron-flex-layout/iron-flex-layout.html">
+<link rel="import" href="../../paper-styles/typography.html">
+<link rel="import" href="../../paper-styles/shadow.html">
+<link rel="import" href="../../iron-icon/iron-icon.html">
+<link rel="import" href="../../iron-icons/iron-icons.html">
+<link rel="import" href="../../iron-image/iron-image.html">
+<link rel="import" href="../../neon-animation/neon-animation-runner-behavior.html">
+<link rel="import" href="../../neon-animation/animations/fade-in-animation.html">
+<link rel="import" href="../../neon-animation/animations/fade-out-animation.html">
+<!--
+`appsco-application-add-item`
+Application item is used to present application in form of an item.
+
+    <appsco-application-add-item item="{}">
+    </appsco-application-add-item>
+
+### Styling
+
+`<appsco-application-add-item>` provides the following custom properties and mixins for styling:
+
+Custom property | Description | Default
+----------------|-------------|----------
+`--appsco-application-add-item` | Mixin for the root element | `{}`
+
+@demo demo/appsco-application-add-item.html
+-->
+
+<dom-module id="appsco-application-add-item">
+    <template>
+        <style>
+            :host {
+                display: none;
+                @apply(--appsco-application-add-item);
+            }
+            :host .application {
+                margin: 2px 2px 2px 0;
+            }
+            :host .application-card {
+                @apply(--shadow-elevation-2dp);
+                @apply(--layout-horizontal);
+                @apply(--layout-center);
+                font-size: 13px;
+                padding: 6px 8px;
+                margin: 0;
+                border-radius: 3px;
+                cursor: pointer;
+                position: relative;
+            }
+            :host .application-icon {
+                width: 22px;
+                height: 22px;
+                margin-right: 4px;
+            }
+            :host .application-title {
+                @apply(--paper-font-common-nowrap);
+                width: 111px;
+                text-transform: uppercase;
+            }
+            :host .clear-icon {
+                width: 14px;
+                height: 14px;
+                position: absolute;
+                top: 4px;
+                right: 4px;
+            }
+        </style>
+
+        <div class="application selected-application">
+            <div class="application-card">
+
+                <iron-image class="application-icon"
+                            placeholder="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAABGdBTUEAALGPC/xhBQAAAI5JREFUeAHt1YEJwCAQBEFN/60KYgMRbGMnHXjs5Ofa5x/h7wu//T3dAAqIL4BAPIChAAXEF0AgHoCfIAIIxBdAIB6AK4AAAvEFEIgH4AoggEB8AQTiAbgCCCAQXwCBeACuAAIIxBdAIB6AK4AAAvEFEIgH4AoggEB8AQTiAbgCCCAQXwCBeACuAAIIxBe4yV0EThqVC64AAAAASUVORK5CYII="
+                            sizing="cover"
+                            preload
+                            fade
+                            src="[[ application.icon_url ]]"></iron-image>
+
+                <span class="application-title">[[ application.title ]]</span>
+                <iron-icon icon="icons:clear" class="clear-icon"></iron-icon>
+            </div>
+        </div>
+
+    </template>
+
+    <script>
+        Polymer({
+
+            is: 'appsco-application-add-item',
+
+            properties: {
+
+                /**
+                 * [Application](https://developers.appsco.com/api/dashboard/id/icons/id) that is to be rendered
+                 */
+                application: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    }
+                },
+
+                /**
+                 * Animation for loader appearance.
+                 */
+                animationConfig: {
+                    value: function() {
+                        return {
+                            'entry': {
+                                name: 'fade-in-animation',
+                                node: this,
+                                timing: {
+                                    duration: 200
+                                }
+                            },
+                            'exit': {
+                                name: 'fade-out-animation',
+                                node: this,
+                                timing: {
+                                    duration: 200
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+
+            behaviors: [
+                Polymer.NeonAnimationRunnerBehavior
+            ],
+
+            listeners: {
+                'tap': '_onTap',
+                'neon-animation-finish': '_onAnimationFinish'
+            },
+
+            attached: function() {
+                this.style.display = 'inline-block';
+                this.playAnimation('entry');
+            },
+
+            _onTap: function() {
+
+                this.playAnimation('exit', {
+                    exit: true
+                });
+
+            },
+
+            _onAnimationFinish: function(event) {
+
+                if (event.detail.exit) {
+                    this.fire('selected', {
+                        application: this.application
+                    });
+                }
+
+            }
+
+        });
+    </script>
+</dom-module>

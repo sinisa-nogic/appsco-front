@@ -1,0 +1,412 @@
+<link rel="import" href="../../polymer/polymer.html">
+<link rel="import" href="../../iron-flex-layout/iron-flex-layout.html">
+<link rel="import" href="../../paper-styles/typography.html">
+<link rel="import" href="../../paper-styles/shadow.html">
+<link rel="import" href="../../paper-button/paper-button.html">
+<link rel="import" href="../../iron-icon/iron-icon.html">
+<link rel="import" href="../../iron-icons/iron-icons.html">
+<link rel="import" href="../../paper-input/paper-input.html">
+<link rel="import" href="../../iron-image/iron-image.html">
+<link rel="import" href="../../iron-ajax/iron-request.html">
+<link rel="import" href="../../paper-dialog/paper-dialog.html">
+<link rel="import" href="../../paper-dialog-scrollable/paper-dialog-scrollable.html">
+<link rel="import" href="../../neon-animation/animations/scale-up-animation.html">
+
+<link rel="import" href="../../appsco-components/appsco-loader.html">
+<link rel="import" href="../../appsco-components/appsco-form-error.html">
+<link rel="import" href="appsco-application-add-item.html">
+
+<!--
+`appsco-company-application-add`
+Provides functionality of adding applications to company.
+
+    <appsco-company-application-add>
+    </appsco-company-application-add>
+
+### Styling
+
+`<appsco-company-application-add>` provides the following custom properties and mixins for styling:
+
+Custom property | Description | Default
+----------------|-------------|----------
+`--appsco-company-application-add` | Mixin for the root element | `{}`
+
+@demo demo/company/appsco-company-application-add.html
+-->
+
+<dom-module id="appsco-company-application-add">
+    <template>
+        <style>
+            :host {
+                display: block;
+                position: relative;
+                @apply(--appsco-company-application-add);
+            }
+            :host paper-dialog {
+                width: 670px;
+                top: 20vh;
+                @apply(--appsco-paper-dialog);
+            }
+            :host paper-dialog-scrollable::shadow .scrollable {
+                min-height: 80px;
+            }
+            :host paper-input {
+                --paper-input-container-label: {
+                     left: 4px;
+                 };
+                --paper-input-container-input: {
+                     padding: 0 4px;
+                 };
+            }
+            :host .application-list {
+                @apply(--layout-horizontal);
+                @apply(--layout-wrap);
+                margin-top: 0;
+                position: relative;
+            }
+            :host .application {
+                margin: 2px 2px 2px 0;
+            }
+            :host .application-card {
+                @apply(--shadow-elevation-2dp);
+                @apply(--layout-horizontal);
+                @apply(--layout-center);
+                font-size: 13px;
+                padding: 6px 8px;
+                margin: 0;
+                border-radius: 3px;
+                cursor: pointer;
+                position: relative;
+            }
+            :host .application-icon {
+                width: 22px;
+                height: 22px;
+                margin-right: 4px;
+            }
+            :host .application-title {
+                @apply(--paper-font-common-nowrap);
+                width: 111px;
+                text-transform: uppercase;
+            }
+            :host .message {
+                margin: 0;
+                color: var(--secondary-text-color);
+                font-style: italic;
+                @apply(--paper-font-body2);
+            }
+            :host .buttons {
+                margin-top: 10px;
+            }
+            :host .buttons paper-button {
+                @apply(--paper-dialog-button);
+            }
+            :host .buttons paper-button[dialog-confirm] {
+                @apply(--paper-dialog-confirm-button);
+            }
+            :host .buttons paper-button[dialog-dismiss] {
+                @apply(--paper-dialog-dismiss-button);
+            }
+            :host .message {
+                color: var(--secondary-text-color);
+                font-style: italic;
+                @apply(--paper-font-body2);
+            }
+        </style>
+
+        <paper-dialog id="dialog"
+                      with-backdrop
+                      entry-animation="scale-up-animation"
+                      exit-animation="fade-out-animation"
+                      on-iron-overlay-opened="_onDialogOpened"
+                      on-iron-overlay-closed="_onDialogClosed">
+
+            <h2>Add one or more applications</h2>
+
+            <paper-dialog-scrollable>
+                <div class="dialog-container">
+
+                    <appsco-loader active="[[ _addLoader ]]"
+                                   loader-alt="Appsco is adding applications"
+                                   multi-color></appsco-loader>
+
+                    <div class="application-list">
+
+                        <appsco-form-error message="[[ _error ]]"></appsco-form-error>
+
+                        <template is="dom-repeat" items="[[ _selectedApplications ]]">
+                            <appsco-application-add-item application="[[ item ]]"
+                                                         on-selected="_onAddedApplicationSelect"></appsco-application-add-item>
+                        </template>
+                    </div>
+
+                    <paper-input id="search"
+                                 label="search applications"
+                                 error-message="Please type three or more letters."
+                                 on-keyup="_search">
+                    </paper-input>
+
+                    <div class="application-list">
+
+                        <appsco-loader active="[[ _searchLoader ]]" loader-alt="Appsco is searching applications" multi-color></appsco-loader>
+
+                        <template is="dom-repeat" items="[[ _searchList ]]">
+                            <div class="application" id="searchItem_{{ index }}">
+                                <div on-tap="_onApplicationSelect" class="application-card">
+
+                                    <iron-image class="application-icon"
+                                                placeholder="data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiIHN0YW5kYWxvbmU9Im5vIj8+PHN2ZyB3aWR0aD0iMjhweCIgaGVpZ2h0PSIyOHB4IiB2aWV3Qm94PSIwIDAgMjggMjgiIHZlcnNpb249IjEuMSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiB4bWxuczp4bGluaz0iaHR0cDovL3d3dy53My5vcmcvMTk5OS94bGluayI+ICAgICAgICA8dGl0bGU+QXBwc0NvLWxvZ288L3RpdGxlPiAgICA8ZGVzYz5DcmVhdGVkIHdpdGggU2tldGNoLjwvZGVzYz4gICAgPGRlZnM+PC9kZWZzPiAgICA8ZyBpZD0iUGFnZS0xIiBzdHJva2U9Im5vbmUiIHN0cm9rZS13aWR0aD0iMSIgZmlsbD0ibm9uZSIgZmlsbC1ydWxlPSJldmVub2RkIj4gICAgICAgIDxnIGlkPSJBcHBzQ28tbG9nbyI+ICAgICAgICAgICAgPGcgaWQ9Ikdyb3VwIj4gICAgICAgICAgICAgICAgPHJlY3QgaWQ9IlJlY3RhbmdsZS0yIiBmaWxsPSIjMjA5QkMzIiB4PSIwIiB5PSIxNSIgd2lkdGg9IjEzIiBoZWlnaHQ9IjEzIj48L3JlY3Q+ICAgICAgICAgICAgICAgIDxyZWN0IGlkPSJSZWN0YW5nbGUtMi1Db3B5IiBmaWxsPSIjODhCOTU1IiB4PSIxNSIgeT0iMCIgd2lkdGg9IjEzIiBoZWlnaHQ9IjEzIj48L3JlY3Q+ICAgICAgICAgICAgICAgIDxyZWN0IGlkPSJSZWN0YW5nbGUtMi1Db3B5LTIiIGZpbGw9IiNFNkQwMjUiIHg9IjE1IiB5PSIxNSIgd2lkdGg9IjEwIiBoZWlnaHQ9IjEwIj48L3JlY3Q+ICAgICAgICAgICAgICAgIDxyZWN0IGlkPSJSZWN0YW5nbGUtMi1Db3B5LTMiIGZpbGw9IiNEODNEODIiIHg9IjMiIHk9IjMiIHdpZHRoPSIxMCIgaGVpZ2h0PSIxMCI+PC9yZWN0PiAgICAgICAgICAgIDwvZz4gICAgICAgIDwvZz4gICAgPC9nPjwvc3ZnPg=="
+                                                sizing="cover"
+                                                preload
+                                                fade
+                                                src="[[ item.icon_url ]]"></iron-image>
+
+                                    <span class="application-title">[[ item.title ]]</span>
+                                </div>
+                            </div>
+                        </template>
+
+                        <template is="dom-if" if="[[ _message ]]">
+                            <p class="message">
+                                [[ _message ]]
+                            </p>
+                        </template>
+                    </div>
+                </div>
+            </paper-dialog-scrollable>
+
+            <div class="buttons">
+                <paper-button dialog-dismiss>Cancel</paper-button>
+                <paper-button autofocus on-tap="_onAddApplicationsAction">Add</paper-button>
+            </div>
+        </paper-dialog>
+
+    </template>
+    <script>
+        Polymer({
+
+            is: 'appsco-company-application-add',
+
+            properties: {
+
+                /**
+                 * Authorization token.
+                 */
+                authorizationToken: {
+                    type: String
+                },
+
+                /**
+                 * Company API link.
+                 * API in which company to add application.
+                 */
+                companyApi: {
+                    type: String
+                },
+
+                /**
+                 * Applications template API link.
+                 * API to get applications.
+                 */
+                applicationsTemplateApi: {
+                    type: String
+                },
+
+                /**
+                 * Number of applications to load show in search result.
+                 */
+                size: {
+                    type: Number,
+                    value: 12
+                },
+
+                /**
+                 * Application list from search.
+                 */
+                _searchList: {
+                    type: Array,
+                    value: function() {
+                        return [];
+                    }
+                },
+
+                /**
+                 * Message to display if there is no search result.
+                 */
+                _message: {
+                    type: String
+                },
+
+                /**
+                 * Selected applications from search list.
+                 */
+                _selectedApplications: {
+                    type: Array,
+                    value: function() {
+                        return [];
+                    }
+                },
+
+                /**
+                 * Indicates if search loader should be displayed or not.
+                 */
+                _searchLoader: {
+                    type: Boolean,
+                    value: false
+                },
+
+                /**
+                 * Indicates if add application loader should be displayed or not.
+                 */
+                _addLoader: {
+                    type: Boolean,
+                    value: false
+                }
+
+            },
+
+            /**
+             * Toggles add applications dialog.
+             */
+            toggle: function() {
+                this.$.dialog.toggle();
+            },
+
+            /**
+             * Called after dialog has been opened.
+             *
+             * @private
+             */
+            _onDialogOpened: function() {
+                this.$.search.focus();
+            },
+
+            /**
+             * Called after dialog has been closed.
+             *
+             * @private
+             */
+            _onDialogClosed: function() {
+                this.set('_searchList', []);
+                this.set('_selectedApplications', []);
+                this.$.search.value = '';
+                this._searchLoader = false;
+                this._addLoader = false;
+                this._error = '';
+            },
+
+            /**
+             * Gets applications by term.
+             *
+             * @param {Object} event
+             * @private
+             */
+            _search: function(event) {
+                var regexpBackspace = /^Backspace$/i,
+                    regexpAlphanumeric = /^\w$/,
+                    searchValue = this.$.search.value,
+                    searchLength = searchValue.length;
+
+                this._searchLoader = true;
+                this._message = '';
+
+                if (searchLength === 0) {
+                    this._message = '';
+                    this._searchLoader = false;
+                    this.set('_searchList', []);
+                    return false;
+                }
+
+                if (searchLength < 3 || !(regexpAlphanumeric.test(event.key) || regexpBackspace.test(event.key))) {
+                    this._message = 'Please type three or more letters.';
+                    this._searchLoader = false;
+                    this.set('_searchList', []);
+                    return false;
+                }
+
+                var request = document.createElement('iron-request'),
+                    url = this.applicationsTemplateApi + '?extended=1&limit=' + this.size + '&term=' + searchValue;
+
+                this._message = '';
+
+                var options = {
+                    url: url,
+                    method: 'GET',
+                    handleAs: 'json',
+                    headers: {
+                        'Authorization': 'token ' + this.authorizationToken
+                    }
+                };
+
+                request.send(options).then(function() {
+                    var applications = request.response.applications;
+
+                    if (applications && applications.length > 0) {
+                        this.set('_searchList', applications);
+                    }
+                    else {
+                        this.set('_searchList', []);
+                        this._message = 'There are no applications with asked title.';
+                    }
+
+                    this._searchLoader = false;
+                }.bind(this));
+            },
+
+            /**
+             * Called after application has been selected from search list.
+             *
+             * @param {Object} event
+             * @private
+             */
+            _onApplicationSelect: function(event) {
+                this.push('_selectedApplications', event.model.item);
+            },
+
+            _onAddedApplicationSelect: function(event) {
+                this.splice('_selectedApplications', event.detail.application, 1);
+            },
+
+            _onAddApplicationsAction: function() {
+                var applications = this._selectedApplications,
+                    length = applications.length - 1,
+                    applicationsToAdd = [],
+                    appRequest = document.createElement('iron-request'),
+                    options = {
+                        url: this.companyApi + '/applications',
+                        method: 'POST',
+                        handleAs: 'json',
+                        headers: {
+                            'Authorization': 'token ' + this.authorizationToken,
+                            'Content-Type': 'application/x-www-form-urlencoded'
+                        }
+                    },
+                    body = '';
+
+                this._addLoader = true;
+
+                for (var i = 0; i <= length; i++) {
+                    var next = (i === length) ? '' : '&';
+                    body += 'application_templates[]=' + encodeURIComponent(applications[i].self) + next;
+                }
+
+                options.body = body;
+
+                appRequest.send(options).then(function(request) {
+                        this.$.dialog.close();
+
+                        /**
+                         * Fired when application has been shared.
+                         *
+                         * @event application-shared
+                         */
+                        this.fire('applications-added', {
+                            applications: request.response.applications
+                        });
+
+                        this.set('_selectedApplications', []);
+                        this._addLoader = false;
+                }.bind(this));
+            }
+        });
+    </script>
+</dom-module>

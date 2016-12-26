@@ -51,6 +51,9 @@
 <link rel="import" href="vault/appsco-vault-manage-item.html">
 <link rel="import" href="../bower_components/appsco-vault/appsco-vault-remove.html">
 
+<link rel="import" href="../bower_components/appsco-orgunit/appsco-orgunit-modify.html">
+<link rel="import" href="../bower_components/appsco-orgunit/appsco-orgunit-remove.html">
+
 <link rel="import" href="shared-styles.html">
 <link rel="import" href="webkit-scrollbar-style.html">
 
@@ -164,6 +167,10 @@
 
                 --paper-tooltip-background: var(--app-primary-color-dark);
             }
+
+            /*:host([_business]) {*/
+                /*--app-primary-color: #5B7EB8;*/
+            /*}*/
 
             /* Top header style START */
             appsco-header {
@@ -559,7 +566,9 @@
                             application="{{ application }}"
                             application-log="[[ application.meta.log ]]"
                             authorization-token="[[ authorizationToken ]]"
+                            computed-headers="[[ _computedHeaders ]]"
                             company-applications-api="[[ companyApplicationsApi ]]"
+                            company-orgunits-api="[[ companyOrgunitsApi ]]"
                             on-loaded="_onLoadedApplications"
                             on-edit-application="_onEditApplication"
                             on-info-edit-application="_onInfoEditApplication"
@@ -567,7 +576,10 @@
                             on-filter-done="_onPageLoaded"
                             on-page-loaded="_onPageLoaded"
                             on-show-bulk-actions="_onShowApplicationsBulkActions"
-                            on-hide-bulk-actions="_onHideApplicationsBulkActions"></appsco-applications-page>
+                            on-hide-bulk-actions="_onHideApplicationsBulkActions"
+                            on-add-orgunit="_onAddOrgunit"
+                            on-modify-orgunit="_onModifyOrgunit"
+                            on-remove-orgunit="_onRemoveOrgunit"></appsco-applications-page>
 
                     <appsco-not-found-page name="404"></appsco-not-found-page>
                 </neon-animated-pages>
@@ -629,6 +641,19 @@
                 on-item-saved="_onItemSaved"
         ></appsco-vault-manage-item>
 
+        <appsco-orgunit-modify
+                id="appscoOrgunitModify"
+                authorization-token="[[ authorizationToken ]]"
+                on-orgunit-added="_onOrgunitAdded"
+                on-orgunit-modified="_onOrgunitModified"
+                ></appsco-orgunit-modify>
+
+        <appsco-orgunit-remove
+                id="appscoOrgunitRemove"
+                authorization-token="[[ authorizationToken ]]"
+                on-orgunit-removed="_onOrgunitRemoved"
+                ></appsco-orgunit-remove>
+
         <template is="dom-if" if="[[ api.me ]]">
             <iron-ajax auto
                        url="[[ api.me ]]"
@@ -659,7 +684,9 @@
 
                 _business: {
                     type: Boolean,
-                    computed: '_computeBusiness(page)'
+                    computed: '_computeBusiness(page)',
+                    reflectToAttribute: true,
+                    observer: '_onBusinessChange'
                 },
 
                 page: {
@@ -715,6 +742,9 @@
                  */
                 application: {
                     type: Object,
+                    value: function() {
+                        return {};
+                    },
                     notify: true
                 },
 
@@ -723,6 +753,9 @@
                  */
                 _authorizedApplication: {
                     type: Object,
+                    value: function() {
+                        return {};
+                    },
                     notify: true
                 },
 
@@ -746,6 +779,11 @@
                 },
 
                 companyApplicationsApi: {
+                    type: String,
+                    value: ''
+                },
+
+                companyOrgunitsApi: {
                     type: String,
                     value: ''
                 },
@@ -780,6 +818,24 @@
 
             listeners: {
                 'api-changed': "_apiChanged"
+            },
+
+            _onBusinessChange: function() {
+
+                if (this._business) {
+                    this.customStyle['--app-primary-color'] = '#5AC099';
+
+                    // Without click new value of CSS variable doesn't apply to children components.
+                    setTimeout(function() {
+                        document.body.click();
+                    }, 10);
+                }
+                else {
+                    this.customStyle['--app-primary-color'] = '#279FBC';
+                }
+
+                this.updateStyles();
+
             },
 
             attached: function() {
@@ -868,6 +924,7 @@
 
                 if (response && response.meta.total > 0) {
                     this.companyApplicationsApi = response.companies[0] + '/applications?extended=1';
+                    this.companyOrgunitsApi = response.companies[0] + '/org-units?extended=1';
                 }
             },
             /**
@@ -1180,6 +1237,50 @@
 
             _onHideApplicationsBulkActions: function() {
                 this.$.appscoApplicationsPageActions.hideBulkActions();
+            },
+
+            _onAddOrgunit: function(event) {
+                var orgunitAddDialog = this.$.appscoOrgunitModify;
+
+                orgunitAddDialog.parent = event.detail.orgUnit;
+                orgunitAddDialog.orgUnit = {};
+                orgunitAddDialog.open();
+            },
+
+            _onOrgunitAdded: function(event) {
+                var orgunit = event.detail.orgUnit;
+
+                this.$.appscoApplicationsPage.addOrgunit(orgunit);
+                this._notify('Organization unit ' + orgunit.name + ' successfully added.');
+            },
+
+            _onModifyOrgunit: function(event) {
+                var orgunitModifyDialog = this.$.appscoOrgunitModify;
+
+                orgunitModifyDialog.parent = {};
+                orgunitModifyDialog.orgUnit = event.detail.orgUnit;
+                orgunitModifyDialog.open();
+            },
+
+            _onOrgunitModified: function(event) {
+                var orgunit = event.detail.orgUnit;
+
+                this.$.appscoApplicationsPage.modifyOrgunit(orgunit);
+                this._notify('Organization unit ' + orgunit.name + ' successfully modified.');
+            },
+
+            _onRemoveOrgunit: function(event) {
+                var orgunitRemoveDialog = this.$.appscoOrgunitRemove;
+
+                orgunitRemoveDialog.orgUnit = event.detail.orgUnit;
+                orgunitRemoveDialog.open();
+            },
+
+            _onOrgunitRemoved: function(event) {
+                var orgunit = event.detail.orgUnit;
+
+                this.$.appscoApplicationsPage.removeOrgunit(orgunit);
+                this._notify('Organization unit ' + orgunit.name + ' successfully removed.');
             },
             /**
              * Applications page END

@@ -9,37 +9,38 @@
 <link rel="import" href="../../neon-animation/animations/fade-in-animation.html">
 <link rel="import" href="../../neon-animation/animations/fade-out-animation.html">
 <!--
-`appsco-application-add-item`
-Application item is used to present application in form of an item.
+`appsco-card-item`
+Card item is used to present item (application, account) in form of a card which contains image, title and close action if needed.
 
-    <appsco-application-add-item item="{}">
-    </appsco-application-add-item>
+    <appsco-card-item item="{}">
+    </appsco-card-item>
 
 ### Styling
 
-`<appsco-application-add-item>` provides the following custom properties and mixins for styling:
+`<appsco-card-item>` provides the following custom properties and mixins for styling:
 
 Custom property | Description | Default
 ----------------|-------------|----------
-`--appsco-application-add-item` | Mixin for the root element | `{}`
+`--appsco-card-item` | Mixin applied to the root element | `{}`
+`--item-image` | Mixin applied to item image | `{}`
+`--item-title` | Mixin applied to item title | `{}`
 
-@demo demo/appsco-application-add-item.html
 -->
 
-<dom-module id="appsco-application-add-item">
+<dom-module id="appsco-card-item">
     <template>
         <style>
             :host {
                 display: none;
-                @apply(--appsco-application-add-item);
+            @apply(--appsco-card-item);
             }
-            :host .application {
+            :host .item {
                 margin: 2px 2px 2px 0;
             }
-            :host .application-card {
-                @apply(--shadow-elevation-2dp);
-                @apply(--layout-horizontal);
-                @apply(--layout-center);
+            :host .item-card {
+            @apply(--shadow-elevation-2dp);
+            @apply(--layout-horizontal);
+            @apply(--layout-center);
                 font-size: 13px;
                 padding: 6px 8px;
                 margin: 0;
@@ -47,15 +48,17 @@ Custom property | Description | Default
                 cursor: pointer;
                 position: relative;
             }
-            :host .application-icon {
+            :host .item-image {
                 width: 22px;
                 height: 22px;
                 margin-right: 4px;
+            @apply(--item-image);
             }
-            :host .application-title {
-                @apply(--paper-font-common-nowrap);
+            :host .item-title {
+            @apply(--paper-font-common-nowrap);
                 width: 111px;
                 text-transform: uppercase;
+            @apply(--item-title);
             }
             :host .clear-icon {
                 width: 14px;
@@ -66,18 +69,21 @@ Custom property | Description | Default
             }
         </style>
 
-        <div class="application selected-application">
-            <div class="application-card">
+        <div class="item">
+            <div class="item-card">
 
-                <iron-image class="application-icon"
+                <iron-image class="item-image"
                             placeholder="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAABGdBTUEAALGPC/xhBQAAAI5JREFUeAHt1YEJwCAQBEFN/60KYgMRbGMnHXjs5Ofa5x/h7wu//T3dAAqIL4BAPIChAAXEF0AgHoCfIAIIxBdAIB6AK4AAAvEFEIgH4AoggEB8AQTiAbgCCCAQXwCBeACuAAIIxBdAIB6AK4AAAvEFEIgH4AoggEB8AQTiAbgCCCAQXwCBeACuAAIIxBe4yV0EThqVC64AAAAASUVORK5CYII="
                             sizing="cover"
                             preload
                             fade
-                            src="[[ application.icon_url ]]"></iron-image>
+                            src="[[ item.image ]]"></iron-image>
 
-                <span class="application-title">[[ application.title ]]</span>
-                <iron-icon icon="icons:clear" class="clear-icon"></iron-icon>
+                <span class="item-title">[[ item.title ]]</span>
+
+                <template is="dom-if" if="[[ removeAction ]]">
+                    <iron-icon icon="icons:clear" class="clear-icon"></iron-icon>
+                </template>
             </div>
         </div>
 
@@ -86,18 +92,23 @@ Custom property | Description | Default
     <script>
         Polymer({
 
-            is: 'appsco-application-add-item',
+            is: 'appsco-card-item',
 
             properties: {
 
                 /**
-                 * [Application](https://developers.appsco.com/api/dashboard/id/icons/id) that is to be rendered
+                 * Item that is to be rendered.
                  */
-                application: {
+                item: {
                     type: Object,
                     value: function() {
                         return {};
                     }
+                },
+
+                removeAction: {
+                    type: Boolean,
+                    value: false
                 },
 
                 /**
@@ -151,7 +162,7 @@ Custom property | Description | Default
 
                 if (event.detail.exit) {
                     this.fire('selected', {
-                        application: this.application
+                        item: this.item
                     });
                 }
 

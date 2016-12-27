@@ -17,30 +17,19 @@
 <link rel="import" href="appsco-card-item.html">
 
 <!--
-`appsco-company-application-add`
-Provides functionality of adding applications to company.
+`appsco-company-application-share`
+Provides functionality of sharing applications to users.
 
-    <appsco-company-application-add>
-    </appsco-company-application-add>
-
-### Styling
-
-`<appsco-company-application-add>` provides the following custom properties and mixins for styling:
-
-Custom property | Description | Default
-----------------|-------------|----------
-`--appsco-company-application-add` | Mixin for the root element | `{}`
-
-@demo demo/company/appsco-company-application-add.html
+    <appsco-company-application-share applications="[]">
+    </appsco-company-application-share>
 -->
 
-<dom-module id="appsco-company-application-add">
+<dom-module id="appsco-company-application-share">
     <template>
         <style>
             :host {
                 display: block;
                 position: relative;
-            @apply(--appsco-company-application-add);
             }
             :host paper-dialog {
                 width: 670px;
@@ -58,11 +47,16 @@ Custom property | Description | Default
                  padding: 0 4px;
              };
             }
-            :host .application-list {
+            :host .account-list {
             @apply(--layout-horizontal);
             @apply(--layout-wrap);
                 margin-top: 0;
                 position: relative;
+            }
+            appsco-card-item {
+            --item-image: {
+                 border-radius: 50%;
+             };
             }
             :host .message {
                 margin: 0;
@@ -71,7 +65,7 @@ Custom property | Description | Default
             @apply(--paper-font-body2);
             }
             :host .buttons {
-                margin-top: 10px;
+                margin-top: 20px;
             }
             :host .buttons paper-button {
             @apply(--paper-dialog-button);
@@ -96,39 +90,39 @@ Custom property | Description | Default
                       on-iron-overlay-opened="_onDialogOpened"
                       on-iron-overlay-closed="_onDialogClosed">
 
-            <h2>Add one or more applications</h2>
+            <h2>Share applications</h2>
 
             <paper-dialog-scrollable>
                 <div class="dialog-container">
 
-                    <appsco-loader active="[[ _addLoader ]]"
-                                   loader-alt="Appsco is adding applications"
+                    <appsco-loader active="[[ _shareLoader ]]"
+                                   loader-alt="Appsco is sharing applications"
                                    multi-color></appsco-loader>
 
-                    <div class="application-list">
+                    <div class="account-list">
 
                         <appsco-form-error message="[[ _error ]]"></appsco-form-error>
 
-                        <template is="dom-repeat" items="[[ _selectedApplications ]]">
+                        <template is="dom-repeat" items="[[ _selectedAccounts ]]">
                             <appsco-card-item item="[[ _mapToItem(item) ]]"
                                               remove-action
-                                              on-selected="_onAddedApplicationSelect"></appsco-card-item>
+                                              on-selected="_onItemRemove"></appsco-card-item>
                         </template>
                     </div>
 
                     <paper-input id="search"
-                                 label="search applications"
+                                 label="search accounts"
                                  error-message="Please type three or more letters."
                                  on-keyup="_search">
                     </paper-input>
 
-                    <div class="application-list">
+                    <div class="account-list">
 
-                        <appsco-loader active="[[ _searchLoader ]]" loader-alt="Appsco is searching applications" multi-color></appsco-loader>
+                        <appsco-loader active="[[ _searchLoader ]]" loader-alt="Appsco is searching accounts" multi-color></appsco-loader>
 
                         <template is="dom-repeat" items="[[ _searchList ]]">
                             <appsco-card-item item="[[ _mapToItem(item) ]]"
-                                              on-selected="_onApplicationSelect"></appsco-card-item>
+                                              on-selected="_onItemSelect"></appsco-card-item>
                         </template>
 
                         <template is="dom-if" if="[[ _message ]]">
@@ -142,7 +136,7 @@ Custom property | Description | Default
 
             <div class="buttons">
                 <paper-button dialog-dismiss>Cancel</paper-button>
-                <paper-button autofocus on-tap="_onAddApplicationsAction">Add</paper-button>
+                <paper-button autofocus on-tap="_onShareApplicationsAction">Share</paper-button>
             </div>
         </paper-dialog>
 
@@ -150,7 +144,7 @@ Custom property | Description | Default
     <script>
         Polymer({
 
-            is: 'appsco-company-application-add',
+            is: 'appsco-company-application-share',
 
             properties: {
 
@@ -162,23 +156,24 @@ Custom property | Description | Default
                 },
 
                 /**
-                 * Company API link.
-                 * API in which company to add application.
+                 * Accounts API link
                  */
-                companyApi: {
+                accountsApi: {
                     type: String
                 },
 
                 /**
-                 * Applications template API link.
-                 * API to get applications.
+                 * Applications to share.
                  */
-                applicationsTemplateApi: {
-                    type: String
+                applications: {
+                    type: Array,
+                    value: function() {
+                        return [];
+                    }
                 },
 
                 /**
-                 * Number of applications to load show in search result.
+                 * Number of accounts to load show in search result.
                  */
                 size: {
                     type: Number,
@@ -203,9 +198,9 @@ Custom property | Description | Default
                 },
 
                 /**
-                 * Selected applications from search list.
+                 * Selected accounts from search list.
                  */
-                _selectedApplications: {
+                _selectedAccounts: {
                     type: Array,
                     value: function() {
                         return [];
@@ -221,9 +216,9 @@ Custom property | Description | Default
                 },
 
                 /**
-                 * Indicates if add application loader should be displayed or not.
+                 * Indicates if share applications loader should be displayed or not.
                  */
-                _addLoader: {
+                _shareLoader: {
                     type: Boolean,
                     value: false
                 }
@@ -231,7 +226,7 @@ Custom property | Description | Default
             },
 
             /**
-             * Toggles add applications dialog.
+             * Toggles sharing dialog.
              */
             toggle: function() {
                 this.$.dialog.toggle();
@@ -253,15 +248,15 @@ Custom property | Description | Default
              */
             _onDialogClosed: function() {
                 this.set('_searchList', []);
-                this.set('_selectedApplications', []);
+                this.set('_selectedAccounts', []);
                 this.$.search.value = '';
                 this._searchLoader = false;
-                this._addLoader = false;
+                this._shareLoader = false;
                 this._error = '';
             },
 
             /**
-             * Gets applications by term.
+             * Gets accounts by term.
              *
              * @param {Object} event
              * @private
@@ -290,7 +285,7 @@ Custom property | Description | Default
                 }
 
                 var request = document.createElement('iron-request'),
-                        url = this.applicationsTemplateApi + '?extended=1&limit=' + this.size + '&term=' + searchValue;
+                        url = this.accountsApi + '?extended=1&limit=' + this.size + '&term=' + searchValue;
 
                 this._message = '';
 
@@ -304,14 +299,14 @@ Custom property | Description | Default
                 };
 
                 request.send(options).then(function() {
-                    var applications = request.response.applications;
+                    var accounts = request.response.accounts;
 
-                    if (applications && applications.length > 0) {
-                        this.set('_searchList', applications);
+                    if (accounts && accounts.length > 0) {
+                        this.set('_searchList', accounts);
                     }
                     else {
                         this.set('_searchList', []);
-                        this._message = 'There are no applications with asked title.';
+                        this._message = 'There are no accounts with asked name.';
                     }
 
                     this._searchLoader = false;
@@ -320,31 +315,33 @@ Custom property | Description | Default
 
             _mapToItem: function(item) {
                 return {
-                    image: item.icon_url,
-                    title: item.title
+                    image: item.picture_url,
+                    title: item.name
                 }
             },
 
             /**
-             * Called after application has been selected from search list.
+             * Called after account has been selected from search list.
              *
              * @param {Object} event
              * @private
              */
-            _onApplicationSelect: function(event) {
-                this.push('_selectedApplications', event.model.item);
+            _onItemSelect: function(event) {
+                this.push('_selectedAccounts', event.model.item);
+                this.splice('_searchList', this._searchList.indexOf(event.model.item), 1);
             },
 
-            _onAddedApplicationSelect: function(event) {
-                this.splice('_selectedApplications', event.detail.application, 1);
+            _onItemRemove: function(event) {
+                this.push('_searchList', event.model.item);
+                this.splice('_selectedAccounts', this._selectedAccounts.indexOf(event.model.item), 1);
             },
 
-            _onAddApplicationsAction: function() {
-                var applications = this._selectedApplications,
-                        length = applications.length - 1,
+            _shareAccounts: function(application, more) {
+                var accounts = this._selectedAccounts,
+                        length = accounts.length - 1,
                         appRequest = document.createElement('iron-request'),
                         options = {
-                            url: this.companyApi + '/applications',
+                            url: application.self + '/share',
                             method: 'POST',
                             handleAs: 'json',
                             headers: {
@@ -354,30 +351,50 @@ Custom property | Description | Default
                         },
                         body = '';
 
-                this._addLoader = true;
-
                 for (var i = 0; i <= length; i++) {
                     var next = (i === length) ? '' : '&';
-                    body += 'application_templates[]=' + encodeURIComponent(applications[i].self) + next;
+                    body += 'accounts[]=' + encodeURIComponent(accounts[i].self) + next;
                 }
 
                 options.body = body;
 
-                appRequest.send(options).then(function(request) {
-                    this.$.dialog.close();
+                appRequest.send(options).then(function() {
 
-                    /**
-                     * Fired when application has been shared.
-                     *
-                     * @event application-shared
-                     */
-                    this.fire('applications-added', {
-                        applications: request.response.applications
-                    });
+                    if (more) {
+                        this.$.dialog.close();
 
-                    this.set('_selectedApplications', []);
-                    this._addLoader = false;
+                        /**
+                         * Fired when applications have been shared.
+                         *
+                         * @event applications-shared
+                         */
+                        this.fire('applications-shared', {
+                            applications: this.applications
+                        });
+
+                        this.set('_selectedAccounts', []);
+                        this._shareLoader = false;
+                    }
                 }.bind(this));
+            },
+
+            _onShareApplicationsAction: function() {
+                var applications = this.applications,
+                        length = applications.length - 1;
+
+                this._shareLoader = true;
+
+                for (var i = 0; i <= length; i++) {
+
+                    if (i === length) {
+                        this._shareAccounts(applications[i], true);
+                        return false;
+                    }
+
+                    this._shareAccounts(applications[i], false);
+
+
+                }
             }
         });
     </script>

@@ -1,10 +1,11 @@
 <link rel="import" href="../polymer/polymer.html">
-
 <link rel="import" href="../iron-ajax/iron-ajax.html">
 <link rel="import" href="../iron-flex-layout/iron-flex-layout.html">
-
 <link rel="import" href="../paper-button/paper-button.html">
 <link rel="import" href="../paper-progress/paper-progress.html">
+<link rel="import" href="../neon-animation/neon-animation-runner-behavior.html">
+<link rel="import" href="../neon-animation/animations/transform-animation.html">
+
 <link rel="import" href="appsco-application-item.html">
 
 <!--
@@ -94,7 +95,7 @@ Custom property | Description | Default
                 width: 120px;
                 margin: 20px auto 0;
                 text-align: center;
-                @apply(--load-more-button);
+            @apply(--load-more-button);
             }
             :host .message {
                 font-style: italic;
@@ -121,7 +122,9 @@ Custom property | Description | Default
 
             <template is="dom-if" if="[[ !_applicationsEmpty ]]">
                 <div applications company$="[[ company ]]">
-                    <template is="dom-repeat" items="{{ _applications }}">
+                    <template is="dom-repeat"
+                              items="{{ _applications }}"
+                              on-dom-change="_onItemsDomChange">
 
                         <appsco-application-item id="appscoApplicationItem_[[ index ]]"
                                                  class="applicationitem"
@@ -226,8 +229,38 @@ Custom property | Description | Default
                 _totalApplications: {
                     type: Number,
                     value: 0
+                },
+
+                _renderedIndex: {
+                    type: Number,
+                    value: -1
+                },
+
+                /**
+                 * Animation for loader appearance.
+                 */
+                animationConfig: {
+                    value: function() {
+                        return {
+                            'entry': {
+                                name: 'transform-animation',
+                                transformOrigin: '1 1',
+                                transformFrom: 'scale(1)',
+                                transformTo: 'scale(1.08)',
+                                node: {},
+                                timing: {
+                                    delay: 200,
+                                    duration: 500
+                                }
+                            }
+                        }
+                    }
                 }
             },
+
+            behaviors: [
+                Polymer.NeonAnimationRunnerBehavior
+            ],
 
             listeners: {
                 'applications-api-changed': "_loadApplications"
@@ -235,6 +268,20 @@ Custom property | Description | Default
 
             ready: function () {
                 this._currentUrl = this.applicationsApi + "?page=1&extended=1&limit=" + this.size;
+
+                if (this.company) {
+
+                    this.animationConfig.entry = {
+                        name: 'cascaded-animation',
+                        animation: 'slide-from-left-animation',
+                        nodes: [],
+                        nodeDelay: 50,
+                        timing: {
+                            duration: 300
+                        }
+                    };
+
+                }
             },
 
             _loadApplications: function () {
@@ -281,7 +328,7 @@ Custom property | Description | Default
                     return false;
                 }
 
-                me._applicationsEmpty = false;
+                this._applicationsEmpty = false;
 
                 icons.forEach(function (el, index) {
 
@@ -320,8 +367,15 @@ Custom property | Description | Default
                 }
             },
 
-            addApplication: function(application) {
-                this.push('_applications', application);
+            addApplications: function(applications) {
+                var length = applications.length;
+
+                this._applicationsEmpty = false;
+                this._renderedIndex = length - 1;
+
+                for (var i = 0; i < length; i++) {
+                    this.unshift('_applications', applications[i]);
+                }
             },
 
             reloadApplications: function() {
@@ -329,13 +383,21 @@ Custom property | Description | Default
                 this._loadApplications();
             },
 
-            removeApplication: function(application) {
-                var index = this._applications.indexOf(application);
-                this.splice('_applications', index, 1);
+            removeApplications: function(applications) {
+                var length = applications.length - 1;
 
-                this.fire('application-removed', {
-                    application: application
+                for (var i = 0; i <= length; i++) {
+                    var index = this._applications.indexOf(applications[i]);
+                    this.splice('_applications', index, 1);
+                }
+
+                this.fire('applications-removed', {
+                    applications: applications
                 });
+
+                if (0 === this._applications.length) {
+                    this._handleEmptyLoad();
+                }
             },
 
             getFirstApplication: function() {
@@ -359,7 +421,7 @@ Custom property | Description | Default
                     if (elem.title.toLowerCase().indexOf(term.toLowerCase()) >= 0) {
                         var oldElem = JSON.parse(JSON.stringify(elem));
 
-                        this.addApplication(oldElem);
+                        this.push('_applications', oldElem);
                     }
 
                     if (index === length - 1) {
@@ -383,6 +445,25 @@ Custom property | Description | Default
                 setTimeout(function() {
                     this.$$('#paperProgress').hidden = true;
                 }.bind(this), 300);
+
+            },
+
+            _onItemsDomChange: function() {
+                var index = this._renderedIndex;
+
+                if (-1 != index && this.company) {
+
+                    this.animationConfig.entry.nodes = [];
+
+                    for (var i = 0; i <= index; i++) {
+                        var addedItem = this.$$('#appscoApplicationItem_' + i);
+                        this.animationConfig.entry.nodes.push(addedItem);
+                    }
+
+                    this.playAnimation('entry');
+
+                    this._renderedIndex = -1;
+                }
 
             }
         });

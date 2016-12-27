@@ -38,6 +38,9 @@
 <link rel="import" href="../bower_components/appsco-application/appsco-application-share.html">
 <link rel="import" href="../bower_components/appsco-application/appsco-application-remove.html">
 <link rel="import" href="../bower_components/appsco-application/appsco-application-subscriber-revoke.html">
+<link rel="import" href="../bower_components/appsco-application/company/appsco-company-application-add.html">
+<link rel="import" href="../bower_components/appsco-application/company/appsco-company-application-share.html">
+<link rel="import" href="../bower_components/appsco-application/company/appsco-company-application-remove.html">
 
 <link rel="import" href="../bower_components/appsco-account/appsco-account-authorized-app-revoke.html">
 
@@ -465,10 +468,12 @@
                                     name="applications"
                                     authorization-token="[[ authorizationToken ]]"
                                     filter-api="[[ api.dashboards ]]?extended=1"
-                                    on-add-application="_onAddApplication"
+                                    on-add-application="_onCompanyAddApplication"
                                     on-search="_onSearchApplications"
                                     on-page-global-info="_onInfoAction"
-                                    on-page-global-filters="_onApplicationsFiltersAction"></appsco-applications-page-actions>
+                                    on-page-global-filters="_onApplicationsFiltersAction"
+                                    on-share="_onShareApplications"
+                                    on-remove="_onRemoveApplications"></appsco-applications-page-actions>
 
                         </neon-animated-pages>
 
@@ -564,6 +569,7 @@
                             id="appscoApplicationsPage"
                             name="applications"
                             application="{{ application }}"
+                            selected-applications="{{ _selectedApplications }}"
                             application-log="[[ application.meta.log ]]"
                             authorization-token="[[ authorizationToken ]]"
                             computed-headers="[[ _computedHeaders ]]"
@@ -653,6 +659,30 @@
                 authorization-token="[[ authorizationToken ]]"
                 on-orgunit-removed="_onOrgunitRemoved"
                 ></appsco-orgunit-remove>
+
+        <appsco-company-application-add
+                id="appscoCompanyApplicationsAdd"
+                authorization-token="[[ authorizationToken ]]"
+                applications-template-api="[[ api.applicationTemplates ]]"
+                company-api="[[ companyApi ]]"
+                on-applications-added="_onCompanyApplicationsAdded">
+        </appsco-company-application-add>
+
+        <appsco-company-application-share
+                id="appscoCompanyApplicationsShare"
+                applications="[[ _selectedApplications ]]"
+                authorization-token="[[ authorizationToken ]]"
+                accounts-api="[[ api.accounts ]]"
+                on-applications-shared="_onCompanyApplicationsShared"
+                ></appsco-company-application-share>
+
+        <appsco-company-application-remove
+                id="appscoCompanyApplicationsRemove"
+                applications="[[ _selectedApplications ]]"
+                authorization-token="[[ authorizationToken ]]"
+                company-api="[[ companyApi ]]"
+                on-applications-removed="_onApplicationsRemoved"
+                on-applications-remove-failed="_onApplicationsRemoveFailed"></appsco-company-application-remove>
 
         <template is="dom-if" if="[[ api.me ]]">
             <iron-ajax auto
@@ -749,6 +779,16 @@
                 },
 
                 /**
+                 * Selected applications (company).
+                 */
+                _selectedApplications: {
+                    type: Array,
+                    value: function() {
+                        return [];
+                    }
+                },
+
+                /**
                  * Selected authorized application that is to be removed.
                  */
                 _authorizedApplication: {
@@ -784,6 +824,11 @@
                 },
 
                 companyOrgunitsApi: {
+                    type: String,
+                    value: ''
+                },
+
+                companyApi: {
                     type: String,
                     value: ''
                 },
@@ -923,6 +968,7 @@
                 var response = event.detail.response;
 
                 if (response && response.meta.total > 0) {
+                    this.companyApi = response.companies[0];
                     this.companyApplicationsApi = response.companies[0] + '/applications?extended=1';
                     this.companyOrgunitsApi = response.companies[0] + '/org-units?extended=1';
                 }
@@ -1000,9 +1046,10 @@
 
             _onApplicationAdded: function(event) {
                 var application = event.detail.application,
+                    applications = [application],
                     message = application.title + ' was successfully saved.';
 
-                this._business ? this.$.appscoApplicationsPage.addApplication(application) : this.$.appscoHomePage.addApplication(application);
+                this.$.appscoHomePage.addApplications(applications);
                 this._notify(message);
             },
 
@@ -1047,9 +1094,10 @@
 
             _onApplicationRemoved: function(event) {
                 var application = event.detail.application,
+                    applications = [application],
                     message = application.title + ' was successfully removed.';
 
-                this.$.appscoHomePage.removeApplication(application);
+                this.$.appscoHomePage.removeApplications(applications);
                 this.set('routeData.page', 'home');
 
                 this._notify(message);
@@ -1281,6 +1329,47 @@
 
                 this.$.appscoApplicationsPage.removeOrgunit(orgunit);
                 this._notify('Organization unit ' + orgunit.name + ' successfully removed.');
+            },
+
+            _onCompanyAddApplication: function() {
+                this.$.appscoCompanyApplicationsAdd.toggle();
+            },
+
+            _onCompanyApplicationsAdded: function(event) {
+                var applications = event.detail.applications,
+                    message = 'Selected applications were successfully added.';
+
+                this.$.appscoApplicationsPage.addApplications(applications);
+                this._notify(message);
+            },
+
+            _onShareApplications: function() {
+                this.$.appscoCompanyApplicationsShare.toggle();
+            },
+
+            _onCompanyApplicationsShared: function(event) {
+                var applications = event.detail.applications,
+                    application = applications[applications.length - 1];
+
+                this.set('application', {});
+                this.set('application', application);
+
+                this._notify('Selected applications were successfully shared.');
+            },
+
+            _onRemoveApplications: function() {
+                this.$.appscoCompanyApplicationsRemove.toggle();
+            },
+
+            _onApplicationsRemoved: function() {
+                this.$.appscoApplicationsPage.removeApplications();
+                this.set('selectedApplications', []);
+                this._notify('Selected applications were successfully removed from company.');
+            },
+
+            _onApplicationsRemoveFailed: function() {
+                this.set('selectedApplications', []);
+                this._notify('An error occurred. Selected applications were not removed from company. Please try again.');
             },
             /**
              * Applications page END

@@ -199,31 +199,34 @@ Custom property | Description | Default
 
                 this._message = null;
 
-                if (application.security && (0 == this._totalInstances)) {
-                    this._message = 'Application is not assigned to anyone yet.';
-                }
+                if (application) {
 
-                if ('individual' === application.claim_type) {
-                    this._setByInfo = 'Application is set to be configured by users.';
-                }
+                    if (application.security && (0 == this._totalInstances)) {
+                        this._message = 'Application is not assigned to anyone yet.';
+                    }
 
-                if (application.self) {
-                    this._showAnalytics();
+                    if ('individual' === application.claim_type) {
+                        this._setByInfo = 'Application is set to be configured by users.';
+                    }
+
+                    if (application.self) {
+                        this._showAnalytics();
+                    }
                 }
 
             },
 
             _computeTotalInstances: function(application) {
-                return application.security ? application.security.info.configured + application.security.info.not_configured : 0;
+                return (application && application.security) ? application.security.info.configured + application.security.info.not_configured : 0;
             },
 
             _computeLastEditedDate: function(application) {
-                return application.last_modified ? this._dateFormat(application.last_modified.date.date) : '';
+                return (application && application.last_modified) ? this._dateFormat(application.last_modified.date.date) : '';
             },
 
             _computeDailyUsage: function(application) {
 
-                if (application.security) {
+                if (application && application.security) {
                     var usage = Math.round(application.daily_usage / this._totalInstances * 100);
 
                     return (0 === usage) ? 'There is no activity today' : usage + '%';

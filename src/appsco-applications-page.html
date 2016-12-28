@@ -274,7 +274,8 @@
                     type: Array,
                     value: function() {
                         return [];
-                    }
+                    },
+                    notify: true
                 },
 
                 _orgUnits: {
@@ -329,13 +330,6 @@
                 companyOrgunitsApi: {
                     type: String,
                     value: ''
-                },
-
-                _applications: {
-                    type: Array,
-                    value: function () {
-                        return [];
-                    }
                 },
 
                 mobileScreen: {
@@ -407,6 +401,12 @@
                 this.fire('page-loaded');
             },
 
+            initializePage: function() {
+                this.set('selectedApplications', []);
+                this.$.appscoApplications.selectAllApplications(false);
+                this.setDefaultApplication();
+            },
+
             _showInfo: function() {
                 this.$.appscoContent.showSection('info');
                 this._infoShown = true;
@@ -466,7 +466,16 @@
 
             _onApplication: function(event) {
                 var application = event.detail.application,
-                    index = this.selectedApplications.indexOf(application);
+                    index = -1,
+                    applications = this.selectedApplications,
+                    length = applications.length;
+
+                for (var i = 0; i < length; i++) {
+                    if (applications[i].self === application.self) {
+                        index = i;
+                        break;
+                    }
+                }
 
                 if (index > -1) {
                     this.splice('selectedApplications', index, 1);
@@ -499,6 +508,10 @@
                 this.$.appscoApplications.addApplications(applications);
             },
 
+            modifyApplications: function(applications) {
+                this.$.appscoApplications.modifyApplications(applications);
+            },
+
             removeApplications: function() {
                 this.$.appscoApplications.removeApplications(this.selectedApplications);
                 this.setDefaultApplication();
@@ -509,6 +522,20 @@
             },
 
             _onApplicationRemoved: function() {
+                this.setDefaultApplication();
+            },
+
+            selectAllApplications: function() {
+                var allApplications = JSON.parse(JSON.stringify(this.$.appscoApplications.getAllApplications()));
+
+                this.set('selectedApplications', allApplications);
+                this.$.appscoApplications.selectAllApplications(true);
+                this.setDefaultApplication();
+            },
+
+            deselectAllApplications: function() {
+                this.set('selectedApplications', []);
+                this.$.appscoApplications.selectAllApplications(false);
                 this.setDefaultApplication();
             },
 

@@ -41,6 +41,7 @@
 <link rel="import" href="../bower_components/appsco-application/company/appsco-company-application-add.html">
 <link rel="import" href="../bower_components/appsco-application/company/appsco-company-application-share.html">
 <link rel="import" href="../bower_components/appsco-application/company/appsco-company-application-remove.html">
+<link rel="import" href="../bower_components/appsco-application/company/appsco-application-orgunit.html">
 
 <link rel="import" href="../bower_components/appsco-account/appsco-account-authorized-app-revoke.html">
 
@@ -170,10 +171,6 @@
 
                 --paper-tooltip-background: var(--app-primary-color-dark);
             }
-
-            /*:host([_business]) {*/
-                /*--app-primary-color: #5B7EB8;*/
-            /*}*/
 
             /* Top header style START */
             appsco-header {
@@ -473,7 +470,10 @@
                                     on-page-global-info="_onInfoAction"
                                     on-page-global-filters="_onApplicationsFiltersAction"
                                     on-share="_onShareApplications"
-                                    on-remove="_onRemoveApplications"></appsco-applications-page-actions>
+                                    on-remove="_onRemoveApplications"
+                                    on-orgunits="_onAddToOrgunit"
+                                    on-select-all="_onSelectAllApplications"
+                                    on-deselect-all="_onDeselectAllApplications"></appsco-applications-page-actions>
 
                         </neon-animated-pages>
 
@@ -568,7 +568,6 @@
                     <appsco-applications-page
                             id="appscoApplicationsPage"
                             name="applications"
-                            application="{{ application }}"
                             selected-applications="{{ _selectedApplications }}"
                             application-log="[[ application.meta.log ]]"
                             authorization-token="[[ authorizationToken ]]"
@@ -667,6 +666,13 @@
                 company-api="[[ companyApi ]]"
                 on-applications-added="_onCompanyApplicationsAdded">
         </appsco-company-application-add>
+
+        <appsco-application-orgunit
+                id="appscoApplicationOrgunit"
+                authorization-token="[[ authorizationToken ]]"
+                company-orgunits-api="[[ companyOrgunitsApi ]]"
+                applications="[[ _selectedApplications ]]"
+                on-added-to-orgunit="_onAddedToOrgunit"></appsco-application-orgunit>
 
         <appsco-company-application-share
                 id="appscoCompanyApplicationsShare"
@@ -1343,6 +1349,15 @@
                 this._notify(message);
             },
 
+            _onAddToOrgunit: function() {
+                this.$.appscoApplicationOrgunit.toggle();
+            },
+
+            _onAddedToOrgunit: function(event) {
+                this._notify('Selected applications were successfully added to ' + event.detail.orgunit.name + '.');
+                this.$.appscoApplicationsPage.modifyApplications(event.detail.applications);
+            },
+
             _onShareApplications: function() {
                 this.$.appscoCompanyApplicationsShare.toggle();
             },
@@ -1370,6 +1385,16 @@
             _onApplicationsRemoveFailed: function() {
                 this.set('selectedApplications', []);
                 this._notify('An error occurred. Selected applications were not removed from company. Please try again.');
+            },
+
+            _onSelectAllApplications: function() {
+                this.$.appscoApplicationsPage.selectAllApplications();
+            },
+
+            _onDeselectAllApplications: function() {
+                this.$.appscoApplicationsPage.deselectAllApplications();
+                this._onHideApplicationsBulkActions();
+
             },
             /**
              * Applications page END
@@ -1441,6 +1466,11 @@
                         break;
 
                     case 'account':
+                        fromPage.initializePage();
+                        break;
+
+                    case 'applications':
+                        this._onHideApplicationsBulkActions();
                         fromPage.initializePage();
                         break;
 

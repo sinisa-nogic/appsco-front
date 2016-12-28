@@ -77,6 +77,9 @@ Custom property | Description | Default
             :host([bulk-actions]) .bulk-action {
                 display: flex;
             }
+            :host .bulk-action[hidden] {
+                display: none !important;
+            }
             :host .action-search {
             @apply(--paper-input-search-container);
             }
@@ -187,6 +190,27 @@ Custom property | Description | Default
         </template>
 
         <template is="dom-if" if="[[ business ]]">
+
+            <!--Select / deselect all applications-->
+
+            <!--<div class="action bulk-action flex-none" hidden$="[[ _selectedAll ]]">-->
+            <!--<paper-icon-button id="selectAllAction"-->
+            <!--icon="icons:check-box-outline-blank"-->
+            <!--alt="Select all"-->
+            <!--on-tap="_onSelectAllAction"></paper-icon-button>-->
+            <!--<paper-tooltip for="selectAllAction"-->
+            <!--position="bottom">Select All</paper-tooltip>-->
+            <!--</div>-->
+
+            <!--<div class="action bulk-action flex-none" hidden$="[[ !_selectedAll ]]">-->
+            <!--<paper-icon-button id="deselectAllAction"-->
+            <!--icon="icons:check-box"-->
+            <!--alt="Deselect all"-->
+            <!--on-tap="_onDeselectAllAction"></paper-icon-button>-->
+            <!--<paper-tooltip for="deselectAllAction"-->
+            <!--position="bottom">Deselect All</paper-tooltip>-->
+            <!--</div>-->
+
             <div class="action bulk-action flex-none">
                 <paper-icon-button id="organizationUnitsAction"
                                    icon="icons:group-work"
@@ -236,14 +260,17 @@ Custom property | Description | Default
             is: 'appsco-application-actions',
 
             properties: {
+
                 authorizationToken: {
                     type: String,
                     value: ''
                 },
+
                 _computedHeaders: {
                     type: Object,
                     computed: "_computeHeaders(authorizationToken)"
                 },
+
                 /**
                  * Link to retrieve filters from
                  */
@@ -251,6 +278,7 @@ Custom property | Description | Default
                     type: String,
                     value: ''
                 },
+
                 _filterItems: {
                     type: Array,
                     value: function () {
@@ -280,6 +308,11 @@ Custom property | Description | Default
                     type: Boolean,
                     value: false,
                     observer: '_onBulkActionsChanged'
+                },
+
+                _selectedAll: {
+                    type: Boolean,
+                    value: false
                 },
 
                 /**
@@ -481,6 +514,40 @@ Custom property | Description | Default
                  * @event orgunits
                  */
                 this.fire('orgunits');
+            },
+
+            /**
+             * Called on select all action tap.
+             * It fires an event.
+             *
+             * @private
+             */
+            _onSelectAllAction: function() {
+                this._selectedAll = true;
+
+                /**
+                 * Fired when select all action is triggered.
+                 *
+                 * @event select-all
+                 */
+                this.fire('select-all');
+            },
+
+            /**
+             * Called on deselect all action tap.
+             * It fires an event.
+             *
+             * @private
+             */
+            _onDeselectAllAction: function() {
+                this._selectedAll = false;
+
+                /**
+                 * Fired when deselect all action is triggered.
+                 *
+                 * @event deselect-all
+                 */
+                this.fire('deselect-all');
             },
 
             _onSearchIcon: function() {

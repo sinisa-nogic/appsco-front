@@ -127,7 +127,7 @@ Custom property | Description | Default
                               on-dom-change="_onItemsDomChange">
 
                         <appsco-application-item id="appscoApplicationItem_[[ index ]]"
-                                                 class="applicationitem"
+                                                 class="application-item"
                                                  application="{{ item }}"
                                                  company="[[ company ]]"></appsco-application-item>
 
@@ -378,6 +378,28 @@ Custom property | Description | Default
                 }
             },
 
+            modifyApplications: function(applications) {
+                var allApplications = JSON.parse(JSON.stringify(this._applications)),
+                        length = allApplications.length,
+                        lengthModify = applications.length;
+
+                for (var i = 0; i < lengthModify; i++) {
+                    var application = applications[i];
+
+                    for (var j = 0; j < length; j++) {
+
+                        if (application.self === allApplications[j].self) {
+                            allApplications[j] = application;
+                            break;
+                        }
+                    }
+
+                }
+
+                this.set('_applications', []);
+                this.set('_applications', allApplications);
+            },
+
             reloadApplications: function() {
                 this.set('_currentUrl', '');
                 this._loadApplications();
@@ -402,6 +424,20 @@ Custom property | Description | Default
 
             getFirstApplication: function() {
                 return this._applications[0];
+            },
+
+            getAllApplications: function() {
+                return this._applications;
+            },
+
+            selectAllApplications: function(select) {
+                var applications = this._applications,
+                        length = applications.length;
+
+                for (var i = 0; i < length; i++) {
+                    var applicationItem = this.$$('#appscoApplicationItem_' + i);
+                    select ? applicationItem.select() : applicationItem.deselect();
+                }
             },
 
             filterApplicationsByTerm: function(term) {

@@ -116,8 +116,8 @@ Custom property | Description | Default
 
             <paper-progress id="paperProgress" indeterminate></paper-progress>
 
-            <template is="dom-if" if="[[ _applicationsEmpty ]]">
-                <p class="message">There are no asked applications.</p>
+            <template is="dom-if" if="[[ _message ]]">
+                <p class="message">[[ _message ]]</p>
             </template>
 
             <template is="dom-if" if="[[ !_applicationsEmpty ]]">
@@ -127,7 +127,7 @@ Custom property | Description | Default
                               on-dom-change="_onItemsDomChange">
 
                         <appsco-application-item id="appscoApplicationItem_[[ index ]]"
-                                                 class="applicationitem"
+                                                 class="application-item"
                                                  application="{{ item }}"
                                                  company="[[ company ]]"></appsco-application-item>
 
@@ -218,6 +218,11 @@ Custom property | Description | Default
                     value: false
                 },
 
+                _message: {
+                    type: String,
+                    value: ''
+                },
+
                 _currentUrl: {
                     type: String,
                     notify: true
@@ -297,6 +302,7 @@ Custom property | Description | Default
             },
 
             _onError: function() {
+                this._message = 'We couldn\'t load applications at the moment. Please try again in a minute.';
                 this._handleEmptyLoad();
             },
 
@@ -324,11 +330,13 @@ Custom property | Description | Default
                 this._next = meta.next + "&limit=" + this.size;
 
                 if (meta.total === 0) {
+                    this._message = 'Please add applications to your company.';
                     this._handleEmptyLoad();
                     return false;
                 }
 
                 this._applicationsEmpty = false;
+                this._message = '';
 
                 icons.forEach(function (el, index) {
 
@@ -371,11 +379,34 @@ Custom property | Description | Default
                 var length = applications.length;
 
                 this._applicationsEmpty = false;
+                this._message = '';
                 this._renderedIndex = length - 1;
 
                 for (var i = 0; i < length; i++) {
                     this.unshift('_applications', applications[i]);
                 }
+            },
+
+            modifyApplications: function(applications) {
+                var allApplications = JSON.parse(JSON.stringify(this._applications)),
+                        length = allApplications.length,
+                        lengthModify = applications.length;
+
+                for (var i = 0; i < lengthModify; i++) {
+                    var application = applications[i];
+
+                    for (var j = 0; j < length; j++) {
+
+                        if (application.self === allApplications[j].self) {
+                            allApplications[j] = application;
+                            break;
+                        }
+                    }
+
+                }
+
+                this.set('_applications', []);
+                this.set('_applications', allApplications);
             },
 
             reloadApplications: function() {
@@ -384,11 +415,17 @@ Custom property | Description | Default
             },
 
             removeApplications: function(applications) {
-                var length = applications.length - 1;
+                var length = applications.length;
 
-                for (var i = 0; i <= length; i++) {
-                    var index = this._applications.indexOf(applications[i]);
-                    this.splice('_applications', index, 1);
+                for (var i = 0; i < length; i++) {
+                    for (var j = 0; j < this._applications.length; j++) {
+
+                        if (applications[i].self === this._applications[j].self) {
+                            this.splice('_applications', j, 1);
+                            break;
+                        }
+
+                    }
                 }
 
                 this.fire('applications-removed', {
@@ -396,12 +433,27 @@ Custom property | Description | Default
                 });
 
                 if (0 === this._applications.length) {
+                    this._message = 'You have removed all applications. Please add new ones.';
                     this._handleEmptyLoad();
                 }
             },
 
             getFirstApplication: function() {
                 return this._applications[0];
+            },
+
+            getAllApplications: function() {
+                return this._applications;
+            },
+
+            selectAllApplications: function(select) {
+                var applications = this._applications,
+                        length = applications.length;
+
+                for (var i = 0; i < length; i++) {
+                    var applicationItem = this.$$('#appscoApplicationItem_' + i);
+                    select ? applicationItem.select() : applicationItem.deselect();
+                }
             },
 
             filterApplicationsByTerm: function(term) {
@@ -465,6 +517,62 @@ Custom property | Description | Default
                     this._renderedIndex = -1;
                 }
 
+            },
+
+            filterApplicationsByOrgunit: function(data) {
+                var orgunit = data.orgUnit,
+                        selected = data.selected,
+                        allLength = 0;
+
+                this._applicationsEmpty = false;
+                this._message = '';
+
+                if (this._allApplications.length < this._applications.length) {
+                    this._allApplications = JSON.parse(JSON.stringify(this._applications));
+                }
+
+                allLength = this._allApplications.length;
+
+                if (!selected) {
+                    this.set('_applications', this._allApplications);
+
+                    for (var i = 0; i < allLength; i++) {
+                        var applicationItem = this.$$('#appscoApplicationItem_' + i);
+
+                        if (applicationItem) {
+                            applicationItem.deselect();
+                        }
+                    }
+                }
+                else {
+                    this.set('_applications', []);
+
+                    for (var i = 0; i < allLength; i++) {
+                        var application = this._allApplications[i],
+                                orgunits = application.org_units,
+                                orgunitsLength = orgunits.length,
+                                applicationItem = this.$$('#appscoApplicationItem_' + i);
+
+                        if (applicationItem) {
+                            applicationItem.deselect();
+                        }
+
+                        for (var j = 0; j < orgunitsLength; j++) {
+
+                            if (orgunits[j].name === orgunit.name) {
+                                this.push('_applications', application);
+                                break;
+                            }
+
+                        }
+                    }
+
+                    if (this._applications.length === 0) {
+                        this._message = 'There are no applications within ' + orgunit.name +' organization unit.';
+                        this._handleEmptyLoad();
+                    }
+
+                }
             }
         });
     </script>

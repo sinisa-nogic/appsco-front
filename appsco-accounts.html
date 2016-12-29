@@ -1,0 +1,472 @@
+<link rel="import" href="../polymer/polymer.html">
+<link rel="import" href="../iron-ajax/iron-ajax.html">
+<link rel="import" href="../iron-flex-layout/iron-flex-layout.html">
+<link rel="import" href="../paper-button/paper-button.html">
+<link rel="import" href="../paper-progress/paper-progress.html">
+<link rel="import" href="../neon-animation/neon-animation-runner-behavior.html">
+<link rel="import" href="../neon-animation/animations/transform-animation.html">
+
+<link rel="import" href="appsco-account-item.html">
+
+<!--
+`appsco-accounts`
+Contains account list and Load More action (if there are more accounts then presented).
+Accounts are loaded inside component through iron-ajax.
+Component listens for events which have influence on result and changes query in order to retrieve appropriate accounts.
+
+
+    <appsco-accounts>
+    </appsco-accounts>
+
+### Styling
+
+`<appsco-accounts>` provides the following custom properties and mixins for styling:
+
+Custom property | Description | Default
+----------------|-------------|----------
+`--appsco-accounts-item` | Mixin for item style | `{}`
+`--appsco-accounts` | Mixin for the root element | `{}`
+`--accounts-container` | Mixin for the accounts container | `{}`
+`--accounts-progress-bar` | Mixin applied to paper-progress for account list | `{}`
+
+@demo demo/appsco-accounts.html
+-->
+
+<dom-module id="appsco-accounts">
+    <template>
+        <style>
+            :host {
+                display: inline-block;
+                position: relative;
+                @apply(--appsco-accounts);
+                @apply(--layout-vertical);
+                @apply(--layout-center);
+
+                --paper-progress-container-color: var(--body-background-color);
+                --paper-progress-height: 2px;
+            }
+
+            :host div[accounts] {
+                @apply(--layout-horizontal);
+                @apply(--layout-wrap);
+                @apply(--layout-start);
+                margin-right: -10px;
+                @apply(--accounts-container);
+            }
+            :host([company]) div[accounts] {
+                @apply(--layout-vertical);
+                @apply(--layout-start);
+                margin-right: 0;
+            }
+            :host appsco-account-item {
+                margin: 0 10px 10px 0;
+                @apply(--appsco-accounts-item);
+            }
+            :host([company]) appsco-account-item {
+                width: 100%;
+                margin: 0 0 10px 0;
+                @apply(--appsco-accounts-item);
+            }
+
+            :host .accounts-container {
+                width: 100%;
+                min-height: 160px;
+                padding-top: 10px;
+                position: relative;
+            }
+            :host appsco-loader {
+                background-color: rgba(255, 255, 255, 0.4);
+            }
+            :host .load-more-box {
+                margin-top: 10px;
+                padding-top: 4px;
+                position: relative;
+            }
+            :host paper-progress {
+                min-width: 100px;
+                width: 100%;
+                position: absolute;
+                top: 0;
+                left: 0;
+                @apply(--accounts-progress-bar);
+            }
+            :host paper-button {
+                display: block;
+                width: 120px;
+                margin: 20px auto 0;
+                text-align: center;
+                @apply(--load-more-button);
+            }
+            :host .message {
+                font-style: italic;
+                opacity: 0.5;
+            }
+        </style>
+
+        <div class="accounts-container">
+            <iron-ajax
+                    auto
+                    id="accountsApiRequest"
+                    url="{{ _currentUrl }}"
+                    on-error="_onError"
+                    on-response="_onResponse"
+                    headers="{{ _computedHeaders }}"
+                    debounce-duration="300"
+            ></iron-ajax>
+
+            <paper-progress id="paperProgress" indeterminate></paper-progress>
+
+            <template is="dom-if" if="[[ _accountsEmpty ]]">
+                <p class="message">There are no asked accounts.</p>
+            </template>
+
+            <template is="dom-if" if="[[ !_accountsEmpty ]]">
+                <div accounts company$="[[ company ]]">
+                    <template is="dom-repeat"
+                              items="{{ _accounts }}"
+                              on-dom-change="_onItemsDomChange">
+
+                        <appsco-account-item id="appscoAccountItem_[[ index ]]"
+                                                 class="accountitem"
+                                                 account="{{ item.account }}"
+                                                 company-role="{{ item }}"
+                                                 company="[[ company ]]"></appsco-account-item>
+
+                    </template>
+                </div>
+            </template>
+        </div>
+
+        <template is="dom-if" if="[[ !_accountsEmpty ]]">
+            <div class="load-more-box">
+                <paper-button on-tap="_loadMoreApps" id="loadMore" hidden$="[[ !_loadMore ]]">Load More</paper-button>
+            </div>
+        </template>
+    </template>
+
+    <script>
+        Polymer({
+
+            is: 'appsco-accounts',
+
+            properties: {
+
+                /**
+                 * Indicates if user manages company accounts or not.
+                 */
+                company: {
+                    type: Boolean,
+                    value: false,
+                    reflectToAttribute: true
+                },
+
+                /**
+                 * Authorization token.
+                 */
+                authorizationToken: {
+                    type: String,
+                    value: ''
+                },
+                /**
+                 * Route to retrieve accounts for current user
+                 */
+                accountsApi: {
+                    type: String,
+                    value: '',
+                    notify: true
+                },
+                /**
+                 * Number of account items to load and present
+                 */
+                size: {
+                    type: Number,
+                    value: 10
+                },
+                /**
+                 * Show load more button
+                 */
+                loadMore: {
+                    type: Boolean,
+                    value: false
+                },
+
+                _loadMore: {
+                    type: Boolean,
+                    value: false
+                },
+
+                _computedHeaders: {
+                    type: Object,
+                    computed: "_computeHeaders(authorizationToken)"
+                },
+                _accounts: {
+                    type: Array,
+                    value: function () {
+                        return [];
+                    },
+                    notify: true
+                },
+
+                _allAccounts: {
+                    type: Array,
+                    value: function () {
+                        return [];
+                    }
+                },
+
+                _accountsEmpty: {
+                    type: Boolean,
+                    value: false
+                },
+
+                _currentUrl: {
+                    type: String,
+                    notify: true
+                },
+                _next: {
+                    type: String
+                },
+
+                _totalAccounts: {
+                    type: Number,
+                    value: 0
+                },
+
+                _renderedIndex: {
+                    type: Number,
+                    value: -1
+                },
+
+                /**
+                 * Animation for loader appearance.
+                 */
+                animationConfig: {
+                    value: function() {
+                        return {
+                            'entry': {
+                                name: 'transform-animation',
+                                transformOrigin: '1 1',
+                                transformFrom: 'scale(1)',
+                                transformTo: 'scale(1.08)',
+                                node: {},
+                                timing: {
+                                    delay: 200,
+                                    duration: 500
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+
+            behaviors: [
+                Polymer.NeonAnimationRunnerBehavior
+            ],
+
+            listeners: {
+                'accounts-api-changed': "_loadAccounts"
+            },
+
+            ready: function () {
+                this._currentUrl = this.accountsApi + "?page=1&extended=1&limit=" + this.size;
+
+                if (this.company) {
+
+                    this.animationConfig.entry = {
+                        name: 'cascaded-animation',
+                        animation: 'slide-from-left-animation',
+                        nodes: [],
+                        nodeDelay: 50,
+                        timing: {
+                            duration: 300
+                        }
+                    };
+
+                }
+            },
+
+            _loadAccounts: function () {
+                this.$$('#paperProgress').hidden = false;
+                this._loadMore = false;
+                this._currentUrl = this.accountsApi + "?page=1&extended=1&limit=" + this.size;
+                this.set('_accounts', []);
+            },
+
+            _loadMoreApps: function () {
+                this.$$('#paperProgress').hidden = false;
+                this._currentUrl = this._next;
+            },
+
+            _onError: function() {
+                this._handleEmptyLoad();
+            },
+
+            _handleEmptyLoad: function() {
+                this._accountsEmpty = true;
+
+                /**
+                 * Fired when there are no accounts.
+                 *
+                 * @event empty-load
+                 */
+                this.fire('empty-load');
+
+                this._hideProgressBar();
+            },
+
+            _onResponse: function(e) {
+                var me = this,
+                        response = e.detail.response,
+                        companyRoles = response.company_roles,
+                        meta = response.meta,
+                        accountsCount = companyRoles.length - 1;
+
+                this._totalAccounts = meta.total;
+                this._next = meta.next + "&limit=" + this.size;
+
+                if (meta.total === 0) {
+                    this._handleEmptyLoad();
+                    return false;
+                }
+
+                this._accountsEmpty = false;
+
+                companyRoles.forEach(function (el, index) {
+
+                    setTimeout( function() {
+
+                        me.push("_accounts", el);
+
+                        if (index == accountsCount) {
+                            me._loadMore = me.loadMore;
+
+                            if (me._accounts.length === meta.total) {
+                                me._loadMore = false;
+                            }
+
+                            me._hideProgressBar();
+
+                            /**
+                             * Fired when accounts are loaded
+                             *
+                             * @event loaded
+                             * @param {Object} account[] [account](https://developers.appsco.com/api/dashboard/id/icons/id)
+                             */
+                            me.fire('loaded', {
+                                accounts: e.detail.response.company_roles
+                            });
+                        }
+
+                    }.bind(this), (index + 1) * 50 );
+
+                });
+            },
+
+            _computeHeaders: function (authorizationToken) {
+                return {
+                    "Authorization": "token " + authorizationToken
+                }
+            },
+
+            addAccounts: function(accounts) {
+                var length = accounts.length;
+
+                this._accountsEmpty = false;
+                this._renderedIndex = length - 1;
+
+                for (var i = 0; i < length; i++) {
+                    this.unshift('_accounts', accounts[i]);
+                }
+            },
+
+            reloadAccounts: function() {
+                this.set('_currentUrl', '');
+                this._loadAccounts();
+            },
+
+            removeAccounts: function(accounts) {
+                var length = accounts.length - 1;
+
+                for (var i = 0; i <= length; i++) {
+                    var index = this._accounts.indexOf(accounts[i]);
+                    this.splice('_accounts', index, 1);
+                }
+
+                this.fire('accounts-removed', {
+                    accounts: accounts
+                });
+
+                if (0 === this._accounts.length) {
+                    this._handleEmptyLoad();
+                }
+            },
+
+            getFirstAccount: function() {
+                return this._accounts[0];
+            },
+
+            filterAccountsByTerm: function(term) {
+                var length = this._allAccounts.length;
+
+                this.$$('#paperProgress').hidden = false;
+
+                if (length < this._accounts.length) {
+                    this._allAccounts = JSON.parse(JSON.stringify(this._accounts));
+                    length = this._allAccounts.length;
+                }
+
+                this.set('_accounts', []);
+
+                this._allAccounts.forEach(function(elem, index) {
+
+                    if (elem.title.toLowerCase().indexOf(term.toLowerCase()) >= 0) {
+                        var oldElem = JSON.parse(JSON.stringify(elem));
+
+                        this.push('_accounts', oldElem);
+                    }
+
+                    if (index === length - 1) {
+                        this._accountsEmpty = (this._accounts.length === 0);
+                        this._hideProgressBar();
+
+                        this.fire('filter-done');
+                    }
+
+                }.bind(this));
+
+                this._loadMore = false;
+
+                if (term.length < 3 && this._accounts.length < this._totalAccounts) {
+                    this._loadMore = true;
+                }
+            },
+
+            _hideProgressBar: function() {
+
+                setTimeout(function() {
+                    this.$$('#paperProgress').hidden = true;
+                }.bind(this), 300);
+
+            },
+
+            _onItemsDomChange: function() {
+                var index = this._renderedIndex;
+
+                if (-1 != index && this.company) {
+
+                    this.animationConfig.entry.nodes = [];
+
+                    for (var i = 0; i <= index; i++) {
+                        var addedItem = this.$$('#appscoAccountItem_' + i);
+                        this.animationConfig.entry.nodes.push(addedItem);
+                    }
+
+                    this.playAnimation('entry');
+
+                    this._renderedIndex = -1;
+                }
+
+            }
+        });
+    </script>
+</dom-module>

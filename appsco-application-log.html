@@ -104,10 +104,12 @@ Custom property | Description | Default
                 </p>
             </template>
 
-            <paper-button on-tap="loadMoreLogs"
-                          id="loadMore"
-                          class="load-more-button"
-                          hidden="[[ !loadMore ]]">Load More</paper-button>
+            <template is="dom-if" if="[[ loadMore ]]">
+                <paper-button on-tap="loadMoreLogs"
+                              id="loadMore"
+                              class="load-more-button"
+                              hidden="[[ !_moreLogItems ]]">Load More</paper-button>
+            </template>
         </div>
 
     </template>
@@ -167,6 +169,17 @@ Custom property | Description | Default
                     value: false,
                     reflectToAttribute: true
                 },
+
+                _loadMore: {
+                    type: Boolean,
+                    value: false
+                },
+
+                _moreLogItems: {
+                    type: Boolean,
+                    value: true
+                },
+
                 authorizationToken: {
                     type: String,
                     value: ''
@@ -214,8 +227,6 @@ Custom property | Description | Default
                 this.set('_logMessages', []);
                 this.set('_currentUrl', '');
 
-                this.$.loadMore.disabled = false;
-
                 if (this.application && this.application.meta) {
                     this._next = this.application.meta.log + "?page=1&limit=" + this.size;
                     this._currentUrl = this._next;
@@ -230,6 +241,12 @@ Custom property | Description | Default
                 var me = this,
                         response = e.detail.response;
 
+                if (!this._loadMore) {
+                    this.set('_logMessages', []);
+                }
+
+                this._loadMore = false;
+
                 if (response && response.log.length > 0) {
 
                     response.log.forEach(function(el, index) {
@@ -239,6 +256,7 @@ Custom property | Description | Default
                         }, (index + 1) * 50);
 
                         if (index === response.log.length - 1) {
+                            me._moreLogItems = true;
                             me.fire('log-loaded');
                         }
 
@@ -248,14 +266,19 @@ Custom property | Description | Default
                     // Wait for a bit longer so that loading looks nice
                     setTimeout(function() {
                         me.$.progress.hidden = true;
+
                         if (parseInt(e.detail.response.meta.page) == parseInt(e.detail.response.meta.pages)) {
-                            me.$.loadMore.disabled = true;
+                            me._moreLogItems = false;
                         }
+
                     }, 600 + (e.detail.response.log.length * 100))
                 }
                 else {
                     this._message = 'The log is empty.';
-                    me.$.progress.hidden = true;
+                    this.$.progress.hidden = true;
+                    this._moreLogItems = false;
+
+                    this.fire('log-empty');
                 }
             },
             _handleError: function() {
@@ -263,6 +286,7 @@ Custom property | Description | Default
                 this.$.progress.hidden = true;
             },
             loadMoreLogs: function () {
+                this._loadMore = true;
                 this._currentUrl = this._next;
             },
             _loading: function() {

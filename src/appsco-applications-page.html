@@ -170,7 +170,8 @@
                 </div>
 
                 <appsco-orgunit-tree id="appscoOrgunitTree"
-                                     org-units='[[ _orgUnits ]]'></appsco-orgunit-tree>
+                                     org-units='[[ _orgUnits ]]'
+                                     on-selected="_onOrgunitSelected"></appsco-orgunit-tree>
 
             </div>
 
@@ -187,7 +188,7 @@
                         on-application="_onApplication"
                         on-application-removed="_onApplicationRemoved"
                         on-loaded="_pageLoaded"
-                        on-empty-load="_pageLoaded"></appsco-applications>
+                        on-empty-load="_onApplicationsEmptyLoad"></appsco-applications>
             </div>
 
             <div class="flex-vertical" info>
@@ -274,7 +275,8 @@
                     type: Array,
                     value: function() {
                         return [];
-                    }
+                    },
+                    notify: true
                 },
 
                 _orgUnits: {
@@ -329,13 +331,6 @@
                 companyOrgunitsApi: {
                     type: String,
                     value: ''
-                },
-
-                _applications: {
-                    type: Array,
-                    value: function () {
-                        return [];
-                    }
                 },
 
                 mobileScreen: {
@@ -407,6 +402,18 @@
                 this.fire('page-loaded');
             },
 
+            initializePage: function() {
+                this.set('selectedApplications', []);
+                this.$.appscoApplications.selectAllApplications(false);
+                this.hideInfo();
+            },
+
+            _onApplicationsEmptyLoad: function() {
+                this.hideInfo();
+                this._pageLoaded();
+                this.fire('hide-bulk-actions');
+            },
+
             _showInfo: function() {
                 this.$.appscoContent.showSection('info');
                 this._infoShown = true;
@@ -419,12 +426,16 @@
             },
 
             toggleInfo: function() {
-                this.$.appscoContent.toggleSection('info');
-                this._infoShown = !this._infoShown;
 
-                if (this._infoShown) {
-                    this._selectedTab = 0;
+                if (this.$.appscoApplications.getAllApplications().length > 0) {
+                    this.$.appscoContent.toggleSection('info');
+                    this._infoShown = !this._infoShown;
+
+                    if (this._infoShown) {
+                        this._selectedTab = 0;
+                    }
                 }
+
             },
 
             toggleResource: function() {
@@ -466,7 +477,14 @@
 
             _onApplication: function(event) {
                 var application = event.detail.application,
-                    index = this.selectedApplications.indexOf(application);
+                    index = -1;
+
+                for (var i = 0; i < this.selectedApplications.length; i++) {
+                    if (this.selectedApplications[i].self === application.self) {
+                        index = i;
+                        break;
+                    }
+                }
 
                 if (index > -1) {
                     this.splice('selectedApplications', index, 1);
@@ -476,19 +494,25 @@
                     this.push('selectedApplications', application);
                 }
 
+                var applications = JSON.parse(JSON.stringify(this.selectedApplications));
+
+                this.set('selectedApplications', []);
+                this.set('selectedApplications', applications);
+
                 if (this.selectedApplications.length > 0) {
                     this.fire('show-bulk-actions');
                 }
                 else {
                     this.fire('hide-bulk-actions');
-//                    this.hideInfo();
                     this.setDefaultApplication();
                 }
 
             },
 
             _onShareApplication: function() {
-                this.fire('share-application');
+                this.fire('share-company-application', {
+                    application: this.application
+                });
             },
 
             reloadApplications: function(callback) {
@@ -497,6 +521,14 @@
 
             addApplications: function(applications) {
                 this.$.appscoApplications.addApplications(applications);
+
+                if (!this.application) {
+                    this.set('application', applications[applications.length - 1]);
+                }
+            },
+
+            modifyApplications: function(applications) {
+                this.$.appscoApplications.modifyApplications(applications);
             },
 
             removeApplications: function() {
@@ -512,12 +544,30 @@
                 this.setDefaultApplication();
             },
 
+            selectAllApplications: function() {
+                var allApplications = JSON.parse(JSON.stringify(this.$.appscoApplications.getAllApplications()));
+
+                this.set('selectedApplications', allApplications);
+                this.$.appscoApplications.selectAllApplications(true);
+                this.setDefaultApplication();
+            },
+
+            deselectAllApplications: function() {
+                this.set('selectedApplications', []);
+                this.$.appscoApplications.selectAllApplications(false);
+                this.setDefaultApplication();
+            },
+
             setDefaultApplication: function() {
                 this.set('application', this.$.appscoApplications.getFirstApplication());
             },
 
             filterApplicationsByTerm: function(term) {
                 this.$.appscoApplications.filterApplicationsByTerm(term);
+            },
+
+            _onOrgunitSelected: function(event) {
+                this.$.appscoApplications.filterApplicationsByOrgunit(event.detail);
             }
         });
     </script>

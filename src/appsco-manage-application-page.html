@@ -8,12 +8,14 @@
 
 <link rel="import" href="../bower_components/appsco-page/appsco-content.html">
 <link rel="import" href="../bower_components/appsco-application/appsco-application-subscribers.html">
-<link rel="import" href="application/appsco-application-components-page.html">
 <link rel="import" href="application/appsco-application-settings-page.html">
 <link rel="import" href="application/appsco-application-subscribers-page.html">
 <link rel="import" href="application/appsco-application-log-page.html">
+<link rel="import" href="applications/appsco-manage-application-components-page.html">
+<link rel="import" href="applications/appsco-application-sharing-settings-page.html">
+<link rel="import" href="applications/appsco-application-orgunits-page.html">
 
-<dom-module id="appsco-application-page">
+<dom-module id="appsco-manage-application-page">
     <template>
         <style include="webkit-scrollbar-style">
             :host {
@@ -41,7 +43,7 @@
             :host .application-components, :host .application-components neon-animated-pages {
                 height: 100%;
             }
-            appsco-application-components-page {
+            appsco-manage-application-components-page {
                 padding: 10px;
             }
             :host .resource-header {
@@ -77,6 +79,12 @@
             }
             :host .appsco-application-subscribers {
                 margin-top: 10px;
+                height: 65px;
+                box-sizing: border-box;
+            }
+            :host .info {
+                @apply(--paper-font-body1);
+                margin-top: 10px;
             }
             :host div[resource] .resource-actions {
                 position: absolute;
@@ -84,20 +92,14 @@
                 left: 0;
                 right: 0;
             }
-            :host .open-button, :host .remove-button {
+            :host .remove-button {
+                background-color: var(--app-danger-color);
                 color: #ffffff;
                 border-radius: 0;
                 margin: 0;
                 padding: 6px 12px;
                 font-size: 14px;
                 height: 34px;
-            }
-            :host .open-button {
-                margin-right: 1px;
-                background-color: var(--app-primary-color);
-            }
-            :host .remove-button {
-                background-color: var(--app-danger-color);
             }
             :host .flex-horizontal {
                 @apply(--layout-horizontal);
@@ -137,7 +139,7 @@
                             placeholder="data:image/gif;base64,R0lGODlhAQABAIAAAMLCwgAAACH5BAAAAAAALAAAAAABAAEAAAICRAEAOw=="
                             preload
                             fade
-                            src="[[ application.icon_url ]]"
+                            src="[[ application.application_url ]]"
                             sizing="contain">
                     </iron-image>
 
@@ -159,13 +161,15 @@
                         size="5">
                 </appsco-application-subscribers>
 
-                <div class="resource-actions flex-horizontal">
-                    <paper-button
-                            class="open-button flex"
-                            on-tap="">
-                        Open
-                    </paper-button>
+                <div class="info">
+                    Last modified: [[ _lastEditedDate ]] by [[ application.last_modified.account ]].
+                </div>
 
+                <div class="info">
+                    [[ _setByInfo ]]
+                </div>
+
+                <div class="resource-actions flex-horizontal">
                     <paper-button
                             class="remove-button flex"
                             on-tap="_onRemoveApplication">
@@ -183,18 +187,22 @@
                                          attr-for-selected="name"
                                          on-neon-animation-finish="_onPageAnimationFinish">
 
-                        <appsco-application-components-page
+                        <appsco-manage-application-components-page
                                 id="appscoApplicationComponentsPage"
                                 name="appsco-application-components-page"
                                 application="{{ application }}"
                                 authorization-token="[[ authorizationToken ]]"
+                                set-by-info="[[ _setByInfo ]]"
                                 on-application-settings="_onApplicationSettings"
+                                on-application-sharing-settings="_onApplicationSharingSettings"
                                 on-all-subscribers="_onAllSubscribers"
                                 on-all-log="_onAllLog"
+                                on-manage-orgunits="_onManageOrgunits"
+                                on-log-empty="_pageLoaded"
                                 on-log-loaded="_pageLoaded">
-                        </appsco-application-components-page>
+                        </appsco-manage-application-components-page>
 
-                        <appsco-application-settings-page
+                        <appsco-application-settings-page company
                                 id="appscoApplicationSettingsPage"
                                 name="appsco-application-settings-page"
                                 application="{{ application }}"
@@ -202,6 +210,16 @@
                                 on-application-settings-saved="_onApplicationSettingsSaved"
                                 on-back="_onApplicationSettingsBack">
                         </appsco-application-settings-page>
+
+                        <appsco-application-sharing-settings-page
+                                id="appscoApplicationSharingSettingsPage"
+                                name="appsco-application-sharing-settings-page"
+                                application="{{ application }}"
+                                authorization-token="[[ authorizationToken ]]"
+                                on-claim-type-changed="_onApplicationClaimTypeChanged"
+                                on-sharing-settings-saved="_onApplicationSettingsSaved"
+                                on-back="_onApplicationSettingsBack">
+                        </appsco-application-sharing-settings-page>
 
                         <appsco-application-subscribers-page
                                 id="appscoApplicationSubscribersPage"
@@ -220,6 +238,14 @@
                                 on-back="_onResourceBack">
                         </appsco-application-log-page>
 
+                        <appsco-application-orgunits-page
+                                id="appscoApplicationOrgunitsPage"
+                                name="appsco-application-orgunits-page"
+                                application="[[ application ]]"
+                                authorization-token="[[ authorizationToken ]]"
+                                on-back="_onResourceBack">
+                        </appsco-application-orgunits-page>
+
                     </neon-animated-pages>
                 </div>
 
@@ -228,7 +254,6 @@
 
         <iron-ajax
                 id="ironAjaxGetApplication"
-                url="[[ applicationsApi ]]"
                 on-error="_onApplicationError"
                 on-response="_onApplicationResponse"
                 headers="{{ _computedHeaders }}">
@@ -238,7 +263,7 @@
 
     <script>
         Polymer({
-            is: 'appsco-application-page',
+            is: 'appsco-manage-application-page',
 
             properties: {
 
@@ -253,8 +278,17 @@
                     type: Object,
                     value: function() {
                         return {};
-                    },
-                    notify: true
+                    }
+                },
+
+                _lastEditedDate: {
+                    type: String,
+                    computed: '_computeLastEditedDate(application)'
+                },
+
+                _setByInfo: {
+                    type: String,
+                    computed: '_computeSetByInfo(application)'
                 },
 
                 /**
@@ -293,11 +327,11 @@
                 },
 
                 /**
-                 * Get accounts link.
+                 * Get company link.
                  */
-                applicationsApi: {
+                companyApi: {
                     type: String,
-                    notify: true
+                    value: ''
                 },
 
                 /**
@@ -412,13 +446,41 @@
                 }
             },
 
+            _computeLastEditedDate: function(application) {
+                return (application && application.last_modified) ? this._dateFormat(application.last_modified.date.date) : '';
+            },
+
+            _computeSetByInfo: function(application) {
+                return (application.claim_type && application.claim_type === 'individual') ? 'Application is set to be configured individually by employees.' : 'Application is set to be configured by admin for all subscribers.';
+            },
+
+            /**
+             * Formats date and returns formatted date as string.
+             *
+             * @param {String} value
+             * @returns {string}
+             * @private
+             */
+            _dateFormat: function(value) {
+
+                if (value) {
+                    var options = {
+                        year: 'numeric', month: 'short', day: 'numeric',
+                        hour: 'numeric', minute: 'numeric', second: 'numeric'
+                    };
+
+                    return (new Date(value)).toLocaleDateString('en', options);
+                }
+
+            },
+
             _pageLoaded: function() {
                 this.pageLoaded = true;
                 this.fire('page-loaded');
             },
 
             _getApplication: function() {
-                var applicationApi = this.applicationsApi + this.route.path;
+                var applicationApi = this.companyApi + '/applications' + this.route.path;
 
                 if (!this.application.self) {
                     this.$.ironAjaxGetApplication.url = applicationApi;
@@ -428,22 +490,19 @@
             },
 
             _onApplicationResponse: function(event) {
-                var icon = event.detail.response.icon;
-
-                if (icon.owner) {
-                    this.application = event.detail.response.icon;
-                }
-                else {
-                    this._onApplicationError();
-                }
+                this.application = event.detail.response;
             },
 
-            _onApplicationError: function(event) {
+            _onApplicationError: function() {
                 this.fire('error');
             },
 
             _onApplicationSettings: function() {
                 this._selected = 'appsco-application-settings-page';
+            },
+
+            _onApplicationSharingSettings: function() {
+                this._selected = 'appsco-application-sharing-settings-page';
             },
 
             _onAllSubscribers: function() {
@@ -454,7 +513,16 @@
                 this._selected = 'appsco-application-log-page';
             },
 
-            _onApplicationSettingsSaved: function() {
+            _onManageOrgunits: function() {
+                this._selected = 'appsco-application-orgunits-page';
+            },
+
+            _onApplicationClaimTypeChanged: function(event) {
+                this.application = event.detail.application;
+            },
+
+            _onApplicationSettingsSaved: function(event) {
+                this.application = event.detail.application;
                 this._showApplicationComponentsPage();
             },
 
@@ -472,11 +540,15 @@
             },
 
             _onShareApplication: function() {
-                this.fire('share-application');
+                this.fire('share-company-application', {
+                    application: this.application
+                });
             },
 
             _onRemoveApplication: function() {
-                this.fire('remove-application');
+                this.fire('remove-application', {
+                    application: this.application
+                });
             },
 
             initializePage: function() {

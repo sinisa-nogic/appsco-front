@@ -73,10 +73,13 @@ Custom property | Description | Default
             <template is="dom-if" if="[[ info ]]">
                 <div class="policies">
                     <div class="policy">
-                        [[ _security.info.configured ]] configured instances.
+                        Configured instances: [[ _security.info.configured ]]
                     </div>
                     <div class="policy">
-                        [[ _security.info.not-configured ]] unconfigured instances.
+                        Unconfigured instances: [[ _security.info.not_configured ]]
+                    </div>
+                    <div class="policy">
+                        Lowest score: [[ _security.info.lowest-score ]]%
                     </div>
                 </div>
             </template>
@@ -116,6 +119,11 @@ Custom property | Description | Default
                     observer: '_onSecurityChanged'
                 },
 
+                _haveAssignees: {
+                    type: Boolean,
+                    computed: '_computeAssigness(application)'
+                },
+
                 /**
                  * Indicates if info should be displayed beside security score.
                  */
@@ -152,27 +160,31 @@ Custom property | Description | Default
                 }
             },
 
+            _computeAssigness: function(application) {
+                return (application.security && (application.security.info.not_configured + application.security.info.configured) != 0);
+            },
+
             _onApplicationChanged: function(application) {
                 this.set('_security', application ? application.security : {});
             },
 
             _onSecurityChanged: function(security) {
 
-                if (security && (0 === security.score)) {
+                if (security && !this._haveAssignees) {
                     this._message = 'You haven\'t assigned this application to anyone yet. Go and share it to your employees.';
                     return false;
                 }
 
-                this._message = null;
+                this._message = '';
 
-                if (security && security.score) {
+                this._weak = false;
+                this._medium = false;
+                this._strong = false;
+
+                if (security && security.score != 0) {
                     var score = Math.round(security.score);
 
                     this._score = score;
-
-                    this._weak = false;
-                    this._medium = false;
-                    this._strong = false;
 
                     if (score > 80) {
                         this._strong = true;
@@ -184,6 +196,10 @@ Custom property | Description | Default
                         return false;
                     }
 
+                    this._weak = true;
+                }
+                else {
+                    this._score = 0;
                     this._weak = true;
                 }
 

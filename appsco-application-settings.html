@@ -109,14 +109,20 @@ Custom property | Description | Default
                     value: {},
                     notify: true
                 },
+
                 authorizationToken: {
                     type: String,
                     value: ''
                 },
 
+                company: {
+                    type: Boolean,
+                    value: false
+                },
+
                 _applicationClaims: {
                     type: Boolean,
-                    computed: '_computeApplicationClaims(application)'
+                    computed: '_computeApplicationClaims(application, company)'
                 },
 
                 _loader: {
@@ -125,8 +131,8 @@ Custom property | Description | Default
                 }
             },
 
-            _computeApplicationClaims: function(application) {
-                return application.claims;
+            _computeApplicationClaims: function(application, company) {
+                return (application.claims && !company);
             },
 
             /**
@@ -138,6 +144,24 @@ Custom property | Description | Default
                 this._submit();
             },
 
+            _applicationSaved: function(app) {
+                this.$.submit.disabled = false;
+                this._loader = false;
+
+                if (!app) {
+                    this.fire('application-settings-no-changes', {
+                        application: this.application
+                    });
+                }
+                else {
+                    this.application = app;
+
+                    this.fire('application-settings-saved', {
+                        application: app
+                    });
+                }
+            },
+
             _submit: function () {
 
                 this._loader = true;
@@ -145,26 +169,21 @@ Custom property | Description | Default
                 this.$.submit.disabled = true;
                 this.message = "";
                 var me = this;
-                this._submitApplicationConfigure().then(function (app) {
-                    me._submitNewClaims(app).then(function(app) {
+                this._submitApplicationConfigure().then(function(app) {
 
-                        me.$.submit.disabled = false;
-                        me._loader = false;
+                    if (me._applicationClaims) {
 
-                        if (!app) {
-                            me.fire('application-settings-no-changes', {
-                                application: me.application
-                            });
-                        }
-                        else {
-                            me.application = app;
+                        me._submitNewClaims(app).then(function(app) {
 
-                            me.fire('application-settings-saved', {
-                                application: app
-                            });                 }
-                    });
+                            me._applicationSaved(app);
+                        });
+                    }
+                    else {
+                        me._applicationSaved(app);
+                    }
                 });
             },
+
             _submitApplicationConfigure: function () {
                 var me = this;
                 return new Promise(function (resolve, reject) {
@@ -176,23 +195,24 @@ Custom property | Description | Default
                         body += body == "" ? '' : '&';
                         body += encodeURIComponent(me.$.url.name) + "=" + encodeURIComponent(me.$.url.value);
                     }
+
                     if ('' != body) {
                         var options = {
-                            url: me.application.self + "/application",
-                            method: "PATCH",
+                            url: me.application.self + (me.company ? '' : '/application'),
+                            method: 'PATCH',
                             body: body,
                             handleAs: 'json',
                             headers: {
-                                "Authorization": "token " + me.authorizationToken,
-                                "Content-Type": "application/x-www-form-urlencoded"
+                                'Authorization': 'token ' + me.authorizationToken,
+                                'Content-Type': 'application/x-www-form-urlencoded'
                             }
                         };
 
 
                         var request = document.createElement('iron-request');
-                        request.send(options).then(function () {
+                        request.send(options).then(function() {
                             if (request.succeeded) {
-                                resolve(request.response.icon);
+                                me.company ? resolve(request.response) : resolve(request.response.icon);
                             }
                         });
                     } else {

@@ -40,7 +40,7 @@ Custom property | Description | Default
         <style>
             :host {
                 display: block;
-                @apply(--appsco-application-sharing-settings);
+            @apply(--appsco-application-sharing-settings);
             }
             :host paper-toggle-button {
                 cursor: pointer;
@@ -71,16 +71,17 @@ Custom property | Description | Default
         <paper-toggle-button id="setByUser"
                              active$="[[ _setByUser ]]"
                              disabled$="[[ !_computedAuthTypes ]]"
-                             on-change="_onChangeSetByUser">Set by user</paper-toggle-button>
+                             on-change="_onChangeSetByUser">Set individually</paper-toggle-button>
 
         <div class="info">
             <template is="dom-if" if="[[ _setByUser ]]">
-                <p>Every user sets its own configuration.</p>
-                <p>Disable it in order to manage application configuration for all users.</p>
+                <p>Every employee sets its own configuration.</p>
+                <p>Disable it in order to manage application configuration for all employees.</p>
             </template>
 
             <template is="dom-if" if="[[ !_computedAuthTypes ]]">
-                <p>This application can't be set by user.</p>
+                <p>This application can't be set by anyone else but company administrator.</p>
+                <p>Please set claims for all employees.</p>
             </template>
         </div>
 
@@ -89,8 +90,8 @@ Custom property | Description | Default
               id="saveSharingSettingsForm"
               class="sharing-settings-form"
               method="POST"
-              action="[[ application.self ]]"
-              headers="{{ _computedHeaders }}"
+              action="[[ _computedAction ]]"
+              headers="[[ _computedHeaders ]]"
               on-iron-form-presubmit="_onFormPresubmit"
               on-iron-form-error="_onFormError"
               on-iron-form-response="_onFormResponse"
@@ -99,19 +100,19 @@ Custom property | Description | Default
             <paper-input
                     id="username"
                     label="username"
-                    value="{{ application.claims.username }}"
-                    name="icon_claims[username]"></paper-input>
+                    value="[[ application.claims.username ]]"
+                    name="application_claims[claims][username]"></paper-input>
             <paper-input
                     id="password"
                     label="password"
                     type="password"
-                    value="{{ application.claims.password }}"
-                    name="icon_claims[password]"></paper-input>
+                    value="[[ application.claims.password ]]"
+                    name="application_claims[claims][password]"></paper-input>
             <paper-textarea
                     id="note"
                     label="note"
-                    value="{{ application.claims.note }}"
-                    name="icon_claims[note]"></paper-textarea>
+                    value="[[ application.claims.note ]]"
+                    name="application_claims[claims][note]"></paper-textarea>
 
             <paper-button class="submit-button"
                           on-tap="_submit">Save</paper-button>
@@ -136,7 +137,10 @@ Custom property | Description | Default
                  */
                 application: {
                     type: Object,
-                    notify: true
+                    value: function() {
+                        return {};
+                    },
+                    observer: '_onApplicationChanged'
                 },
 
                 /**
@@ -238,7 +242,6 @@ Custom property | Description | Default
             ],
 
             listeners: {
-                'application-changed': '_onApplicationChanged',
                 'neon-animation-finish': '_onNeonAnimationFinish'
             },
 
@@ -250,7 +253,7 @@ Custom property | Description | Default
              * @private
              */
             _computeAction: function(application) {
-                return application.self;
+                return application.self + '/claims';
             },
 
             /**
@@ -262,7 +265,8 @@ Custom property | Description | Default
              */
             _computeHeaders: function(authorizationToken) {
                 return {
-                    'Authorization': 'token ' + authorizationToken
+                    'Authorization': 'token ' + authorizationToken,
+                    'Content-Type': 'application/x-www-form-urlencoded'
                 }
             },
 
@@ -278,27 +282,32 @@ Custom property | Description | Default
             },
 
             _onApplicationChanged: function(application) {
-                this._setByUser = (application.claimType === 'individual');
+                this._setByUser = (application.claim_type === 'individual');
             },
 
             _onChangeSetByUser: function() {
-                var request = document.createElement('iron-request');
+                var request = document.createElement('iron-request'),
+                        options = {
+                            url: this._computedAction,
+                            method: "PATCH",
+                            handleAs: 'json',
+                            headers: this._computedHeaders,
+                            body: 'application_claims[claim_type]=' + !this._setByUser
+                        };
 
                 this._loader = true;
                 this.$.setByUser.disabled = true;
 
-                var options = {
-                    url: this.application.meta.setByUser,
-                    method: "POST",
-                    handleAs: 'json',
-                    headers: this._computedHeaders
-                };
-
-                request.send(options).then(function() {
+                request.send(options).then(function(request) {
+                    var application = request.response;
 
                     this._setByUser = !this._setByUser;
                     this.$.setByUser.disabled = false;
                     this._loader = false;
+
+                    this.fire('claim-type-changed', {
+                        application: application
+                    });
 
                 }.bind(this));
             },
@@ -373,7 +382,7 @@ Custom property | Description | Default
              * @private
              */
             _onFormResponse: function(event) {
-                this.set('application', event.detail.response.icon);
+                this.set('application', event.detail.response);
 
                 /**
                  * Fired after sharing settings has been saved.

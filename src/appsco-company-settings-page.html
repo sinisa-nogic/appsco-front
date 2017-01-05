@@ -1,0 +1,296 @@
+<link rel="import" href="../bower_components/polymer/polymer.html">
+<link rel="import" href="../bower_components/paper-icon-button/paper-icon-button.html">
+<link rel="import" href="../bower_components/iron-image/iron-image.html">
+<link rel="import" href="../bower_components/iron-media-query/iron-media-query.html">
+<link rel="import" href="../bower_components/iron-icons/communication-icons.html">
+<link rel="import" href="../bower_components/iron-icon/iron-icon.html">
+<link rel="import" href="../bower_components/iron-ajax/iron-request.html">
+
+<link rel="import" href="company/appsco-company-image-settings.html">
+
+<link rel="import" href="../bower_components/appsco-page/appsco-content.html">
+<!--<link rel="import" href="account/appsco-account-components-page.html">-->
+
+
+<dom-module id="appsco-company-settings-page">
+    <template>
+        <style include="webkit-scrollbar-style">
+            :host {
+                display: block;
+                color: var(--primary-text-color);
+
+                --appsco-content-sections: {
+                    padding: 0 10px;
+                    color: var(--primary-text-color);
+                };
+                --paper-button: {
+                    padding: 4px 8px;
+                    @apply(--primary-button);
+                    display: inline-block;
+                    margin-top:20px;
+                };
+
+                --resource-width: 300px;
+            }
+            :host paper-icon-button::shadow paper-ripple {
+                width: 150%;
+                height: 150%;
+                top: -25%;
+                left: -25%;
+            }
+            :host div[resource] {
+                padding: 10px;
+            }
+            :host div[content] {
+                height: 90%;
+            }
+            .resource-header {
+                padding: 20px 10px 30px;
+                border-bottom: 1px solid var(--divider-color);
+                position: relative;
+            }
+            .company-info {
+                margin-top: 10px;
+                font-size: 14px;
+            }
+            .company-info p {
+                margin: 4px 0;
+            }
+            :host .flex-horizontal {
+                @apply(--layout-horizontal);
+                @apply(--layout-center);
+            }
+            :host .flex-vertical {
+                @apply(--layout-vertical);
+                @apply(--layout-center);
+            }
+            :host .flex {
+                @apply(--layout-flex);
+            }
+            :host([medium-screen]) {
+                --resource-width: 240px;
+            }
+            :host([mobile-screen]) {
+                --resource-width: 180px;
+            }
+            hr {
+                height: 1px;
+                margin: 4px 0;
+                border: none;
+                background-color: var(--divider-color);
+            }
+            :host .company-settings{
+                color: var(--primary-text-color);
+            }
+        </style>
+
+        <iron-media-query query="(max-width: 1200px)" query-matches="{{ mediumScreen }}"></iron-media-query>
+        <iron-media-query query="(max-width: 800px)" query-matches="{{ tabletScreen }}"></iron-media-query>
+        <iron-media-query query="(max-width: 600px)" query-matches="{{ mobileScreen }}"></iron-media-query>
+
+        <appsco-content id="appscoContent" resource-active>
+
+            <div resource>
+
+                <div class="resource-header flex-vertical">
+                    <appsco-company-image-settings
+                        id="appscoCompanyImageSettings"
+                        company="{{ account.company }}"
+                        authorization-token="[[ authorizationToken ]]"
+                        image-settings-api="{{ account.company.meta.logo }}"
+                        on-logo-changed="_companyLogoChanged"
+                    ></appsco-company-image-settings>
+                </div>
+
+                <div class="company-info">
+                    <h3>[[ account.company.name ]]</h3>
+                    <iron-icon icon="communication:email"></iron-icon>[[ account.company.contact_email ]]
+                </div>
+            </div>
+
+            <div content>
+
+                <div class="account-components">
+                    <div class="company-settings">
+                        <h2>Company Settings</h2>
+                        <p>
+                            Company name is used to distinguish company applications from users personal applications.
+                            It is used in branding and can be displayed in login screen along with company logo.
+                            Beside this usage company name will also be shown in filtering on personal home screen under "All applications" section.
+                        </p>
+                        <paper-input
+                                id="companyName"
+                                label="Company name"
+                                value="[[ account.company.name ]]"
+                                name="company_settings[name]"
+                                required
+                                error-message="Please type in company name."
+                        ></paper-input>
+                        <p>
+                            Company contact email will be displayed in user profile section and used for contact purposes.
+                        </p>
+                        <paper-input
+                                id="contactEmail"
+                                label="Contact email"
+                                value="[[ account.company.contact_email ]]"
+                                name="company_settings[contactEmail]"
+                                error-message="Please type in contact email."
+                        ></paper-input>
+
+                        <paper-button on-tap="_updateCompanySettings">Save</paper-button>
+                    </div>
+                </div>
+
+            </div>
+        </appsco-content>
+
+    </template>
+
+    <script>
+        Polymer({
+            is: 'appsco-company-settings-page',
+
+            properties: {
+
+                account: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    },
+                    notify: true
+                },
+
+                authorizationToken: {
+                    type: String
+                },
+
+                /**
+                 * Save account image link.
+                 */
+                imageSettingsApi: {
+                    type: String
+                },
+
+                /**
+                 * Computed headers.
+                 * It contains authorization token.
+                 */
+                _computedHeaders: {
+                    type: Object,
+                    computed: "_computeHeaders(authorizationToken)"
+                },
+
+                /**
+                 * Indicates if it is medium screen size.
+                 * It uses iron-media-query.
+                 */
+                mediumScreen: {
+                    type: Boolean,
+                    value: false,
+                    reflectToAttribute: true
+                },
+
+                tabletScreen: {
+                    type: Boolean,
+                    value: false,
+                    reflectToAttribute: true
+                },
+
+                mobileScreen: {
+                    type: Boolean,
+                    value: false,
+                    reflectToAttribute: true
+                },
+
+                pageLoaded: {
+                    type: Boolean,
+                    value: false
+                }
+            },
+
+            behaviors: [
+                Polymer.NeonAnimatableBehavior
+            ],
+
+            observers: [
+                '_updateScreen(mediumScreen, tabletScreen, mobileScreen)'
+            ],
+
+            attached: function() {
+
+                this.pageLoaded = false;
+
+                if (this.mobileScreen || this.tabletScreen || this.mediumScreen) {
+                    this.updateStyles();
+                }
+
+            },
+
+            _updateCompanySettings: function() {
+                var body = "",
+                    me = this;
+                body = encodeURIComponent(this.$.companyName.name) + "=" + encodeURIComponent(this.$.companyName.value);
+                body += '&';
+                body += encodeURIComponent(this.$.contactEmail.name) + "=" + encodeURIComponent(this.$.contactEmail.value);
+
+                var options = {
+                    url: this.account.company.meta.settings,
+                    method: 'PUT',
+                    body: body,
+                    handleAs: 'json',
+                    headers: {
+                        'Authorization': 'token ' + this.authorizationToken,
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    }
+                };
+
+                var request = document.createElement('iron-request');
+                request.send(options).then(function() {
+                    if (request.succeeded) {
+                        me.set('account.company', request.response);
+                        me.fire('settings-changed', {
+                            account: me.account
+                        })
+                    }
+                });
+            },
+
+            _companyLogoChanged: function(e) {
+                this.set("account.company", e.detail.company);
+                this.fire('settings-changed', {
+                    account: this.account
+                })
+            },
+
+            _updateScreen: function(medium, tablet, mobile) {
+                this.updateStyles();
+
+                if (mobile) {
+                    this.$.appscoContent.hideSection('resource');
+                }
+                else if(!this.$.appscoContent.resourceActive) {
+                    this.$.appscoContent.showSection('resource');
+                }
+            },
+
+            /**
+             * Computes authorization headers.
+             *
+             * @param {Object} authorizationToken
+             * @returns {{ Authorization: string }}
+             * @private
+             */
+            _computeHeaders: function (authorizationToken) {
+                return {
+                    'Authorization': 'token ' + authorizationToken
+                }
+            },
+
+            _pageLoaded: function() {
+                this.pageLoaded = true;
+                this.fire('page-loaded');
+            }
+
+        });
+    </script>
+</dom-module>

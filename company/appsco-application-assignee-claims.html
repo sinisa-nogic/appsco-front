@@ -1,0 +1,353 @@
+<link rel="import" href="../../polymer/polymer.html">
+<link rel="import" href="../../paper-button/paper-button.html">
+<link rel="import" href="../../iron-ajax/iron-request.html">
+<link rel="import" href="../../paper-dialog/paper-dialog.html">
+<link rel="import" href="../../paper-dialog-scrollable/paper-dialog-scrollable.html">
+<link rel="import" href="../../neon-animation/animations/fade-out-animation.html">
+<link rel="import" href="../../neon-animation/animations/scale-up-animation.html">
+<link rel="import" href="../../iron-a11y-keys/iron-a11y-keys.html">
+
+<link rel="import" href="../../appsco-components/appsco-loader.html">
+<link rel="import" href="../../appsco-components/appsco-form-error.html">
+
+<!--
+`appsco-application-assignee-claims`
+Shows dialog screen with form for changing claims for application instance.
+
+    <appsco-application-assignee-claims application="{}" assignee="{}">
+    </appsco-application-assignee-claims>
+
+@demo demo/appsco-application-assignee-claims.html
+-->
+
+<dom-module id="appsco-application-assignee-claims">
+    <template>
+        <style>
+            :host {
+                display: block;
+                position: relative;
+            }
+            :host paper-dialog {
+                width: 670px;
+                top: 20vh;
+                @apply(--appsco-paper-dialog);
+            }
+            :host paper-dialog-scrollable::shadow .scrollable {
+                min-height: 80px;
+            }
+            :host .buttons paper-button {
+                @apply(--paper-dialog-button);
+            }
+            :host .buttons paper-button[dialog-confirm] {
+                @apply(--paper-dialog-confirm-button);
+            }
+            :host .buttons paper-button[dialog-dismiss] {
+                @apply(--paper-dialog-dismiss-button);
+            }
+        </style>
+        
+        <paper-dialog
+                with-backdrop
+                id="dialog"
+                entry-animation="scale-up-animation"
+                exit-animation="fade-out-animation"
+                on-iron-overlay-opened="_onDialogOpened"
+                on-iron-overlay-closed="_onDialogClosed">
+
+            <h2>Change claims for [[ assignee.display_name ]]</h2>
+
+            <paper-dialog-scrollable>
+                <div class="dialog-container">
+                    <appsco-loader active="[[ _loader ]]" loader-alt="AppsCo is revoking access" multi-color></appsco-loader>
+
+                    <appsco-form-error message="[[ _error ]]"></appsco-form-error>
+
+                    <form is="iron-form"
+                          id="form"
+                          method="POST"
+                          action="[[ _computedAction ]]"
+                          headers="[[ _computedHeaders ]]"
+                          on-iron-form-presubmit="_onFormPresubmit"
+                          on-iron-form-error="_onFormError"
+                          on-iron-form-response="_onFormResponse"
+                          on-keyup="_onFormKeyUp">
+
+                        <paper-input
+                                id="username"
+                                label="username"
+                                value="{{ _applicationIcon.claims.username }}"
+                                name="account_claims[claims][username]"
+                                required
+                                error-message="Please enter username"
+                                on-keyup="_onInputKeyUp"></paper-input>
+                        <paper-input
+                                id="password"
+                                label="password"
+                                type="password"
+                                value="{{ _applicationIcon.claims.password }}"
+                                name="account_claims[claims][password]"
+                                required
+                                error-message="Please enter password"
+                                on-keyup="_onInputKeyUp"></paper-input>
+                        <paper-textarea
+                                id="note"
+                                label="note"
+                                value="{{ _applicationIcon.claims.note }}"
+                                name="account_claims[claims][note]"
+                                required
+                                error-message="Please enter note"
+                                on-keyup="_onInputKeyUp"></paper-textarea>
+                    </form>
+
+                    <iron-a11y-keys
+                            target="[[ _target ]]"
+                            keys="enter"
+                            on-keys-pressed="_onEnter">
+                    </iron-a11y-keys>
+
+                </div>
+            </paper-dialog-scrollable>
+
+            <div class="buttons">
+                <paper-button dialog-dismiss>Cancel</paper-button>
+                <paper-button on-tap="_submit">Save</paper-button>
+            </div>
+        </paper-dialog>
+
+    </template>
+    <script>
+        Polymer({
+
+            is: 'appsco-application-assignee-claims',
+
+            properties: {
+
+                /**
+                 * Application instance to change claims for.
+                 */
+                application: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    },
+                    observer: '_onChange'
+                },
+
+                _applicationIcon: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    }
+                },
+
+                /**
+                 * Assignee to change claims for.
+                 */
+                assignee: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    },
+                    observer: '_onChange'
+                },
+
+                /**
+                 * Authorization token.
+                 */
+                authorizationToken: {
+                    type: String,
+                    value: ''
+                },
+
+                /**
+                 * Computed headers.
+                 * It contains authorization token.
+                 */
+                _computedHeaders: {
+                    type: Object,
+                    computed: "_computeHeaders(authorizationToken)"
+                },
+
+                /**
+                 * Computed action.
+                 */
+                _computedAction: {
+                    type: Object,
+                    computed: "_computeAction(application)"
+                },
+
+                _loader: {
+                    type: Boolean,
+                    value: false
+                },
+
+                /**
+                 * Error message for form.
+                 */
+                _error: {
+                    type: String
+                },
+
+                /**
+                 * Target for iron-a11y-keys component.
+                 * Submit form on enter.
+                 */
+                _target: {
+                    type: Object,
+                    value: function() {
+                        return this.$.form
+                    }
+                }
+            },
+
+            toggle: function () {
+                this.$.dialog.toggle();
+            },
+
+            setApplication: function(application) {
+                this.set('application', application);
+            },
+
+            setAssignee: function(assignee) {
+                this.set('assignee', assignee);
+            },
+
+            _getApplicationIcon: function() {
+                var request = document.createElement('iron-request'),
+                    options = {
+                        url: this.application.meta.account_icon,
+                        method: 'POST',
+                        handleAs: 'json',
+                        headers: {
+                            'Authorization': 'token ' + this.authorizationToken,
+                            'Content-Type': 'application/x-www-form-urlencoded'
+                        },
+                        body: 'account=' + encodeURIComponent(this.assignee.self)
+                    };
+
+                request.send(options).then(function() {
+                    this._applicationIcon = request.response;
+                }.bind(this));
+            },
+
+            _onChange: function() {
+
+                if (this.application.self && this.assignee.self) {
+                    this._getApplicationIcon();
+                }
+
+            },
+
+            /**
+             * Called after dialog has been opened.
+             *
+             * @private
+             */
+            _onDialogOpened: function() {
+                this.$.username.focus();
+            },
+
+            /**
+             * Called after dialog has been closed.
+             *
+             * @private
+             */
+            _onDialogClosed: function() {
+                this.set('application', {});
+                this.set('_applicationIcon', {});
+                this.set('assignee', {});
+                this.reset();
+            },
+
+            /**
+             * Computes authorization headers.
+             *
+             * @param {Object} authorizationToken
+             * @returns {{Authorization: string}}
+             * @private
+             */
+            _computeHeaders: function (authorizationToken) {
+                return {
+                    'Authorization': 'token ' + authorizationToken,
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                }
+            },
+
+            _computeAction: function(application) {
+                return application.meta ? application.meta.account_claims : '';
+            },
+
+            _onFormKeyUp: function() {
+                this._error = '';
+            },
+
+            _onInputKeyUp: function(event) {
+                event.target.invalid = false;
+            },
+
+            /**
+             * Submits signup form on ENTER key using iron-a11y-keys component.
+             *
+             * @private
+             */
+            _onEnter: function() {
+                this.$.username.validate();
+                this.$.password.validate();
+                this.$.note.validate();
+                this._submit();
+            },
+
+            _submit: function() {
+                this.$.form.submit();
+            },
+
+            _onFormPresubmit: function() {
+                this._loader = true;
+                this.$.form.request.method = 'PUT';
+                this.$.form.request.body['account_claims[account]'] = this.assignee.self;
+            },
+
+            /**
+             * Called on form error when trying to save settings.
+             *
+             * @param {Object} event
+             * @private
+             */
+            _onFormError: function(event) {
+                this._error = event.detail.error.message;
+                this._loader = false;
+            },
+
+            /**
+             * Called after settings have been submited.
+             *
+             * @param {Object} event
+             * @private
+             */
+            _onFormResponse: function(event) {
+
+                /**
+                 * Fired after claims are changed.
+                 *
+                 * @event claims-changed
+                 */
+                this.fire('claims-changed', {
+                    application: event.detail.response,
+                    assignee: this.assignee
+                });
+
+                this.reset();
+
+                this.$.dialog.close();
+            },
+
+            /**
+             * Resets component.
+             */
+            reset: function() {
+                this._error = '';
+                this._loader = false;
+            }
+        });
+    </script>
+</dom-module>

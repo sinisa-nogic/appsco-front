@@ -7,13 +7,13 @@
 <link rel="import" href="../bower_components/iron-media-query/iron-media-query.html">
 
 <link rel="import" href="../bower_components/appsco-page/appsco-content.html">
-<link rel="import" href="../bower_components/appsco-application/appsco-application-subscribers.html">
+<link rel="import" href="../bower_components/appsco-application/company/appsco-application-assignees.html">
 <link rel="import" href="application/appsco-application-settings-page.html">
-<link rel="import" href="application/appsco-application-subscribers-page.html">
 <link rel="import" href="application/appsco-application-log-page.html">
 <link rel="import" href="applications/appsco-manage-application-components-page.html">
 <link rel="import" href="applications/appsco-application-sharing-settings-page.html">
 <link rel="import" href="applications/appsco-application-orgunits-page.html">
+<link rel="import" href="applications/appsco-application-assignees-page.html">
 
 <dom-module id="appsco-manage-application-page">
     <template>
@@ -77,7 +77,7 @@
                 margin-top: 30px;
                 margin-bottom: 0;
             }
-            :host .appsco-application-subscribers {
+            :host .appsco-application-assignees {
                 margin-top: 10px;
                 height: 65px;
                 box-sizing: border-box;
@@ -155,11 +155,11 @@
 
                 <p class="application-title">[[ application.title ]]</p>
 
-                <appsco-application-subscribers class="appsco-application-subscribers"
+                <appsco-application-assignees class="appsco-application-assignees"
                         application="[[ application ]]"
                         authorization-token="[[ authorizationToken ]]"
-                        size="5">
-                </appsco-application-subscribers>
+                        size="5"
+                        preview></appsco-application-assignees>
 
                 <div class="info">
                     Last modified: [[ _lastEditedDate ]] by [[ application.last_modified.account ]].
@@ -188,14 +188,13 @@
                                          on-neon-animation-finish="_onPageAnimationFinish">
 
                         <appsco-manage-application-components-page
-                                id="appscoApplicationComponentsPage"
                                 name="appsco-application-components-page"
                                 application="{{ application }}"
                                 authorization-token="[[ authorizationToken ]]"
                                 set-by-info="[[ _setByInfo ]]"
                                 on-application-settings="_onApplicationSettings"
                                 on-application-sharing-settings="_onApplicationSharingSettings"
-                                on-all-subscribers="_onAllSubscribers"
+                                on-all-assignees="_onAllAssignees"
                                 on-all-log="_onAllLog"
                                 on-manage-orgunits="_onManageOrgunits"
                                 on-log-empty="_pageLoaded"
@@ -203,35 +202,32 @@
                         </appsco-manage-application-components-page>
 
                         <appsco-application-settings-page company
-                                id="appscoApplicationSettingsPage"
-                                name="appsco-application-settings-page"
-                                application="{{ application }}"
-                                authorization-token="[[ authorizationToken ]]"
-                                on-application-settings-saved="_onApplicationSettingsSaved"
-                                on-back="_onApplicationSettingsBack">
-                        </appsco-application-settings-page>
+                                                          id="appscoApplicationSettingsPage"
+                                                          name="appsco-application-settings-page"
+                                                          application="{{ application }}"
+                                                          authorization-token="[[ authorizationToken ]]"
+                                                          on-application-settings-saved="_onApplicationSettingsSaved"
+                                                          on-back="_onApplicationSettingsBack"></appsco-application-settings-page>
 
                         <appsco-application-sharing-settings-page
-                                id="appscoApplicationSharingSettingsPage"
                                 name="appsco-application-sharing-settings-page"
                                 application="{{ application }}"
                                 authorization-token="[[ authorizationToken ]]"
                                 on-claim-type-changed="_onApplicationClaimTypeChanged"
                                 on-sharing-settings-saved="_onApplicationSettingsSaved"
-                                on-back="_onApplicationSettingsBack">
+                                on-back="_onApplicationSharingSettingsBack">
                         </appsco-application-sharing-settings-page>
 
-                        <appsco-application-subscribers-page
-                                id="appscoApplicationSubscribersPage"
-                                name="appsco-application-subscribers-page"
+                        <appsco-application-assignees-page
+                                name="appsco-application-assignees-page"
                                 application="{{ application }}"
                                 authorization-token="[[ authorizationToken ]]"
+                                on-assignee-claims="_onAssigneeClaims"
                                 on-back="_onResourceBack"
                                 account="[[ account ]]"
-                        ></appsco-application-subscribers-page>
+                        ></appsco-application-assignees-page>
 
                         <appsco-application-log-page
-                                id="appscoApplicationSubscribersPage"
                                 name="appsco-application-log-page"
                                 application="[[ application ]]"
                                 authorization-token="[[ authorizationToken ]]"
@@ -239,7 +235,6 @@
                         </appsco-application-log-page>
 
                         <appsco-application-orgunits-page
-                                id="appscoApplicationOrgunitsPage"
                                 name="appsco-application-orgunits-page"
                                 application="[[ application ]]"
                                 authorization-token="[[ authorizationToken ]]"
@@ -505,8 +500,8 @@
                 this._selected = 'appsco-application-sharing-settings-page';
             },
 
-            _onAllSubscribers: function() {
-                this._selected = 'appsco-application-subscribers-page';
+            _onAllAssignees: function() {
+                this._selected = 'appsco-application-assignees-page';
             },
 
             _onAllLog: function() {
@@ -531,6 +526,10 @@
                 this._showApplicationComponentsPage();
             },
 
+            _onApplicationSharingSettingsBack: function() {
+                this._showApplicationComponentsPage();
+            },
+
             _onResourceBack: function() {
                 this._showApplicationComponentsPage();
             },
@@ -542,6 +541,13 @@
             _onShareApplication: function() {
                 this.fire('share-company-application', {
                     application: this.application
+                });
+            },
+
+            _onAssigneeClaims: function(event) {
+                this.fire('change-assignee-claims', {
+                    application: this.application,
+                    assignee: event.detail.assignee
                 });
             },
 

@@ -6,7 +6,7 @@
 <link rel="import" href="../../neon-animation/animations/fade-out-animation.html">
 <link rel="import" href="../../neon-animation/animations/scale-up-animation.html">
 
-<link rel="import" href="../appsco-application-subscribers.html">
+<link rel="import" href="appsco-application-assignees.html">
 <link rel="import" href="../../appsco-components/appsco-loader.html">
 
 <!--
@@ -45,6 +45,9 @@ Shows dialog screen with confirmation for applications removal.
             :host .buttons paper-button[dialog-dismiss] {
             @apply(--paper-dialog-dismiss-button);
             }
+            :host appsco-application-assignees[hidden] {
+                display: none;
+            }
         </style>
         <paper-dialog
                 with-backdrop
@@ -52,14 +55,25 @@ Shows dialog screen with confirmation for applications removal.
                 entry-animation="scale-up-animation"
                 exit-animation="fade-out-animation">
 
-            <h2>Remove applications</h2>
+            <div class="header">
+                <h2 hidden$="[[ _singleApplication ]]">Remove applications</h2>
+                <h2 hidden$="[[ !_singleApplication ]]">Remove application [[ _application.title ]]</h2>
+            </div>
 
             <paper-dialog-scrollable>
                 <div class="remove-container">
 
                     <appsco-loader active="[[ _loader ]]" loader-alt="Appsco is removing application" multi-color></appsco-loader>
 
-                    <p>By removing selected applications you will also remove all its subscribers.</p>
+                    <p hidden$="[[ _singleApplication ]]">By removing selected applications you will also remove all its assignees.</p>
+                    <p hidden$="[[ !_singleApplication ]]">By removing selected application you will also remove all its assignees.</p>
+
+                    <appsco-application-assignees class="appsco-application-assignees"
+                                                  application="[[ _application ]]"
+                                                  authorization-token="[[ authorizationToken ]]"
+                                                  size="10"
+                                                  preview
+                                                  hidden$="[[ !_singleApplication ]]"></appsco-application-assignees>
                 </div>
             </paper-dialog-scrollable>
 
@@ -87,6 +101,18 @@ Shows dialog screen with confirmation for applications removal.
                     }
                 },
 
+                _application: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    }
+                },
+
+                _singleApplication: {
+                    type: Boolean,
+                    computed: '_computeSingleApplication(applications)'
+                },
+
                 /**
                  * Authorization token.
                  */
@@ -110,6 +136,16 @@ Shows dialog screen with confirmation for applications removal.
 
             toggle: function () {
                 this.$.dialog.open();
+            },
+
+            _computeSingleApplication: function(applications) {
+
+                if (applications && applications.length === 1) {
+                    this._application = applications[0];
+                    return true;
+                }
+
+                return false;
             },
 
             _removeApplications: function() {

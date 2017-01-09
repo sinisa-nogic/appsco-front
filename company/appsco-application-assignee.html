@@ -1,0 +1,303 @@
+<link rel="import" href="../../polymer/polymer.html">
+<link rel="import" href="../../iron-flex-layout/iron-flex-layout-classes.html">
+<link rel="import" href="../../neon-animation/neon-animation-runner-behavior.html">
+<link rel="import" href="../../neon-animation/animations/fade-in-animation.html">
+<link rel="import" href="../../neon-animation/animations/fade-out-animation.html">
+<link rel="import" href="../../paper-tooltip/paper-tooltip.html">
+<link rel="import" href="../../paper-styles/typography.html">
+<link rel="import" href="../../paper-styles/shadow.html">
+
+<!--
+`appsco-application-assignee`
+Is used to represent assignee for application.
+
+Example:
+
+    <body>
+      <appsco-application-assignee assignee="{}" preview>
+     </appsco-application-assignee>
+
+ Custom property | Description | Default
+----------------|-------------|----------
+`--appsco-application-assignee` | Mixin applied to root element | `{}`
+`--appsco-application-assignee-image` | Mixin applied to inner image element | `{}`
+`--appsco-application-assignee-image-contain` | Mixin applied to iron-image #sizedImgDiv | `{}`
+
+@demo demo/appsco-application-assignee.html
+-->
+
+<dom-module id="appsco-application-assignee">
+    <template>
+        <style include="iron-flex iron-flex-alignment">
+            :host {
+                display: none;
+                color: var(--primary-text-color);
+            @apply(--appsco-application-assignee);
+            }
+            :host .iron-image {
+                border-radius: 50%;
+            }
+            :host .iron-image::shadow #sizedImgDiv, :host .iron-image::shadow #placeholder {
+                border-radius: 50%;
+            }
+            :host .assignee-image-preview {
+                width: 28px;
+                height: 28px;
+            @apply(--appsco-application-assignee-image);
+            }
+            :host .assignee-image-preview::shadow #sizedImgDiv, :host .assignee-image-preview::shadow #placeholder {
+            @apply(--appsco-application-assignee-image-contain);
+            }
+            paper-tooltip {
+            --paper-tooltip: {
+                 font-size: 11px;
+                 line-height: 12px;
+             };
+            }
+            :host .assignee {
+            @apply(--layout-horizontal);
+            @apply(--layout-center);
+            @apply(--shadow-elevation-2dp);
+                width: 100%;
+                height: 70px;
+                padding: 0 10px;
+                box-sizing: border-box;
+                border-radius: 3px;
+                overflow: hidden;
+                position: relative;
+                background-color: var(--background-color, #fafafa);
+                cursor: pointer;
+            @apply(--appsco-application-assignee);
+            }
+            :host .assignee:hover {
+            @apply(--shadow-elevation-4dp);
+            }
+            :host .assignee-image {
+                width: 52px;
+                height: 52px;
+                margin: 0;
+                border-radius: 50%;
+            @apply(--layout-flex-none);
+            }
+            :host .assignee-info {
+            @apply(--layout-vertical);
+            @apply(--layout-start);
+                padding: 0 10px;
+            }
+            :host .assignee-basic-info {
+                width: 220px;
+            }
+            :host.assignee-basic-info .info-label, :host .assignee-basic-info .info-value {
+                width: 226px;
+            @apply(--paper-font-common-nowrap);
+            }
+            :host .assignee-security-info {
+                border-left: 1px solid var(--divider-color);
+            }
+            :host .info-label {
+                font-size: 16px;
+                height: auto;
+                line-height: normal;
+            }
+            :host .info-value {
+                display: block;
+                font-size: 12px;
+            }
+            :host .assignee-name {
+                display: block;
+            @apply(--paper-font-common-base);
+                font-size: 16px;
+                font-weight: 400;
+                overflow: hidden;
+            }
+            :host .actions {
+            @apply(--layout-horizontal);
+            @apply(--layout-center);
+                position: absolute;
+                right: 4px;
+                bottom: 4px;
+            }
+            :host paper-button {
+            @apply(--paper-font-common-base);
+            @apply(--paper-font-common-nowrap);
+                padding: 4px;
+                font-size: 12px;
+                font-weight: 400;
+                letter-spacing: 0.018em;
+                line-height: 18px;
+                text-transform: uppercase;
+            }
+            :host paper-button[disabled] {
+                background: transparent;
+            }
+        </style>
+
+        <template is="dom-if" if="[[ preview ]]">
+            <template is="dom-if" if="[[ assignee.picture_url ]]">
+                <iron-image
+                        src="[[ assignee.picture_url ]]"
+                        alt="[[ assignee.display_name ]]"
+                        sizing="contain"
+                        class="iron-image assignee-image-preview"></iron-image>
+            </template>
+
+            <template is="dom-if" if="[[ !assignee.picture_url ]]">
+                <iron-image
+                        src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIwAAACMCAMAAACZHrEMAAAAqFBMVEUAAAAnNEEnNEEnNEEnNEEnNEE8rPcnNEEnNEEnNUI8rPc8rPc8rPcnNEEnNEEnNEEnNEEnNEE8rPc8rPc8rPc8rPcnNEE8rPcnNEE8rPcnNEH///88rPeTmqAoPlDJzNBdZ3Hx8/WBiI+us7g0gLUuWno1QU1OtPjk5+kxbZg9TFtswfprc3w6oebX2ds3lNO8wMShpqxQWmWu3fye1vszeKfU7f6Nz/toHOtWAAAAGnRSTlMAnyC/EO+fYEDPYO26r4+AcFA9IIAQ388wUFlk1w8AAASsSURBVHjazNbdqqtADAXg+XEYvajam1JWkFYLIiIb2/d/uHPgwPam7kmM7p7vCRbJJBmzXR4r6z2w8N5WMTe/7FrbAqsKW1/N73DxFJAUTtGZg7m6AFtRH5gnix5CPmbmCK4M2CCU+5cnt9jM5vtG8VDx+8VxFmp2n2ZlFXZRZUbtfMFOLmdtWU7Y0SlTlSVgV2F7cbISuys3FscVOEDhzAZ5wCFCbsQiDhONkMWB7BFZ+qmZb/TtNjdTr0ijyNJ3M70xd70wjT5L37S0om16SRp9lqmlH7QTP40+y4MSHsI0+izHp4ncLPo00STkSOqIpUNSYhe7gJSxJZZ2REpw5gdZIWmSvlFFZtaVSBqJbURSaVadkfYktifSzqtNCkgbiG1AWlhr1AlpLxJ4Ie20vUnoSKDD1kZlFzDMJDCD4fKuURU4vkjgCxzVm3UHFhIBi+Pfx+PDWNFNWtxJ5I6F4Eb5T4bxzMLow8hLYz8bxrJGSR9GPlDlp8OUzAupDyO7lxFcI4mM4IqcudYvPeF0O3w+zPcTrsEkP5R8tfmnAN+NBG7gK+RdwpMEnhBwiVnS//QEYuLrq100dyyYn+EAvnEigWkEXzB/XcH3IKEH+K6ywe5IrANbvfwetHOtn24r2zIDiQ0ABJsGfLQB+JYPp/oW6C9CbiKA/+PNIJoKfA2JNeCrjAXfRGIT+KzxECCxHnxeFmYmoRkC3iBB16cOEgYiA4m0SFCFaY6bJXmYvhUVpoeIgUyjKIwijP4kDD0StGFef2g1t50GgSCABrSBPhj7aHDcGgPZkk0lFlr+/880PDhpaumc4pwvONnN7ly35ks6VAAiw0c84FiADHjgPI9ZLvOx/LfjMrxnz6sULsMDZnUPGigJu6VxYHnUVrb/meCpDEiu3GUyTTsJb4ZAwHkGCbm7TAFKFXeZEhRx7jKgvHWXWYPCHzXTvipOBloi7k97A5pF7jIv2kZDfDrIrECD0T1QPoHWq7tMAZrSMJ85VJRc2/WId4fkag0GGbB44r/eBox44ACB/3o5GH6xb4a/7Yf71m1D0xoK7l3bhApQ8IFpaI6dSHw1EEW6o1lo9QhHyaHtZCJZZJJMdK36GBfBcqvJROxvu/RRROw+OVg/aGo5Iw7zW69DlDPqhiytlLOHspdLUn/62+TUJ7lkP3s8pXFlJdRyjfgrpCJjlGvUYf5dKyVVUaM0Dj+MKakH1Cln15xUhcN1MsMCmKo46+S3V+O+m7VjFYdhIAigU22x2nCglTE+llRxkYBJlf//tbsikKQ4CVtand4XDCPBNnPdzMV2/f70VRwNrpu52dbP0WBhTnl+mKvHubh7PWVqcSvnlJng+tfyKud1If98qNvdurjfMo/0vN6rdbP+XuvsoP1iHV2yg3ZosI6CIitaRxEFbN0wisg6IWCYNAQMk4aAYdIQMEwaAoZJQ8AwaQg7sblh7BaDuQgRB+hsDmbFIVOy5tKEo5ZgTYUFFSaxhuRZywDlhAXVpvTvv+WdklUjRStRrIpEtBSpopWI1jQFOyAkhYeJxXYSnuBGeceNmFnhTFmCFQVhRR+Rac40QhzRWeREIvZGhFJNjh/wS1HnPv+ePgAAAABJRU5ErkJggg=="
+                        alt="[[ assignee.name ]]"
+                        sizing="contain"
+                        class="iron-image assignee-image-preview"></iron-image>
+            </template>
+
+            <paper-tooltip position="right">[[ assignee.display_name ]]<br/>[[ assignee.email ]]</paper-tooltip>
+        </template>
+
+        <template is="dom-if" if="[[ !preview ]]">
+            <div class="assignee" on-tap="_onAssigneeAction">
+                <iron-image class="iron-image assignee-image"
+                            placeholder="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAABGdBTUEAALGPC/xhBQAAAI5JREFUeAHt1YEJwCAQBEFN/60KYgMRbGMnHXjs5Ofa5x/h7wu//T3dAAqIL4BAPIChAAXEF0AgHoCfIAIIxBdAIB6AK4AAAvEFEIgH4AoggEB8AQTiAbgCCCAQXwCBeACuAAIIxBdAIB6AK4AAAvEFEIgH4AoggEB8AQTiAbgCCCAQXwCBeACuAAIIxBe4yV0EThqVC64AAAAASUVORK5CYII="
+                            sizing="cover"
+                            preload fade src="[[ assignee.picture_url ]]"></iron-image>
+
+                <div class="assignee-info assignee-basic-info">
+                    <span class="info-label assignee-name">[[ assignee.display_name ]]</span>
+                    <span class="info-value">[[ assignee.email ]]</span>
+                </div>
+
+                <div class="assignee-info assignee-security-info">
+                    <span class="info-label">Security</span>
+                    <span class="info-value">Score: [[ assignee.score ]]</span>
+                </div>
+
+                <div class="actions">
+                    <template is="dom-if" if="[[ _individualClaims ]]">
+                        <paper-button on-tap="_onClaimsAction">Claims</paper-button>
+                    </template>
+
+                    <paper-button on-tap="_onRevokeAction">Revoke</paper-button>
+                </div>
+            </div>
+        </template>
+
+    </template>
+
+    <script>
+        Polymer({
+
+            is: 'appsco-application-assignee',
+
+            properties: {
+
+                /**
+                 * Application which is assigned to account.
+                 */
+                application: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    }
+                },
+
+                /**
+                 * Assignee to display.
+                 *
+                 * @type {Object}
+                 */
+                assignee: {
+                    type: Object
+                },
+
+                /**
+                 * Indicates if assignee should be in preview mode rather then full detailed view.
+                 */
+                preview: {
+                    type: Boolean,
+                    value: false
+                },
+
+                _individualClaims: {
+                    type: Boolean,
+                    computed: '_computeIndividualClaims(application)'
+                },
+
+                /**
+                 * Animation for loader appearance.
+                 */
+                animationConfig: {
+                    value: function() {
+                        return {
+                            'entry': {
+                                name: 'fade-in-animation',
+                                node: this,
+                                timing: {
+                                    duration: 300
+                                }
+                            },
+                            'exit': {
+                                name: 'fade-out-animation',
+                                node: this,
+                                timing: {
+                                    duration: 100
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+
+            behaviors: [
+                Polymer.NeonAnimationRunnerBehavior
+            ],
+
+            attached: function() {
+                this.style.display = 'inline-block';
+                this.playAnimation('entry');
+            },
+
+            _computeIndividualClaims: function(application) {
+                return application.claim_type === 'individual';
+            },
+
+            _onAssigneeAction: function() {
+
+                /**
+                 * Fired when assignee is tapped.
+                 *
+                 * @event assignee
+                 * @param {Object} assignee
+                 */
+                this.fire('assignee', {
+                    detail: this.assignee
+                });
+            },
+
+            _onClaimsAction: function(event) {
+                event.stopPropagation();
+
+                /**
+                 * Fired when claims action is tapped.
+                 *
+                 * @event assignee-claims
+                 * @param {Object} assignee
+                 */
+                this.fire('assignee-claims', {
+                    assignee: this.assignee
+                });
+            },
+
+            _onRevokeAction: function(event) {
+                event.stopPropagation();
+
+                /**
+                 * Fired when revoke action is tapped.
+                 *
+                 * @event revoke-assignee
+                 * @param {Object} assignee
+                 */
+                this.fire('revoke-assignee', {
+                    assignee: this.assignee
+                });
+            }
+        });
+    </script>
+</dom-module>

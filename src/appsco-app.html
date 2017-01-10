@@ -43,6 +43,8 @@
 <link rel="import" href="../bower_components/appsco-application/company/appsco-company-application-remove.html">
 <link rel="import" href="../bower_components/appsco-application/company/appsco-application-orgunit.html">
 <link rel="import" href="../bower_components/appsco-application/company/appsco-application-remove-orgunit.html">
+<link rel="import" href="../bower_components/appsco-application/company/appsco-application-assignee-claims.html">
+<link rel="import" href="../bower_components/appsco-application/company/appsco-application-assignee-revoke.html">
 
 <link rel="import" href="../bower_components/appsco-account/appsco-account-authorized-app-revoke.html">
 
@@ -71,6 +73,24 @@
         <style include="shared-styles">
             :host {
                 display: block;
+
+                --app-primary-color: #279FBC;
+                --app-primary-color-1: #39C2D7;
+                --app-secondary-color: #273441;
+                --app-secondary-color-1: #1183A4;
+                --app-danger-color: #ff0000;
+                --body-background-color: #f5f8fa;
+                --app-primary-color-dark: #414042;
+                --success-color: #5AC099;
+
+                --primary-text-color: #414042;
+                --secondary-text-color: #969696;
+
+                --primary-button-background-color: var(--app-primary-color);
+
+                --border-radius-base: 3px;
+
+                --paper-progress-active-color: var(--success-color);
             }
 
             /* Top header style START */
@@ -552,7 +572,8 @@
                             account="{{ account }}"
                             on-share-company-application="_onShareCompanyApplication"
                             on-remove-application="_onRemoveCompanyApplication"
-                            on-subscription-revoke="_onSubscriptionRevoke"
+                            on-change-assignee-claims="_onChangeAssigneeClaims"
+                            on-revoke-assignee="_onRevokeAssigneeAccess"
                             on-application-settings-saved="_onApplicationSettingsSaved"
                             on-sharing-settings-saved="_onApplicationSettingsSaved"
                             on-application-settings-no-changes="_onApplicationSettingsNoChanges"
@@ -684,6 +705,19 @@
                 accounts-api="[[ api.accounts ]]"
                 on-applications-shared="_onCompanyApplicationsShared"
                 ></appsco-company-application-share>
+
+        <appsco-application-assignee-claims
+                id="appscoApplicationAssigneeClaims"
+                application="[[ application ]]"
+                authorization-token="[[ authorizationToken ]]"
+                on-claims-changed="_onAssigneeClaimsChanged"
+                ></appsco-application-assignee-claims>
+
+        <appsco-application-assignee-revoke
+                id="appscoApplicationAssigneeRevoke"
+                authorization-token="[[ authorizationToken ]]"
+                on-access-revoked="_onAssigneeAccessRevoked"
+                ></appsco-application-assignee-revoke>
 
         <appsco-company-application-remove
                 id="appscoCompanyApplicationsRemove"
@@ -1483,6 +1517,35 @@
                 this.set('application', application);
 
                 this._notify('Selected applications were successfully shared.');
+            },
+
+            _onChangeAssigneeClaims: function(event) {
+                var assigneeClaimsComponent = this.$.appscoApplicationAssigneeClaims;
+
+                assigneeClaimsComponent.setApplication(event.detail.application);
+                assigneeClaimsComponent.setAssignee(event.detail.assignee);
+                assigneeClaimsComponent.toggle();
+            },
+
+            _onAssigneeClaimsChanged: function(event) {
+                this._notify('Claims for ' + event.detail.assignee.display_name + ' were successfully changed.');
+                this.set('application', {});
+                this.set('application', event.detail.application);
+            },
+
+            _onRevokeAssigneeAccess: function(event) {
+                var assigneeRevokeComponent = this.$.appscoApplicationAssigneeRevoke;
+
+                assigneeRevokeComponent.setAssignee(event.detail.assignee);
+                assigneeRevokeComponent.toggle();
+            },
+
+            _onAssigneeAccessRevoked: function(event) {
+                var application = event.detail.application;
+
+                this._notify('Access for ' + event.detail.assignee.display_name + ' on ' + application.title + ' revoked.');
+                this.set('application', {});
+                this.set('application', application);
             },
 
             _onRemoveApplications: function() {

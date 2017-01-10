@@ -53,6 +53,9 @@
 <link rel="import" href="applications/appsco-applications-page-actions.html">
 <link rel="import" href="applications/appsco-manage-application-page-actions.html">
 
+<link rel="import" href="directory/appsco-directory-page-actions.html">
+<link rel="import" href="directory/appsco-directory-add-account.html">
+
 <link rel="import" href="vault/appsco-vault-page-actions.html">
 <link rel="import" href="vault/appsco-vault-manage-item.html">
 <link rel="import" href="../bower_components/appsco-vault/appsco-vault-remove.html">
@@ -398,7 +401,7 @@
                                     on-add-application="_onCompanyAddApplication"
                                     on-search="_onSearchApplications"
                                     on-page-global-info="_onInfoAction"
-                                    on-page-global-filters="_onApplicationsFiltersAction"
+                                    on-page-global-filters="_onFiltersAction"
                                     on-share="_onShareApplications"
                                     on-remove="_onRemoveApplications"
                                     on-orgunits="_onAddToOrgunit"
@@ -409,6 +412,19 @@
                                     name="manage-application"
                                     on-back="_backTo"
                                     on-resource-section="_onResourceActionApplicationPage"></appsco-manage-application-page-actions>
+
+                            <appsco-directory-page-actions
+                                    id="appscoDirectoryPageActions"
+                                    name="directory"
+                                    authorization-token="[[ authorizationToken ]]"
+                                    on-add-account="_onCompanyAddAccount"
+                                    on-import-accounts="_onCompanyImportAccounts"
+                                    on-search="_onSearchAccounts"
+                                    on-page-global-info="_onInfoAction"
+                                    on-page-global-filters="_onFiltersAction"
+                                    on-remove="_onRemoveAccounts"
+                                    on-orgunits="_onAddToOrgunit"
+                            ></appsco-directory-page-actions>
 
                         </neon-animated-pages>
 
@@ -518,8 +534,8 @@
                             on-share-company-application="_onShareCompanyApplication"
                             on-filter-done="_onPageLoaded"
                             on-page-loaded="_onPageLoaded"
-                            on-show-bulk-actions="_onShowApplicationsBulkActions"
-                            on-hide-bulk-actions="_onHideApplicationsBulkActions"
+                            on-show-bulk-actions="_onShowBulkActions"
+                            on-hide-bulk-actions="_onHideBulkActions"
                             on-add-orgunit="_onAddOrgunit"
                             on-modify-orgunit="_onModifyOrgunit"
                             on-remove-orgunit="_onRemoveOrgunit"></appsco-applications-page>
@@ -552,6 +568,8 @@
                             computed-headers="[[ _computedHeaders ]]"
                             company-directory-roles-api="[[ companyDirectoryRolesApi ]]"
                             company-orgunits-api="[[ companyOrgunitsApi ]]"
+                            on-show-bulk-actions="_onShowBulkActions"
+                            on-hide-bulk-actions="_onHideBulkActions"
                             on-add-orgunit="_onAddOrgunit"
                             on-modify-orgunit="_onModifyOrgunit"
                             on-remove-orgunit="_onRemoveOrgunit"></appsco-directory-page>
@@ -674,6 +692,14 @@
                 company-api="[[ companyApi ]]"
                 on-applications-removed="_onApplicationsRemoved"
                 on-applications-remove-failed="_onApplicationsRemoveFailed"></appsco-company-application-remove>
+
+        <appsco-directory-add-account
+                id="appscoDirectoryAccountAdd"
+                authorization-token="[[ authorizationToken ]]"
+                applications-template-api="[[ api.applicationTemplates ]]"
+                company-api="[[ companyApi ]]"
+                on-account-added="_onCompanyApplicationsAdded">
+        </appsco-directory-add-account>
 
         <template is="dom-if" if="[[ api.me ]]">
             <iron-ajax auto
@@ -1058,8 +1084,47 @@
 
             },
 
+            getCurrentAppscoPageElement: function() {
+                switch(this.page) {
+                    case 'home':
+                        return this.$.appscoHomePage;
+                        break;
+                    case 'applications':
+                        return this.$.appscoApplicationsPage;
+                        break;
+                    case 'directory':
+                        return this.$.appscoDirectoryPage;
+                        break;
+                }
+            },
+            getCurrentAppscoPageActionsElement: function() {
+                switch(this.page) {
+                    case 'home':
+                        return this.$.appscoHomePageActions;
+                        break;
+                    case 'applications':
+                        return this.$.appscoApplicationsPageActions;
+                        break;
+                    case 'directory':
+                        return this.$.appscoDirectoryPageActions;
+                        break;
+                }
+            },
+
             _onInfoAction: function() {
-                this._business ?  this.$.appscoApplicationsPage.toggleInfo() : this.$.appscoHomePage.toggleInfo();
+                this.getCurrentAppscoPageElement().toggleInfo();
+            },
+
+            _onFiltersAction: function() {
+                this.getCurrentAppscoPageElement().toggleResource();
+            },
+
+            _onShowBulkActions: function() {
+                this.getCurrentAppscoPageActionsElement().showBulkActions();
+            },
+
+            _onHideBulkActions: function() {
+                this.getCurrentAppscoPageActionsElement().hideBulkActions();
             },
 
             _onInfoVaultAction: function() {
@@ -1324,17 +1389,6 @@
             /**
              * Applications page START
              */
-            _onApplicationsFiltersAction: function() {
-                this.$.appscoApplicationsPage.toggleResource();
-            },
-
-            _onShowApplicationsBulkActions: function() {
-                this.$.appscoApplicationsPageActions.showBulkActions();
-            },
-
-            _onHideApplicationsBulkActions: function() {
-                this.$.appscoApplicationsPageActions.hideBulkActions();
-            },
 
             _onAddOrgunit: function(event) {
                 var orgunitAddDialog = this.$.appscoOrgunitModify;
@@ -1485,6 +1539,17 @@
             },
             /**
              * Applications page END
+             */
+
+            /**
+             * Directory page END
+             */
+
+            _onCompanyAddAccount: function() {
+                this.$.appscoDirectoryAccountAdd.toggle();
+            },
+            /**
+             * Directory page END
              */
 
             /**

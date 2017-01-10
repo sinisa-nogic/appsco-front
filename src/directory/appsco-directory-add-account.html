@@ -1,0 +1,226 @@
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../bower_components/iron-flex-layout/iron-flex-layout.html">
+<link rel="import" href="../../bower_components/paper-styles/typography.html">
+<link rel="import" href="../../bower_components/paper-styles/shadow.html">
+<link rel="import" href="../../bower_components/paper-button/paper-button.html">
+<link rel="import" href="../../bower_components/iron-icon/iron-icon.html">
+<link rel="import" href="../../bower_components/iron-icons/iron-icons.html">
+<link rel="import" href="../../bower_components/paper-input/paper-input.html">
+<link rel="import" href="../../bower_components/iron-image/iron-image.html">
+<link rel="import" href="../../bower_components/iron-ajax/iron-request.html">
+<link rel="import" href="../../bower_components/paper-dialog/paper-dialog.html">
+<link rel="import" href="../../bower_components/paper-dialog-scrollable/paper-dialog-scrollable.html">
+<link rel="import" href="../../bower_components/neon-animation/animations/scale-up-animation.html">
+
+<link rel="import" href="../../bower_components/appsco-components/appsco-loader.html">
+<link rel="import" href="../../bower_components/appsco-components/appsco-form-error.html">
+
+<dom-module id="appsco-directory-add-account">
+    <template>
+        <style>
+            :host {
+                display: block;
+                position: relative;
+                @apply(--appsco-directory-add-account);
+            }
+            :host paper-dialog {
+                width: 670px;
+                top: 20vh;
+                @apply(--appsco-paper-dialog);
+            }
+            :host paper-dialog-scrollable::shadow .scrollable {
+                min-height: 80px;
+            }
+            :host paper-input {
+                --paper-input-container-label: {
+                    left: 4px;
+                };
+                --paper-input-container-input: {
+                    /*padding: 0 4px;*/
+                };
+            }
+            :host .message {
+                margin: 0;
+                color: var(--secondary-text-color);
+                font-style: italic;
+                @apply(--paper-font-body2);
+            }
+            :host .buttons {
+                margin-top: 10px;
+            }
+            :host .buttons paper-button {
+                margin-top: 10px;
+                @apply(--paper-dialog-button);
+            }
+            :host .buttons paper-button[dialog-confirm] {
+                @apply(--paper-dialog-confirm-button);
+            }
+            :host .buttons paper-button[dialog-dismiss] {
+                @apply(--paper-dialog-dismiss-button);
+            }
+            :host .message {
+                color: var(--secondary-text-color);
+                font-style: italic;
+                @apply(--paper-font-body2);
+            }
+            :host .info {
+                /*font-size:12px;*/
+            }
+        </style>
+
+        <paper-dialog id="dialog"
+                      with-backdrop
+                      entry-animation="scale-up-animation"
+                      exit-animation="fade-out-animation"
+                      on-iron-overlay-opened="_onDialogOpened"
+                      on-iron-overlay-closed="_onDialogClosed">
+
+            <h2>Add account to Directory</h2>
+
+            <paper-dialog-scrollable>
+                <div class="dialog-container">
+
+                    <appsco-loader active="[[ _addLoader ]]"
+                               loader-alt="Appsco is adding account"
+                               multi-color></appsco-loader>
+
+                    <appsco-form-error message="[[ _error ]]"></appsco-form-error>
+
+                    <div>
+                        <p class="info">
+                            First name and last name are important since they associate degree of confidence.
+                            They will be used for log purposes, statistics and other reporting activities.
+                            Beside usage in AppsCo they can also be used for integration with other tools.
+                        </p>
+                        <paper-input
+                                id="accountFistName"
+                                label="First name"
+                                value=""
+                                name="register_account[firstName]"
+                                required
+                                error-message="Please provide first name."
+                        ></paper-input>
+                        <paper-input
+                                id="accountLastName"
+                                label="Last name"
+                                value=""
+                                name="register_account[lastName]"
+                                required
+                                error-message="Please provide last name."
+                        ></paper-input>
+                        <p class="info">
+                            Email is used as part of credentials for accessing the system.
+                            Email can be used for log purposes, statistics and other reporting activities.
+                        </p>
+                        <paper-input
+                                id="accountEmail"
+                                label="Email"
+                                value="[[ account.company.contact_email ]]"
+                                name="register_account[email]"
+                                error-message="Please provide email."
+                        ></paper-input>
+                    </div>
+
+                </div>
+            </paper-dialog-scrollable>
+
+            <div class="buttons">
+                <paper-button dialog-dismiss>Cancel</paper-button>
+                <paper-button autofocus on-tap="_onAddAccountAction">Add</paper-button>
+            </div>
+        </paper-dialog>
+
+    </template>
+    <script>
+        Polymer({
+
+            is: 'appsco-directory-add-account',
+
+            properties: {
+
+                /**
+                 * Authorization token.
+                 */
+                authorizationToken: {
+                    type: String
+                },
+
+                /**
+                 * Company API link.
+                 * API in which company to add application.
+                 */
+                companyApi: {
+                    type: String
+                },
+
+                /**
+                 * Indicates if add application loader should be displayed or not.
+                 */
+                _addLoader: {
+                    type: Boolean,
+                    value: false
+                }
+
+            },
+
+            /**
+             * Toggles add applications dialog.
+             */
+            toggle: function() {
+                this.$.dialog.toggle();
+            },
+
+            /**
+             * Called after dialog has been opened.
+             *
+             * @private
+             */
+            _onDialogOpened: function() {
+            },
+
+            /**
+             * Called after dialog has been closed.
+             *
+             * @private
+             */
+            _onDialogClosed: function() {
+                this._addLoader = false;
+                this._error = '';
+            },
+
+            _onAddAccountAction: function() {
+                var
+                    request = document.createElement('iron-request'),
+                    options = {
+                        url: this.companyApi + '/directory/roles',
+                        method: 'POST',
+                        handleAs: 'json',
+                        headers: {
+                            'Authorization': 'token ' + this.authorizationToken,
+                            'Content-Type': 'application/x-www-form-urlencoded'
+                        }
+                    },
+                    body = '';
+
+                this._addLoader = true;
+
+                options.body = body;
+
+                request.send(options).then(function(request) {
+                    this.$.dialog.close();
+
+                    /**
+                     * Fired when application has been shared.
+                     *
+                     * @event application-shared
+                     */
+                    this.fire('account-added', {
+                        account: request.response
+                    });
+
+                    this._addLoader = false;
+                }.bind(this));
+            }
+        });
+    </script>
+</dom-module>

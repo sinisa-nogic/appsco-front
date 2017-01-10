@@ -193,9 +193,7 @@
                         authorization-token="[[ authorizationToken ]]"
                         accounts-api="[[ companyDirectoryRolesApi ]]"
                         on-account="_onViewAccountInfo"
-                        on-edit="_onApplicationEdit"
-                        on-application="_onApplication"
-                        on-application-removed="_onApplicationRemoved"
+                        on-edit="_onAccountEdit"
                         on-loaded="_pageLoaded"
                         on-empty-load="_pageLoaded"></appsco-accounts>
             </div>
@@ -256,7 +254,7 @@
                     <paper-button
                             class="share-button flex"
                             on-tap="_onShareApplication">
-                        Share
+                        Change Password
                     </paper-button>
                 </div>
 
@@ -414,6 +412,7 @@
             _pageLoaded: function() {
                 this.pageLoaded = true;
                 this.fire('page-loaded');
+                this.setDefaultAccount();
             },
 
             _showInfo: function() {
@@ -447,9 +446,21 @@
                 if (!this._infoShown) {
                     this._showInfo();
                 }
+
+                if (this.selectedAccounts.length > 0) {
+                    this.fire('show-bulk-actions');
+                }
+                else {
+                    this.fire('hide-bulk-actions');
+                    this.setDefaultAccount();
+                }
             },
 
             _onOrgunitsResponse: function(event) {
+                if(null == event.detail.response) {
+                    return;
+                }
+
                 this._orgUnits = event.detail.response.orgunits
             },
 
@@ -465,12 +476,8 @@
                 this.$.appscoOrgunitTree.removeOrgunit(orgunit);
             },
 
-            _onDirectoryRolesResponse: function(e) {
-                var me = this;
-                this.set('_roles', e.detail.response.company_roles);
-//                e.detail.response.company_roles.forEach(function(item){
-//                    me.push('_roles', item);
-//                });
+            setDefaultAccount: function() {
+                this.set('_role', this.$.appscoAccounts.getFirstAccount());
             }
         });
     </script>

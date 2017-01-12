@@ -57,6 +57,7 @@
 
 <link rel="import" href="directory/appsco-directory-page-actions.html">
 <link rel="import" href="directory/appsco-directory-add-account.html">
+<link rel="import" href="directory/appsco-directory-import-accounts.html">
 
 <link rel="import" href="vault/appsco-vault-page-actions.html">
 <link rel="import" href="vault/appsco-vault-manage-item.html">
@@ -730,10 +731,17 @@
         <appsco-directory-add-account
                 id="appscoDirectoryAccountAdd"
                 authorization-token="[[ authorizationToken ]]"
-                applications-template-api="[[ api.applicationTemplates ]]"
                 company-api="[[ companyApi ]]"
-                on-account-added="_onCompanyApplicationsAdded">
+                on-account-added="_onAccountAdded">
         </appsco-directory-add-account>
+
+        <appsco-directory-import-accounts
+                id="appscoDirectoryImportAccounts"
+                authorization-token="[[ authorizationToken ]]"
+                directory-import-api="[[ companyDirectoryImportAccounts ]]"
+                domain="[[ domain ]]"
+                on-accounts-added="_onAccountsAdded">
+        </appsco-directory-import-accounts>
 
         <template is="dom-if" if="[[ api.me ]]">
             <iron-ajax auto
@@ -1078,6 +1086,7 @@
                     this.companyApi = response.companies[0];
                     this.companyApplicationsApi = response.companies[0] + '/applications?extended=1';
                     this.companyDirectoryRolesApi = response.companies[0] + '/directory/roles';
+                    this.companyDirectoryImportAccounts = response.companies[0] + '/directory/roles/import';
                     this.companyOrgunitsApi = response.companies[0] + '/org-units?extended=1';
                 }
             },
@@ -1607,10 +1616,21 @@
             /**
              * Directory page END
              */
-
             _onCompanyAddAccount: function() {
                 this.$.appscoDirectoryAccountAdd.toggle();
             },
+
+            _onCompanyImportAccounts: function() {
+                this.$.appscoDirectoryImportAccounts.toggle();
+            },
+
+            _onAccountAdded: function(e) {
+                this.$.appscoDirectoryPage.addAccounts([e.detail.account]);
+            },
+            _onAccountsAdded: function(e) {
+                this.$.appscoDirectoryPage.addAccounts(e.detail.accounts);
+            },
+
             /**
              * Directory page END
              */

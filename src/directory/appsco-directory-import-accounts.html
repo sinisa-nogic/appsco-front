@@ -1,0 +1,279 @@
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../bower_components/iron-flex-layout/iron-flex-layout.html">
+<link rel="import" href="../../bower_components/paper-styles/typography.html">
+<link rel="import" href="../../bower_components/paper-styles/shadow.html">
+<link rel="import" href="../../bower_components/paper-button/paper-button.html">
+<link rel="import" href="../../bower_components/iron-icon/iron-icon.html">
+<link rel="import" href="../../bower_components/iron-icons/iron-icons.html">
+<link rel="import" href="../../bower_components/paper-input/paper-input.html">
+<link rel="import" href="../../bower_components/iron-image/iron-image.html">
+<link rel="import" href="../../bower_components/paper-dialog/paper-dialog.html">
+<link rel="import" href="../../bower_components/paper-dialog-scrollable/paper-dialog-scrollable.html">
+<link rel="import" href="../../bower_components/paper-toggle-button/paper-toggle-button.html">
+<link rel="import" href="../../bower_components/neon-animation/animations/scale-up-animation.html">
+
+<link rel="import" href="../../bower_components/appsco-components/appsco-loader.html">
+<link rel="import" href="../../bower_components/appsco-components/appsco-form-error.html">
+
+<link rel="import" href="../../bower_components/vaadin-upload/vaadin-upload.html">
+
+<dom-module id="appsco-directory-import-accounts">
+    <template>
+        <style>
+            :host {
+                display: block;
+                position: relative;
+                @apply(--appsco-directory-import-accounts);
+                --paper-dialog-scrollable: {
+                    height:355px;
+                }
+            }
+            :host paper-dialog {
+                width: 670px;
+                top: 10vh;
+                @apply(--appsco-paper-dialog);
+            }
+            :host paper-dialog-scrollable::shadow .scrollable {
+                min-height: 80px;
+            }
+            :host paper-input {
+                --paper-input-container-label: {
+                    left: 4px;
+                };
+                --paper-input-container-input: {
+                    /*padding: 0 4px;*/
+                };
+            }
+            :host .message {
+                margin: 0;
+                color: var(--secondary-text-color);
+                font-style: italic;
+                @apply(--paper-font-body2);
+            }
+            :host .buttons {
+                margin-top: 10px;
+            }
+            :host .buttons paper-button {
+                margin-top: 10px;
+                @apply(--paper-dialog-button);
+            }
+            :host .buttons paper-button[dialog-confirm] {
+                @apply(--paper-dialog-confirm-button);
+            }
+            :host .buttons paper-button[dialog-dismiss] {
+                @apply(--paper-dialog-dismiss-button);
+            }
+            :host .message {
+                color: var(--secondary-text-color);
+                font-style: italic;
+                @apply(--paper-font-body2);
+            }
+            :host .info {
+                margin: 0;
+            }
+            :host .mt {
+                margin-top: 15px;
+            }
+            :host .flex-horizontal {
+                @apply(--layout-horizontal);
+            }
+            :host .flex{
+                @apply(--layout-flex);
+            }
+            :host .baseline {
+                @apply(--layout-self-end);
+                padding-bottom: 10px;
+                text-align: center;
+            }
+            vaadin-upload {
+                --vaadin-upload-button-add: {
+                    @apply(--primary-button);
+                }
+            }
+            :host a {
+                color: var(--primary-text-color);
+                text-decoration: none;
+            }
+        </style>
+
+        <paper-dialog id="dialog"
+                      with-backdrop
+                      entry-animation="scale-up-animation"
+                      exit-animation="fade-out-animation"
+                      on-iron-overlay-opened="_onDialogOpened"
+                      on-iron-overlay-closed="_onDialogClosed">
+
+            <h2>Importing Your Organization’s Accounts</h2>
+
+            <paper-dialog-scrollable>
+                <div class="dialog-container">
+
+                    <appsco-loader active="[[ _addLoader ]]"
+                                   loader-alt="Appsco is adding account"
+                                   multi-color></appsco-loader>
+
+
+
+                    <div>
+                        <p class="info">
+                            To get started, prepare your organization’s business account data so it’s in the proper format
+                            for importing to AppsCo. Allowed format is csv.
+                            <ul>
+                                <li>
+                                    Before importing check your subscription size.
+                                    System will import only up to the subscription size.
+                                </li>
+                                <li>
+                                    If you are importing more then 500 accounts at a time, split them into multiple
+                                    CSVs before you import them.
+                                </li>
+                                <li>
+                                    Make sure your symbols are ASCII or Unicode Latin-based.
+                                </li>
+                                <li>
+                                    Download example import for reference.
+                                    <a href="[[domain]]/example_import.csv"><iron-icon icon="icons:attachment"></iron-icon> Download</a>
+                                </li>
+                                <li>
+                                    If your list is in Excel or Google Sheet you can save it as CSV.
+                                </li>
+                            </ul>
+                        </p>
+                        <appsco-form-error message="[[ _error ]]"></appsco-form-error>
+                        <div>
+                            <vaadin-upload
+                                    id="uploadCsv"
+                                max-file-size="1000000"
+                                accept="text/csv"
+                                target="[[ directoryImportApi ]]"
+                                on-upload-start="_uploadStarted"
+                                on-file-reject="_fileRejected"
+                                on-upload-error="_uploadErrorResponse"
+                                on-upload-success="_uploadSuccess"
+                                headers="[[ _computedHeaders ]]"
+                            >
+                                <div class="drop-label">
+                                    <iron-icon icon="file-upload"></iron-icon>
+                                    Upload Organization Accounts
+                                </div>
+                            </vaadin-upload>
+                        </div>
+                        <!--<div class="baseline">-->
+                            <!--<paper-toggle-button id="sendActivationEmail">Send Activation Email to all accounts</paper-toggle-button>-->
+                        <!--</div>-->
+                    </div>
+                </div>
+            </paper-dialog-scrollable>
+
+            <div class="buttons">
+                <paper-button dialog-dismiss>Done</paper-button>
+            </div>
+        </paper-dialog>
+
+    </template>
+    <script>
+        Polymer({
+
+            is: 'appsco-directory-import-accounts',
+
+            properties: {
+
+                /**
+                 * Authorization token.
+                 */
+                authorizationToken: {
+                    type: String
+                },
+
+                /**
+                 * Company API link.
+                 * API in which company to add application.
+                 */
+                directoryImportApi: {
+                    type: String
+                },
+
+                /**
+                 * Indicates if add application loader should be displayed or not.
+                 */
+                _addLoader: {
+                    type: Boolean,
+                    value: false
+                },
+
+                domain: {
+                    type: String
+                },
+
+                /**
+                 * Computed headers.
+                 * It contains authorization token.
+                 */
+                _computedHeaders: {
+                    type: Object,
+                    computed: "_computeHeaders(authorizationToken)"
+                }
+            },
+
+            /**
+             * Toggles add applications dialog.
+             */
+            toggle: function() {
+                this.$.dialog.toggle();
+            },
+
+            /**
+             * Called after dialog has been opened.
+             *
+             * @private
+             */
+            _onDialogOpened: function() {
+                this._addLoader = false;
+                this._error = '';
+                this.$.uploadCsv.files = [];
+            },
+
+            /**
+             * Called after dialog has been closed.
+             *
+             * @private
+             */
+            _onDialogClosed: function() {
+                this._addLoader = false;
+                this._error = '';
+                this.$.uploadCsv.files = [];
+            },
+
+            _uploadStarted: function(e) {
+            },
+            _fileRejected: function(e) {
+                this._error = e.detail.error;
+            },
+
+            /**
+             * Computes authorization headers.
+             *
+             * @param {Object} authorizationToken
+             * @returns {{Authorization: string}}
+             * @private
+             */
+            _computeHeaders: function (authorizationToken) {
+                return {
+                    'Authorization': 'token ' + authorizationToken
+                }
+            },
+
+            _uploadErrorResponse: function(e) {
+                if (e.detail.xhr.status == 402) {
+                    e.detail.file.error = "Maximum subscription reached. Please upgrade before import.";
+                }
+            },
+
+            _uploadSuccess: function(e) {
+                this.toggle();
+                var accounts = JSON.parse(e.detail.xhr.responseText);
+                this.fire('accounts-added', accounts);
+            }
+        });
+    </script>
+</dom-module>

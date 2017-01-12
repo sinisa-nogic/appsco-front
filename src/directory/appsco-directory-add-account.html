@@ -10,6 +10,7 @@
 <link rel="import" href="../../bower_components/iron-ajax/iron-request.html">
 <link rel="import" href="../../bower_components/paper-dialog/paper-dialog.html">
 <link rel="import" href="../../bower_components/paper-dialog-scrollable/paper-dialog-scrollable.html">
+<link rel="import" href="../../bower_components/paper-toggle-button/paper-toggle-button.html">
 <link rel="import" href="../../bower_components/neon-animation/animations/scale-up-animation.html">
 
 <link rel="import" href="../../bower_components/appsco-components/appsco-loader.html">
@@ -22,10 +23,13 @@
                 display: block;
                 position: relative;
                 @apply(--appsco-directory-add-account);
+                --paper-dialog-scrollable: {
+                    height:255px;
+                }
             }
             :host paper-dialog {
                 width: 670px;
-                top: 20vh;
+                top: 10vh;
                 @apply(--appsco-paper-dialog);
             }
             :host paper-dialog-scrollable::shadow .scrollable {
@@ -64,7 +68,21 @@
                 @apply(--paper-font-body2);
             }
             :host .info {
-                /*font-size:12px;*/
+                margin: 0;
+            }
+            :host .mt {
+                margin-top: 15px;
+            }
+            :host .flex-horizontal {
+                @apply(--layout-horizontal);
+            }
+            :host .flex{
+                @apply(--layout-flex);
+            }
+            :host .baseline {
+                @apply(--layout-self-end);
+                padding-bottom: 10px;
+                text-align: center;
             }
         </style>
 
@@ -92,35 +110,47 @@
                             They will be used for log purposes, statistics and other reporting activities.
                             Beside usage in AppsCo they can also be used for integration with other tools.
                         </p>
-                        <paper-input
-                                id="accountFistName"
-                                label="First name"
-                                value=""
-                                name="register_account[firstName]"
-                                required
-                                error-message="Please provide first name."
-                        ></paper-input>
-                        <paper-input
-                                id="accountLastName"
-                                label="Last name"
-                                value=""
-                                name="register_account[lastName]"
-                                required
-                                error-message="Please provide last name."
-                        ></paper-input>
-                        <p class="info">
+                        <div class="flex-horizontal">
+                            <div class="flex">
+                                <paper-input
+                                        id="accountFirstName"
+                                        label="First name"
+                                        value=""
+                                        name="register_account[firstName]"
+                                        required
+                                        error-message="Please provide first name."
+                                ></paper-input>
+                            </div>
+                            <div class="flex">
+                                <paper-input
+                                        id="accountLastName"
+                                        label="Last name"
+                                        value=""
+                                        name="register_account[lastName]"
+                                        required
+                                        error-message="Please provide last name."
+                                ></paper-input>
+                            </div>
+                        </div>
+                        <p class="info mt">
                             Email is used as part of credentials for accessing the system.
                             Email can be used for log purposes, statistics and other reporting activities.
                         </p>
-                        <paper-input
-                                id="accountEmail"
-                                label="Email"
-                                value="[[ account.company.contact_email ]]"
-                                name="register_account[email]"
-                                error-message="Please provide email."
-                        ></paper-input>
+                        <div class="flex-horizontal">
+                            <div class="flex">
+                                <paper-input
+                                        id="accountEmail"
+                                        label="Email"
+                                        value=""
+                                        name="register_account[email]"
+                                        error-message="Please provide email."
+                                ></paper-input>
+                            </div>
+                            <div class="baseline">
+                                <paper-toggle-button id="sendActivationEmail">Send Activation Email</paper-toggle-button>
+                            </div>
+                        </div>
                     </div>
-
                 </div>
             </paper-dialog-scrollable>
 
@@ -200,26 +230,58 @@
                             'Content-Type': 'application/x-www-form-urlencoded'
                         }
                     },
-                    body = '';
-
+                    body = encodeURIComponent(this.$.accountFirstName.name) +
+                            '=' +
+                            encodeURIComponent(this.$.accountFirstName.value) +
+                            '&' +
+                            encodeURIComponent(this.$.accountLastName.name) +
+                            "=" +
+                            encodeURIComponent(this.$.accountLastName.value) +
+                            '&' +
+                            encodeURIComponent(this.$.accountEmail.name) +
+                            "=" +
+                            encodeURIComponent(this.$.accountEmail.value) +
+                            '&' +
+                            encodeURIComponent('register_account[companyRoles][COMPANY_ROLE_EMPLOYEE]') +
+                            "=" +
+                            encodeURIComponent('COMPANY_ROLE_EMPLOYEE')
+                    ;
+                if(this.$.sendActivationEmail.active) {
+                    body += '&' +
+                            encodeURIComponent('register_account[sendActivationMail]') +
+                            "=" +
+                            encodeURIComponent('true')
+                    ;
+                }
                 this._addLoader = true;
 
                 options.body = body;
 
-                request.send(options).then(function(request) {
-                    this.$.dialog.close();
+                request.send(options).then(
+                        function(request) {
+                            this.$.dialog.close();
 
-                    /**
-                     * Fired when application has been shared.
-                     *
-                     * @event application-shared
-                     */
-                    this.fire('account-added', {
-                        account: request.response
-                    });
+                            /**
+                             * Fired when application has been shared.
+                             *
+                             * @event application-shared
+                             */
+                            this.fire('account-added', {
+                                account: request.response
+                            });
 
-                    this._addLoader = false;
-                }.bind(this));
+                            this._addLoader = false;
+                            this.$.accountFirstName.value = "";
+                            this.$.accountLastName.value = "";
+                            this.$.accountEmail.value = "";
+                            this.$.sendActivationEmail.active = false;
+
+                        }.bind(this),
+                        function() {
+                            this._error = request.response.message;
+                            this._addLoader = false;
+                        }.bind(this)
+                );
             }
         });
     </script>

@@ -24,10 +24,6 @@
                 --resource-width: 318px;
                 --info-width: 318px;
 
-                --appsco-application-item: {
-                    color: var(--primary-text-color);
-                };
-
                 --appsco-list-item-message: {
                     font-size: 14px;
                     @apply(--paper-font-common-nowrap);
@@ -38,15 +34,11 @@
                     padding-bottom: 8px;
                 };
 
-                --application-details-label: {
+                --account-details-label: {
                     font-size: 12px;
                 };
-                --application-details-value: {
+                --account-details-value: {
                     font-size: 14px;
-                };
-
-                --applications-container: {
-                    margin-right: -30px;
                 };
             }
             :host .resource-header {
@@ -68,7 +60,7 @@
                 @apply(--layout-flex-none);
                 color: var(--primary-text-color);
             }
-            appsco-application-analytics-security {
+            appsco-account-security {
                 --security-score: {
                     width: 32px;
                     height: 32px;
@@ -130,9 +122,6 @@
                     height: 34px;
                 };
             }
-            appsco-application-details {
-                --appsco-application-icons-color: var(--primary-text-color);
-            }
             :host .flex-horizontal {
                 @apply(--layout-horizontal);
                 @apply(--layout-center);
@@ -180,7 +169,8 @@
                 </div>
 
                 <appsco-orgunit-tree id="appscoOrgunitTree"
-                                     org-units='[[ _orgUnits ]]'></appsco-orgunit-tree>
+                                     org-units="[[ _orgUnits ]]"
+                                     on-selected="_onOrgunitSelected"></appsco-orgunit-tree>
 
             </div>
 
@@ -192,9 +182,8 @@
                         company
                         authorization-token="[[ authorizationToken ]]"
                         accounts-api="[[ companyDirectoryRolesApi ]]"
-                        on-account="_onViewAccountInfo"
-                        on-edit="_onAccountEdit"
-                        on-loaded="_pageLoaded"
+                        on-account="_onAccount"
+                        on-loaded="_onAccountsLoaded"
                         on-empty-load="_pageLoaded"></appsco-accounts>
             </div>
 
@@ -274,7 +263,8 @@
                     type: Array,
                     value: function() {
                         return [];
-                    }
+                    },
+                    notify: true
                 },
 
                 _orgUnits: {
@@ -412,7 +402,18 @@
             _pageLoaded: function() {
                 this.pageLoaded = true;
                 this.fire('page-loaded');
+            },
+
+            resetPage: function() {
+                this.set('selectedAccounts', []);
+                this.$.appscoAccounts.selectAllAccounts(false);
+                this.fire('hide-bulk-actions');
+                this.hideInfo();
+            },
+
+            _onAccountsLoaded: function() {
                 this.setDefaultAccount();
+                this._pageLoaded();
             },
 
             _showInfo: function() {
@@ -440,22 +441,57 @@
                 this.$.appscoContent.toggleSection('resource');
             },
 
-            _onViewAccountInfo: function(event) {
-                this.set('_role', {});
-                this.set('_role', JSON.parse(JSON.stringify(event.detail.role)));
+            _onViewInfo: function(event) {
+                this.set('_role', event.detail.role);
 
                 if (!this._infoShown) {
                     this._showInfo();
                 }
-                this.$.accountLog.loadLog();
+            },
+
+            setDefaultAccount: function() {
+                this.set('_role', this.$.appscoAccounts.getFirstAccount());
+            },
+
+            _onAccount: function(event) {
+                var role = event.detail.role,
+                    length = this.selectedAccounts.length,
+                    index = -1;
+
+                for (var i = 0; i < length; i++) {
+                    if (this.selectedAccounts[i].self === role.self) {
+                        index = i;
+                        break;
+                    }
+                }
+
+                if (index > -1) {
+                    this.splice('selectedAccounts', index, 1);
+
+                    if (index != 0) {
+                        var role = this.selectedAccounts[this.selectedAccounts.length - 1];
+
+                        if (this._role.self !== role.self) {
+                            this.set('_role', role);
+                        }
+                    }
+                }
+                else {
+                    this._onViewInfo(event);
+                    this.push('selectedAccounts', role);
+                }
+
+                var roles = JSON.parse(JSON.stringify(this.selectedAccounts));
+
+                this.set('selectedAccounts', []);
+                this.set('selectedAccounts', roles);
 
                 if (this.selectedAccounts.length > 0) {
                     this.fire('show-bulk-actions');
                 }
                 else {
                     this.fire('hide-bulk-actions');
-                    this.fire('show-bulk-actions');
-//                    this.setDefaultAccount();
+                    this.setDefaultAccount();
                 }
             },
 
@@ -483,9 +519,22 @@
                 this.$.appscoAccounts.addAccounts(accounts);
             },
 
-            setDefaultAccount: function() {
-                this.set('_role', this.$.appscoAccounts.getFirstAccount());
-            }
+            modifyAccounts: function(accounts) {
+                this.$.appscoAccounts.modifyAccounts(accounts);
+            },
+
+            _onOrgunitSelected: function(event) {
+                this.$.appscoAccounts.filterByOrgunit(event.detail);
+            },
+
+            filterAccountsByTerm: function(term) {
+                this.$.appscoAccounts.filterByTerm(term);
+            },
+
+            removeAccounts: function(accounts) {
+                this.$.appscoAccounts.removeAccounts(accounts);
+                this.setDefaultAccount();
+            },
         });
     </script>
 </dom-module>

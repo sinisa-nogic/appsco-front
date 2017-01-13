@@ -403,8 +403,13 @@
             },
 
             initializePage: function() {
+                this.setDefaultApplication();
+            },
+
+            resetPage: function() {
                 this.set('selectedApplications', []);
                 this.$.appscoApplications.selectAllApplications(false);
+                this.fire('hide-bulk-actions');
                 this.hideInfo();
             },
 
@@ -477,9 +482,10 @@
 
             _onApplication: function(event) {
                 var application = event.detail.application,
+                    length = this.selectedApplications.length,
                     index = -1;
 
-                for (var i = 0; i < this.selectedApplications.length; i++) {
+                for (var i = 0; i < length; i++) {
                     if (this.selectedApplications[i].self === application.self) {
                         index = i;
                         break;
@@ -488,6 +494,14 @@
 
                 if (index > -1) {
                     this.splice('selectedApplications', index, 1);
+
+                    if (index != 0) {
+                        var app = this.selectedApplications[this.selectedApplications.length - 1];
+
+                        if (this.application.self !== app.self) {
+                            this.set('application', app);
+                        }
+                    }
                 }
                 else {
                     this._onViewApplicationInfo(event);

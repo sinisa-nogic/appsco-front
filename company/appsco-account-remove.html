@@ -1,0 +1,174 @@
+<link rel="import" href="../../polymer/polymer.html">
+<link rel="import" href="../../paper-button/paper-button.html">
+<link rel="import" href="../../iron-ajax/iron-request.html">
+<link rel="import" href="../../paper-dialog/paper-dialog.html">
+<link rel="import" href="../../paper-dialog-scrollable/paper-dialog-scrollable.html">
+<link rel="import" href="../../neon-animation/animations/fade-out-animation.html">
+<link rel="import" href="../../neon-animation/animations/scale-up-animation.html">
+
+<link rel="import" href="../../appsco-components/appsco-loader.html">
+
+<!--
+`appsco-account-remove`
+Shows dialog screen with confirmation for account removal.
+
+    <appsco-account-remove accounts="[]">
+    </appsco-account-remove>
+
+@demo demo/appsco-account-remove.html
+-->
+
+<dom-module id="appsco-account-remove">
+    <template>
+        <style>
+            :host {
+                display: block;
+                position: relative;
+            }
+            :host paper-dialog {
+                width: 670px;
+                top: 20vh;
+            @apply(--appsco-paper-dialog);
+            }
+            :host .buttons paper-button {
+            @apply(--paper-dialog-button);
+            }
+            :host .buttons paper-button[dialog-confirm] {
+            @apply(--paper-dialog-confirm-button);
+            }
+            :host .buttons paper-button[dialog-dismiss] {
+            @apply(--paper-dialog-dismiss-button);
+            }
+        </style>
+        <paper-dialog
+                with-backdrop
+                id="dialog"
+                entry-animation="scale-up-animation"
+                exit-animation="fade-out-animation">
+
+            <div class="header">
+                <h2>Account remove</h2>
+            </div>
+
+            <paper-dialog-scrollable>
+                <div class="remove-container">
+
+                    <appsco-loader active="[[ _loader ]]" loader-alt="Appsco is removing account" multi-color></appsco-loader>
+
+                    <p>Once account is removed from company all data related to it will be lost.</p>
+                    <p>Please confirm account removing.</p>
+
+                </div>
+            </paper-dialog-scrollable>
+
+            <div class="buttons">
+                <paper-button dialog-dismiss>Cancel</paper-button>
+                <paper-button dialog-confirm autofocus on-tap="_remove">Remove</paper-button>
+            </div>
+        </paper-dialog>
+
+    </template>
+    <script>
+        Polymer({
+
+            is: 'appsco-account-remove',
+
+            properties: {
+
+                /**
+                 * Accounts to delete.
+                 */
+                accounts: {
+                    type: Array,
+                    value: function() {
+                        return [];
+                    }
+                },
+
+                _account: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    }
+                },
+
+                /**
+                 * Authorization token.
+                 */
+                authorizationToken: {
+                    type: String
+                },
+
+                /**
+                 * Company API link.
+                 * API from which company to remove accounts.
+                 */
+                companyApi: {
+                    type: String
+                },
+
+                _loader: {
+                    type: Boolean,
+                    value: false
+                }
+            },
+
+            toggle: function () {
+                this.$.dialog.open();
+            },
+
+            _remove: function() {
+                var roles = this.accounts,
+                        length = roles.length - 1,
+                        appRequest = document.createElement('iron-request'),
+                        options = {
+                            url: this.companyApi + '/directory/roles',
+                            method: 'DELETE',
+                            handleAs: 'json',
+                            headers: {
+                                'Authorization': 'token ' + this.authorizationToken,
+                                'Content-Type': 'application/x-www-form-urlencoded'
+                            }
+                        },
+                        body = '';
+
+                this._loader = true;
+
+                for (var i = 0; i <= length; i++) {
+                    var next = (i === length) ? '' : '&';
+                    body += 'roles[]=' + encodeURIComponent(roles[i].self) + next;
+                }
+
+                options.body = body;
+
+                appRequest.send(options).then(function(request) {
+                    this.$.dialog.close();
+
+                    if (200 == request.status) {
+
+                        /**
+                         * Fired when accounts are removed.
+                         *
+                         * @event accounts-removed
+                         */
+                        this.fire('accounts-removed', {
+                            accounts: request.response.company_roles
+                        });
+                    }
+                    else {
+                        /**
+                         * Fired when accounts were not deleted.
+                         *
+                         * @event accounts-remove-failed
+                         */
+                        this.fire('accounts-remove-failed');
+                    }
+
+                    this.set('accounts', []);
+                    this._loader = false;
+
+                }.bind(this));
+            }
+        });
+    </script>
+</dom-module>

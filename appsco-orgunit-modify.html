@@ -54,7 +54,9 @@ Custom property | Description | Default
                 with-backdrop
                 id="modifyDialog"
                 entry-animation="scale-up-animation"
-                exit-animation="fade-out-animation">
+                exit-animation="fade-out-animation"
+                on-iron-overlay-opened="_onDialogOpened"
+                on-iron-overlay-closed="_onDialogClosed">
 
             <div class="remove-container">
 
@@ -74,8 +76,8 @@ Custom property | Description | Default
                         label="name"
                         value="[[ orgUnit.name ]]"
                         name="org_unit[name]"
-                        required
-                        ></paper-input>
+                        error-message="Please enter organization unit name."
+                        on-keyup="_onKeyup"></paper-input>
                 <paper-textarea
                         id="description"
                         label="description"
@@ -154,10 +156,10 @@ Custom property | Description | Default
 
             },
 
-            ready: function() {
+            _onKeyup: function(event) {
 
-                if (this.parent && Object.keys(this.parent).length == 0) {
-                    this._error = "Parent must be provided";
+                if (event.code !== 'Enter') {
+                    event.target.invalid = false;
                 }
 
             },
@@ -184,8 +186,37 @@ Custom property | Description | Default
              * Open dialog
              */
             open: function () {
-                this._error = "";
                 this.$.modifyDialog.open();
+            },
+
+            _close: function () {
+                this.$.modifyDialog.close();
+            },
+
+            _onDialogOpened: function() {
+                this.$.name.value = this.orgUnit.name;
+                this.$.description.value = this.orgUnit.description;
+                this.$.name.focus();
+            },
+
+            _onDialogClosed: function() {
+                this.$.name.value = '';
+                this.$.description.value = '';
+                this.$.name.invalid = false;
+                this._error = '';
+            },
+
+            _validate: function() {
+                var nameInput = this.$.name,
+                        name = nameInput.value ? nameInput.value : '';
+
+                if (name.trim().length === 0) {
+                    nameInput.invalid = true;
+                    nameInput.focus();
+                    return false;
+                }
+
+                return true;
             },
 
             /**
@@ -194,37 +225,42 @@ Custom property | Description | Default
              * @private
              */
             _add: function() {
-                var appRequest = document.createElement('iron-request');
 
-                this._loader = true;
+                if (this._validate()) {
+                    var appRequest = document.createElement('iron-request');
 
-                appRequest.send({
-                    url: this.parent.self,
-                    method: "POST",
-                    handleAs: 'json',
-                    body: this._prepBody(),
-                    headers: {
-                        "Authorization": "token " + this.authorizationToken,
-                        'Content-Type': 'application/x-www-form-urlencoded'
-                    }
-                }).then(function(request) {
-                    this._loader = false;
+                    this._loader = true;
 
-                    /**
-                     * Fired when organization unit is added
-                     *
-                     * @event orgunit-added
-                     * @param {Object} orgUnit [orgUnit]() for which event is fired
-                     */
-                    this.fire('orgunit-added', {
-                        orgUnit: request.response.orgunit
-                    });
+                    appRequest.send({
+                        url: this.parent.self,
+                        method: 'POST',
+                        handleAs: 'json',
+                        body: this._prepBody(),
+                        headers: {
+                            'Authorization': 'token ' + this.authorizationToken,
+                            'Content-Type': 'application/x-www-form-urlencoded'
+                        }
+                    }).then(function(request) {
+                        this._loader = false;
 
-                    this.$.modifyDialog.close();
-                }.bind(this), function(e){
-                    this._loader = false;
-                    this._error = "Add request failed";
-                }.bind(this));
+                        /**
+                         * Fired when organization unit is added
+                         *
+                         * @event orgunit-added
+                         * @param {Object} orgUnit [orgUnit]() for which event is fired
+                         */
+                        this.fire('orgunit-added', {
+                            orgUnit: request.response.orgunit
+                        });
+
+                        this.$.modifyDialog.close();
+                    }.bind(this), function(e) {
+                        this._loader = false;
+                        this._error = 'We couldn\'t save your changes. Please try again in a minute.';
+                    }.bind(this));
+
+                }
+
             },
 
             /**
@@ -233,37 +269,40 @@ Custom property | Description | Default
              * @private
              */
             _modify: function() {
-                var appRequest = document.createElement('iron-request');
 
-                this._loader = true;
+                if (this._validate()) {
+                    var appRequest = document.createElement('iron-request');
 
-                appRequest.send({
-                    url: this.orgUnit.self,
-                    method: "PATCH",
-                    handleAs: 'json',
-                    body: this._prepBody(),
-                    headers: {
-                        "Authorization": "token " + this.authorizationToken,
-                        'Content-Type': 'application/x-www-form-urlencoded'
-                    }
-                }).then(function(request) {
-                    this._loader = false;
+                    this._loader = true;
 
-                    /**
-                     * Fired when organization unit is modified
-                     *
-                     * @event orgunit-modified
-                     * @param {Object} orgUnit [orgUnit]() for which event is fired
-                     */
-                    this.fire('orgunit-modified', {
-                        orgUnit: request.response.orgunit
-                    });
+                    appRequest.send({
+                        url: this.orgUnit.self,
+                        method: 'PATCH',
+                        handleAs: 'json',
+                        body: this._prepBody(),
+                        headers: {
+                            'Authorization': 'token ' + this.authorizationToken,
+                            'Content-Type': 'application/x-www-form-urlencoded'
+                        }
+                    }).then(function(request) {
+                        this._loader = false;
 
-                    this.$.modifyDialog.close();
-                }.bind(this), function(e){
-                    this._loader = false;
-                    this._error = "Modify request failed";
-                }.bind(this));
+                        /**
+                         * Fired when organization unit is modified
+                         *
+                         * @event orgunit-modified
+                         * @param {Object} orgUnit [orgUnit]() for which event is fired
+                         */
+                        this.fire('orgunit-modified', {
+                            orgUnit: request.response.orgunit
+                        });
+
+                        this.$.modifyDialog.close();
+                    }.bind(this), function(e) {
+                        this._loader = false;
+                        this._error = 'We couldn\'t save your changes. Please try again in a minute.';
+                    }.bind(this));
+                }
             },
 
             /**
@@ -272,27 +311,15 @@ Custom property | Description | Default
              * @private
              */
             _prepBody: function() {
-                var body = '';
-                if (
-                        !('name' in this.orgUnit) ||
-                        (
-                                'name' in this.orgUnit &&
-                                (this.orgUnit.name != this.$.name.value)
-                        )
-                ) {
-                    body = encodeURIComponent(this.$.name.name) + '=' + encodeURIComponent(this.$.name.value);
-                }
+                var nameInput = this.$.name,
+                        name = nameInput.value ? nameInput.value : '',
+                        descriptionInput = this.$.description,
+                        description = descriptionInput.value ? descriptionInput.value : '',
+                        body = '';
 
-                if (
-                        !('description' in this.orgUnit) ||
-                        (
-                                'description' in this.orgUnit &&
-                                (this.orgUnit.description != this.$.description.value)
-                        )
-                ) {
-                    body += body == "" ? '' : '&';
-                    body += encodeURIComponent(this.$.description.name) + '=' + encodeURIComponent(this.$.description.value);
-                }
+                body = encodeURIComponent(nameInput.name) + '=' + encodeURIComponent(name);
+                body += body == '' ? '' : '&';
+                body += encodeURIComponent(descriptionInput.name) + '=' + encodeURIComponent(description);
 
                 return body;
             }

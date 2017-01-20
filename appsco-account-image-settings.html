@@ -48,7 +48,7 @@ Custom property | Description | Default
                 position: relative;
             @apply(--account-image-upload-container);
             }
-            :host appsco-loader, .upload-container, .account-image, .account-image-upload {
+            :host appsco-loader, .upload-container, .account-image, .account-image-upload, .account-image::shadow #sizedImgDiv, .account-image::shadow #placeholder {
                 border-radius: var(--account-image-upload-radius, 50%);
             }
             .account-image, .account-image-upload, .icon-upload {
@@ -107,17 +107,19 @@ Custom property | Description | Default
                         class="sized"
                         sizing="contain"></iron-image>
 
-            <label for="accountImage"
-                   class$="account-image-upload [[ _imagePreview ]]">
-                <iron-icon icon="file-upload" class="icon-upload"></iron-icon>
-            </label>
+            <template is="dom-if" if="[[ !previewOnly ]]">
+                <label for="accountImage"
+                       class$="account-image-upload [[ _imagePreview ]]">
+                    <iron-icon icon="file-upload" class="icon-upload"></iron-icon>
+                </label>
 
-            <input type="file"
-                   accept="image/*"
-                   id="accountImage"
-                   name="account-image"
-                   class="upload-file"
-                   on-change="_onUploadImage">
+                <input type="file"
+                       accept="image/*"
+                       id="accountImage"
+                       name="account-image"
+                       class="upload-file"
+                       on-change="_onUploadImage">
+            </template>
         </div>
 
         <content select="[info]"></content>
@@ -153,6 +155,14 @@ Custom property | Description | Default
                  */
                 imageSettingsApi: {
                     type: String
+                },
+
+                /**
+                 * Preview only. Without upload.
+                 */
+                previewOnly: {
+                    type: Boolean,
+                    value: false
                 },
 
                 /**
@@ -270,7 +280,7 @@ Custom property | Description | Default
             },
 
             _computeImagePreviewClass: function(account) {
-                return account.picture_url ? 'has-image' : 'no-image';
+                return (account && account.picture_url) ? 'has-image' : 'no-image';
             },
 
             /**

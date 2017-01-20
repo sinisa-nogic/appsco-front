@@ -38,34 +38,34 @@ Custom property | Description | Default
             :host {
                 display: inline-block;
                 position: relative;
-                @apply(--appsco-accounts);
-                @apply(--layout-vertical);
-                @apply(--layout-center);
+            @apply(--appsco-accounts);
+            @apply(--layout-vertical);
+            @apply(--layout-center);
 
                 --paper-progress-container-color: var(--body-background-color);
                 --paper-progress-height: 2px;
             }
 
             :host div[accounts] {
-                @apply(--layout-horizontal);
-                @apply(--layout-wrap);
-                @apply(--layout-start);
+            @apply(--layout-horizontal);
+            @apply(--layout-wrap);
+            @apply(--layout-start);
                 margin-right: -10px;
-                @apply(--accounts-container);
+            @apply(--accounts-container);
             }
             :host([company]) div[accounts] {
-                @apply(--layout-vertical);
-                @apply(--layout-start);
+            @apply(--layout-vertical);
+            @apply(--layout-start);
                 margin-right: 0;
             }
             :host appsco-account-item {
                 margin: 0 10px 10px 0;
-                @apply(--appsco-accounts-item);
+            @apply(--appsco-accounts-item);
             }
             :host([company]) appsco-account-item {
                 width: 100%;
                 margin: 0 0 10px 0;
-                @apply(--appsco-accounts-item);
+            @apply(--appsco-accounts-item);
             }
 
             :host .accounts-container {
@@ -88,14 +88,14 @@ Custom property | Description | Default
                 position: absolute;
                 top: 0;
                 left: 0;
-                @apply(--accounts-progress-bar);
+            @apply(--accounts-progress-bar);
             }
             :host paper-button {
                 display: block;
                 width: 120px;
                 margin: 20px auto 0;
                 text-align: center;
-                @apply(--load-more-button);
+            @apply(--load-more-button);
             }
             :host .message {
                 font-style: italic;
@@ -112,12 +112,12 @@ Custom property | Description | Default
                     on-response="_onResponse"
                     headers="{{ _computedHeaders }}"
                     debounce-duration="300"
-            ></iron-ajax>
+                    ></iron-ajax>
 
             <paper-progress id="paperProgress" indeterminate></paper-progress>
 
-            <template is="dom-if" if="[[ _accountsEmpty ]]">
-                <p class="message">There are no asked accounts.</p>
+            <template is="dom-if" if="[[ _message ]]">
+                <p class="message">[[ _message ]]</p>
             </template>
 
             <template is="dom-if" if="[[ !_accountsEmpty ]]">
@@ -127,10 +127,10 @@ Custom property | Description | Default
                               on-dom-change="_onItemsDomChange">
 
                         <appsco-account-item id="appscoAccountItem_[[ index ]]"
-                                                 class="accountitem"
-                                                 account="{{ item.account }}"
-                                                 company-role="{{ item }}"
-                                                 company="[[ company ]]"></appsco-account-item>
+                                             class="accountitem"
+                                             account="{{ item.account }}"
+                                             company-role="{{ item }}"
+                                             company="[[ company ]]"></appsco-account-item>
 
                     </template>
                 </div>
@@ -219,6 +219,11 @@ Custom property | Description | Default
                     value: false
                 },
 
+                _message: {
+                    type: String,
+                    value: ''
+                },
+
                 _currentUrl: {
                     type: String,
                     notify: true
@@ -235,6 +240,24 @@ Custom property | Description | Default
                 _renderedIndex: {
                     type: Number,
                     value: -1
+                },
+
+                /**
+                 * Search term.
+                 */
+                _filterTerm: {
+                    type: String,
+                    value: ''
+                },
+
+                /**
+                 * Search term.
+                 */
+                _filterOrgunit: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    }
                 },
 
                 /**
@@ -298,6 +321,7 @@ Custom property | Description | Default
             },
 
             _onError: function() {
+                this._message = 'We couldn\'t load accounts at the moment. Please try again in a minute.';
                 this._handleEmptyLoad();
             },
 
@@ -317,7 +341,7 @@ Custom property | Description | Default
             _onResponse: function(e) {
                 var me = this,
                         response = e.detail.response,
-                        companyRoles = response.company_roles,
+                        companyRoles = response.company_roles.reverse(),
                         meta = response.meta,
                         accountsCount = companyRoles.length - 1;
 
@@ -325,11 +349,13 @@ Custom property | Description | Default
                 this._next = meta.next + "&limit=" + this.size;
 
                 if (meta.total === 0) {
+                    this._message = 'Please add accounts to your company.';
                     this._handleEmptyLoad();
                     return false;
                 }
 
                 this._accountsEmpty = false;
+                this._message = '';
 
                 companyRoles.forEach(function (el, index) {
 
@@ -372,11 +398,34 @@ Custom property | Description | Default
                 var length = accounts.length;
 
                 this._accountsEmpty = false;
+                this._message = '';
                 this._renderedIndex = length - 1;
 
                 for (var i = 0; i < length; i++) {
                     this.unshift('_accounts', accounts[i]);
                 }
+            },
+
+            modifyAccounts: function(accounts) {
+                var allAccounts = JSON.parse(JSON.stringify(this._accounts)),
+                        length = allAccounts.length,
+                        lengthModify = accounts.length;
+
+                for (var i = 0; i < lengthModify; i++) {
+                    var account = accounts[i];
+
+                    for (var j = 0; j < length; j++) {
+
+                        if (account.account.self === allAccounts[j].account.self) {
+                            allAccounts[j] = account;
+                            break;
+                        }
+                    }
+
+                }
+
+                this.set('_accounts', []);
+                this.set('_accounts', allAccounts);
             },
 
             reloadAccounts: function() {
@@ -385,11 +434,21 @@ Custom property | Description | Default
             },
 
             removeAccounts: function(accounts) {
-                var length = accounts.length - 1;
+                var length = accounts.length,
+                        _accounts = this._accounts,
+                        _length = _accounts.length;
 
-                for (var i = 0; i <= length; i++) {
-                    var index = this._accounts.indexOf(accounts[i]);
-                    this.splice('_accounts', index, 1);
+                for (var i = 0; i < length; i++) {
+                    var account = accounts[i];
+
+                    for (var j = 0; j < _length; j++) {
+
+                        if (account.self === _accounts[j].self) {
+                            this.splice('_accounts', j, 1);
+                            break;
+                        }
+                    }
+
                 }
 
                 this.fire('accounts-removed', {
@@ -397,6 +456,7 @@ Custom property | Description | Default
                 });
 
                 if (0 === this._accounts.length) {
+                    this._message = 'You have removed all accounts from company. Please add new ones.';
                     this._handleEmptyLoad();
                 }
             },
@@ -405,8 +465,31 @@ Custom property | Description | Default
                 return this._accounts[0];
             },
 
-            filterAccountsByTerm: function(term) {
-                var length = this._allAccounts.length;
+            selectAllAccounts: function(select) {
+                var accounts = this._accounts,
+                        length = accounts.length;
+
+                for (var i = 0; i < length; i++) {
+                    var accountItem = this.$$('#appscoAccountItem_' + i);
+                    select ? accountItem.select() : accountItem.deselect();
+                }
+            },
+
+            filterByTerm: function(term) {
+                this._filterTerm = term;
+
+                this._filterOrgunit.orgUnit ? this._filterByTermAndOrgunit() : this._filterByTerm();
+            },
+
+            filterByOrgunit: function(orgunitData) {
+                this._filterOrgunit = orgunitData;
+
+                this._filterTerm.trim().length > 0 ? this._filterByTermAndOrgunit() : this._filterByOrgunit();
+            },
+
+            _filterByTerm: function() {
+                var term = this._filterTerm,
+                        length = this._allAccounts.length;
 
                 this.$$('#paperProgress').hidden = false;
 
@@ -415,11 +498,16 @@ Custom property | Description | Default
                     length = this._allAccounts.length;
                 }
 
+                if (length === 0) {
+                    this.fire('filter-done');
+                    return false;
+                }
+
                 this.set('_accounts', []);
 
                 this._allAccounts.forEach(function(elem, index) {
 
-                    if (elem.title.toLowerCase().indexOf(term.toLowerCase()) >= 0) {
+                    if (elem.account.name.toLowerCase().indexOf(term.toLowerCase()) >= 0 || elem.account.email.toLowerCase().indexOf(term.toLowerCase()) >= 0) {
                         var oldElem = JSON.parse(JSON.stringify(elem));
 
                         this.push('_accounts', oldElem);
@@ -427,6 +515,7 @@ Custom property | Description | Default
 
                     if (index === length - 1) {
                         this._accountsEmpty = (this._accounts.length === 0);
+                        this._message = this._accountsEmpty ? 'There are no accounts with asked term.' : '';
                         this._hideProgressBar();
 
                         this.fire('filter-done');
@@ -438,6 +527,122 @@ Custom property | Description | Default
 
                 if (term.length < 3 && this._accounts.length < this._totalAccounts) {
                     this._loadMore = true;
+                }
+            },
+
+            _filterByOrgunit: function() {
+                var filterOrgunit = this._filterOrgunit,
+                        orgunit = filterOrgunit.orgUnit,
+                        selected = filterOrgunit.selected,
+                        allLength = 0;
+
+                this._accountsEmpty = false;
+                this._message = '';
+
+                if (this._allAccounts.length < this._accounts.length) {
+                    this._allAccounts = JSON.parse(JSON.stringify(this._accounts));
+                }
+
+                allLength = this._allAccounts.length;
+
+                if (!selected) {
+                    this.set('_accounts', this._allAccounts);
+
+                    for (var i = 0; i < allLength; i++) {
+                        var item = this.$$('#appscoAccountItem_' + i);
+
+                        if (item) {
+                            item.deselect();
+                        }
+                    }
+
+                    this.set('_filterOrgunit', {});
+                }
+                else {
+                    this.set('_accounts', []);
+
+                    for (var i = 0; i < allLength; i++) {
+                        var account = this._allAccounts[i],
+                                orgunits = account.account.org_units,
+                                orgunitsLength = orgunits.length,
+                                item = this.$$('#appscoAccountItem_' + i);
+
+                        if (item) {
+                            item.deselect();
+                        }
+
+                        for (var j = 0; j < orgunitsLength; j++) {
+
+                            if (orgunits[j].name === orgunit.name) {
+                                this.push('_accounts', account);
+                                break;
+                            }
+
+                        }
+                    }
+
+                    if (this._accounts.length === 0) {
+                        this._message = 'There are no accounts within ' + orgunit.name +' organization unit.';
+                        this._handleEmptyLoad();
+                    }
+
+                }
+            },
+
+            _filterByTermAndOrgunit: function() {
+                var filterOrgunit = this._filterOrgunit,
+                        orgunit = filterOrgunit.orgUnit,
+                        selected = filterOrgunit.selected,
+                        term = this._filterTerm,
+                        allLength = 0;
+
+                this._accountsEmpty = false;
+                this._message = '';
+
+                if (this._allAccounts.length < this._accounts.length) {
+                    this._allAccounts = JSON.parse(JSON.stringify(this._accounts));
+                }
+
+                allLength = this._allAccounts.length;
+
+                if (!selected) {
+                    this.set('_accounts', this._allAccounts);
+                    this.set('_filterOrgunit', {});
+                    this._filterByTerm();
+                }
+                else {
+                    this.set('_accounts', []);
+
+                    for (var i = 0; i < allLength; i++) {
+                        var account = this._allAccounts[i],
+                                orgunits = account.account.org_units,
+                                orgunitsLength = orgunits.length,
+                                accountItem = this.$$('#appscoAccountItem_' + i);
+
+                        if (accountItem) {
+                            accountItem.deselect();
+                        }
+
+                        for (var j = 0; j < orgunitsLength; j++) {
+
+                            if (orgunits[j].name === orgunit.name &&
+                                    (account.account.name.toLowerCase().indexOf(term.toLowerCase()) >= 0 || account.account.email.toLowerCase().indexOf(term.toLowerCase()) >= 0)) {
+                                this.push('_accounts', account);
+                                break;
+                            }
+
+                        }
+
+                        if (i === allLength - 1) {
+                            this.fire('filter-done');
+                        }
+                    }
+
+                    if (this._accounts.length === 0) {
+                        this._message = 'There are no accounts within ' + orgunit.name +' organization unit.';
+                        this._handleEmptyLoad();
+                    }
+
                 }
             },
 

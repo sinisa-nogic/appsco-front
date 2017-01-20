@@ -59,7 +59,7 @@ Example:
                 color: var(--secondary-text-color);
                 font-style: italic;
                 padding: 0 16px;
-                @apply(--paper-font-body2);
+            @apply(--paper-font-body2);
             }
             :host paper-progress {
                 position: absolute;
@@ -75,7 +75,7 @@ Example:
                 width: 120px;
                 margin: 20px auto 0;
                 text-align: center;
-                @apply(--load-more-button);
+            @apply(--load-more-button);
             }
         </style>
 
@@ -165,7 +165,7 @@ Example:
                  */
                 _computedUrl: {
                     type: String,
-                    computed: "_computeUrl(notificationsApi)"
+                    value: ''
                 },
 
                 /**
@@ -250,7 +250,7 @@ Example:
              */
             _mapToListItem: function(item) {
                 var icon = item.imageUrl,
-                    domain = window.location.protocol + '//' + window.location.hostname;
+                        domain = window.location.protocol + '//' + window.location.hostname;
 //                domain = 'https://my-dev.appsco.com';
 
                 if (icon && icon.indexOf('/public/pic') > -1) {
@@ -276,12 +276,17 @@ Example:
              */
             loadNotifications: function() {
                 this.$.progress.hidden = false;
-                this._notifications = [];
+                this.set('_notifications', []);
+                this._message = '';
+                this._nextPage = 1;
+
+                this.$.ironAjaxNotifications.url = this._computeUrl(this.notificationsApi);
                 this.$.ironAjaxNotifications.generateRequest();
             },
 
             _loadMore: function() {
                 this.$.progress.hidden = false;
+
                 this.$.ironAjaxNotifications.url = this._computeUrl(this.notificationsApi);
                 this.$.ironAjaxNotifications.generateRequest();
             },
@@ -305,10 +310,11 @@ Example:
              */
             _handleResponse: function(event) {
                 var notifications = event.detail.response,
-                    currentLength = this._notifications.length;
+                        currentLength = this._notifications.length;
 
                 if (notifications && notifications.length > 0) {
 
+                    this.$.loadMore.disabled = false;
                     this._nextPage += 1;
 
                     notifications.forEach(function(notification, i) {
@@ -337,12 +343,10 @@ Example:
                 else if (notifications && !notifications.length) {
 
                     if (!currentLength) {
-                        this._message = 'You don\'t have notifications.';
-                    }
-                    else {
-                        this.$.loadMore.disabled = true;
+                        this._message = 'There are no notifications.';
                     }
 
+                    this.$.loadMore.disabled = true;
                     this._hideProgressBar();
                 }
                 else if (!currentLength) {

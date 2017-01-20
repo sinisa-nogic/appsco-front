@@ -2,6 +2,9 @@
 <link rel="import" href="../iron-flex-layout/iron-flex-layout.html">
 <link rel="import" href="../paper-styles/typography.html">
 <link rel="import" href="../iron-ajax/iron-ajax.html">
+<link rel="import" href="../neon-animation/neon-animation-runner-behavior.html">
+<link rel="import" href="../neon-animation/animations/fade-in-animation.html">
+<link rel="import" href="../neon-animation/animations/fade-out-animation.html">
 
 <!--
 `appsco-account-details`
@@ -30,28 +33,27 @@ Custom property | Description | Default
     <template>
         <style>
             :host {
-                display: block;
-                @apply(--layout-vertical);
+                display: none;
             }
             :host > div {
                 margin: 6px 0;
-                @apply(--account-detail-container);
+            @apply(--account-detail-container);
             }
             :host div[label] {
                 color: var(--secondary-text-color);
-                @apply(--paper-font-body1);
-                @apply(--account-details-label);
+            @apply(--paper-font-body1);
+            @apply(--account-details-label);
             }
             :host div[content] {
                 color: var(--primary-text-color);
-                @apply(--layout-horizontal);
-                @apply(--layout-center);
-                @apply(--paper-font-subhead);
-                @apply(--account-details-value);
+            @apply(--layout-horizontal);
+            @apply(--layout-center);
+            @apply(--paper-font-subhead);
+            @apply(--account-details-value);
             }
             :host .flex {
-                @apply(--layout-flex);
-                @apply(--paper-font-common-nowrap);
+            @apply(--layout-flex);
+            @apply(--paper-font-common-nowrap);
             }
         </style>
 
@@ -124,7 +126,7 @@ Custom property | Description | Default
                     value: function() {
                         return {};
                     },
-                    notify: true
+                    observer: '_onAccountChanged'
                 },
 
                 /**
@@ -146,8 +148,36 @@ Custom property | Description | Default
                     value: function() {
                         return [];
                     }
+                },
+
+                /**
+                 * Animation config.
+                 */
+                animationConfig: {
+                    value: function() {
+                        return {
+                            'entry': {
+                                name: 'fade-in-animation',
+                                node: this,
+                                timing: {
+                                    duration: 500
+                                }
+                            },
+                            'exit': {
+                                name: 'fade-out-animation',
+                                node: this,
+                                timing: {
+                                    duration: 100
+                                }
+                            }
+                        }
+                    }
                 }
             },
+
+            behaviors: [
+                Polymer.NeonAnimationRunnerBehavior
+            ],
 
             _onCountryListResponse: function(event, ironRequest) {
                 this._countryList = ironRequest.response;
@@ -166,6 +196,15 @@ Custom property | Description | Default
                 }
 
                 return '';
+            },
+
+            _onAccountChanged: function() {
+                this._showDetails();
+            },
+
+            _showDetails: function() {
+                this.style.display = 'block';
+                this.playAnimation('entry');
             }
         });
     </script>

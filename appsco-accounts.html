@@ -243,6 +243,24 @@ Custom property | Description | Default
                 },
 
                 /**
+                 * Search term.
+                 */
+                _filterTerm: {
+                    type: String,
+                    value: ''
+                },
+
+                /**
+                 * Search term.
+                 */
+                _filterOrgunit: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    }
+                },
+
+                /**
                  * Animation for loader appearance.
                  */
                 animationConfig: {
@@ -323,7 +341,7 @@ Custom property | Description | Default
             _onResponse: function(e) {
                 var me = this,
                         response = e.detail.response,
-                        companyRoles = response.company_roles,
+                        companyRoles = response.company_roles.reverse(),
                         meta = response.meta,
                         accountsCount = companyRoles.length - 1;
 
@@ -458,13 +476,31 @@ Custom property | Description | Default
             },
 
             filterByTerm: function(term) {
-                var length = this._allAccounts.length;
+                this._filterTerm = term;
+
+                this._filterOrgunit.orgUnit ? this._filterByTermAndOrgunit() : this._filterByTerm();
+            },
+
+            filterByOrgunit: function(orgunitData) {
+                this._filterOrgunit = orgunitData;
+
+                this._filterTerm.trim().length > 0 ? this._filterByTermAndOrgunit() : this._filterByOrgunit();
+            },
+
+            _filterByTerm: function() {
+                var term = this._filterTerm,
+                        length = this._allAccounts.length;
 
                 this.$$('#paperProgress').hidden = false;
 
                 if (length < this._accounts.length) {
                     this._allAccounts = JSON.parse(JSON.stringify(this._accounts));
                     length = this._allAccounts.length;
+                }
+
+                if (length === 0) {
+                    this.fire('filter-done');
+                    return false;
                 }
 
                 this.set('_accounts', []);
@@ -494,9 +530,10 @@ Custom property | Description | Default
                 }
             },
 
-            filterByOrgunit: function(data) {
-                var orgunit = data.orgUnit,
-                        selected = data.selected,
+            _filterByOrgunit: function() {
+                var filterOrgunit = this._filterOrgunit,
+                        orgunit = filterOrgunit.orgUnit,
+                        selected = filterOrgunit.selected,
                         allLength = 0;
 
                 this._accountsEmpty = false;
@@ -518,6 +555,8 @@ Custom property | Description | Default
                             item.deselect();
                         }
                     }
+
+                    this.set('_filterOrgunit', {});
                 }
                 else {
                     this.set('_accounts', []);
@@ -544,6 +583,64 @@ Custom property | Description | Default
 
                     if (this._accounts.length === 0) {
                         this._message = 'There are no accounts within ' + orgunit.name +' organization unit.';
+                        this._handleEmptyLoad();
+                    }
+
+                }
+            },
+
+            _filterByTermAndOrgunit: function() {
+                var filterOrgunit = this._filterOrgunit,
+                        orgunit = filterOrgunit.orgUnit,
+                        selected = filterOrgunit.selected,
+                        term = this._filterTerm,
+                        allLength = 0;
+
+                this._accountsEmpty = false;
+                this._message = '';
+
+                if (this._allAccounts.length < this._accounts.length) {
+                    this._allAccounts = JSON.parse(JSON.stringify(this._accounts));
+                }
+
+                allLength = this._allAccounts.length;
+
+                if (!selected) {
+                    this.set('_accounts', this._allAccounts);
+                    this.set('_filterOrgunit', {});
+                    this._filterByTerm();
+                }
+                else {
+                    this.set('_accounts', []);
+
+                    for (var i = 0; i < allLength; i++) {
+                        var account = this._allAccounts[i],
+                                orgunits = account.account.org_units,
+                                orgunitsLength = orgunits.length,
+                                accountItem = this.$$('#appscoAccountItem_' + i);
+
+                        if (accountItem) {
+                            accountItem.deselect();
+                        }
+
+                        for (var j = 0; j < orgunitsLength; j++) {
+
+                            if (orgunits[j].name === orgunit.name &&
+                                    (account.account.name.toLowerCase().indexOf(term.toLowerCase()) >= 0 || account.account.email.toLowerCase().indexOf(term.toLowerCase()) >= 0)) {
+                                this.push('_accounts', account);
+                                break;
+                            }
+
+                        }
+
+                        if (i === allLength - 1) {
+                            this.fire('filter-done');
+                        }
+                    }
+
+                    if (this._accounts.length === 0) {
+                        this._message = 'There are no accounts within ' + orgunit.name +' organization unit.';
+                        this._handleEmptyLoad();
                     }
 
                 }

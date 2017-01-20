@@ -44,6 +44,8 @@ Custom property | Description | Default
         <style>
             :host {
                 display: block;
+                font-size: 14px;
+                color: var(--primary-text-color);
             @apply(--appsco-account-log);
             }
             :host .account-log {
@@ -140,17 +142,6 @@ Custom property | Description | Default
             properties: {
 
                 /**
-                 * [Account](https://developers.appsco.com/api/accounts/id)
-                 */
-                account: {
-                    type: Object,
-                    value: function() {
-                        return {}
-                    },
-                    notify: true
-                },
-
-                /**
                  * Authorization token
                  */
                 authorizationToken: {
@@ -201,7 +192,7 @@ Custom property | Description | Default
                  */
                 _computedUrl: {
                     type: String,
-                    computed: "_computeUrl(logApi)"
+                    computed: ''
                 },
 
                 /**
@@ -543,7 +534,8 @@ Custom property | Description | Default
              */
             loadLog: function() {
                 this.$.progress.hidden = false;
-                this._logList = [];
+                this.set('_logList', []);
+                this.set('_message', '');
                 this._nextPage = 1;
 
                 this.$.ironAjaxLog.url = this._computeUrl(this.logApi);
@@ -577,49 +569,52 @@ Custom property | Description | Default
              */
             _handleResponse: function(event) {
                 var response = event.detail.response,
-                        logList = response.log,
+                        logList = [],
                         currentLength = this._logList.length;
 
-                if (logList && logList.length > 0) {
+                if (response) {
+                    logList = response.log;
 
-                    this._nextPage += 1;
+                    if (logList && logList.length > 0) {
 
-                    logList.forEach(function(log, i) {
+                        this.$.loadMore.disabled = false;
+                        this._nextPage += 1;
 
-                        setTimeout( function() {
+                        logList.forEach(function(log, i) {
 
-                            this.push('_logList', logList[i]);
+                            setTimeout(function() {
 
-                            if (i === (logList.length - 1)) {
+                                this.push('_logList', logList[i]);
 
-                                if (this._logList.length === response.meta.total) {
-                                    this.$.loadMore.disabled = true;
+                                if (i === (logList.length - 1)) {
+
+                                    if (this._logList.length === response.meta.total) {
+                                        this.$.loadMore.disabled = true;
+                                    }
+
+                                    this._handleEmptyLog();
                                 }
 
-                                this._handleEmptyLog();
-                            }
+                            }.bind(this), (i + 1) * 50);
 
-                        }.bind(this), (i + 1) * 50 );
+                        }.bind(this));
 
-                    }.bind(this));
-
-                }
-                else if (logList && !logList.length) {
-
-                    if (!currentLength) {
-                        this._message = 'Your log is empty.';
                     }
-                    else {
+                    else if (logList && !logList.length) {
+
+                        if (!currentLength) {
+                            this._message = 'The log is empty.';
+                        }
+
                         this.$.loadMore.disabled = true;
+                        this._handleEmptyLog();
                     }
+                    else if (!currentLength) {
+                        this._message = 'We couldn\'t load log at the moment.';
+                        this._hideProgressBar();
 
-                    this._handleEmptyLog();
-                }
-                else if (!currentLength) {
-                    this._message = 'We couldn\'t load log at the moment.';
-                    this._hideProgressBar();
-
-                    this.fire('log-empty');
+                        this.fire('log-empty');
+                    }
                 }
             },
 

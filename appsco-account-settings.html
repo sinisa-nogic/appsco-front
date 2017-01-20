@@ -254,13 +254,6 @@ Custom property | Description | Default
                     value: ''
                 },
 
-                /**
-                 * Account settings api link.
-                 */
-                accountSettingsApi: {
-                    type: String
-                },
-
                 _localeList: {
                     type: Array,
                     value: function() {
@@ -314,6 +307,13 @@ Custom property | Description | Default
                 },
 
                 /**
+                 * Account settings api link.
+                 */
+                accountSettingsApi: {
+                    type: String
+                },
+
+                /**
                  * Computed headers.
                  * It contains authorization token.
                  */
@@ -346,11 +346,13 @@ Custom property | Description | Default
                 }
             },
 
-            _onAccountChange: function() {
-//                this.$.paperListboxLocale.select(this.account.locale);
-                this.$.paperListboxTimezone.select(this.account.timezone);
-                this.$.paperListboxCountry.select(this.account.country);
-                this.$.paperListboxGender.select(this.account.gender);
+            _onAccountChange: function(account) {
+                if (account) {
+//                    this.$.paperListboxLocale.select(account.locale);
+                    this.$.paperListboxTimezone.select(account.timezone);
+                    this.$.paperListboxCountry.select(account.country);
+                    this.$.paperListboxGender.select(account.gender);
+                }
             },
 
             _onCountryListResponse: function(event, ironRequest) {
@@ -423,7 +425,7 @@ Custom property | Description | Default
 
                 this._loader = true;
 
-                this.$.accountSettingsForm.request.method = 'PUT';
+                this.$.accountSettingsForm.request.method = 'put';
                 this.$.accountSettingsForm.request.body['profile[timezone]'] = this.$.dropdownTimezone.selectedItem ? this.$.dropdownTimezone.selectedItem.value : '';
                 this.$.accountSettingsForm.request.body['profile[country]'] = this.$.dropdownCountry.selectedItem ? this.$.dropdownCountry.selectedItem.value : '';
                 this.$.accountSettingsForm.request.body['profile[gender]'] = this.$.dropdownGender.selectedItem ? this.$.dropdownGender.selectedItem.value : '';
@@ -447,15 +449,18 @@ Custom property | Description | Default
              * @private
              */
             _onFormResponse: function(event) {
+                var account = event.detail.response.account;
 
-                this.set('account', event.detail.response.account);
+                this.set('account', account);
 
                 /**
                  * Fired after successful settings saving.
                  *
                  * @event settings-saved
                  */
-                this.fire('settings-saved');
+                this.fire('settings-saved', {
+                    account: account
+                });
 
                 this._loader = false;
             },

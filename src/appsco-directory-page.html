@@ -40,6 +40,10 @@
                 --account-details-value: {
                     font-size: 14px;
                 };
+
+                --appsco-account-log-container: {
+                     padding-top: 0;
+                 };
             }
             :host .resource-header {
                 border-bottom: 1px solid var(--divider-color);
@@ -54,7 +58,7 @@
             :host div[info] {
                 height: 100%;
             }
-            :host div[info] .application-info {
+            :host div[info] .account-info {
                 border-bottom: 1px solid var(--divider-color);
                 height: 50px;
                 @apply(--layout-flex-none);
@@ -66,12 +70,6 @@
                     height: 32px;
                     font-size: 14px;
                 };
-            }
-            :host div[info] appsco-application-subscribers {
-                height: 90px;
-                padding-top: 14px;
-                color: var(--primary-text-color);
-                @apply(--layout-flex-none);
             }
             :host div[info] .details-log {
                 height: calc(100% - 50px - 90px - 34px);
@@ -110,17 +108,6 @@
             }
             :host .share-button {
                 background-color: var(--app-secondary-color);
-            }
-            appsco-application-share {
-                --appsco-application-share-button: {
-                    border-radius: 0;
-                    margin: 0;
-                    padding: 6px 12px;
-                    background-color: var(--app-secondary-color);
-                    color: #ffffff;
-                    font-size: 14px;
-                    height: 34px;
-                };
             }
             :host .flex-horizontal {
                 @apply(--layout-horizontal);
@@ -182,6 +169,7 @@
                         company
                         authorization-token="[[ authorizationToken ]]"
                         accounts-api="[[ companyDirectoryRolesApi ]]"
+                        on-edit="_onAccountEdit"
                         on-account="_onAccount"
                         on-loaded="_onAccountsLoaded"
                         on-empty-load="_pageLoaded"></appsco-accounts>
@@ -189,13 +177,13 @@
 
             <div class="flex-vertical" info>
 
-                <div class="application-info flex-horizontal">
+                <div class="account-info flex-horizontal">
                     <iron-image class="account-icon"
                                 placeholder="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAABGdBTUEAALGPC/xhBQAAAI5JREFUeAHt1YEJwCAQBEFN/60KYgMRbGMnHXjs5Ofa5x/h7wu//T3dAAqIL4BAPIChAAXEF0AgHoCfIAIIxBdAIB6AK4AAAvEFEIgH4AoggEB8AQTiAbgCCCAQXwCBeACuAAIIxBdAIB6AK4AAAvEFEIgH4AoggEB8AQTiAbgCCCAQXwCBeACuAAIIxBe4yV0EThqVC64AAAAASUVORK5CYII="
                                 sizing="cover"
-                                preload fade src="[[ _role.account.picture_url ]]"></iron-image>
-                    <span class="account-name flex">[[ _role.account.display_name ]]</span>
-                    <appsco-account-security role="[[ _role ]]"></appsco-account-security>
+                                preload fade src="[[ role.account.picture_url ]]"></iron-image>
+                    <span class="account-name flex">[[ role.account.name ]]</span>
+                    <appsco-account-security role="[[ role ]]"></appsco-account-security>
                 </div>
 
                 <div>
@@ -216,17 +204,17 @@
                             class="info-details-section">
 
                         <div name="info" class="tab-content details">
-                            <appsco-account-details account="[[ _role.account ]]"></appsco-account-details>
+                            <appsco-account-details account="[[ role.account ]]"></appsco-account-details>
 
                         </div>
 
                         <div name="log" class="tab-content log">
                             <appsco-account-log
                                 id="accountLog"
-                                log-api="[[ _role.meta.log ]]"
+                                log-api="[[ role.meta.log ]]"
                                 authorization-token="[[ authorizationToken ]]"
                                 size="5"
-                            ></appsco-account-log>
+                                short-view></appsco-account-log>
                         </div>
 
                     </neon-animated-pages>
@@ -240,11 +228,11 @@
                         Edit
                     </paper-button>
 
-                    <paper-button
-                            class="share-button flex"
-                            on-tap="_onShareApplication">
-                        Change Password
-                    </paper-button>
+                    <!--<paper-button-->
+                            <!--class="share-button flex"-->
+                            <!--on-tap="_onShareApplication">-->
+                        <!--Change Password-->
+                    <!--</paper-button>-->
                 </div>
 
             </div>
@@ -306,6 +294,14 @@
                 },
 
                 /**
+                 * Get account log link.
+                 */
+                _logApi: {
+                    type: String,
+                    computed: '_computeLogApi(role)'
+                },
+
+                /**
                  * Get company accounts.
                  */
                 companyDirectoryRolesApi: {
@@ -328,11 +324,12 @@
                     }
                 },
 
-                _role: {
+                role: {
                     type: Object,
                     value: function () {
                         return {};
-                    }
+                    },
+                    observer: '_onRoleChange'
                 },
 
                 mobileScreen: {
@@ -411,6 +408,18 @@
                 this.hideInfo();
             },
 
+            _computeLogApi: function(role) {
+                return role.meta ? role.meta.log : '';
+            },
+
+            _onRoleChange: function() {
+                this._loadLog();
+            },
+
+            _loadLog: function() {
+                this.$.accountLog.loadLog();
+            },
+
             _onAccountsLoaded: function() {
                 this.setDefaultAccount();
                 this._pageLoaded();
@@ -419,7 +428,6 @@
             _showInfo: function() {
                 this.$.appscoContent.showSection('info');
                 this._infoShown = true;
-                this.$.accountLog.loadLog();
                 this._selectedTab = 0;
             },
 
@@ -442,7 +450,7 @@
             },
 
             _onViewInfo: function(event) {
-                this.set('_role', event.detail.role);
+                this.set('role', event.detail.role);
 
                 if (!this._infoShown) {
                     this._showInfo();
@@ -450,7 +458,16 @@
             },
 
             setDefaultAccount: function() {
-                this.set('_role', this.$.appscoAccounts.getFirstAccount());
+                this.set('role', this.$.appscoAccounts.getFirstAccount());
+            },
+
+            _onAccountEdit: function(event) {
+                var role = event.detail.role;
+
+                this.set('role', role);
+                this.fire('edit-account', {
+                    role: role
+                });
             },
 
             _onAccount: function(event) {
@@ -471,8 +488,8 @@
                     if (index != 0) {
                         var role = this.selectedAccounts[this.selectedAccounts.length - 1];
 
-                        if (this._role.self !== role.self) {
-                            this.set('_role', role);
+                        if (this.role.self !== role.self) {
+                            this.set('role', role);
                         }
                     }
                 }
@@ -493,6 +510,12 @@
                     this.fire('hide-bulk-actions');
                     this.setDefaultAccount();
                 }
+            },
+
+            _onAccountInfoEdit: function() {
+                this.fire('info-edit-account', {
+                    role: this.role
+                });
             },
 
             _onOrgunitsResponse: function(event) {

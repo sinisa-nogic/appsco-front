@@ -242,6 +242,24 @@ Custom property | Description | Default
                 },
 
                 /**
+                 * Search term.
+                 */
+                _filterTerm: {
+                    type: String,
+                    value: ''
+                },
+
+                /**
+                 * Search term.
+                 */
+                _filterOrgunit: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    }
+                },
+
+                /**
                  * Animation for loader appearance.
                  */
                 animationConfig: {
@@ -323,9 +341,11 @@ Custom property | Description | Default
             _onResponse: function(e) {
                 var me = this,
                         response = e.detail.response,
-                        icons = response.icons ? response.icons : response.applications,
+                        icons = response.icons ? response.icons.reverse() : response.applications.reverse(),
                         meta = response.meta,
                         iconsCount = icons.length - 1;
+
+                this.set('_applications', []);
 
                 this._totalApplications = meta.total;
                 this._next = meta.next + '&limit=' + this.size;
@@ -344,6 +364,7 @@ Custom property | Description | Default
                     setTimeout( function() {
 
                         this.push('_applications', el);
+                        this.push('_allApplications', el);
 
                         if (index == iconsCount) {
                             this._loadMore = me.loadMore;
@@ -368,8 +389,6 @@ Custom property | Description | Default
                     }.bind(this), (index + 1) * 50 );
 
                 }.bind(this));
-
-                this.set('_allApplications', this._applications);
             },
 
             _computeHeaders: function (authorizationToken) {
@@ -394,15 +413,23 @@ Custom property | Description | Default
             modifyApplications: function(applications) {
                 var _applications = JSON.parse(JSON.stringify(this._applications)),
                         _length = _applications.length,
+                        allApplications = JSON.parse(JSON.stringify(this._allApplications)),
+                        allLength = allApplications.length,
                         lengthModify = applications.length;
 
                 for (var i = 0; i < lengthModify; i++) {
                     var application = applications[i];
 
                     for (var j = 0; j < _length; j++) {
-
                         if (application.self === _applications[j].self) {
                             _applications[j] = application;
+                            break;
+                        }
+                    }
+
+                    for (var k = 0; k < allLength; k++) {
+                        if (application.self === allApplications[k].self) {
+                            allApplications[k] = application;
                             break;
                         }
                     }
@@ -411,6 +438,9 @@ Custom property | Description | Default
 
                 this.set('_applications', []);
                 this.set('_applications', _applications);
+
+                this.set('_allApplications', []);
+                this.set('_allApplications', allApplications);
             },
 
             reloadApplications: function() {
@@ -472,7 +502,20 @@ Custom property | Description | Default
             },
 
             filterApplicationsByTerm: function(term) {
-                var length = this._allApplications.length;
+                this._filterTerm = term;
+
+                this._filterOrgunit.orgUnit ? this._filterApplicationsByTermAndOrgunit() : this._filterApplicationsByTerm();
+            },
+
+            filterApplicationsByOrgunit: function(orgunitData) {
+                this._filterOrgunit = orgunitData;
+
+                this._filterTerm.trim().length > 0 ? this._filterApplicationsByTermAndOrgunit() : this._filterApplicationsByOrgunit();
+            },
+
+            _filterApplicationsByTerm: function() {
+                var term = this._filterTerm,
+                        length = this._allApplications.length;
 
                 this.$$('#paperProgress').hidden = false;
 
@@ -540,9 +583,10 @@ Custom property | Description | Default
 
             },
 
-            filterApplicationsByOrgunit: function(data) {
-                var orgunit = data.orgUnit,
-                        selected = data.selected,
+            _filterApplicationsByOrgunit: function() {
+                var filterOrgunit = this._filterOrgunit,
+                        orgunit = filterOrgunit.orgUnit,
+                        selected = filterOrgunit.selected,
                         allLength = 0;
 
                 this._applicationsEmpty = false;
@@ -564,6 +608,8 @@ Custom property | Description | Default
                             applicationItem.deselect();
                         }
                     }
+
+                    this.set('_filterOrgunit', {});
                 }
                 else {
                     this.set('_applications', []);
@@ -585,6 +631,62 @@ Custom property | Description | Default
                                 break;
                             }
 
+                        }
+                    }
+
+                    if (this._applications.length === 0) {
+                        this._message = 'There are no applications within ' + orgunit.name +' organization unit.';
+                        this._handleEmptyLoad();
+                    }
+
+                }
+            },
+
+            _filterApplicationsByTermAndOrgunit: function() {
+                var filterOrgunit = this._filterOrgunit,
+                        orgunit = filterOrgunit.orgUnit,
+                        selected = filterOrgunit.selected,
+                        term = this._filterTerm,
+                        allLength = 0;
+
+                this._applicationsEmpty = false;
+                this._message = '';
+
+                if (this._allApplications.length < this._applications.length) {
+                    this._allApplications = JSON.parse(JSON.stringify(this._applications));
+                }
+
+                allLength = this._allApplications.length;
+
+                if (!selected) {
+                    this.set('_applications', this._allApplications);
+                    this.set('_filterOrgunit', {});
+                    this._filterApplicationsByTerm();
+                }
+                else {
+                    this.set('_applications', []);
+
+                    for (var i = 0; i < allLength; i++) {
+                        var application = this._allApplications[i],
+                                orgunits = application.org_units,
+                                orgunitsLength = orgunits.length,
+                                applicationItem = this.$$('#appscoApplicationItem_' + i);
+
+                        if (applicationItem) {
+                            applicationItem.deselect();
+                        }
+
+                        for (var j = 0; j < orgunitsLength; j++) {
+
+                            if (orgunits[j].name === orgunit.name && application.title.toLowerCase().indexOf(term.toLowerCase()) >= 0) {
+                                this.push('_applications', application);
+                                break;
+                            }
+
+                        }
+
+                        if (i === allLength - 1) {
+                            this.fire('filter-done');
                         }
                     }
 

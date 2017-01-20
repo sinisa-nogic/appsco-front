@@ -54,6 +54,7 @@
 <link rel="import" href="upgrade/appsco-upgrade-page-actions.html">
 <link rel="import" href="applications/appsco-applications-page-actions.html">
 <link rel="import" href="applications/appsco-manage-application-page-actions.html">
+<link rel="import" href="billing/appsco-billing-page-actions.html">
 
 <link rel="import" href="directory/appsco-directory-page-actions.html">
 <link rel="import" href="directory/appsco-manage-account-page-actions.html">
@@ -61,6 +62,8 @@
 <link rel="import" href="directory/appsco-directory-import-accounts.html">
 
 <link rel="import" href="upgrade/appsco-upgrade-action.html">
+<link rel="import" href="billing/appsco-subscription-cancel.html">
+<link rel="import" href="billing/appsco-credit-card.html">
 
 <link rel="import" href="vault/appsco-vault-page-actions.html">
 <link rel="import" href="vault/appsco-vault-manage-item.html">
@@ -70,6 +73,7 @@
 <link rel="import" href="../bower_components/appsco-orgunit/appsco-orgunit-remove.html">
 
 <link rel="import" href="../bower_components/appsco-account/company/appsco-account-orgunit.html">
+<link rel="import" href="../bower_components/appsco-account/company/appsco-account-remove-orgunit.html">
 <link rel="import" href="../bower_components/appsco-account/company/appsco-account-remove.html">
 
 <link rel="import" href="shared-styles.html">
@@ -277,17 +281,16 @@
         <paper-toast id="toast" text="[[ _toastMessage ]]"></paper-toast>
 
         <appsco-header
-                account="{{ account }}"
-                brand-logoo="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACYAAAAgCAYAAAB+ZAqzAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAVZJREFUeNrsmOENgjAQhcE4AG5QN2AERnCEjsAIdQJG6AiO0BEcATdwhLONxJR6V1u8Ij98ycXkrL3HR+8gVlWCAEDa0EjuaqP1csLGkPJ7FtlNR3hKIzknNeV0uC5YqzhNSc/AiORgKiyCnCbWSm5ar02DHEzFhyB3J9aCf/tL02qckSCvbHSAy60Va9BSSGFn1gAt1zjNlmj5Mr+gdYE0aXZahFmFdOgnSW5aEikivHmWo1NJWnoBLf8ItFujNWumErSwDs3V+xjJoNURtBTwSC6lZQrRmtXhoNXa6IFPIwctE3lYf3crv6TVER26Ki29RVpiNVoJkz+FlmGnlTD5Y7ROia82q9Iat0ALG5xyml3laUXMqkSKZWgRpiha4k+LMPYzWvuYsbquDxhFxn8fzmTt3DNnP9xVNgymbvbCj9SXu8zNeiZTUVocZ27pe/3HA/8QYABzJAP50CmRFwAAAABJRU5ErkJggg=="
+                account="[[ account ]]"
                 brand-logo="[[ _brandLogo ]]"
                 brand-logo-width="38"
                 brand-logo-height="32"
-                brand-titlee="AppsCo"
                 brand-title="[[ _brandTitle ]]"
                 authorization-token="[[ authorizationToken ]]"
                 notifications-api="[[ api.notifications ]]"
                 logout-api="[[ api.logout ]]"
                 notifications-size="5"
+                on-appsco-product-changed="_onAppscoProductChangeAction"
                 on-account-chat="_onAccountChat"
                 on-account-settings="_onAccountSettingsAction"
                 on-all-notifications="_onAllNotifications"></appsco-header>
@@ -458,6 +461,10 @@
                                     on-back="_showCompanyDirectoryPage"
                                     on-resource-section="_onResourceActionManageAccountPage"></appsco-manage-account-page-actions>
 
+                            <appsco-billing-page-actions
+                                    name="billing"
+                                    on-resource-section="_onResourceActionBillingPage"></appsco-billing-page-actions>
+
                         </neon-animated-pages>
 
                     </app-toolbar>
@@ -482,7 +489,8 @@
                             on-loaded="_onLoadedApplications"
                             on-edit-application="_onEditApplication"
                             on-info-edit-application="_onInfoEditApplication"
-                            on-share-application="_onShareApplication"></appsco-home-page>
+                            on-share-application="_onShareApplication"
+                            on-revoke-application="_onRevokeApplication"></appsco-home-page>
 
                     <appsco-application-page
                             id="appscoApplicationPage"
@@ -520,7 +528,6 @@
                             partner-api="[[ api.partner ]]"
                             on-settings-saved="_onAccountSettingsSaved"
                             on-password-changed="_onAccountPasswordChanged"
-                            on-revoke-authorized-application="_onRevokeAuthorizedApplication"
                             on-disable-advanced-settings="_onDisableAdvancedSettings"
                             on-enable-advanced-settings="_onEnableAdvancedSettings"
                             on-twofa-enabled="_onTwoFaEnabled"
@@ -617,6 +624,8 @@
                             change-password-api="[[ api.changePassword ]]"
                             on-settings-saved="_onAccountSettingsSaved"
                             on-password-changed="_onAccountPasswordChanged"
+                            on-add-to-orgunit="_onAddAccountToOrgunit"
+                            on-remove-from-orgunit="_onRemoveAccountFromOrgunit"
                             on-error="_onError"></appsco-manage-account-page>
 
                     <appsco-billing-page
@@ -624,7 +633,8 @@
                             name="billing"
                             company-api="[[ companyApi ]]"
                             account="{{ account }}"
-                            authorization-token="[[ authorizationToken ]]"></appsco-billing-page>
+                            authorization-token="[[ authorizationToken ]]"
+                            on-manage-credit-card="_onManageCreditCard"></appsco-billing-page>
 
                     <appsco-company-settings-page
                             id="appscoCompanySettingsPage"
@@ -780,6 +790,12 @@
                 accounts="[[ _selectedAccounts ]]"
                 on-added-to-orgunit="_onAccountsAddedToOrgunit"></appsco-account-orgunit>
 
+        <appsco-account-remove-orgunit
+                id="appscoAccountRemoveOrgunit"
+                authorization-token="[[ authorizationToken ]]"
+                account="[[ _role ]]"
+                on-account-removed-from-orgunit="_onAccountRemovedFromOrgunit"></appsco-account-remove-orgunit>
+
         <appsco-account-remove
                 id="appscoAccountsRemove"
                 accounts="[[ _selectedAccounts ]]"
@@ -791,8 +807,23 @@
         <appsco-upgrade-action
                 id="appscoUpgradeAction"
                 authorization-token="[[ authorizationToken ]]"
-                company-api="[[ companyApi ]]">
+                company-api="[[ companyApi ]]"
+                on-subscription-changed="_onSubscriptionChanged">
         </appsco-upgrade-action>
+
+        <appsco-subscription-cancel
+                id="appscoSubscriptionCancel"
+                authorization-token="[[ authorizationToken ]]"
+                company-api="[[ companyApi ]]"
+                on-subscription-canceled="_onSubscriptionCanceled">
+        </appsco-subscription-cancel>
+
+        <appsco-credit-card
+                id="appscoCreditCard"
+                authorization-token="[[ authorizationToken ]]"
+                company-api="[[ companyApi ]]"
+                on-credit-card-added="_onCreditCardAdded">
+        </appsco-credit-card>
 
         <template is="dom-if" if="[[ api.me ]]">
             <iron-ajax auto
@@ -826,7 +857,6 @@
                 _business: {
                     type: Boolean,
                     computed: '_computeBusiness(page)',
-                    reflectToAttribute: true,
                     observer: '_onBusinessChange'
                 },
 
@@ -1023,11 +1053,20 @@
                 'api-changed': '_apiChanged',
                 'page-loaded': '_onPageLoaded',
                 'filter-done': '_onPageLoaded',
-                'upgrade-active': "_fireUpgrade"
+                'upgrade-active': '_fireUpgrade',
+                'cancel-subscription': '_onCancelSubscription'
             },
 
-            _fireUpgrade: function() {
-                this.$.appscoUpgradeAction.toggle();
+            attached: function() {
+
+                if (this.mobileScreen || this.tabletScreen) {
+                    this.updateStyles();
+                }
+
+            },
+
+            _updateScreen: function(mobile, tablet) {
+                this.updateStyles();
             },
 
             _computeCompanyUser: function(account) {
@@ -1048,19 +1087,6 @@
                     this.customStyle['--app-primary-color'] = '#279FBC';
                 }
 
-                this.updateStyles();
-
-            },
-
-            attached: function() {
-
-                if (this.mobileScreen || this.tabletScreen) {
-                    this.updateStyles();
-                }
-
-            },
-
-            _updateScreen: function(mobile, tablet) {
                 this.updateStyles();
             },
 
@@ -1184,6 +1210,19 @@
             /**
              * Appsco header actions START
              */
+            _onAppscoProductChangeAction: function(event) {
+                var panel = event.detail.product;
+
+                if ('appsco-product' === panel && 'home' !== this.page) {
+                    this._showHomePage();
+                }
+
+                if ('appsco-business-product' === panel && 'applications' !== this._page) {
+                    this._showCompanyApplicationsPage();
+                }
+
+            },
+
             _onAccountChat: function(event) {
                 this.$.appscoAccountChat.toggleChat(event.target);
             },
@@ -1215,7 +1254,7 @@
             },
 
             getCurrentAppscoPageElement: function() {
-                switch(this.page) {
+                switch (this.page) {
                     case 'home':
                         return this.$.appscoHomePage;
                         break;
@@ -1374,8 +1413,22 @@
 
             _reloadApplications: function() {
 
-                if (this.$.appscoHomePage.$) {
-                    this.$.appscoHomePage.reloadApplications();
+                switch (this.page) {
+                    case 'application':
+
+                        if (this.$.appscoHomePage.$) {
+                            this.$.appscoHomePage.reloadApplications();
+                        }
+
+                        break;
+
+                    case 'manage-application':
+
+                        if (this.$.appscoApplicationsPage.$) {
+                            this.$.appscoApplicationsPage.reloadApplications();
+                        }
+
+                        break;
                 }
 
             },
@@ -1399,11 +1452,35 @@
                 this.$.appscoApplicationSubscriberRevoke.open();
             },
 
+            _onRevokeApplication: function(event) {
+                event.detail.account = this.account;
+                this._onSubscriptionRevoke(event);
+            },
+
+            _onSelfSubscriptionRevoked: function(event) {
+                this.$.appscoHomePage.removeApplications([event.detail.application]);
+                this.$.appscoHomePage.setDefaultApplication();
+                this._notify('You have successfully revoked access to ' + event.detail.application.title + '.');
+            },
+
+            _onAccountSubscriptionRevoked: function(event) {
+                this.set('application', {});
+                this.set('application', event.detail.application);
+                this._notify('You have successfully revoked access to ' + event.detail.application.title + ' for ' + event.detail.account.name);
+            },
+
             _onSubscriptionRevoked: function(event) {
-                this.set("application", {});
-                this.set("application", event.detail.application);
-                var msg = "You have successfully revoked access to " + event.detail.application.title + ' for ' + event.detail.account.name;
-                this._notify(msg);
+
+                switch (this.page) {
+                    case 'home':
+                        this._onSelfSubscriptionRevoked(event);
+                        break;
+
+                    case 'application':
+                        this._onAccountSubscriptionRevoked(event);
+                        break;
+                }
+
             },
             /**
              * Application page END
@@ -1420,8 +1497,24 @@
                 this.$.appscoAccountPage._onAccountAdvancedSettings();
             },
 
-            _onAccountSettingsSaved: function() {
-                this._notify('Account settings were successfully changed.');
+            _onAccountSettingsSaved: function(event) {
+
+                switch (this.page) {
+                    case 'manage-account':
+
+                        if (this.$.appscoDirectoryPage.$) {
+                            this.$.appscoDirectoryPage.reloadAccounts();
+                        }
+
+                        this._notify('Account settings for ' + event.detail.account.name + ' were successfully changed.');
+
+                        break;
+
+                    case 'account':
+                        this._notify('Account settings were successfully changed.');
+
+                        break;
+                }
             },
 
             _onAccountPasswordChanged: function() {
@@ -1806,9 +1899,9 @@
                     this.$.appscoDirectoryPage.modifyAccounts(accounts);
                 }
 
-//                if (accounts.length === 1) {
-//                    this.application = applications[0];
-//                }
+                if (accounts.length === 1) {
+                    this._role = accounts[0];
+                }
             },
 
             _onRemoveAccounts: function() {
@@ -1845,8 +1938,71 @@
             _onResourceActionManageAccountPage: function() {
                 this.$.appscoManageAccountPage.toggleResource();
             },
+
+            _onAddAccountToOrgunit: function(event) {
+                this.set('_selectedAccounts', [event.detail.role]);
+                this._onAddAccountsToOrgunit();
+            },
+
+            _onRemoveAccountFromOrgunit: function(event) {
+                this.$.appscoAccountRemoveOrgunit.orgunit = event.detail.orgunit;
+                this._role = event.detail.account;
+                this.$.appscoAccountRemoveOrgunit.toggle();
+            },
+
+            _onAccountRemovedFromOrgunit: function(event) {
+                var role = event.detail.account;
+
+                if (this.$.appscoDirectoryPage.$) {
+                    this.$.appscoDirectoryPage.modifyAccounts([role]);
+                }
+
+                this._role = role;
+                this._notify(role.name + ' has been removed from ' + event.detail.orgunit.name + ' organization unit.');
+            },
             /**
              * Manage Account page END
+             */
+
+            /**
+             * Billing page START
+             */
+            _onResourceActionBillingPage: function() {
+                this.$.appscoBillingPage.toggleResource();
+            },
+
+            _fireUpgrade: function() {
+                this.$.appscoUpgradeAction.toggle();
+            },
+
+            _setSubscription: function(subscription) {
+                this.$.appscoBillingPage.setSubscription(subscription);
+            },
+
+            _onSubscriptionChanged: function(event) {
+                this._setSubscription(event.detail.subscription);
+                this._notify('Subscription has been successfully changed.');
+            },
+
+            _onCancelSubscription: function() {
+                this.$.appscoSubscriptionCancel.toggle();
+            },
+
+            _onSubscriptionCanceled: function(event) {
+                this._setSubscription(event.detail.subscription);
+                this._notify('Subscription has been successfully canceled.');
+            },
+
+            _onManageCreditCard: function() {
+                this.$.appscoCreditCard.toggle();
+            },
+
+            _onCreditCardAdded: function(event) {
+                this.$.appscoBillingPage.setCreditCard(event.detail.credit_card);
+                this._notify('Credit card has been successfully saved.');
+            },
+            /**
+             * Billing page END
              */
 
             /**
@@ -1910,7 +2066,12 @@
             },
 
             _computeBusiness: function(page) {
-                return (page === 'applications' || page === 'manage-application' || page === 'directory' || page === 'manage-account');
+                return (page === 'applications' ||
+                        page === 'manage-application' ||
+                        page === 'directory' ||
+                        page === 'manage-account' ||
+                        page === 'billing' ||
+                        page === 'company-settings');
             },
 
             _computeBrandLogo: function(account) {

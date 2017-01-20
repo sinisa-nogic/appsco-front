@@ -107,20 +107,15 @@
                 left: 0;
                 right: 0;
             }
-            :host .view-button, :host .share-button {
-                color: #ffffff;
+            :host .view-button, :host .share-button, :host .revoke-button {
+                @apply(--primary-button);
                 border-radius: 0;
-                margin: 0;
-                padding: 6px 12px;
-                font-size: 14px;
-                height: 34px;
             }
             :host .view-button {
                 margin-right: 1px;
-                background-color: var(--app-primary-color);
             }
             :host .share-button {
-                background-color: var(--app-secondary-color);
+                @apply(--secondary-button);
             }
             appsco-application-share {
                 --appsco-application-share-button: {
@@ -289,6 +284,16 @@
                                 class="share-button flex"
                                 on-tap="_onShareApplication">
                             Share
+                        </paper-button>
+                    </div>
+                </template>
+
+                <template is="dom-if" if="[[ _shared ]]">
+                    <div class="info-actions flex-horizontal">
+                        <paper-button
+                                class="revoke-button flex"
+                                on-tap="_onRevokeApplication">
+                            Revoke
                         </paper-button>
                     </div>
                 </template>
@@ -489,8 +494,14 @@
                 this.fire('share-application');
             },
 
-            reloadApplications: function(callback) {
-                this.$.appscoApplications.reloadApplications(callback);
+            _onRevokeApplication: function() {
+                this.fire('revoke-application', {
+                    application: this.application
+                });
+            },
+
+            reloadApplications: function() {
+                this.$.appscoApplications.reloadApplications();
             },
 
             addApplications: function(applications) {

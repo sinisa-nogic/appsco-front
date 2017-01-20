@@ -1,0 +1,715 @@
+<link rel="import" href="../bower_components/polymer/polymer.html">
+<link rel="import" href="../bower_components/paper-icon-button/paper-icon-button.html">
+<link rel="import" href="../bower_components/paper-material/paper-material.html">
+<link rel="import" href="../bower_components/iron-media-query/iron-media-query.html">
+<link rel="import" href="../bower_components/iron-ajax/iron-ajax.html">
+<link rel="import" href="../bower_components/iron-icon/iron-icon.html">
+
+<link rel="import" href="../bower_components/appsco-page/appsco-content.html">
+<link rel="import" href="../bower_components/appsco-components/appsco-loader.html">
+<link rel="import" href="../bower_components/appsco-components/appsco-date-format.html">
+<link rel="import" href="../bower_components/appsco-components/appsco-price.html">
+
+
+
+<link rel="import" href="../bower_components/paper-card/paper-card.html">
+
+<link rel="import" href="shared-styles.html">
+
+<dom-module id="appsco-billing-page">
+    <template>
+        <style include="webkit-scrollbar-style">
+            :host {
+                display: block;
+                color: #000;
+                font-size: 14px;
+
+                --appsco-content-sections: {
+                    padding: 0;
+                };
+                --info-width: 25%;
+
+                --resource-width: 300px;
+
+                --paper-card: {
+                    min-height: 150px;
+                    box-sizing: border-box;
+                    margin: 0 8px 16px 8px;
+                };
+                --paper-card-content: {
+                    min-height: 70px;
+                    box-sizing: border-box;
+                };
+                --paper-card-actions: {
+                    padding: 0;
+                    border-color: var(--divider-color);
+                };
+                --paper-card-header-text: {
+                    padding: 8px 16px;
+                    font-size: 18px;
+                    color: var(--primary-text-color);
+                    border-bottom: 1px solid var(--divider-color);
+                };
+            }
+
+            :host .paper-card-action {
+                padding: 6px 0;
+                margin: 0;
+                border-radius: 0;
+                width: 100%;
+                color: var(--primary-text-color);
+            }
+
+            :host div[resource] {
+
+            }
+            :host div[resource] > * {
+                padding: 10px;
+            }
+            :host div[resource] p {
+                margin-bottom: 0;
+                margin-top: 6px;
+                font-size: 14px;
+            }
+            :host .resource-header {
+                border-bottom: 1px solid var(--divider-color);
+                margin-bottom:20px;
+                font-size:18px;
+            }
+            div[resource] .resource-actions {
+                position: absolute;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                padding: 0;
+            }
+            :host .payment-method {
+                color: #ffffff;
+                background-color: var(--app-primary-color);
+                border-radius: 0;
+                margin: 0;
+                font-size: 14px;
+                height: 34px;
+            }
+            :host div[content] {
+                height: calc(100% - 20px);
+                padding: 20px 20px 0 20px;
+                color: var(--primary-text-color);
+            }
+            :host .flex-horizontal {
+                @apply(--layout-horizontal);
+                @apply(--layout-center);
+            }
+            :host .flex-vertical {
+                @apply(--layout-vertical);
+            }
+            :host .flex {
+                @apply(--layout-flex);
+            }
+            :host .flex-start {
+                @apply(--layout-start);
+            }
+            :host([medium-screen]) {
+                --resource-width: 240px;
+            }
+            :host([mobile-screen]) {
+                --resource-width: 180px;
+            }
+            :host paper-material {
+                background-color: white;
+                padding:10px;
+                margin-top: 10px;
+                position: relative;
+            }
+
+            :host .invoices {
+                margin: 10px 0;
+            }
+
+            :host .small {
+                font-size:12px;
+                margin-right: 10px;
+            }
+
+            :host .mt20 {
+                margin-top: 20px;
+            }
+            :host .mt10 {
+                margin-top: 10px;
+            }
+            :host .pr5 {
+                padding-right: 5px;
+            }
+            :host .header {
+                font-size: 18px;
+                padding: 5px;
+            }
+
+            :host .upgrade {
+                @apply(--primary-button);
+                display: inline-block;
+            }
+
+            :host .info-header {
+                background-color: var(--app-primary-color);
+                padding: 10px 0 5px 10px;
+            }
+
+            :host .info-padding {
+                padding: 10px;
+            }
+
+            :host .border-bottom {
+                border-bottom: 1px solid #dbdbdb;
+            }
+            :host .op3 {
+                opacity: 0.6;
+                font-size: 14px;
+            }
+            :host .item-quantity {
+                text-align: right;
+                width:45px;
+                padding: 5px 20px 5px 5px;
+            }
+            :host .item-price {
+                text-align: right;
+                padding:5px;
+            }
+            :host .item-item {
+                padding:5px 0 5px 5px;
+            }
+            :host .font12 {
+                font-size: 12px;
+            }
+            :host .subscription-plan-label {
+                opacity: 0.6;
+                font-size: 14px;
+                padding: 2px 5px 2px 0;
+            }
+        </style>
+
+        <iron-ajax
+                auto
+                url="[[ companyApi ]]/billing/cc"
+                handle-as="json"
+                headers="[[ _computedHeaders ]]"
+                on-response="_handleCCResponse"
+        ></iron-ajax>
+
+        <iron-ajax
+                auto
+                url="[[ companyApi ]]/billing/subscription"
+                handle-as="json"
+                headers="[[ _computedHeaders ]]"
+                on-response="_handleSubscriptionResponse"
+        ></iron-ajax>
+
+        <iron-ajax
+                auto
+                url="[[ companyApi ]]/billing/invoice/upcoming"
+                handle-as="json"
+                headers="[[ _computedHeaders ]]"
+                on-response="_handleUpcomingInvoiceResponse"
+        ></iron-ajax>
+
+        <iron-ajax
+                auto
+                url="[[ companyApi ]]/billing/invoice/list"
+                handle-as="json"
+                headers="[[ _computedHeaders ]]"
+                on-response="_handleInvoicesResponse"
+        ></iron-ajax>
+
+        <iron-media-query query="(max-width: 1200px)" query-matches="{{ mediumScreen }}"></iron-media-query>
+        <iron-media-query query="(max-width: 800px)" query-matches="{{ tabletScreen }}"></iron-media-query>
+        <iron-media-query query="(max-width: 600px)" query-matches="{{ mobileScreen }}"></iron-media-query>
+
+        <appsco-content id="appscoContent" resource-active>
+
+            <div class="flex-vertical" resource>
+
+                <div class="resource-header">
+                    Payment Method
+
+
+                    <!--<ul>-->
+                        <!--<li>[[ cc.id ]]</li>-->
+                        <!--<li>brand     - [[ cc.brand     ]]</li>-->
+                        <!--<li>country   - [[ cc.country   ]]</li>-->
+                        <!--<li>customer  - [[ cc.customer  ]]</li>-->
+                        <!--<li>cvc_check - [[ cc.cvc_check ]]</li>-->
+                        <!--<li>exp_month - [[ cc.exp_month ]]</li>-->
+                        <!--<li>exp_year  - [[ cc.exp_year  ]]</li>-->
+                        <!--<li>last4     - [[ cc.last4     ]]</li>-->
+                        <!--<li>name      - [[ cc.name      ]]</li>-->
+                    <!--</ul>-->
+                </div>
+
+                <div>
+                    <appsco-loader active="[[ _ccLoader ]]"
+                                   loader-alt="Appsco is loading payment method"
+                                   multi-color></appsco-loader>
+                    <template is="dom-if" if="[[cc]]">
+                        <img src="/images/cc/[[ _computedCCLogo ]]" border="0" height="32">
+                        <p>
+                            [[ cc.brand]] **** **** **** [[ cc.last4 ]]
+                        </p>
+                        <p>
+                            Expires [[ cc.exp_month ]]/[[ cc.exp_year  ]]
+                        </p>
+                        <p>
+                            Cardholder: [[ cc.name ]]
+                        </p>
+                    </template>
+                </div>
+                <div class="resource-actions flex-horizontal">
+                    <template is="dom-if" if="[[cc]]">
+                        <paper-button
+                                class="payment-method flex"
+                                on-tap="_onChangePassword">
+                            Change Payment Method
+                        </paper-button>
+                    </template>
+                </div>
+
+            </div>
+
+            <div content>
+                <paper-button class="upgrade" on-tap="_upgrade">Upgrade</paper-button>
+                <!--<template is="dom-if" if="[[ display1 ]]">-->
+                    <div class="flex-horizontal flex-start">
+                        <paper-card heading="Subscription plan" >
+                            <appsco-loader active="[[ _subscriptionLoader ]]"
+                                           loader-alt="Appsco is loading subscription model"
+                                           multi-color></appsco-loader>
+                            <div class="card-content flex-vertical">
+                                <div class="flex-horizontal">
+                                    <span class="subscription-plan-label">Started on</span>
+                                    <appsco-date-format
+                                            class="font12"
+                                            date="[[ subscription.startedAt.date ]]"
+                                            options='{"year": "numeric", "month": "long", "day": "numeric"}'
+                                    ></appsco-date-format>
+                                </div>
+                                <div class="flex-horizontal">
+                                    <span class="subscription-plan-label">Activity period</span>
+                                    <div class="font12">
+                                        <appsco-date-format
+                                                date="[[ subscription.currentPeriodStart.date ]]"
+                                        ></appsco-date-format> /
+                                        <appsco-date-format
+                                                date="[[ subscription.currentPeriodEnd.date ]]"
+                                        ></appsco-date-format>
+                                    </div>
+                                </div>
+                                <div class="flex-horizontal">
+                                    <span class="subscription-plan-label">Plan</span>
+                                    <span class="font12">[[ subscription.plan.display_text ]]</span>
+                                </div>
+                                <div class="flex-horizontal">
+                                    <span class="subscription-plan-label">Subscription price</span>
+                                    <appsco-price
+                                            class="font12"
+                                            price="[[ subscription.plan.amount ]]"
+                                            currency="[[ subscription.plan.currency ]]"
+                                    ></appsco-price>
+                                </div>
+                                <div class="flex-horizontal">
+                                    <span class="subscription-plan-label">Subscription size</span>
+                                    <span class="font12">[[ subscription.quantity ]]</span>
+                                </div>
+                                <div class="flex-horizontal">
+                                    <span class="subscription-plan-label">Status</span>
+                                    <span class="font12">[[ subscription.status ]]</span>
+                                </div>
+                            </div>
+
+                            <div class="card-actions">
+                                <paper-button on-tap="" class="paper-card-action">Cancel subscription</paper-button>
+                            </div>
+                        </paper-card>
+
+                        <paper-card heading="Upcoming invoice" class="flex">
+                            <appsco-loader active="[[ _upcomingInvoiceLoader ]]"
+                                           loader-alt="Appsco is loading subscription model"
+                                           multi-color></appsco-loader>
+                            <div class="card-content flex-vertical">
+                                <div>
+                                    Your next automatic payment is scheduled for
+                                    <appsco-date-format
+                                            date="[[ upcomingInvoice.date.date ]]"
+                                            options='{"year": "numeric", "month": "long", "day": "numeric"}'
+                                    ></appsco-date-format>
+
+                                </div>
+                                <div class="mt10">
+                                    Subscription price
+                                    <appsco-price
+                                            price="[[ upcomingInvoice.total ]]"
+                                            currency="[[ upcomingInvoice.currency ]]"
+                                    ></appsco-price>
+                                </div>
+                                <div class="mt10">
+                                    <iron-icon icon="icons:event"></iron-icon>
+                                    Last payment on
+                                    <appsco-date-format
+                                            date="[[ lastInvoice.date.date ]]"
+                                            options='{"year": "numeric", "month": "long", "day": "numeric"}'
+                                    ></appsco-date-format>
+                                    for
+                                    <appsco-price
+                                            price="[[ lastInvoice.total ]]"
+                                            currency="[[ lastInvoice.currency ]]"
+                                    ></appsco-price>
+                                </div>
+                            </div>
+
+                            <div class="card-actions">
+                                <paper-button on-tap="" class="paper-card-action">Change Plan</paper-button>
+                            </div>
+                        </paper-card>
+
+
+                    </div>
+                    <div class="flex-horizontal">
+                        <paper-card heading="Invoice List" class="flex">
+                            <div class="card-content flex-vertical">
+                                <template is="dom-if" if="{{ invoices }}">
+                                    <template is="dom-repeat" items="{{ invoices }}">
+                                        <paper-material elavation="2" class="invoices flex-horizontal" on-tap="_showInfo">
+                                            <appsco-date-format class="flex"
+                                                                date="[[ item.date.date ]]"
+                                                                options='{"year": "numeric", "month": "long", "day": "numeric"}'
+                                            ></appsco-date-format>
+
+                                            <appsco-price
+                                                    price="[[ item.total ]]"
+                                                    currency="[[ item.currency ]]"
+                                            ></appsco-price>
+                                        </paper-material>
+                                    </template>
+                                </template>
+                            </div>
+                        </paper-card>
+                    </div>
+                <!--</template>-->
+
+                <template is="dom-if" if="[[ display2 ]]">
+                    <div>
+                        <template is="dom-if" if="[[subscription]]">
+                            <paper-material elevation="1" class="subscription-status flex-vertical">
+                                <div class="flex-horizontal">
+                                    <div class="flex">
+                                        Your next automatic payment is scheduled for
+                                        <appsco-date-format
+                                                date="[[ upcomingInvoice.date.date ]]"
+                                                options='{"year": "numeric", "month": "long", "day": "numeric"}'
+                                        ></appsco-date-format>
+                                    </div>
+                                    <appsco-price
+                                            price="[[ upcomingInvoice.total ]]"
+                                            currency="[[ upcomingInvoice.currency ]]"
+                                    ></appsco-price>
+                                </div>
+                                <p>
+                                    Maximum users available is [[ subscription.quantity ]]
+
+                                </p>
+                                <div class="mt20 flex-horizontal">
+                                    <span class="small">
+                                        <iron-icon icon="icons:credit-card"></iron-icon>
+                                        Automatic payments
+                                    </span>
+                                    <span class="small flex">
+                                        <iron-icon icon="icons:event"></iron-icon>
+                                        Last payment on
+                                        <appsco-date-format
+                                                date="[[ lastInvoice.date.date ]]"
+                                                options='{"year": "numeric", "month": "long", "day": "numeric"}'
+                                        ></appsco-date-format>
+                                        for
+                                        <appsco-price
+                                                price="[[ lastInvoice.total ]]"
+                                                currency="[[ lastInvoice.currency ]]"
+                                        ></appsco-price>
+                                    </span>
+                                    <paper-button class="upgrade">Manage</paper-button>
+                                </div>
+                            </paper-material>
+                        </template>
+
+                        <template is="dom-if" if="{{ invoices }}">
+                            <h3>Invoice List</h3>
+                            <template is="dom-repeat" items="{{ invoices }}">
+                                <paper-material elavation="2" class="invoices flex-horizontal" on-tap="_showInfo">
+                                    <appsco-date-format class="flex"
+                                            date="[[ item.date.date ]]"
+                                            options='{"year": "numeric", "month": "long", "day": "numeric"}'
+                                    ></appsco-date-format>
+
+                                    <appsco-price
+                                            price="[[ item.total ]]"
+                                            currency="[[ item.currency ]]"
+                                    ></appsco-price>
+                                </paper-material>
+                            </template>
+                        </template>
+                    </div>
+                </template>
+            </div>
+
+            <div info class="flex-vertical">
+                <div class="info-padding info-header">
+                    <appsco-brand
+                            logo="http://appsco.loc/bundles/appscodashboardapproot/img/footer-logo.png?1.0.6"
+                            logo-width="118"
+                            logo-height="38">
+                    </appsco-brand>
+                </div>
+                <div class="info-padding mt10">
+                    <appsco-date-format class="small"
+                                        date="[[ invoice.date.date ]]"
+                                        options='{"year": "numeric", "month": "long", "day": "numeric", "hour": "2-digit", "minute": "2-digit"}'
+                    ></appsco-date-format>
+                </div>
+                <div class="info-padding mt10 flex-vertical">
+                    <div class="flex-horizontal">
+                        <span class="item-quantity small op3 border-bottom">Quantity</span>
+                        <span class="item-item flex op3 border-bottom">Item</span>
+                        <span class="item-price op3 border-bottom">Price</span>
+                    </div>
+
+                    <template is="dom-repeat" items="{{ invoice.items }}">
+                        <div class="flex-horizontal mt10">
+                            <span class="item-quantity border-bottom font12">[[ item.quantity ]]</span>
+                            <span class="flex item-item border-bottom font12">AppsCo identities</span>
+                            <span class="item-price border-bottom font12">
+                                <appsco-price
+                                        price="[[ item.amount ]]"
+                                        currency="[[ item.currency ]]"
+                                ></appsco-price>
+                            </span>
+                        </div>
+                    </template>
+                    <div class="flex-horizontal mt10">
+                        <span class="item-quantity font12">&nbsp;</span>
+                        <span class="flex item-item font12">Tax</span>
+                        <span class="item-price font12">[[ invoice.tax ]]</span>
+                    </div>
+                    <div class="flex-horizontal mt10">
+                        <span class="item-quantity font12  border-bottom">&nbsp;</span>
+                        <span class="flex item-item font12  border-bottom">Tax Percent</span>
+                        <span class="item-price font12  border-bottom">[[ invoice.tax_percent ]]</span>
+                    </div>
+                    <div class="flex-horizontal mt10">
+                        <span class="item-quantity font12">&nbsp;</span>
+                        <span class="flex item-item font12"><strong>Total</strong></span>
+                        <span class="item-price font12"><strong>
+                            <appsco-price
+                                    price="[[ invoice.total ]]"
+                                    currency="[[ invoice.currency ]]"
+                            ></appsco-price>
+                        </strong></span>
+                    </div>
+                </div>
+                <div class="info-padding flex-vertical">
+                    <span class="font12">Invoice ID</span>
+                    <span class="font12">[[ invoice.id ]]</span>
+                </div>
+                <div class="info-padding flex-vertical">
+                    <span class="font12">Purchased from</span>
+                    <span class="font12">AppsCo</span>
+                    <span class="font12">12345 AppsCo address</span>
+                    <span class="font12">AppsCo Country</span>
+                </div>
+            </div>
+        </appsco-content>
+    </template>
+
+    <script>
+        Polymer({
+            is: 'appsco-billing-page',
+
+            properties: {
+
+                display1: {
+                    type: Boolean,
+                    value: true
+                },
+                display2: {
+                    type: Boolean,
+                    value: true
+                },
+                account: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    },
+                    notify: true
+                },
+
+                companyApi: {
+                    type: String
+                },
+
+                _ccLoader: {
+                    type: Boolean,
+                    value: false
+                },
+
+                _subscriptionLoader: {
+                    type: Boolean,
+                    value: false
+                },
+
+                _upcomingInvoiceLoader: {
+                    type: Boolean,
+                    value: false
+                },
+
+                authorizationToken: {
+                    type: String
+                },
+
+                /**
+                 * Computed headers.
+                 * It contains authorization token.
+                 */
+                _computedHeaders: {
+                    type: Object,
+                    computed: "_computeHeaders(authorizationToken)"
+                },
+
+                /**
+                 * Indicates if it is medium screen size.
+                 * It uses iron-media-query.
+                 */
+                mediumScreen: {
+                    type: Boolean,
+                    value: false,
+                    reflectToAttribute: true
+                },
+
+                tabletScreen: {
+                    type: Boolean,
+                    value: false,
+                    reflectToAttribute: true
+                },
+
+                mobileScreen: {
+                    type: Boolean,
+                    value: false,
+                    reflectToAttribute: true
+                },
+
+                pageLoaded: {
+                    type: Boolean,
+                    value: false
+                },
+
+                _computedCCLogo: {
+                    type: String,
+                    computed: '_computeCCLogo(cc)'
+                }
+            },
+
+            observers: [
+                '_updateScreen(mediumScreen, tabletScreen, mobileScreen)'
+            ],
+
+            attached: function() {
+
+                this.pageLoaded = false;
+                this._ccLoader = true;
+                this._subscriptionLoader = true;
+                this._upcomingInvoiceLoader = true;
+
+                if (this.mobileScreen || this.tabletScreen || this.mediumScreen) {
+                    this.updateStyles();
+                }
+
+//                this.$.appscoContent.showSection('info');
+                this._pageLoaded();
+            },
+
+            _updateScreen: function(medium, tablet, mobile) {
+                this.updateStyles();
+
+                if (mobile) {
+                    this.$.appscoContent.hideSection('resource');
+                }
+                else if(!this.$.appscoContent.resourceActive) {
+                    this.$.appscoContent.showSection('resource');
+                }
+            },
+
+            /**
+             * Computes authorization headers.
+             *
+             * @param {Object} authorizationToken
+             * @returns {{ Authorization: string }}
+             * @private
+             */
+            _computeHeaders: function (authorizationToken) {
+                return {
+                    'Authorization': 'token ' + authorizationToken
+                }
+            },
+
+            _pageLoaded: function() {
+                this.pageLoaded = true;
+                this.fire('page-loaded');
+            },
+
+            _handleCCResponse: function(e){
+                if(null == e.detail.response) {
+                    return;
+                }
+                this.cc = e.detail.response;
+                this._ccLoader = false;
+            },
+
+            _computeCCLogo: function(cc) {
+                if(null == cc) {
+                    return;
+                }
+                return cc.brand.toLowerCase().replace(" ", "_") + ".png";
+            },
+
+            _handleSubscriptionResponse: function(e) {
+                if(null == e.detail.response) {
+                    return;
+                }
+                this.subscription = e.detail.response;
+                this._subscriptionLoader = false;
+            },
+
+            _handleUpcomingInvoiceResponse: function(e) {
+                if(null == e.detail.response) {
+                    return;
+                }
+                this.upcomingInvoice = e.detail.response;
+                this._upcomingInvoiceLoader = false;
+            },
+
+            _handleInvoicesResponse: function(e) {
+                if(null == e.detail.response) {
+                    return;
+                }
+                this.invoices = e.detail.response;
+                this.lastInvoice = this.invoices[0];
+                this._invoicesLoader = false;
+            },
+
+            _showInfo: function(e) {
+                this.invoice = e.model.item;
+                this.$.appscoContent.toggleSection('info');
+            },
+
+            _upgrade: function() {
+                this.fire('upgrade-active');
+            }
+
+        });
+    </script>
+</dom-module>

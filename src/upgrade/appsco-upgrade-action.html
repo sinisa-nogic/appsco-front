@@ -1,0 +1,303 @@
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../bower_components/iron-flex-layout/iron-flex-layout.html">
+<link rel="import" href="../../bower_components/paper-styles/typography.html">
+<link rel="import" href="../../bower_components/paper-styles/shadow.html">
+<link rel="import" href="../../bower_components/paper-button/paper-button.html">
+<link rel="import" href="../../bower_components/iron-icon/iron-icon.html">
+<link rel="import" href="../../bower_components/iron-icons/iron-icons.html">
+<link rel="import" href="../../bower_components/paper-input/paper-input.html">
+<link rel="import" href="../../bower_components/paper-radio-group/paper-radio-group.html">
+<link rel="import" href="../../bower_components/paper-radio-button/paper-radio-button.html">
+<link rel="import" href="../../bower_components/iron-image/iron-image.html">
+<link rel="import" href="../../bower_components/iron-ajax/iron-request.html">
+<link rel="import" href="../../bower_components/paper-dialog/paper-dialog.html">
+<link rel="import" href="../../bower_components/paper-dialog-scrollable/paper-dialog-scrollable.html">
+<link rel="import" href="../../bower_components/paper-toggle-button/paper-toggle-button.html">
+<link rel="import" href="../../bower_components/neon-animation/animations/scale-up-animation.html">
+
+<link rel="import" href="../../bower_components/appsco-components/appsco-loader.html">
+<link rel="import" href="../../bower_components/appsco-components/appsco-form-error.html">
+
+<dom-module id="appsco-upgrade-action">
+    <template>
+        <style>
+            :host {
+                display: block;
+                position: relative;
+                @apply(--appsco-upgrade-action);
+                --paper-dialog-scrollable: {
+                    height:255px;
+                }
+            }
+            :host paper-dialog {
+                width: 670px;
+                top: 10vh;
+                @apply(--appsco-paper-dialog);
+            }
+            :host paper-dialog-scrollable::shadow .scrollable {
+                min-height: 80px;
+            }
+            :host paper-input {
+                --paper-input-container-label: {
+                    left: 4px;
+                };
+                --paper-input-container-input: {
+                    /*padding: 0 4px;*/
+                };
+            }
+            :host .message {
+                margin: 0;
+                color: var(--secondary-text-color);
+                font-style: italic;
+                @apply(--paper-font-body2);
+            }
+            :host .buttons {
+                margin-top: 10px;
+            }
+            :host .buttons paper-button {
+                margin-top: 10px;
+                @apply(--paper-dialog-button);
+            }
+            :host .buttons paper-button[dialog-confirm] {
+                @apply(--paper-dialog-confirm-button);
+            }
+            :host .buttons paper-button[dialog-dismiss] {
+                @apply(--paper-dialog-dismiss-button);
+            }
+            :host .message {
+                color: var(--secondary-text-color);
+                font-style: italic;
+                @apply(--paper-font-body2);
+            }
+            :host .info {
+                margin: 0;
+            }
+            :host .mt {
+                margin-top: 15px;
+            }
+            :host .flex-horizontal {
+                @apply(--layout-horizontal);
+            }
+            :host .flex-vertical {
+                @apply(--layout-vertical);
+            }
+            :host .flex-center {
+                @apply(--layout-center);
+            }
+            :host .flex{
+                @apply(--layout-flex);
+            }
+            :host .baseline {
+                @apply(--layout-self-end);
+                padding-bottom: 10px;
+                text-align: center;
+            }
+            :host .text-center {
+                text-align: center;
+            }
+            :host .op6 {
+                opacity: 0.6;
+            }
+            :host .savings {
+                color: #5AC099;
+            }
+        </style>
+
+        <paper-dialog id="dialog"
+                      with-backdrop
+                      entry-animation="scale-up-animation"
+                      exit-animation="fade-out-animation"
+                      on-iron-overlay-opened="_onDialogOpened"
+                      on-iron-overlay-closed="_onDialogClosed">
+
+            <h2>AppsCo Business Subscription</h2>
+
+            <paper-dialog-scrollable>
+                <div class="dialog-container">
+                    <appsco-form-error message="[[ _error ]]"></appsco-form-error>
+
+                    <appsco-loader active="[[ _purchaseLoader ]]"
+                                   loader-alt="Appsco is processing request"
+                                   multi-color></appsco-loader>
+
+                    <div>
+                        <p class="info">
+                            AppsCo business provides yearly and monthly subscription plans.
+                            During subscription period you can always cancel, upgrade or downgrade subscription.
+                            When changing plans or quantities, we will optionally prorate the price we charge
+                            next month to make up for any price changes.
+                            If you cancel subscription it will still remain active until subscription period end.
+                        </p>
+                        <div class="flex-vertical flex-center text-center">
+                            <paper-input
+                                    allowed-pattern="\d+"
+                                    class="text-center"
+                                    id="quantity"
+                                    label="Number of subscriptions"
+                                    value=""
+                                    name="subscription[numUsers]"
+                                    required
+                                    error-message="Only numbers allowed"
+                                    on-keyup="_reCalculate"
+                            ></paper-input>
+                            <div style="width:100%">
+                                <paper-radio-group selected="usd-yearly" class="flex-horizontal" id="subscriptionPlan">
+                                    <paper-radio-button name="usd-yearly"  class="flex" value="usd-yearly">Annually</paper-radio-button>
+                                    <paper-radio-button name="usd-monthly" class="flex" value="usd-monthly">Monthly</paper-radio-button>
+                                </paper-radio-group>
+                            </div>
+                            <div style="width:100%" class="flex-horizontal">
+                                <div class="flex">
+                                    <appsco-price
+                                            price="{{ _subscriptionYear }}"
+                                            currency="USD"
+                                    ></appsco-price> / year
+                                    <br/>
+                                    <span class="op6">24 USD per user / year</span>
+                                    <br/>
+                                    <span class="savings">10% Savings</span>
+                                </div>
+                                <div class="flex">
+                                    <appsco-price
+                                            price="{{ _subscriptionMonth }}"
+                                            currency="USD"
+                                    ></appsco-price> / month
+                                    <br/>
+                                    <span class="op6">2.5 USD per user / month</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </paper-dialog-scrollable>
+
+            <div class="buttons">
+                <paper-button autofocus on-tap="_onPurchaseAction" id="purchaseButton">Purchase</paper-button>
+            </div>
+        </paper-dialog>
+
+    </template>
+    <script>
+        Polymer({
+
+            is: 'appsco-upgrade-action',
+
+            properties: {
+
+                /**
+                 * Authorization token.
+                 */
+                authorizationToken: {
+                    type: String
+                },
+
+                /**
+                 * Company API link.
+                 * API in which company to add application.
+                 */
+                companyApi: {
+                    type: String
+                },
+
+                /**
+                 * Indicates if add application loader should be displayed or not.
+                 */
+                _purchaseLoader: {
+                    type: Boolean,
+                    value: false
+                },
+
+                _subscriptionYear: {
+                    type: Number,
+                    value: 0
+                },
+
+                _subscriptionMonth: {
+                    type: Number,
+                    value: 0
+                }
+
+            },
+
+            _reCalculate: function(e, d) {
+                this._subscriptionMonth = this.$.quantity.value * 2.5 * 100;
+                this._subscriptionYear = this.$.quantity.value * 24 * 100;
+            },
+
+            /**
+             * Toggles add applications dialog.
+             */
+            toggle: function() {
+                this.$.dialog.toggle();
+            },
+
+            /**
+             * Called after dialog has been opened.
+             *
+             * @private
+             */
+            _onDialogOpened: function() {
+            },
+
+            /**
+             * Called after dialog has been closed.
+             *
+             * @private
+             */
+            _onDialogClosed: function() {
+                this._purchaseLoader = false;
+                this._error = '';
+                this.$.purchaseButton.disabled = false;
+            },
+
+            _onPurchaseAction: function() {
+                var
+                    request = document.createElement('iron-request'),
+                    options = {
+                        url: this.companyApi + '/billing/subscription',
+                        method: 'POST',
+                        handleAs: 'json',
+                        headers: {
+                            'Authorization': 'token ' + this.authorizationToken,
+                            'Content-Type': 'application/x-www-form-urlencoded'
+                        }
+                    },
+                    body = encodeURIComponent(this.$.quantity.name) +
+                            '=' +
+                            encodeURIComponent(this.$.quantity.value) +
+                            '&' +
+                            encodeURIComponent('subscription[period]') +
+                            "=" +
+                            encodeURIComponent(this.$.subscriptionPlan.selectedItem.value)
+                    ;
+                this._purchaseLoader = true;
+                this.$.purchaseButton.disabled = true;
+
+                options.body = body;
+
+                request.send(options).then(
+                        function(request) {
+                            this.$.dialog.close();
+
+                            /**
+                             * Fired when application has been shared.
+                             *
+                             * @event application-shared
+                             */
+                            this.fire('subscription-changed', {
+                                subscription: request.response
+                            });
+
+                            this._purchaseLoader = false;
+                            this.$.purchaseButton.disabled = false;
+                        }.bind(this),
+                        function() {
+                            this._error = request.response.message;
+                            this._purchaseLoader = false;
+                            this.$.purchaseButton.disabled = false;
+                        }.bind(this)
+                );
+            }
+        });
+    </script>
+</dom-module>

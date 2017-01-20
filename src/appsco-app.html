@@ -59,6 +59,8 @@
 <link rel="import" href="directory/appsco-directory-add-account.html">
 <link rel="import" href="directory/appsco-directory-import-accounts.html">
 
+<link rel="import" href="upgrade/appsco-upgrade-action.html">
+
 <link rel="import" href="vault/appsco-vault-page-actions.html">
 <link rel="import" href="vault/appsco-vault-manage-item.html">
 <link rel="import" href="../bower_components/appsco-vault/appsco-vault-remove.html">
@@ -326,9 +328,9 @@
                             <!--icons:track-changes-->
                             <!--icons:trending-up-->
                         </div>
-                        <div name="vault" href="/vault" disabled>
+                        <a name="billing" href="/billing">
                             <iron-icon icon="icons:payment"></iron-icon> <span class="menu-text">Billing</span>
-                        </div>
+                        </a>
                         <a name="settings" href="/company-settings">
                             <iron-icon icon="icons:settings"></iron-icon> <span class="menu-text">Settings</span>
                         </a>
@@ -596,6 +598,14 @@
                             on-modify-orgunit="_onModifyOrgunit"
                             on-remove-orgunit="_onRemoveOrgunit"></appsco-directory-page>
 
+                    <appsco-billing-page
+                            id="appscoBillingPage"
+                            name="billing"
+                            company-api="[[ companyApi ]]"
+                            account="{{ account }}"
+                            authorization-token="[[ authorizationToken ]]"
+                            on-page-loaded="_onPageLoaded"></appsco-billing-page>
+
                     <appsco-company-settings-page
                             id="appscoCompanySettingsPage"
                             name="company-settings"
@@ -742,6 +752,12 @@
                 domain="[[ domain ]]"
                 on-accounts-added="_onAccountsAdded">
         </appsco-directory-import-accounts>
+
+        <appsco-upgrade-action
+                id="appscoUpgradeAction"
+                authorization-token="[[ authorizationToken ]]"
+                company-api="[[ companyApi ]]">
+        </appsco-upgrade-action>
 
         <template is="dom-if" if="[[ api.me ]]">
             <iron-ajax auto
@@ -951,7 +967,12 @@
             ],
 
             listeners: {
-                'api-changed': "_apiChanged"
+                'api-changed': "_apiChanged",
+                'upgrade-active': "_fireUpgrade"
+            },
+
+            _fireUpgrade: function() {
+                this.$.appscoUpgradeAction.toggle();
             },
 
             _computeCompanyUser: function(account) {

@@ -24,10 +24,6 @@
                 --resource-width: 318px;
                 --info-width: 318px;
 
-                --appsco-application-item: {
-                    color: var(--primary-text-color);
-                };
-
                 --appsco-list-item-message: {
                     font-size: 14px;
                     @apply(--paper-font-common-nowrap);
@@ -38,16 +34,16 @@
                     padding-bottom: 8px;
                 };
 
-                --application-details-label: {
+                --account-details-label: {
                     font-size: 12px;
                 };
-                --application-details-value: {
+                --account-details-value: {
                     font-size: 14px;
                 };
 
-                --applications-container: {
-                    margin-right: -30px;
-                };
+                --appsco-account-log-container: {
+                     padding-top: 0;
+                 };
             }
             :host .resource-header {
                 border-bottom: 1px solid var(--divider-color);
@@ -62,24 +58,18 @@
             :host div[info] {
                 height: 100%;
             }
-            :host div[info] .application-info {
+            :host div[info] .account-info {
                 border-bottom: 1px solid var(--divider-color);
                 height: 50px;
                 @apply(--layout-flex-none);
                 color: var(--primary-text-color);
             }
-            appsco-application-analytics-security {
+            appsco-account-security {
                 --security-score: {
                     width: 32px;
                     height: 32px;
                     font-size: 14px;
                 };
-            }
-            :host div[info] appsco-application-subscribers {
-                height: 90px;
-                padding-top: 14px;
-                color: var(--primary-text-color);
-                @apply(--layout-flex-none);
             }
             :host div[info] .details-log {
                 height: calc(100% - 50px - 90px - 34px);
@@ -118,20 +108,6 @@
             }
             :host .share-button {
                 background-color: var(--app-secondary-color);
-            }
-            appsco-application-share {
-                --appsco-application-share-button: {
-                    border-radius: 0;
-                    margin: 0;
-                    padding: 6px 12px;
-                    background-color: var(--app-secondary-color);
-                    color: #ffffff;
-                    font-size: 14px;
-                    height: 34px;
-                };
-            }
-            appsco-application-details {
-                --appsco-application-icons-color: var(--primary-text-color);
             }
             :host .flex-horizontal {
                 @apply(--layout-horizontal);
@@ -180,7 +156,8 @@
                 </div>
 
                 <appsco-orgunit-tree id="appscoOrgunitTree"
-                                     org-units='[[ _orgUnits ]]'></appsco-orgunit-tree>
+                                     org-units="[[ _orgUnits ]]"
+                                     on-selected="_onOrgunitSelected"></appsco-orgunit-tree>
 
             </div>
 
@@ -192,21 +169,21 @@
                         company
                         authorization-token="[[ authorizationToken ]]"
                         accounts-api="[[ companyDirectoryRolesApi ]]"
-                        on-account="_onViewAccountInfo"
                         on-edit="_onAccountEdit"
-                        on-loaded="_pageLoaded"
+                        on-account="_onAccount"
+                        on-loaded="_onAccountsLoaded"
                         on-empty-load="_pageLoaded"></appsco-accounts>
             </div>
 
             <div class="flex-vertical" info>
 
-                <div class="application-info flex-horizontal">
+                <div class="account-info flex-horizontal">
                     <iron-image class="account-icon"
                                 placeholder="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAABGdBTUEAALGPC/xhBQAAAI5JREFUeAHt1YEJwCAQBEFN/60KYgMRbGMnHXjs5Ofa5x/h7wu//T3dAAqIL4BAPIChAAXEF0AgHoCfIAIIxBdAIB6AK4AAAvEFEIgH4AoggEB8AQTiAbgCCCAQXwCBeACuAAIIxBdAIB6AK4AAAvEFEIgH4AoggEB8AQTiAbgCCCAQXwCBeACuAAIIxBe4yV0EThqVC64AAAAASUVORK5CYII="
                                 sizing="cover"
-                                preload fade src="[[ _role.account.picture_url ]]"></iron-image>
-                    <span class="account-name flex">[[ _role.account.display_name ]]</span>
-                    <appsco-account-security role="[[ _role ]]"></appsco-account-security>
+                                preload fade src="[[ role.account.picture_url ]]"></iron-image>
+                    <span class="account-name flex">[[ role.account.name ]]</span>
+                    <appsco-account-security role="[[ role ]]"></appsco-account-security>
                 </div>
 
                 <div>
@@ -227,17 +204,17 @@
                             class="info-details-section">
 
                         <div name="info" class="tab-content details">
-                            <appsco-account-details account="[[ _role.account ]]"></appsco-account-details>
+                            <appsco-account-details account="[[ role.account ]]"></appsco-account-details>
 
                         </div>
 
                         <div name="log" class="tab-content log">
                             <appsco-account-log
                                 id="accountLog"
-                                log-api="[[ _role.meta.log ]]"
+                                log-api="[[ role.meta.log ]]"
                                 authorization-token="[[ authorizationToken ]]"
                                 size="5"
-                            ></appsco-account-log>
+                                short-view></appsco-account-log>
                         </div>
 
                     </neon-animated-pages>
@@ -251,11 +228,11 @@
                         Edit
                     </paper-button>
 
-                    <paper-button
-                            class="share-button flex"
-                            on-tap="_onShareApplication">
-                        Change Password
-                    </paper-button>
+                    <!--<paper-button-->
+                            <!--class="share-button flex"-->
+                            <!--on-tap="_onShareApplication">-->
+                        <!--Change Password-->
+                    <!--</paper-button>-->
                 </div>
 
             </div>
@@ -274,7 +251,8 @@
                     type: Array,
                     value: function() {
                         return [];
-                    }
+                    },
+                    notify: true
                 },
 
                 _orgUnits: {
@@ -316,6 +294,14 @@
                 },
 
                 /**
+                 * Get account log link.
+                 */
+                _logApi: {
+                    type: String,
+                    computed: '_computeLogApi(role)'
+                },
+
+                /**
                  * Get company accounts.
                  */
                 companyDirectoryRolesApi: {
@@ -338,11 +324,12 @@
                     }
                 },
 
-                _role: {
+                role: {
                     type: Object,
                     value: function () {
                         return {};
-                    }
+                    },
+                    observer: '_onRoleChange'
                 },
 
                 mobileScreen: {
@@ -412,13 +399,35 @@
             _pageLoaded: function() {
                 this.pageLoaded = true;
                 this.fire('page-loaded');
+            },
+
+            resetPage: function() {
+                this.set('selectedAccounts', []);
+                this.$.appscoAccounts.selectAllAccounts(false);
+                this.fire('hide-bulk-actions');
+                this.hideInfo();
+            },
+
+            _computeLogApi: function(role) {
+                return role.meta ? role.meta.log : '';
+            },
+
+            _onRoleChange: function() {
+                this._loadLog();
+            },
+
+            _loadLog: function() {
+                this.$.accountLog.loadLog();
+            },
+
+            _onAccountsLoaded: function() {
                 this.setDefaultAccount();
+                this._pageLoaded();
             },
 
             _showInfo: function() {
                 this.$.appscoContent.showSection('info');
                 this._infoShown = true;
-                this.$.accountLog.loadLog();
                 this._selectedTab = 0;
             },
 
@@ -440,23 +449,73 @@
                 this.$.appscoContent.toggleSection('resource');
             },
 
-            _onViewAccountInfo: function(event) {
-                this.set('_role', {});
-                this.set('_role', JSON.parse(JSON.stringify(event.detail.role)));
+            _onViewInfo: function(event) {
+                this.set('role', event.detail.role);
 
                 if (!this._infoShown) {
                     this._showInfo();
                 }
-                this.$.accountLog.loadLog();
+            },
+
+            setDefaultAccount: function() {
+                this.set('role', this.$.appscoAccounts.getFirstAccount());
+            },
+
+            _onAccountEdit: function(event) {
+                var role = event.detail.role;
+
+                this.set('role', role);
+                this.fire('edit-account', {
+                    role: role
+                });
+            },
+
+            _onAccount: function(event) {
+                var role = event.detail.role,
+                    length = this.selectedAccounts.length,
+                    index = -1;
+
+                for (var i = 0; i < length; i++) {
+                    if (this.selectedAccounts[i].self === role.self) {
+                        index = i;
+                        break;
+                    }
+                }
+
+                if (index > -1) {
+                    this.splice('selectedAccounts', index, 1);
+
+                    if (index != 0) {
+                        var role = this.selectedAccounts[this.selectedAccounts.length - 1];
+
+                        if (this.role.self !== role.self) {
+                            this.set('role', role);
+                        }
+                    }
+                }
+                else {
+                    this._onViewInfo(event);
+                    this.push('selectedAccounts', role);
+                }
+
+                var roles = JSON.parse(JSON.stringify(this.selectedAccounts));
+
+                this.set('selectedAccounts', []);
+                this.set('selectedAccounts', roles);
 
                 if (this.selectedAccounts.length > 0) {
                     this.fire('show-bulk-actions');
                 }
                 else {
                     this.fire('hide-bulk-actions');
-                    this.fire('show-bulk-actions');
-//                    this.setDefaultAccount();
+                    this.setDefaultAccount();
                 }
+            },
+
+            _onAccountInfoEdit: function() {
+                this.fire('info-edit-account', {
+                    role: this.role
+                });
             },
 
             _onOrgunitsResponse: function(event) {
@@ -483,9 +542,22 @@
                 this.$.appscoAccounts.addAccounts(accounts);
             },
 
-            setDefaultAccount: function() {
-                this.set('_role', this.$.appscoAccounts.getFirstAccount());
-            }
+            modifyAccounts: function(accounts) {
+                this.$.appscoAccounts.modifyAccounts(accounts);
+            },
+
+            _onOrgunitSelected: function(event) {
+                this.$.appscoAccounts.filterByOrgunit(event.detail);
+            },
+
+            filterAccountsByTerm: function(term) {
+                this.$.appscoAccounts.filterByTerm(term);
+            },
+
+            removeAccounts: function(accounts) {
+                this.$.appscoAccounts.removeAccounts(accounts);
+                this.setDefaultAccount();
+            },
         });
     </script>
 </dom-module>

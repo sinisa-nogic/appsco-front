@@ -27,7 +27,9 @@
                 @apply(--appsco-upgrade-action);
                 --paper-dialog-scrollable: {
                     height:255px;
-                }
+                };
+
+                --paper-radio-button-checked-color: var(--app-primary-color);
             }
             :host paper-dialog {
                 width: 670px;
@@ -45,6 +47,13 @@
                     /*padding: 0 4px;*/
                 };
             }
+            :host appsco-loader {
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+            :host .num-of-subscriptions {
+                min-width: 220px;
+            }
             :host .message {
                 margin: 0;
                 color: var(--secondary-text-color);
@@ -57,9 +66,6 @@
             :host .buttons paper-button {
                 margin-top: 10px;
                 @apply(--paper-dialog-button);
-            }
-            :host .buttons paper-button[dialog-confirm] {
-                @apply(--paper-dialog-confirm-button);
             }
             :host .buttons paper-button[dialog-dismiss] {
                 @apply(--paper-dialog-dismiss-button);
@@ -99,7 +105,7 @@
                 opacity: 0.6;
             }
             :host .savings {
-                color: #5AC099;
+                color: var(--app-secondary-color-1);
             }
         </style>
 
@@ -112,13 +118,13 @@
 
             <h2>AppsCo Business Subscription</h2>
 
+            <appsco-loader active="[[ _purchaseLoader ]]"
+                           loader-alt="Appsco is processing request"
+                           multi-color></appsco-loader>
+
             <paper-dialog-scrollable>
                 <div class="dialog-container">
                     <appsco-form-error message="[[ _error ]]"></appsco-form-error>
-
-                    <appsco-loader active="[[ _purchaseLoader ]]"
-                                   loader-alt="Appsco is processing request"
-                                   multi-color></appsco-loader>
 
                     <div>
                         <p class="info">
@@ -131,13 +137,12 @@
                         <div class="flex-vertical flex-center text-center">
                             <paper-input
                                     allowed-pattern="\d+"
-                                    class="text-center"
+                                    class="num-of-subscriptions text-center"
                                     id="quantity"
                                     label="Number of subscriptions"
-                                    value=""
                                     name="subscription[numUsers]"
-                                    required
-                                    error-message="Only numbers allowed"
+                                    error-message="Please enter number of subscriptions."
+                                    auto-validate
                                     on-keyup="_reCalculate"
                             ></paper-input>
                             <div style="width:100%">
@@ -172,6 +177,7 @@
             </paper-dialog-scrollable>
 
             <div class="buttons">
+                <paper-button dialog-dismiss>Cancel</paper-button>
                 <paper-button autofocus on-tap="_onPurchaseAction" id="purchaseButton">Purchase</paper-button>
             </div>
         </paper-dialog>
@@ -237,6 +243,7 @@
              * @private
              */
             _onDialogOpened: function() {
+                this.$.quantity.focus();
             },
 
             /**
@@ -247,12 +254,20 @@
             _onDialogClosed: function() {
                 this._purchaseLoader = false;
                 this._error = '';
-                this.$.purchaseButton.disabled = false;
+                this.$.quantity.value = '';
+                this.$.quantity.invalid = false;
             },
 
             _onPurchaseAction: function() {
-                var
-                    request = document.createElement('iron-request'),
+                var subscriptionsInput = this.$.quantity;
+
+                if (subscriptionsInput.value.length === 0) {
+                    subscriptionsInput.invalid = true;
+                    subscriptionsInput.focus();
+                    return false;
+                }
+
+                var request = document.createElement('iron-request'),
                     options = {
                         url: this.companyApi + '/billing/subscription',
                         method: 'POST',
@@ -270,8 +285,8 @@
                             "=" +
                             encodeURIComponent(this.$.subscriptionPlan.selectedItem.value)
                     ;
+
                 this._purchaseLoader = true;
-                this.$.purchaseButton.disabled = true;
 
                 options.body = body;
 
@@ -289,12 +304,10 @@
                             });
 
                             this._purchaseLoader = false;
-                            this.$.purchaseButton.disabled = false;
                         }.bind(this),
                         function() {
                             this._error = request.response.message;
                             this._purchaseLoader = false;
-                            this.$.purchaseButton.disabled = false;
                         }.bind(this)
                 );
             }

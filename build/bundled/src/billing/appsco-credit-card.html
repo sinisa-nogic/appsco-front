@@ -1,0 +1,116 @@
+<html><head><link rel="import" href="../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../bower_components/iron-flex-layout/iron-flex-layout.html">
+<link rel="import" href="../../bower_components/paper-button/paper-button.html">
+<link rel="import" href="../../bower_components/iron-form/iron-form.html">
+<link rel="import" href="../../bower_components/paper-input/paper-input.html">
+<link rel="import" href="../../bower_components/gold-cc-input/gold-cc-input.html">
+<link rel="import" href="../../bower_components/gold-cc-cvc-input/gold-cc-cvc-input.html">
+<link rel="import" href="../../bower_components/iron-ajax/iron-ajax.html">
+<link rel="import" href="../../bower_components/paper-dialog/paper-dialog.html">
+<link rel="import" href="../../bower_components/paper-dialog-scrollable/paper-dialog-scrollable.html">
+<link rel="import" href="../../bower_components/neon-animation/animations/scale-up-animation.html">
+<link rel="import" href="../../bower_components/neon-animation/animations/fade-out-animation.html">
+<link rel="import" href="../../bower_components/iron-a11y-keys/iron-a11y-keys.html">
+<link rel="import" href="../../bower_components/vaadin-date-picker/vaadin-date-picker.html">
+
+<link rel="import" href="../../bower_components/appsco-components/appsco-loader.html">
+<link rel="import" href="../../bower_components/appsco-components/appsco-form-error.html">
+
+
+<script type="text/javascript" src="https://js.stripe.com/v2/"></script>
+
+</head><body><dom-module id="appsco-credit-card">
+    <template>
+        <style>
+            :host {
+                display: block;
+                position: relative;
+
+                --vaadin-date-picker-calendar-icon: {
+                     width: 24px;
+                     height: 24px;
+                 };
+            }
+            :host paper-dialog {
+                width: 670px;
+                top: 10vh;
+                @apply(--appsco-paper-dialog);
+            }
+            :host paper-dialog-scrollable::shadow .scrollable {
+                min-height: 80px;
+            }
+            :host appsco-loader {
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+            .date-container {
+                margin-top: 10px;
+                margin-bottom: 10px;
+            }
+            :host .buttons {
+                margin-top: 10px;
+            }
+            :host .buttons paper-button {
+                margin-top: 10px;
+                @apply(--paper-dialog-button);
+            }
+            :host .buttons paper-button[dialog-dismiss] {
+                @apply(--paper-dialog-dismiss-button);
+            }
+        </style>
+
+        <iron-ajax id="getPublicKeyCall" url="[[ _publicKeyApi ]]" method="GET" headers="[[ _headers ]]" handle-as="json" on-response="_handlePublicKeyResponse">
+        </iron-ajax>
+
+        <paper-dialog id="dialog" with-backdrop="" entry-animation="scale-up-animation" exit-animation="fade-out-animation" on-iron-overlay-opened="_onDialogOpened" on-iron-overlay-closed="_onDialogClosed">
+
+            <h2>Payment method</h2>
+
+            <appsco-loader active="[[ _loader ]]" loader-alt="Appsco is processing request" multi-color=""></appsco-loader>
+
+            <paper-dialog-scrollable>
+                <div class="dialog-container">
+                    <p>Once new credit card is added previous credit card will be lost.</p>
+
+                    <appsco-form-error message="[[ _error ]]"></appsco-form-error>
+
+                    <form is="iron-form" id="creditCardForm" method="POST" action="[[ _creditCardApi ]]" headers="[[ _headers ]]" on-iron-form-error="_onFormError" on-iron-form-response="_onFormResponse">
+
+                        <div class="input-container">
+                            <gold-cc-input id="cardNumber" label="Card number" card-type="{{ cardType }}" required="" auto-validate="" error-message="Credit card number is not valid." data-stripe="number"></gold-cc-input>
+                        </div>
+
+                        <div class="input-container date-container">
+                            <vaadin-date-picker id="expiryDate" label="Expiry date" required="" auto-validate="" error-message="Expiry date is not valid." on-iron-overlay-opened="_onDatePickerOpened" on-iron-overlay-closed="_onDatePickerClosed"></vaadin-date-picker>
+                        </div>
+
+                        <paper-input id="expMonth" data-stripe="exp_month" hidden=""></paper-input>
+
+                        <paper-input id="expYear" data-stripe="exp_year" hidden=""></paper-input>
+
+                        <div class="input-container">
+                            <gold-cc-cvc-input id="verificationNumber" label="Verification number" card-type="[[ cardType ]]" required="" auto-validate="" error-message="Verification number is not valid."></gold-cc-cvc-input>
+                        </div>
+
+                        <div class="input-container">
+                            <paper-input id="cardHolder" label="Card holder" data-stripe="name"></paper-input>
+                        </div>
+
+                        <paper-input id="stripeToken" name="stripeToken" hidden=""></paper-input>
+                    </form>
+                </div>
+            </paper-dialog-scrollable>
+
+            <div class="buttons">
+                <paper-button dialog-dismiss="">Cancel</paper-button>
+                <paper-button autofocus="" on-tap="_onAddCreditCard">Add</paper-button>
+            </div>
+        </paper-dialog>
+
+        <iron-a11y-keys target="[[ _target ]]" keys="enter" on-keys-pressed="_onEnter">
+        </iron-a11y-keys>
+
+    </template>
+    <script>Polymer({is:"appsco-credit-card",properties:{authorizationToken:{type:String},companyApi:{type:String},_creditCardApi:{type:String,computed:"_computeCreditCardApi(companyApi)"},_publicKeyApi:{type:String,computed:"_computePublicKeyApi(companyApi)"},_headers:{type:Object,computed:"_computeHeaders(authorizationToken)"},_stripePublicKey:{type:String,value:""},_loader:{type:Boolean,value:!1},_error:{type:String},_target:{type:Object,value:function(){return this.$.creditCardForm}}},attached:function(){this._setValidExpiryDate()},_computeHeaders:function(e){return{Authorization:"token "+e,"Content-Type":"application/x-www-form-urlencoded"}},_computeCreditCardApi:function(e){return e+"/billing/cc"},_computePublicKeyApi:function(e){return e+"/billing/pk"},toggle:function(){this.$.dialog.toggle()},_setValidExpiryDate:function(){var e=new Date,t=e.getDate(),i=e.getMonth()+1,r=e.getFullYear();t<10&&(t="0"+t),i<10&&(i="0"+i),e=r+"-"+i+"-"+t,this.$.expiryDate.min=e},_showLoader:function(){this._loader=!0},_hideLoader:function(){this._loader=!1},_onDatePickerOpened:function(e){e.stopPropagation()},_onDatePickerClosed:function(e){e.stopPropagation()},_onDialogOpened:function(){this.$.getPublicKeyCall.generateRequest(),this.$.cardNumber.focus()},_onDialogClosed:function(){this._hideLoader(),this.$.creditCardForm.reset()},_handlePublicKeyResponse:function(e){this._stripePublicKey=e.detail.response.stripePublicKey,Stripe.setPublishableKey(this._stripePublicKey)},_stripeResponseHandler:function(e,t){t.error?(this._error=t.error.message,this._hideLoader()):(this.$.stripeToken.value=t.id,this._submitForm())},_onAddCreditCard:function(){if(this.$.creditCardForm.validate()){if(this._showLoader(),this.$.expiryDate.value){var e=new Date(this.$.expiryDate.value),t=e.getMonth()+1;this.$.expMonth.value=t<10?"0"+t:t,this.$.expYear.value=e.getFullYear().toString().substr(2,2)}Stripe.card.createToken({number:this.$.cardNumber.value,exp_month:this.$.expMonth.value,exp_year:this.$.expYear.value,cvc:this.$.verificationNumber.value,name:this.$.cardHolder.value},function(e,t){this._stripeResponseHandler(e,t)}.bind(this))}},_onEnter:function(){this._onAddCreditCard()},_submitForm:function(){this.$.creditCardForm.submit()},_onFormError:function(e){this._error=e.detail.error.message,this._hideLoader()},_onFormResponse:function(e){this.$.dialog.close(),this.fire("credit-card-added",{credit_card:e.detail.response})}});</script>
+</dom-module>
+</body></html>

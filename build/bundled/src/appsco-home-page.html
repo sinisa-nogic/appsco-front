@@ -1,0 +1,263 @@
+<html><head><meta charset="UTF-8"><link rel="import" href="appsco-app.html"></head><body><dom-module id="appsco-home-page">
+    <template>
+        <style include="shared-styles webkit-scrollbar-style">
+            :host {
+                display: block;
+
+                --paper-tabs-selection-bar-color: var(--app-primary-color);
+                --info-width: 318px;
+
+                --appsco-application-item: {
+                     color: var(--primary-text-color);
+                 };
+
+                --appsco-list-item-message: {
+                    font-size: 14px;
+                    @apply(--paper-font-common-nowrap);
+                };
+                
+                --account-log-appsco-list-item: {
+                    padding-top: 14px;
+                    padding-bottom: 8px;
+                };
+
+                --application-details-label: {
+                    font-size: 12px;
+                };
+                --application-details-value: {
+                    font-size: 14px;
+                };
+
+                --applications-container: {
+                     margin-right: -30px;
+                 };
+            }
+            :host div[content] > * {
+                padding: 0 10px 10px 10px;
+            }
+            :host div[info] > * {
+                padding: 10px;
+            }
+            :host div[info] {
+                height: 100%;
+            }
+            :host div[info] .application-info {
+                border-bottom: 1px solid var(--divider-color);
+                height: 50px;
+                box-sizing: border-box;
+                @apply(--layout-flex-none);
+            }
+            appsco-application-security {
+                --security-score: {
+                     width: 32px;
+                     height: 32px;
+                     font-size: 14px;
+                 };
+            }
+            :host div[info] appsco-application-subscribers {
+                height: 90px;
+                padding-top: 14px;
+                color: var(--primary-text-color);
+                box-sizing: border-box;
+                @apply(--layout-flex-none);
+            }
+            :host .info {
+                margin-top: 20px;
+            }
+            :host .info p {
+                margin: 0;
+                font-size: 14px;
+            }
+            :host div[info] .details-log {
+                height: calc(100% - 50px - 65px);
+            }
+            :host .details-log paper-tabs {
+                height: 38px;
+                color: var(--primary-text-color);
+            }
+            :host div[info] .info-details-section {
+                margin-top: 6px;
+                height: calc(100% - 48px - 35px - 6px);
+            }
+            .tab-content {
+                margin-right: -10px;
+                padding-right: 10px;
+                overflow: auto;
+            }
+            :host div[info] .info-actions {
+                padding: 0;
+                position: absolute;
+                bottom: 0;
+                left: 0;
+                right: 0;
+            }
+            :host .view-button, :host .share-button, :host .revoke-button {
+                @apply(--primary-button);
+                border-radius: 0;
+            }
+            :host .view-button {
+                margin-right: 1px;
+            }
+            :host .share-button {
+                @apply(--secondary-button);
+            }
+            appsco-application-share {
+                --appsco-application-share-button: {
+                     border-radius: 0;
+                     margin: 0;
+                     padding: 6px 12px;
+                     background-color: var(--app-secondary-color);
+                     color: #ffffff;
+                     font-size: 14px;
+                     height: 34px;
+                 };
+            }
+            appsco-application-details {
+                --appsco-application-icons-color: var(--primary-text-color);
+            }
+            :host .flex-horizontal {
+                @apply(--layout-horizontal);
+                @apply(--layout-center);
+            }
+            :host .flex-vertical {
+                @apply(--layout-vertical);
+            }
+            :host .flex {
+                @apply(--layout-flex);
+            }
+            :host([laptop-screen]) {
+                --appsco-application-item: {
+                     width: 131px;
+                 };
+
+                --info-width: 290px;
+            }
+            :host([tablet-s1280-screen]) {
+                --appsco-application-item: {
+                     width: 141px;
+                 };
+
+                --info-width: 318px;
+            }
+            :host([tablet-s1024-screen]) {
+                --appsco-application-item: {
+                     width: 127px;
+                 };
+
+                --info-width: 290px;
+            }
+            :host([tablet-screen]) {
+                --appsco-application-item: {
+                     width: 140px;
+                 };
+
+                --info-width: 300px;
+            }
+            :host([mobile-screen]) {
+                --info-width: 100%;
+
+                --applications-container: {
+                     margin-right: -25px;
+                     display: block;
+                     @apply(--layout-horizontal);
+                     @apply(--layout-around-justified);
+                 };
+            }
+        </style>
+
+        <iron-media-query query="(max-width: 1366px)" query-matches="{{ laptopScreen }}"></iron-media-query>
+        <iron-media-query query="(max-width: 1280px)" query-matches="{{ tabletS1280Screen }}"></iron-media-query>
+        <iron-media-query query="(max-width: 1024px)" query-matches="{{ tabletS1024Screen }}"></iron-media-query>
+        <iron-media-query query="(max-width: 800px)" query-matches="{{ tabletScreen }}"></iron-media-query>
+        <iron-media-query query="(max-width: 600px)" query-matches="{{ mobileScreen }}"></iron-media-query>
+
+        <appsco-content id="appscoContent">
+
+            <div content="">
+                <appsco-applications id="appscoApplications" size="100" load-more="" authorization-token="[[ authorizationToken ]]" applications-api="[[ applicationsApi ]]" on-info="_onViewApplicationInfo" on-edit="_onApplicationEdit" on-application="_onApplication" on-application-removed="_onApplicationRemoved" on-loaded="_pageLoaded" on-empty-load="_pageLoaded"></appsco-applications>
+            </div>
+
+            <div class="flex-vertical" info="">
+
+                <div class="application-info flex-horizontal">
+                    <appsco-application-info class="flex" application="[[ application ]]">
+                    </appsco-application-info>
+
+                    <template is="dom-if" if="[[ application.claims.password ]]">
+                        <appsco-application-security application="[[ application ]]"></appsco-application-security>
+                    </template>
+                </div>
+
+                <template is="dom-if" if="[[ !_shared ]]">
+                    <appsco-application-subscribers application="[[ application ]]" authorization-token="[[ authorizationToken ]]">
+                    </appsco-application-subscribers>
+                </template>
+
+                <template is="dom-if" if="[[ _shared ]]">
+                    <div class="info">
+                        <p>This application is shared.</p>
+                        <p>You are not allowed to edit it.</p>
+                    </div>
+                </template>
+
+                <div class="details-log flex-vertical">
+
+                    <template is="dom-if" if="[[ !_shared ]]">
+                        <paper-tabs id="paperTabs" selected="{{ _selectedTab }}">
+                            <paper-tab name="details">Details</paper-tab>
+                            <paper-tab name="log">Log</paper-tab>
+                        </paper-tabs>
+
+                        <neon-animated-pages selected="{{ _selectedTab }}" entry-animation="fade-in-animation" exit-animation="fade-out-animation" class="info-details-section">
+
+                            <div name="details" class="tab-content details">
+                                <appsco-application-details application="[[ application ]]">
+                                </appsco-application-details>
+                            </div>
+
+                            <div name="log" class="tab-content log">
+                                <appsco-application-log application="[[ application ]]" authorization-token="[[ authorizationToken ]]">
+                                </appsco-application-log>
+                            </div>
+
+                        </neon-animated-pages>
+                    </template>
+
+                    <template is="dom-if" if="[[ _shared ]]">
+                        <div name="details">
+                            <appsco-application-details application="[[ application ]]">
+                            </appsco-application-details>
+                        </div>
+                    </template>
+
+                </div>
+
+                <template is="dom-if" if="[[ !_shared ]]">
+                    <div class="info-actions flex-horizontal">
+                        <paper-button class="view-button flex" on-tap="_onApplicationInfoEdit">
+                            Edit
+                        </paper-button>
+
+                        <paper-button class="share-button flex" on-tap="_onShareApplication">
+                            Share
+                        </paper-button>
+                    </div>
+                </template>
+
+                <template is="dom-if" if="[[ _shared ]]">
+                    <div class="info-actions flex-horizontal">
+                        <paper-button class="revoke-button flex" on-tap="_onRevokeApplication">
+                            Revoke
+                        </paper-button>
+                    </div>
+                </template>
+
+            </div>
+
+        </appsco-content>
+
+    </template>
+
+    <script>Polymer({is:"appsco-home-page",properties:{application:{type:Object,notify:!0},_shared:{type:Boolean,computed:"_computeApplicationShared(application)",notify:!0},_infoShown:{type:Boolean,value:!1},_selectedTab:{type:Number},authorizationToken:{type:String,value:""},applicationsApi:{type:String,value:""},_applications:{type:Array,value:function(){return[]}},mobileScreen:{type:Boolean,value:!1,reflectToAttribute:!0},tabletScreen:{type:Boolean,value:!1,reflectToAttribute:!0},tabletS1024Screen:{type:Boolean,value:!1,reflectToAttribute:!0},tabletS1280Screen:{type:Boolean,value:!1,reflectToAttribute:!0},laptopScreen:{type:Boolean,value:!1,reflectToAttribute:!0},animationConfig:{value:function(){return{entry:{name:"fade-in-animation",node:this,timing:{duration:300}},exit:{name:"fade-out-animation",node:this,timing:{duration:200}}}}},pageLoaded:{type:Boolean,value:!1}},behaviors:[Polymer.NeonAnimatableBehavior],observers:["_updateScreen(mobileScreen, tabletScreen, tabletS1024Screen, tabletS1280Screen, laptopScreen)"],attached:function(){this.pageLoaded=!1,(this.mobileScreen||this.tabletScreen||this.tabletS1024Screen||this.tabletS1280Screen||this.laptopScreen)&&this.updateStyles()},_updateScreen:function(t,i,e,n,o){this.updateStyles()},_computeApplicationShared:function(t){return t&&!t.owner},_pageLoaded:function(){this.pageLoaded=!0,this.fire("page-loaded")},initializePage:function(){this.setDefaultApplication()},resetPage:function(){this._hideInfo()},_showInfo:function(){this.$.appscoContent.showSection("info"),this._infoShown=!0,this._selectedTab=0},_hideInfo:function(){this.$.appscoContent.hideSection("info"),this._infoShown=!1},toggleInfo:function(){this.$.appscoContent.toggleSection("info"),this._infoShown=!this._infoShown,this._infoShown&&(this._selectedTab=0)},_onViewApplicationInfo:function(t){this.set("application",t.detail.application),this._infoShown||this._showInfo()},_onApplicationEdit:function(t){this.set("application",t.detail.application),this.fire("edit-application")},_onApplicationInfoEdit:function(){this.fire("info-edit-application")},_onApplication:function(t){window.open(t.detail.application.meta.plugin_go,"_blank")},_onShareApplication:function(){this.fire("share-application")},_onRevokeApplication:function(){this.fire("revoke-application",{application:this.application})},reloadApplications:function(){this.$.appscoApplications.reloadApplications()},addApplications:function(t){this.$.appscoApplications.addApplications(t)},removeApplications:function(t){this.$.appscoApplications.removeApplications(t)},_onApplicationRemoved:function(){this.setDefaultApplication()},setDefaultApplication:function(){this.set("application",this.$.appscoApplications.getFirstApplication())},filterApplicationsByTerm:function(t){this.$.appscoApplications.filterApplicationsByTerm(t)}});</script>
+</dom-module>
+</body></html>

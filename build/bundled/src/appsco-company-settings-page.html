@@ -1,0 +1,196 @@
+<html><head><meta charset="UTF-8"><link rel="import" href="appsco-app.html"></head><body><div hidden="" by-vulcanize=""><dom-module id="appsco-company-image-settings" assetpath="company/">
+    <template>
+        <style>
+            :host {
+                display: inline-block;
+                position: relative;
+                @apply(--appsco-company-image-settings);
+            }
+            .upload-container {
+                /*width: 96px;*/
+                height: 96px;
+                margin-left: auto;
+                margin-right: auto;
+                overflow: hidden;
+                position: relative;
+                @apply(--company-image-upload-container);
+            }
+            .company-image, .company-image-upload, .icon-upload {
+                position: absolute;
+                top: 0;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                margin: auto;
+            }
+            .company-image {
+                width: 96px;
+                height: 96px;
+                --iron-image-placeholder: {
+                    background: #eeeeee;
+                };
+
+                @apply(--company-image);
+            }
+            .company-image-upload {
+                background-color: rgba(250, 250, 250, 0.8);
+                display: block;
+                opacity: 0;
+                z-index: 5;
+                cursor: pointer;
+                @apply(--company-image-upload-field);
+            }
+            .company-image-upload.no-image {
+                opacity: 1;
+            }
+            .company-image-upload:hover {
+                opacity: 1;
+                transition: opacity .2s ease-in;
+            }
+            .icon-upload {
+                width: 32px;
+                height: 32px;
+                @apply(--company-image-upload-icon);
+            }
+            .upload-file {
+                width: 0;
+                height: 0;
+                opacity: 0;
+            }
+        </style>
+
+        <appsco-form-error message="[[ _error ]]"></appsco-form-error>
+
+        <div class="upload-container">
+
+            <appsco-loader active="[[ _loader ]]" loader-alt="Appsco is saving company logo" multi-color=""></appsco-loader>
+
+            <iron-image class="company-image" src="[[ company.image ]]" alt="Company logo" sizing="contain"></iron-image>
+
+            <label for="companyImage" class$="company-image-upload [[ _imagePreview ]]">
+                <iron-icon icon="file-upload" class="icon-upload"></iron-icon>
+            </label>
+
+            <input type="file" accept="image/*" id="companyImage" name="company-image" class="upload-file" on-change="_onUploadImage">
+        </div>
+    </template>
+    <script>Polymer({is:"appsco-company-image-settings",properties:{company:{type:Object,value:function(){return{}},notify:!0},authorizationToken:{type:String,value:""},imageSettingsApi:{type:String},_computedHeaders:{type:Object,computed:"_computeHeaders(authorizationToken)"},_imagePreview:{type:String,computed:"_computeImagePreviewClass(company)"},_loader:{type:Boolean,value:!1},_error:{type:String}},_validateImageFile:function(e){var t=["image/jpg","image/jpeg","image/png"],a=e.type,i=!0;if(e.size>1048576)this._error="Image size must be less than 1MB.",i=!1;else for(var n=0;n<t.length;n++){if(t[n]===a){i=!0;break}i=!1,n!==t.length-1||i||(this._error="Allowed file types are: jpg, jpeg and png.")}return i},_setNewImage:function(e){var t=new FileReader;t.onload=function(e){this.company.image=e.target.result;var t=JSON.parse(JSON.stringify(this.company));this.company={},this.company=t}.bind(this),t.readAsDataURL(e)},_onUploadImage:function(e){var t=e.target;if(this._error="",t.files&&t.files[0]){var a=t.files[0],i=new FormData,n=new XMLHttpRequest;if(!this._validateImageFile(a))return!1;i.append("file",a,a.name),n.onreadystatechange=function(){4==n.readyState&&200==n.status&&(this._setNewImage(a),this.fire("logo-changed",{company:JSON.parse(n.response)}))}.bind(this),n.open("POST",this.imageSettingsApi,!0),n.setRequestHeader("Authorization",this._computedHeaders),n.send(i)}},_computeHeaders:function(e){return"token "+e},_computeImagePreviewClass:function(e){return e&&e.image?"has-image":"no-image"},reset:function(){var e=JSON.parse(JSON.stringify(this.company));this.company={},this.company=e,this._error=""}});</script>
+</dom-module>
+</div><dom-module id="appsco-company-settings-page">
+    <template>
+        <style include="webkit-scrollbar-style">
+            :host {
+                display: block;
+                color: var(--primary-text-color);
+
+                --appsco-content-sections: {
+                    padding: 0 10px;
+                    color: var(--primary-text-color);
+                };
+                --paper-button: {
+                    padding: 4px 8px;
+                    @apply(--primary-button);
+                    display: inline-block;
+                    margin-top:20px;
+                };
+
+                --resource-width: 300px;
+            }
+            :host paper-icon-button::shadow paper-ripple {
+                width: 150%;
+                height: 150%;
+                top: -25%;
+                left: -25%;
+            }
+            :host div[resource] {
+                padding: 10px;
+            }
+            :host div[content] {
+                height: 90%;
+            }
+            .resource-header {
+                padding: 20px 10px 30px;
+                border-bottom: 1px solid var(--divider-color);
+                position: relative;
+            }
+            .company-info {
+                margin-top: 10px;
+                font-size: 14px;
+            }
+            .company-info p {
+                margin: 4px 0;
+            }
+            :host .flex-horizontal {
+                @apply(--layout-horizontal);
+                @apply(--layout-center);
+            }
+            :host .flex-vertical {
+                @apply(--layout-vertical);
+                @apply(--layout-center);
+            }
+            :host .flex {
+                @apply(--layout-flex);
+            }
+            :host([medium-screen]) {
+                --resource-width: 240px;
+            }
+            :host([mobile-screen]) {
+                --resource-width: 180px;
+            }
+            hr {
+                height: 1px;
+                margin: 4px 0;
+                border: none;
+                background-color: var(--divider-color);
+            }
+            :host .company-settings{
+                color: var(--primary-text-color);
+            }
+        </style>
+
+        <iron-media-query query="(max-width: 1200px)" query-matches="{{ mediumScreen }}"></iron-media-query>
+        <iron-media-query query="(max-width: 800px)" query-matches="{{ tabletScreen }}"></iron-media-query>
+        <iron-media-query query="(max-width: 600px)" query-matches="{{ mobileScreen }}"></iron-media-query>
+
+        <appsco-content id="appscoContent" resource-active="">
+
+            <div resource="">
+
+                <div class="resource-header flex-vertical">
+                    <appsco-company-image-settings id="appscoCompanyImageSettings" company="{{ account.company }}" authorization-token="[[ authorizationToken ]]" image-settings-api="{{ account.company.meta.logo }}" on-logo-changed="_companyLogoChanged"></appsco-company-image-settings>
+                </div>
+
+                <div class="company-info">
+                    <h3>[[ account.company.name ]]</h3>
+                    <iron-icon icon="communication:email"></iron-icon>[[ account.company.contact_email ]]
+                </div>
+            </div>
+
+            <div content="">
+
+                <div class="account-components">
+                    <div class="company-settings">
+                        <h2>Company Settings</h2>
+                        <p>
+                            Company name is used to distinguish company applications from users personal applications.
+                            It is used in branding and can be displayed in login screen along with company logo.
+                            Beside this usage company name will also be shown in filtering on personal home screen under "All applications" section.
+                        </p>
+                        <paper-input id="companyName" label="Company name" value="[[ account.company.name ]]" name="company_settings[name]" required="" error-message="Please type in company name."></paper-input>
+                        <p>
+                            Company contact email will be displayed in user profile section and used for contact purposes.
+                        </p>
+                        <paper-input id="contactEmail" label="Contact email" value="[[ account.company.contact_email ]]" name="company_settings[contactEmail]" error-message="Please type in contact email."></paper-input>
+
+                        <paper-button on-tap="_updateCompanySettings">Save</paper-button>
+                    </div>
+                </div>
+
+            </div>
+        </appsco-content>
+
+    </template>
+
+    <script>Polymer({is:"appsco-company-settings-page",properties:{account:{type:Object,value:function(){return{}},notify:!0},authorizationToken:{type:String},imageSettingsApi:{type:String},_computedHeaders:{type:Object,computed:"_computeHeaders(authorizationToken)"},mediumScreen:{type:Boolean,value:!1,reflectToAttribute:!0},tabletScreen:{type:Boolean,value:!1,reflectToAttribute:!0},mobileScreen:{type:Boolean,value:!1,reflectToAttribute:!0},pageLoaded:{type:Boolean,value:!1}},behaviors:[Polymer.NeonAnimatableBehavior],observers:["_updateScreen(mediumScreen, tabletScreen, mobileScreen)"],attached:function(){this.pageLoaded=!1,(this.mobileScreen||this.tabletScreen||this.mediumScreen)&&this.updateStyles()},_updateCompanySettings:function(){var e="",t=this;e=encodeURIComponent(this.$.companyName.name)+"="+encodeURIComponent(this.$.companyName.value),e+="&",e+=encodeURIComponent(this.$.contactEmail.name)+"="+encodeURIComponent(this.$.contactEmail.value);var n={url:this.account.company.meta.settings,method:"PUT",body:e,handleAs:"json",headers:{Authorization:"token "+this.authorizationToken,"Content-Type":"application/x-www-form-urlencoded"}},o=document.createElement("iron-request");o.send(n).then(function(){o.succeeded&&(t.set("account.company",o.response),t.fire("settings-changed",{account:t.account}))})},_companyLogoChanged:function(e){this.set("account.company",e.detail.company),this.fire("settings-changed",{account:this.account})},_updateScreen:function(e,t,n){this.updateStyles(),n?this.$.appscoContent.hideSection("resource"):this.$.appscoContent.resourceActive||this.$.appscoContent.showSection("resource")},_computeHeaders:function(e){return{Authorization:"token "+e}},_pageLoaded:function(){this.pageLoaded=!0,this.fire("page-loaded")}});</script>
+</dom-module>
+</body></html>

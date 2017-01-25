@@ -1,0 +1,223 @@
+<html><head><link rel="import" href="../bower_components/polymer/polymer.html">
+<link rel="import" href="../bower_components/neon-animation/neon-animated-pages.html">
+<link rel="import" href="../bower_components/neon-animation/animations/fade-in-animation.html">
+<link rel="import" href="../bower_components/neon-animation/animations/fade-out-animation.html">
+<link rel="import" href="../bower_components/paper-icon-button/paper-icon-button.html">
+<link rel="import" href="../bower_components/iron-image/iron-image.html">
+<link rel="import" href="../bower_components/iron-media-query/iron-media-query.html">
+
+<link rel="import" href="../bower_components/appsco-page/appsco-content.html">
+<link rel="import" href="../bower_components/appsco-account/appsco-account-image-settings.html">
+<link rel="import" href="account/appsco-account-components-page.html">
+<link rel="import" href="account/appsco-account-settings-page.html">
+<link rel="import" href="account/appsco-account-2fa-page.html">
+<link rel="import" href="account/appsco-account-2fa-manage.html">
+<link rel="import" href="account/appsco-account-notifications-page.html">
+<link rel="import" href="account/appsco-account-authorized-apps-page.html">
+<link rel="import" href="account/appsco-account-log-page.html">
+<link rel="import" href="account/appsco-account-transfer-token-page.html">
+<link rel="import" href="account/appsco-account-change-password-page.html">
+
+</head><body><dom-module id="appsco-account-page">
+    <template>
+        <style include="webkit-scrollbar-style">
+            :host {
+                display: block;
+                color: #000;
+
+                --appsco-content-sections: {
+                     padding: 0;
+                 };
+
+                --resource-width: 300px;
+            }
+            :host paper-icon-button::shadow paper-ripple {
+                width: 150%;
+                height: 150%;
+                top: -25%;
+                left: -25%;
+            }
+            :host div[resource] {
+                padding: 10px;
+            }
+            :host div[content] {
+                height: 100%;
+            }
+            :host .account-components, :host .account-components neon-animated-pages {
+                height: 100%;
+            }
+            appsco-account-components-page {
+                padding: 10px;
+            }
+            appsco-account-image-settings {
+                display: block;
+            }
+            .resource-header {
+                padding: 20px 10px 30px;
+                border-bottom: 1px solid var(--divider-color);
+                position: relative;
+            }
+            .resource-header .action-share {
+                color: var(--app-secondary-color);
+                position: absolute;
+                top: 0;
+                right: 0;
+            }
+            .account-image {
+                width: 64px;
+                height: 64px;
+                margin: 0 auto;
+                border-radius: 50%;
+                display: block;
+            }
+            .account-info {
+                margin-top: 10px;
+                font-size: 14px;
+            }
+            .account-info p {
+                margin: 4px 0;
+            }
+            .account-managed-by, .account-partner-info {
+                margin-top: 10px;
+            }
+            div[resource] .resource-actions {
+                position: absolute;
+                bottom: 0;
+                left: 0;
+                right: 0;
+            }
+            :host .change-password-button {
+                @apply(--primary-button);
+                @apply(--secondary-button);
+                border-radius: 0;
+            }
+            :host .flex-horizontal {
+                @apply(--layout-horizontal);
+                @apply(--layout-center);
+            }
+            :host .flex-vertical {
+                @apply(--layout-vertical);
+            }
+            :host .flex {
+                @apply(--layout-flex);
+            }
+            :host([medium-screen]) {
+                --resource-width: 240px;
+            }
+            :host([mobile-screen]) {
+                --resource-width: 180px;
+            }
+            .change-password-hero {
+                position: fixed;
+                top: 0;
+                right: 0;
+                bottom: 0;
+                left: 0;
+                margin: auto;
+                width: 100px;
+                height: 100px;
+                opacity: 0;
+                visibility: hidden;
+            }
+            .additional-info {
+                font-size: 12px;
+                color: var(--secondary-text-color);
+                text-align: center;
+            }
+            hr {
+                height: 1px;
+                margin: 4px 0;
+                border: none;
+                background-color: var(--divider-color);
+            }
+        </style>
+
+        <iron-media-query query="(max-width: 1200px)" query-matches="{{ mediumScreen }}"></iron-media-query>
+        <iron-media-query query="(max-width: 800px)" query-matches="{{ tabletScreen }}"></iron-media-query>
+        <iron-media-query query="(max-width: 600px)" query-matches="{{ mobileScreen }}"></iron-media-query>
+
+        <iron-ajax auto="" url="[[ partnerApi ]]" on-response="_onPartnerResponse" headers="{{ _computedHeaders }}">
+        </iron-ajax>
+
+        <appsco-content id="appscoContent" resource-active="">
+
+            <div class="flex-vertical" resource="">
+
+                <div class="resource-header">
+                    <appsco-account-image-settings id="appscoAccountImageSettings" account="{{ account }}" authorization-token="[[ authorizationToken ]]" image-settings-api="[[ imageSettingsApi ]]">
+                    </appsco-account-image-settings>
+                </div>
+
+                <div class="account-info">
+                    <template is="dom-if" if="[[ _accountName ]]">
+                        <div class="account-name">[[ _accountName ]]</div>
+                    </template>
+
+                    <div class="account-email">[[ account.email ]]</div>
+
+                    <template is="dom-if" if="[[ account.company ]]">
+                        <hr>
+                        <div class="account-managed-by">
+                            <p>Managed by: [[ account.company.name ]]</p>
+                        </div>
+                    </template>
+
+                    <template is="dom-if" if="[[ _partner.company_name ]]">
+                        <hr>
+                        <div class="account-partner-info">
+                            <p>Partner: [[ _partner.company_name ]]</p>
+                        </div>
+                    </template>
+                </div>
+
+                <div class="resource-actions flex-horizontal">
+                    <paper-button class="change-password-button flex" on-tap="_onChangePassword">
+                        Change password
+                    </paper-button>
+                </div>
+
+            </div>
+
+            <div content="">
+
+                <div class="account-components">
+                    <neon-animated-pages class="flex" selected="{{ _selected }}" attr-for-selected="name" on-neon-animation-finish="_onPageAnimationFinish">
+
+                        <appsco-account-components-page id="appscoAccountComponentsPage" name="appsco-account-components-page" account="{{ account }}" partner="{{ _partner }}" authorization-token="[[ authorizationToken ]]" notifications-api="[[ notificationsApi ]]" authorized-apps-api="[[ authorizedAppsApi ]]" log-api="[[ logApi ]]" two-fa-api="[[ twoFaApi ]]" two-fa-qr-api="[[ twoFaQrApi ]]" on-account-settings="_onAccountSettings" on-2fa-enable="_on2FAEnable" on-2fa-manage="_on2FAManage" on-all-notifications="_onAllNotifications" on-manage-authorized-apps="_onManageAuthorizedApps" on-whole-log="_onWholeLog" on-manage-partner="_onManagePartner" on-log-loaded="_pageLoaded" on-log-empty="_pageLoaded">
+                        </appsco-account-components-page>
+
+                        <appsco-account-settings-page name="appsco-account-settings-page" account="{{ account }}" authorization-token="[[ authorizationToken ]]" settings-api="[[ settingsApi ]]" image-settings-api="[[ imageSettingsApi ]]" on-settings-saved="_onSettingsSaved" on-back="_onResourceBack">
+                        </appsco-account-settings-page>
+
+                        <appsco-account-2fa-page name="appsco-account-2fa-page" account="{{ account }}" two-fa-api="[[ twoFaApi ]]" two-fa-qr-api="[[ twoFaQrApi ]]" authorization-token="[[ authorizationToken ]]" on-back="_onResourceBack" on-twofa-enabled="_onTwoFaEnabled"></appsco-account-2fa-page>
+
+                        <appsco-account-2fa-manage name="appsco-account-2fa-manage" account="{{ account }}" two-fa-api="[[ twoFaApi ]]" two-fa-codes-api="[[ twoFaCodesApi ]]" authorization-token="[[ authorizationToken ]]" on-back="_onResourceBack" on-twofa-disabled="_onTwoFaDisabled"></appsco-account-2fa-manage>
+
+                        <appsco-account-notifications-page name="appsco-account-notifications-page" account="{{ account }}" authorization-token="[[ authorizationToken ]]" notifications-api="[[ notificationsApi ]]" on-back="_onResourceBack">
+                        </appsco-account-notifications-page>
+
+                        <appsco-account-authorized-apps-page id="appscoAccountAuthorizedAppsPage" name="appsco-account-authorized-apps-page" account="{{ account }}" authorization-token="[[ authorizationToken ]]" authorized-apps-api="[[ authorizedAppsApi ]]" on-back="_onResourceBack">
+                        </appsco-account-authorized-apps-page>
+
+                        <appsco-account-log-page id="appscoAccountLogPage" name="appsco-account-log-page" account="{{ account }}" authorization-token="[[ authorizationToken ]]" log-api="[[ logApi ]]" on-back="_onResourceBack">
+                        </appsco-account-log-page>
+
+                        <appsco-account-transfer-token-page name="appsco-account-transfer-token-page" partner="[[ _partner ]]" authorization-token="[[ authorizationToken ]]" transfer-token-api="[[ transferTokenApi ]]" on-token-generated="_onTokenGenerated" on-back="_onResourceBack">
+                        </appsco-account-transfer-token-page>
+
+                        <appsco-account-change-password-page name="appsco-account-change-password-page" authorization-token="[[ authorizationToken ]]" change-password-api="[[ changePasswordApi ]]" on-password-changed="_onPasswordChanged" on-back="_onResourceBack">
+                        </appsco-account-change-password-page>
+
+                    </neon-animated-pages>
+                </div>
+
+            </div>
+        </appsco-content>
+
+        <div id="changePasswordHero" class="change-password-hero"></div>
+
+    </template>
+
+    <script>Polymer({is:"appsco-account-page",properties:{account:{type:Object,value:function(){return{}},notify:!0},_partner:{type:Object,value:function(){return{}}},authorizationToken:{type:String},notificationsApi:{type:String},authorizedAppsApi:{type:String},logApi:{type:String},twoFaApi:{type:String},twoFaQrApi:{type:String},twoFaCodesApi:{type:String},settingsApi:{type:String},imageSettingsApi:{type:String},transferTokenApi:{type:String},changePasswordApi:{type:String},partnerApi:{type:String},_computedHeaders:{type:Object,computed:"_computeHeaders(authorizationToken)"},_accountName:{type:String,computed:"_setAccountName(account)"},_selected:{type:String,value:"appsco-account-components-page",notify:!0},mediumScreen:{type:Boolean,value:!1,reflectToAttribute:!0},tabletScreen:{type:Boolean,value:!1,reflectToAttribute:!0},mobileScreen:{type:Boolean,value:!1,reflectToAttribute:!0},animationConfig:{value:function(){return{entry:{name:"fade-in-animation",node:this,timing:{duration:300}},exit:{name:"fade-out-animation",node:this,timing:{duration:200}}}}},showAllNotifications:{type:Boolean,value:!1,observer:"_observeSeeAllNotifications"},pageLoaded:{type:Boolean,value:!1}},behaviors:[Polymer.NeonAnimatableBehavior],observers:["_updateScreen(mediumScreen, tabletScreen, mobileScreen)"],attached:function(){this.pageLoaded=!1,(this.mobileScreen||this.tabletScreen||this.mediumScreen)&&this.updateStyles()},_updateScreen:function(e,t,n){this.updateStyles(),n?this.$.appscoContent.hideSection("resource"):this.$.appscoContent.resourceActive||this.$.appscoContent.showSection("resource")},_computeHeaders:function(e){return{Authorization:"token "+e}},_pageLoaded:function(){this.pageLoaded=!0,this.fire("page-loaded")},_observeSeeAllNotifications:function(e){e&&this.showAllApplications()},_onPartnerResponse:function(e){this._partner=e.detail.response},_setAccountName:function(e){var t=null;return""!=e.first_name&&(t=e.first_name+" "),""!=e.last_name&&(t+=e.last_name),t},_onResourceBack:function(){this._showAccountComponentsPage()},_onTwoFaEnabled:function(){this._showAccountComponentsPage(),this.refreshLog(),this.$.appscoAccountComponentsPage.load2FaApi()},_onTwoFaDisabled:function(){this._showAccountComponentsPage(),this.refreshLog(),this.$.appscoAccountComponentsPage.load2FaApi()},refreshLog:function(){this.$.appscoAccountComponentsPage.loadLog(),this.$.appscoAccountLogPage.loadLog()},_onSettingsSaved:function(){this._showAccountComponentsPage(),this.refreshLog()},_onTokenGenerated:function(){this.refreshLog()},_onPasswordChanged:function(){this._showAccountComponentsPage(),this.refreshLog()},onApplicationRevoked:function(){this.$.appscoAccountAuthorizedAppsPage.loadAuthorizedApps(),this.$.appscoAccountComponentsPage.loadAuthorizedApps(),this.refreshLog()},_showAccountComponentsPage:function(){this._enableAdvancedSettings(),this._selected="appsco-account-components-page"},showAllApplications:function(){this.$.appscoAccountComponentsPage.setSharedElement("notifications"),setTimeout(function(){this._onAllNotifications(),this.showAllNotifications=!1}.bind(this),50)},resetPage:function(){this.$.appscoAccountComponentsPage.hideAdvancedSettings(),this._showAccountComponentsPage()},toggleResource:function(){this.$.appscoContent.toggleSection("resource")},_onAccountAdvancedSettings:function(){this.$.appscoAccountComponentsPage.toggleAdvancedSettings(),this._showAccountComponentsPage()},_disableAdvancedSettings:function(){this.fire("disable-advanced-settings")},_enableAdvancedSettings:function(){this.fire("enable-advanced-settings")},_onAccountSettings:function(){this._disableAdvancedSettings(),this._selected="appsco-account-settings-page"},_on2FAEnable:function(){this._disableAdvancedSettings(),this._selected="appsco-account-2fa-page"},_on2FAManage:function(){this._disableAdvancedSettings(),this._selected="appsco-account-2fa-manage"},_onAllNotifications:function(){this._disableAdvancedSettings(),this._selected="appsco-account-notifications-page"},_onManageAuthorizedApps:function(){this._disableAdvancedSettings(),this._selected="appsco-account-authorized-apps-page"},_onWholeLog:function(){this._disableAdvancedSettings(),this._selected="appsco-account-log-page"},_onManagePartner:function(){this._disableAdvancedSettings(),this._selected="appsco-account-transfer-token-page"},_onChangePassword:function(){this._disableAdvancedSettings(),this.$.appscoAccountComponentsPage.sharedElements={hero:this.$.changePasswordHero},this._selected="appsco-account-change-password-page"},_onPageAnimationFinish:function(e){var t=e.detail.fromPage,n=e.detail.toPage;switch(t.getAttribute("name")){case"appsco-account-settings-page":case"appsco-account-transfer-token-page":case"appsco-account-change-password-page":t.resetPage()}switch(n.getAttribute("name")){case"appsco-account-settings-page":case"appsco-account-change-password-page":n.setPage()}}});</script>
+</dom-module>
+</body></html>

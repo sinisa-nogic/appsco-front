@@ -1,0 +1,109 @@
+<html><head><link rel="import" href="../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../bower_components/iron-flex-layout/iron-flex-layout.html">
+<link rel="import" href="../../bower_components/neon-animation/neon-shared-element-animatable-behavior.html">
+<link rel="import" href="../../bower_components/neon-animation/animations/hero-animation.html">
+<link rel="import" href="../../bower_components/neon-animation/animations/fade-in-animation.html">
+<link rel="import" href="../../bower_components/neon-animation/animations/slide-right-animation.html">
+<link rel="import" href="../../bower_components/paper-card/paper-card.html">
+<link rel="import" href="../../bower_components/paper-icon-button/paper-icon-button.html">
+<link rel="import" href="../../bower_components/paper-button/paper-button.html">
+<link rel="import" href="../../bower_components/paper-progress/paper-progress.html">
+
+<link rel="import" href="../../bower_components/appsco-application/appsco-application-subscribers.html">
+<link rel="import" href="../../bower_components/appsco-components/appsco-list-item.html">
+
+</head><body><dom-module id="appsco-application-subscribers-page">
+    <template>
+        <style include="webkit-scrollbar-style">
+            :host {
+                @apply(--full-page);
+
+                --paper-card-header: {
+                     border-bottom: 1px solid var(--divider-color);
+                 };
+            }
+            :host paper-card {
+                @apply(--full-page-paper-card);
+            }
+            .page-close-action {
+                @apply(--page-close-action);
+            }
+            :host appsco-application-subscribers {
+                display: none;
+            }
+            :host appsco-list-item {
+                padding-top: 10px;
+            }
+            :host appsco-list-item:first-of-type {
+                border-top: none;
+            }
+            .total-subscribers {
+                margin-bottom: 10px;
+                display: block;
+            }
+            :host paper-progress {
+                width: 100%;
+            }
+            :host .load-more-button {
+                @apply(--load-more-button);
+            }
+            :host .subscriber {
+                @apply(--layout-horizontal);
+                @apply(--layout-center);
+            }
+            :host .subscriber > appsco-list-item {
+                @apply(--layout-flex);
+            }
+            :host .subscriber paper-button {
+                padding: 2px 4px;
+                font-size: 12px;
+                opacity: 0.6;
+            }
+            :host .message {
+                @apply(--info-message);
+            }
+        </style>
+
+        <appsco-application-subscribers id="appscoApplicationSubscribers" application="[[ application ]]" authorization-token="[[ authorizationToken ]]" size="10" on-subscribers-load="_onSubscribersLoad" on-subscribers-empty="_onSubscribersLoadEmpty" hidden="">
+        </appsco-application-subscribers>
+
+        <paper-card heading="Subscribers" id="card">
+            <paper-icon-button icon="close" title="Close" class="page-close-action" on-tap="_back"></paper-icon-button>
+
+            <div class="card-content layout vertical">
+
+                <div hidden$="[[ _subscribersEmpty ]]">
+                    <span class="total-subscribers">Total subscribers: [[ _totalSubscribers ]]</span>
+                </div>
+
+                <div hidden$="[[ !_subscribersEmpty ]]">
+                    <p class="message">There are no subscribers for this application.</p>
+                    <p class="message">Go and share it to other users.</p>
+                </div>
+
+                <paper-progress id="progressBar" indeterminate="" hidden=""></paper-progress>
+
+                <template is="dom-repeat" items="{{ _subscribers }}">
+
+                    <div class="subscriber">
+                        <appsco-list-item item="[[ _mapToListItem(item) ]]"></appsco-list-item>
+
+                        <div class="actions" hidden$="[[ _owner(item) ]]">
+                            <paper-button on-tap="_revoke">Revoke</paper-button>
+                        </div>
+                    </div>
+
+
+                </template>
+
+                <paper-button id="loadMore" class="load-more-button" on-tap="_loadMoreSubscribers" hidden="[[ !_moreSubscribers ]]">Load More</paper-button>
+
+            </div>
+        </paper-card>
+
+    </template>
+
+    <script>Polymer({is:"appsco-application-subscribers-page",properties:{application:{type:Object,value:function(){return{}},notify:!0},account:{type:Object,value:function(){return{}}},authorizationToken:{type:String,value:""},_subscribers:{type:Array,value:function(){return[]},notify:!0},_totalSubscribers:{type:Number},_subscribersEmpty:{type:Boolean,computed:"_computeSubscribersEmpty(_totalSubscribers)"},_placeholder:{type:String,value:"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIwAAACMCAMAAACZHrEMAAAAqFBMVEUAAAAnNEEnNEEnNEEnNEEnNEE8rPcnNEEnNEEnNUI8rPc8rPc8rPcnNEEnNEEnNEEnNEEnNEE8rPc8rPc8rPc8rPcnNEE8rPcnNEE8rPcnNEH///88rPeTmqAoPlDJzNBdZ3Hx8/WBiI+us7g0gLUuWno1QU1OtPjk5+kxbZg9TFtswfprc3w6oebX2ds3lNO8wMShpqxQWmWu3fye1vszeKfU7f6Nz/toHOtWAAAAGnRSTlMAnyC/EO+fYEDPYO26r4+AcFA9IIAQ388wUFlk1w8AAASsSURBVHjazNbdqqtADAXg+XEYvajam1JWkFYLIiIb2/d/uHPgwPam7kmM7p7vCRbJJBmzXR4r6z2w8N5WMTe/7FrbAqsKW1/N73DxFJAUTtGZg7m6AFtRH5gnix5CPmbmCK4M2CCU+5cnt9jM5vtG8VDx+8VxFmp2n2ZlFXZRZUbtfMFOLmdtWU7Y0SlTlSVgV2F7cbISuys3FscVOEDhzAZ5wCFCbsQiDhONkMWB7BFZ+qmZb/TtNjdTr0ijyNJ3M70xd70wjT5L37S0om16SRp9lqmlH7QTP40+y4MSHsI0+izHp4ncLPo00STkSOqIpUNSYhe7gJSxJZZ2REpw5gdZIWmSvlFFZtaVSBqJbURSaVadkfYktifSzqtNCkgbiG1AWlhr1AlpLxJ4Ie20vUnoSKDD1kZlFzDMJDCD4fKuURU4vkjgCxzVm3UHFhIBi+Pfx+PDWNFNWtxJ5I6F4Eb5T4bxzMLow8hLYz8bxrJGSR9GPlDlp8OUzAupDyO7lxFcI4mM4IqcudYvPeF0O3w+zPcTrsEkP5R8tfmnAN+NBG7gK+RdwpMEnhBwiVnS//QEYuLrq100dyyYn+EAvnEigWkEXzB/XcH3IKEH+K6ywe5IrANbvfwetHOtn24r2zIDiQ0ABJsGfLQB+JYPp/oW6C9CbiKA/+PNIJoKfA2JNeCrjAXfRGIT+KzxECCxHnxeFmYmoRkC3iBB16cOEgYiA4m0SFCFaY6bJXmYvhUVpoeIgUyjKIwijP4kDD0StGFef2g1t50GgSCABrSBPhj7aHDcGgPZkk0lFlr+/880PDhpaumc4pwvONnN7ly35ks6VAAiw0c84FiADHjgPI9ZLvOx/LfjMrxnz6sULsMDZnUPGigJu6VxYHnUVrb/meCpDEiu3GUyTTsJb4ZAwHkGCbm7TAFKFXeZEhRx7jKgvHWXWYPCHzXTvipOBloi7k97A5pF7jIv2kZDfDrIrECD0T1QPoHWq7tMAZrSMJ85VJRc2/WId4fkag0GGbB44r/eBox44ACB/3o5GH6xb4a/7Yf71m1D0xoK7l3bhApQ8IFpaI6dSHw1EEW6o1lo9QhHyaHtZCJZZJJMdK36GBfBcqvJROxvu/RRROw+OVg/aGo5Iw7zW69DlDPqhiytlLOHspdLUn/62+TUJ7lkP3s8pXFlJdRyjfgrpCJjlGvUYf5dKyVVUaM0Dj+MKakH1Cln15xUhcN1MsMCmKo46+S3V+O+m7VjFYdhIAigU22x2nCglTE+llRxkYBJlf//tbsikKQ4CVtand4XDCPBNnPdzMV2/f70VRwNrpu52dbP0WBhTnl+mKvHubh7PWVqcSvnlJng+tfyKud1If98qNvdurjfMo/0vN6rdbP+XuvsoP1iHV2yg3ZosI6CIitaRxEFbN0wisg6IWCYNAQMk4aAYdIQMEwaAoZJQ8AwaQg7sblh7BaDuQgRB+hsDmbFIVOy5tKEo5ZgTYUFFSaxhuRZywDlhAXVpvTvv+WdklUjRStRrIpEtBSpopWI1jQFOyAkhYeJxXYSnuBGeceNmFnhTFmCFQVhRR+Rac40QhzRWeREIvZGhFJNjh/wS1HnPv+ePgAAAABJRU5ErkJggg=="},_loadMore:{type:Boolean,value:!1},_moreSubscribers:{type:Boolean,value:!0},animationConfig:{value:function(){return{entry:[{name:"hero-animation",id:"hero",toPage:this,timing:{duration:300}},{name:"fade-in-animation",node:this,timing:{duration:500}}],exit:{name:"slide-right-animation",node:this,timing:{duration:200}}}}},sharedElements:{value:function(){return{hero:this.$.card}}}},behaviors:[Polymer.NeonSharedElementAnimatableBehavior],listeners:{"application-changed":"_onApplicationChanged"},_onApplicationChanged:function(){this.set("_subscribers",[])},_computeSubscribersEmpty:function(e){return 0===e},_revoke:function(e){this.fire("subscription-revoke",{application:this.application,account:e.model.item})},_onSubscribersLoad:function(e){var t=e.detail.subscribers.accounts;this._loadMore||this.set("_subscribers",[]),this._loadMore=!1,t&&t.length>0&&t.forEach(function(i,n){setTimeout(function(){this.push("_subscribers",i)}.bind(this),50*(n+1)),n===t.length-1&&setTimeout(function(){this._moreSubscribers=!0,this._totalSubscribers=e.detail.subscribers.meta.total,this.$.progressBar.hidden=!0,parseInt(e.detail.subscribers.meta.page)==parseInt(e.detail.subscribers.meta.pages)&&(this._moreSubscribers=!1)}.bind(this),50*t.length)}.bind(this))},_onSubscribersLoadEmpty:function(){this._totalSubscribers=0,this._moreSubscribers=!1},_loadMoreSubscribers:function(){this.$.progressBar.hidden=!1,this.$.appscoApplicationSubscribers.loadMore(),this._loadMore=!0},_back:function(){this.fire("back")},_mapToListItem:function(e){return{icon:e.picture_url?e.picture_url:this._placeholder,date:"",message:e.name+" - "+e.email}},_owner:function(e){return e.email==this.account.email}});</script>
+</dom-module>
+
+</body></html>

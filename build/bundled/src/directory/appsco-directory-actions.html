@@ -1,0 +1,169 @@
+<html><head><link rel="import" href="../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../bower_components/iron-ajax/iron-ajax.html">
+<link rel="import" href="../../bower_components/iron-flex-layout/iron-flex-layout.html">
+<link rel="import" href="../../bower_components/paper-input/paper-input.html">
+<link rel="import" href="../../bower_components/paper-icon-button/paper-icon-button.html">
+<link rel="import" href="../../bower_components/iron-icon/iron-icon.html">
+<link rel="import" href="../../bower_components/iron-icons/iron-icons.html">
+<link rel="import" href="../../bower_components/iron-icons/social-icons.html">
+<link rel="import" href="../../bower_components/paper-styles/typography.html">
+<link rel="import" href="../../bower_components/paper-listbox/paper-listbox.html">
+<link rel="import" href="../../bower_components/paper-item/paper-item.html">
+<link rel="import" href="../../bower_components/paper-tooltip/paper-tooltip.html">
+<link rel="import" href="../../bower_components/neon-animation/neon-animation-runner-behavior.html">
+<link rel="import" href="../../bower_components/neon-animation/animations/cascaded-animation.html">
+<link rel="import" href="../../bower_components/neon-animation/animations/fade-in-animation.html">
+<link rel="import" href="../../bower_components/neon-animation/animations/fade-out-animation.html">
+
+<link rel="import" href="../../bower_components/paper-dropdown-menu/paper-dropdown-menu.html">
+
+</head><body><dom-module id="appsco-directory-actions">
+    <template>
+        <style>
+            :host {
+                display: inline-block;
+                position: relative;
+                margin-right: -10px;
+                @apply(--layout-horizontal);
+                @apply(--layout-center);
+                @apply(--layout-end-justified);
+                @apply(--appsco-directory-actions);
+
+                --paper-dropdown-menu-button: {
+                    display: block;
+                    padding: 0 0 0 8px;
+                    @apply(--applications-actions-paper-dropdown-menu-button);
+                };
+
+                --iron-icon-fill-color: var(--application-action-icon-color);
+            }
+            :host .action {
+                margin-right: 10px;
+                position: relative;
+                @apply(--layout-vertical);
+                @apply(--layout-center);
+                @apply(--application-action);
+            }
+            :host .bulk-action {
+                display: none;
+            }
+            :host([bulk-actions]) .bulk-action {
+                display: flex;
+            }
+            :host .bulk-action[hidden] {
+                display: none !important;
+            }
+            :host .action-search {
+                @apply(--paper-input-search-container);
+            }
+            :host .action-search paper-input {
+                max-width: 184px;
+            }
+            paper-dropdown-menu {
+                --paper-input-container-underline: {
+                    display: none;
+                };
+                --paper-input-container-underline-focus: {
+                    display: none;
+                };
+                --paper-dropdown-menu-ripple: {
+                    display: none;
+                };
+                --paper-input-container-input: {
+                    vertical-align: middle;
+                    cursor: pointer;
+                    @apply(--application-actions-paper-dropdown-menu-input);
+                };
+            }
+            paper-input[focused] div[prefix] {
+                @apply(--paper-input-focused-prefix);
+            }
+            paper-input[focused] paper-icon-button[suffix] {
+                @apply(--paper-input-focused-sufix);
+            }
+            :host paper-listbox {
+                @apply(--paper-listbox);
+                max-width: 230px;
+                overflow: hidden;
+            }
+            :host paper-item:hover {
+                @apply(--paper-item-hover);
+            }
+            :host div[prefix] iron-icon {
+                width: 18px;
+                height: 18px;
+                @apply(--input-search-prefix);
+            }
+            :host paper-icon-button[suffix] {
+                width: 20px;
+                height: 20px;
+                padding: 0;
+            }
+            :host .add-application-button {
+                @apply(--add-application-button);
+            }
+            .add-application-icon-button {
+                display: none;
+                @apply(--add-application-icon-button);
+            }
+            :host .flex-none {
+                @apply(--layout-flex-none);
+            }
+            :host .action-search paper-input {
+                @apply(--paper-input-search);
+            }
+            :host paper-icon-button::shadow paper-ripple {
+                width: 150%;
+                height: 150%;
+                top: -25%;
+                left: -25%;
+            }
+            :host paper-tooltip {
+                top: 100% !important;
+                font-weight: 500;
+                min-width: 100px;
+                text-align: center;
+                @apply(--application-actions-tooltip);
+            }
+        </style>
+
+        <div class="action action-search flex-none">
+            <paper-input label="Filter accounts" on-keyup="_search" id="search" no-label-float="" tabindex="1">
+                <div prefix="">
+                    <iron-icon icon="search" on-tap="_onSearchIcon"></iron-icon>
+                </div>
+
+                <template is="dom-if" if="[[ _clear ]]">
+                    <paper-icon-button class="clear-icon" id="clear" suffix="" icon="clear" on-tap="_clearSearch"></paper-icon-button>
+                </template>
+
+            </paper-input>
+        </div>
+
+        <div class="action bulk-action flex-none">
+            <paper-icon-button id="organizationUnitsAction" icon="icons:group-work" alt="Organization units" on-tap="_onOrganizationUnitsAction"></paper-icon-button>
+            <paper-tooltip for="organizationUnitsAction" position="bottom">Organization units</paper-tooltip>
+        </div>
+
+        <div class="action bulk-action flex-none">
+            <paper-icon-button id="removeAction" icon="icons:delete" alt="Delete applications" on-tap="_onRemoveAction"></paper-icon-button>
+            <paper-tooltip for="removeAction" position="bottom">Remove</paper-tooltip>
+        </div>
+
+        <div class="action flex-none">
+            <paper-button class="add-application-button" on-tap="_onAddAccountAction">Add account</paper-button>
+            <paper-icon-button id="addAccountAction" icon="icons:add-circle" class="add-application-icon-button" alt="Add application" on-tap="_onAddAccountAction"></paper-icon-button>
+            <paper-tooltip for="addAccountAction" position="bottom">Add account</paper-tooltip>
+        </div>
+
+        <div class="action flex-none">
+            <paper-button class="add-application-button" on-tap="_onImportAccountsAction">Import accounts</paper-button>
+            <paper-icon-button id="importAccountsAction" icon="icons:add-circle" class="add-application-icon-button" alt="Add application" on-tap="_onImportAccountsAction"></paper-icon-button>
+            <paper-tooltip for="importAccountsAction" position="bottom">Import accounts</paper-tooltip>
+        </div>
+
+    </template>
+
+    <script>Polymer({is:"appsco-directory-actions",properties:{authorizationToken:{type:String,value:""},_computedHeaders:{type:Object,computed:"_computeHeaders(authorizationToken)"},_clear:{type:Boolean,value:!1},bulkActions:{type:Boolean,value:!1,observer:"_onBulkActionsChanged"},_selectedAll:{type:Boolean,value:!1},animationConfig:{value:function(){return{entry:{name:"cascaded-animation",animation:"fade-in-animation",nodes:[],nodeDelay:50,timing:{duration:300}},exit:{name:"cascaded-animation",animation:"fade-out-animation",nodes:[],nodeDelay:0,timing:{duration:200}}}}}},behaviors:[Polymer.NeonAnimationRunnerBehavior],listeners:{"neon-animation-finish":"_onNeonAnimationFinish"},ready:function(){Polymer.Gestures.add(document,"tap",this._handleDocumentClick.bind(this))},_isInPath:function(n,i){n=n||[];for(var t=0;t<n.length;t++)if(n[t]==i)return!0;return!1},_handleDocumentClick:function(n){var i=Polymer.dom(n).path;this._isInPath(i,this)||this.fire("close-search")},_selected:function(n){this.fire("group-selected",{id:n.detail.item.getAttribute("value"),name:n.detail.item.getAttribute("name")})},_search:function(){return this.set("_clear",this.$.search.value.length>0),this.$.search.value.length<3?void this.fire("search",{term:""}):void this.fire("search",{term:this.$.search.value})},_clearSearch:function(){this.$.search.value="",this._search()},_computeHeaders:function(n){return{Authorization:"token "+n}},_onAddAccountAction:function(){this.fire("add-account")},_onImportAccountsAction:function(){this.fire("import-accounts")},_onRemoveAction:function(){this.fire("remove")},_onOrganizationUnitsAction:function(){this.fire("orgunits")},_onSearchIcon:function(){this.fire("search-icon")},focusSearch:function(){this.$.search.$.input.focus()},_onBulkActionsChanged:function(){var n=Polymer.dom(this.root).querySelectorAll(".bulk-action");if(this.animationConfig&&(this.animationConfig.entry.nodes=n,this.animationConfig.exit.nodes=n),this.bulkActions){for(var i=n.length,t=0;t<i;t++)n[t].style.display="flex";this.playAnimation("entry")}else this.playAnimation("exit")},showBulkActions:function(){this.bulkActions=!0},hideBulkActions:function(){this.bulkActions=!1},_onNeonAnimationFinish:function(){if(!this.bulkActions)for(var n=Polymer.dom(this.root).querySelectorAll(".bulk-action"),i=n.length,t=0;t<i;t++)n[t].style.display="none"}});</script>
+</dom-module>
+</body></html>

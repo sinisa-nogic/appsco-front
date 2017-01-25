@@ -1,0 +1,68 @@
+<html><head><link rel="import" href="../../polymer/polymer.html">
+<link rel="import" href="../../paper-button/paper-button.html">
+<link rel="import" href="../../iron-ajax/iron-request.html">
+<link rel="import" href="../../paper-dialog/paper-dialog.html">
+<link rel="import" href="../../paper-dialog-scrollable/paper-dialog-scrollable.html">
+<link rel="import" href="../../neon-animation/animations/fade-out-animation.html">
+<link rel="import" href="../../neon-animation/animations/scale-up-animation.html">
+
+<link rel="import" href="appsco-application-assignees.html">
+<link rel="import" href="../../appsco-components/appsco-loader.html">
+
+
+
+</head><body><dom-module id="appsco-company-application-remove">
+    <template>
+        <style>
+            :host {
+                display: block;
+                position: relative;
+            @apply(--appsco-application-remove);
+            }
+            :host paper-dialog {
+                width: 670px;
+                top: 20vh;
+            @apply(--appsco-paper-dialog);
+            }
+            :host .buttons paper-button {
+            @apply(--paper-dialog-button);
+            }
+            :host .buttons paper-button[dialog-confirm] {
+            @apply(--paper-dialog-confirm-button);
+            }
+            :host .buttons paper-button[dialog-dismiss] {
+            @apply(--paper-dialog-dismiss-button);
+            }
+            :host appsco-application-assignees[hidden] {
+                display: none;
+            }
+        </style>
+        <paper-dialog with-backdrop="" id="dialog" entry-animation="scale-up-animation" exit-animation="fade-out-animation">
+
+            <div class="header">
+                <h2 hidden$="[[ _singleApplication ]]">Remove applications</h2>
+                <h2 hidden$="[[ !_singleApplication ]]">Remove application [[ _application.title ]]</h2>
+            </div>
+
+            <paper-dialog-scrollable>
+                <div class="remove-container">
+
+                    <appsco-loader active="[[ _loader ]]" loader-alt="Appsco is removing application" multi-color=""></appsco-loader>
+
+                    <p hidden$="[[ _singleApplication ]]">By removing selected applications you will also remove all its assignees.</p>
+                    <p hidden$="[[ !_singleApplication ]]">By removing selected application you will also remove all its assignees.</p>
+
+                    <appsco-application-assignees class="appsco-application-assignees" application="[[ _application ]]" authorization-token="[[ authorizationToken ]]" size="10" preview="" hidden$="[[ !_singleApplication ]]"></appsco-application-assignees>
+                </div>
+            </paper-dialog-scrollable>
+
+            <div class="buttons">
+                <paper-button dialog-dismiss="">Cancel</paper-button>
+                <paper-button dialog-confirm="" autofocus="" on-tap="_removeApplications">Remove</paper-button>
+            </div>
+        </paper-dialog>
+
+    </template>
+    <script>Polymer({is:"appsco-company-application-remove",properties:{applications:{type:Array,value:function(){return[]}},_application:{type:Object,value:function(){return{}}},_singleApplication:{type:Boolean,computed:"_computeSingleApplication(applications)"},authorizationToken:{type:String},companyApi:{type:String},_loader:{type:Boolean,value:!1}},toggle:function(){this.$.dialog.open()},_computeSingleApplication:function(e){return!(!e||1!==e.length)&&(this._application=e[0],!0)},_removeApplications:function(){var e=this.applications,i=e.length-1,o=document.createElement("iron-request"),t={url:this.companyApi+"/applications",method:"DELETE",handleAs:"json",headers:{Authorization:"token "+this.authorizationToken,"Content-Type":"application/x-www-form-urlencoded"}},n="";this._loader=!0;for(var a=0;a<=i;a++){var p=a===i?"":"&";n+="applications[]="+encodeURIComponent(e[a].self)+p}t.body=n,o.send(t).then(function(e){this.$.dialog.close(),200==e.response.response.code?this.fire("applications-removed"):this.fire("applications-remove-failed"),this.set("applications",[]),this._loader=!1}.bind(this))}});</script>
+</dom-module>
+</body></html>

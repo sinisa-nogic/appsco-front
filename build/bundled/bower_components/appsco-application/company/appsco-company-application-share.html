@@ -1,0 +1,128 @@
+<html><head><link rel="import" href="../../polymer/polymer.html">
+<link rel="import" href="../../iron-flex-layout/iron-flex-layout.html">
+<link rel="import" href="../../paper-styles/typography.html">
+<link rel="import" href="../../paper-styles/shadow.html">
+<link rel="import" href="../../paper-button/paper-button.html">
+<link rel="import" href="../../iron-icon/iron-icon.html">
+<link rel="import" href="../../iron-icons/iron-icons.html">
+<link rel="import" href="../../paper-input/paper-input.html">
+<link rel="import" href="../../iron-image/iron-image.html">
+<link rel="import" href="../../iron-ajax/iron-request.html">
+<link rel="import" href="../../paper-dialog/paper-dialog.html">
+<link rel="import" href="../../paper-dialog-scrollable/paper-dialog-scrollable.html">
+<link rel="import" href="../../neon-animation/animations/scale-up-animation.html">
+
+<link rel="import" href="../../appsco-components/appsco-loader.html">
+<link rel="import" href="../../appsco-components/appsco-form-error.html">
+<link rel="import" href="appsco-card-item.html">
+
+
+
+</head><body><dom-module id="appsco-company-application-share">
+    <template>
+        <style>
+            :host {
+                display: block;
+                position: relative;
+            }
+            :host paper-dialog {
+                width: 670px;
+                top: 20vh;
+            @apply(--appsco-paper-dialog);
+            }
+            :host paper-dialog-scrollable::shadow .scrollable {
+                min-height: 80px;
+            }
+            :host paper-input {
+            --paper-input-container-label: {
+                 left: 4px;
+             };
+            --paper-input-container-input: {
+                 padding: 0 4px;
+             };
+            }
+            :host .account-list {
+            @apply(--layout-horizontal);
+            @apply(--layout-wrap);
+                margin-top: 0;
+                position: relative;
+            }
+            appsco-card-item {
+            --item-image: {
+                 border-radius: 50%;
+             };
+            }
+            :host .message {
+                margin: 0;
+                color: var(--secondary-text-color);
+                font-style: italic;
+            @apply(--paper-font-body2);
+            }
+            :host .buttons {
+                margin-top: 20px;
+            }
+            :host .buttons paper-button {
+                margin-top: 10px;
+            @apply(--paper-dialog-button);
+            }
+            :host .buttons paper-button[dialog-confirm] {
+            @apply(--paper-dialog-confirm-button);
+            }
+            :host .buttons paper-button[dialog-dismiss] {
+            @apply(--paper-dialog-dismiss-button);
+            }
+            :host .message {
+                color: var(--secondary-text-color);
+                font-style: italic;
+            @apply(--paper-font-body2);
+            }
+        </style>
+
+        <paper-dialog id="dialog" with-backdrop="" entry-animation="scale-up-animation" exit-animation="fade-out-animation" on-iron-overlay-opened="_onDialogOpened" on-iron-overlay-closed="_onDialogClosed">
+
+            <h2>Share applications</h2>
+
+            <paper-dialog-scrollable>
+                <div class="dialog-container">
+
+                    <appsco-loader active="[[ _shareLoader ]]" loader-alt="Appsco is sharing applications" multi-color=""></appsco-loader>
+
+                    <div class="account-list">
+
+                        <appsco-form-error message="[[ _error ]]"></appsco-form-error>
+
+                        <template is="dom-repeat" items="[[ _selectedAccounts ]]">
+                            <appsco-card-item item="[[ _mapToItem(item) ]]" remove-action="" on-selected="_onItemRemove"></appsco-card-item>
+                        </template>
+                    </div>
+
+                    <paper-input id="search" label="search accounts" error-message="Please type three or more letters." on-keyup="_search">
+                    </paper-input>
+
+                    <div class="account-list">
+
+                        <appsco-loader active="[[ _searchLoader ]]" loader-alt="Appsco is searching accounts" multi-color=""></appsco-loader>
+
+                        <template is="dom-repeat" items="[[ _searchList ]]">
+                            <appsco-card-item item="[[ _mapToItem(item) ]]" on-selected="_onItemSelect"></appsco-card-item>
+                        </template>
+
+                        <template is="dom-if" if="[[ _message ]]">
+                            <p class="message">
+                                [[ _message ]]
+                            </p>
+                        </template>
+                    </div>
+                </div>
+            </paper-dialog-scrollable>
+
+            <div class="buttons">
+                <paper-button dialog-dismiss="">Cancel</paper-button>
+                <paper-button autofocus="" on-tap="_onShareApplicationsAction">Share</paper-button>
+            </div>
+        </paper-dialog>
+
+    </template>
+    <script>Polymer({is:"appsco-company-application-share",properties:{authorizationToken:{type:String},accountsApi:{type:String},applications:{type:Array,value:function(){return[]}},size:{type:Number,value:12},_searchList:{type:Array,value:function(){return[]}},_message:{type:String},_selectedAccounts:{type:Array,value:function(){return[]}},_searchLoader:{type:Boolean,value:!1},_shareLoader:{type:Boolean,value:!1}},toggle:function(){this.$.dialog.toggle()},_onDialogOpened:function(){this.$.search.focus()},_onDialogClosed:function(){this.set("_searchList",[]),this.set("_selectedAccounts",[]),this.$.search.value="",this._searchLoader=!1,this._shareLoader=!1,this._error=""},_search:function(e){var t=/^Backspace$/i,s=/^\w$/,i=this.$.search.value,a=i.length;if(this._searchLoader=!0,this._message="",0===a)return this._message="",this._searchLoader=!1,this.set("_searchList",[]),!1;if(a<3||!s.test(e.key)&&!t.test(e.key))return this._message="Please type three or more letters.",this._searchLoader=!1,this.set("_searchList",[]),!1;var n=document.createElement("iron-request"),o=this.accountsApi+"?extended=1&limit="+this.size+"&term="+i;this._message="";var r={url:o,method:"GET",handleAs:"json",headers:{Authorization:"token "+this.authorizationToken}};n.send(r).then(function(){var e=n.response.accounts;e&&e.length>0?this.set("_searchList",e):(this.set("_searchList",[]),this._message="There are no accounts with asked name."),this._searchLoader=!1}.bind(this))},_mapToItem:function(e){return{image:e.picture_url,title:e.name}},_onItemSelect:function(e){this.push("_selectedAccounts",e.model.item),this.splice("_searchList",this._searchList.indexOf(e.model.item),1)},_onItemRemove:function(e){this.push("_searchList",e.model.item),this.splice("_selectedAccounts",this._selectedAccounts.indexOf(e.model.item),1)},_shareAccounts:function(e,t){for(var s=this._selectedAccounts,i=s.length-1,a=document.createElement("iron-request"),n={url:e.self+"/share",method:"POST",handleAs:"json",headers:{Authorization:"token "+this.authorizationToken,"Content-Type":"application/x-www-form-urlencoded"}},o="",r=0;r<=i;r++){var h=r===i?"":"&";o+="accounts[]="+encodeURIComponent(s[r].self)+h}n.body=o,a.send(n).then(function(){t&&(this.$.dialog.close(),this.fire("applications-shared",{applications:this.applications}),this.set("_selectedAccounts",[]),this._shareLoader=!1)}.bind(this))},_onShareApplicationsAction:function(){var e=this.applications,t=e.length-1;this._shareLoader=!0;for(var s=0;s<=t;s++){if(s===t)return this._shareAccounts(e[s],!0),!1;this._shareAccounts(e[s],!1)}}});</script>
+</dom-module>
+</body></html>

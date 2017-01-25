@@ -1,0 +1,113 @@
+<html><head><link rel="import" href="../polymer/polymer.html">
+<link rel="import" href="../iron-ajax/iron-ajax.html">
+<link rel="import" href="../iron-flex-layout/iron-flex-layout.html">
+<link rel="import" href="../paper-button/paper-button.html">
+<link rel="import" href="../paper-progress/paper-progress.html">
+<link rel="import" href="../neon-animation/neon-animation-runner-behavior.html">
+<link rel="import" href="../neon-animation/animations/transform-animation.html">
+
+<link rel="import" href="appsco-application-item.html">
+
+
+
+</head><body><dom-module id="appsco-applications">
+    <template>
+        <style>
+            :host {
+                display: inline-block;
+                position: relative;
+            @apply(--appsco-applications);
+            @apply(--layout-vertical);
+            @apply(--layout-center);
+
+                --paper-progress-container-color: var(--body-background-color);
+                --paper-progress-height: 2px;
+            }
+
+            :host div[applications] {
+            @apply(--layout-horizontal);
+            @apply(--layout-wrap);
+            @apply(--layout-start);
+                margin-right: -10px;
+            @apply(--applications-container);
+            }
+            :host([company]) div[applications] {
+            @apply(--layout-vertical);
+            @apply(--layout-start);
+                margin-right: 0;
+            }
+            :host appsco-application-item {
+                margin: 0 10px 10px 0;
+            @apply(--appsco-applications-item);
+            }
+            :host([company]) appsco-application-item {
+                width: 100%;
+                margin: 0 0 10px 0;
+            @apply(--appsco-applications-item);
+            }
+
+            :host .applications-container {
+                width: 100%;
+                min-height: 160px;
+                padding-top: 10px;
+                position: relative;
+            }
+            :host appsco-loader {
+                background-color: rgba(255, 255, 255, 0.4);
+            }
+            :host .load-more-box {
+                margin-top: 10px;
+                padding-top: 4px;
+                position: relative;
+            }
+            :host paper-progress {
+                min-width: 100px;
+                width: 100%;
+                position: absolute;
+                top: 0;
+                left: 0;
+            @apply(--applications-progress-bar);
+            }
+            :host paper-button {
+                display: block;
+                width: 120px;
+                margin: 20px auto 0;
+                text-align: center;
+            @apply(--load-more-button);
+            }
+            :host .message {
+                font-style: italic;
+                opacity: 0.5;
+            }
+        </style>
+
+        <div class="applications-container">
+            <iron-ajax auto="" id="applicationsApiRequest" url="{{ _currentUrl }}" on-error="_onError" on-response="_onResponse" headers="{{ _computedHeaders }}" debounce-duration="300"></iron-ajax>
+
+            <paper-progress id="paperProgress" indeterminate=""></paper-progress>
+
+            <template is="dom-if" if="[[ _message ]]">
+                <p class="message">[[ _message ]]</p>
+            </template>
+
+            <template is="dom-if" if="[[ !_applicationsEmpty ]]">
+                <div applications="" company$="[[ company ]]">
+                    <template is="dom-repeat" items="{{ _applications }}" on-dom-change="_onItemsDomChange">
+
+                        <appsco-application-item id="appscoApplicationItem_[[ index ]]" class="application-item" application="{{ item }}" company="[[ company ]]"></appsco-application-item>
+
+                    </template>
+                </div>
+            </template>
+        </div>
+
+        <template is="dom-if" if="[[ !_applicationsEmpty ]]">
+            <div class="load-more-box">
+                <paper-button on-tap="_loadMoreApps" id="loadMore" hidden$="[[ !_loadMore ]]">Load More</paper-button>
+            </div>
+        </template>
+    </template>
+
+    <script>Polymer({is:"appsco-applications",properties:{company:{type:Boolean,value:!1,reflectToAttribute:!0},authorizationToken:{type:String,value:""},applicationsApi:{type:String,value:"",notify:!0},size:{type:Number,value:10},loadMore:{type:Boolean,value:!1},_loadMore:{type:Boolean,value:!1},_computedHeaders:{type:Object,computed:"_computeHeaders(authorizationToken)"},_applications:{type:Array,value:function(){return[]},notify:!0},_allApplications:{type:Array,value:function(){return[]}},_applicationsEmpty:{type:Boolean,value:!1},_message:{type:String,value:""},_currentUrl:{type:String,notify:!0},_next:{type:String},_totalApplications:{type:Number,value:0},_renderedIndex:{type:Number,value:-1},_filterTerm:{type:String,value:""},_filterOrgunit:{type:Object,value:function(){return{}}},animationConfig:{value:function(){return{entry:{name:"transform-animation",transformOrigin:"1 1",transformFrom:"scale(1)",transformTo:"scale(1.08)",node:{},timing:{delay:200,duration:500}}}}}},behaviors:[Polymer.NeonAnimationRunnerBehavior],listeners:{"applications-api-changed":"_loadApplications"},ready:function(){this._currentUrl=this.applicationsApi+"?page=1&extended=1&limit="+this.size,this.company&&(this.animationConfig.entry={name:"cascaded-animation",animation:"slide-from-left-animation",nodes:[],nodeDelay:50,timing:{duration:300}})},_loadApplications:function(){this.$$("#paperProgress").hidden=!1,this._loadMore=!1,this._currentUrl=this.applicationsApi+"?page=1&extended=1&limit="+this.size,this.set("_applications",[]),this.set("_allApplications",[])},_loadMoreApps:function(){this.$$("#paperProgress").hidden=!1,this._currentUrl=this._next},_onError:function(){this._message="We couldn't load applications at the moment. Please try again in a minute.",this._handleEmptyLoad()},_handleEmptyLoad:function(){this._applicationsEmpty=!0,this.fire("empty-load"),this._hideProgressBar()},_onResponse:function(i){var t=this,e=i.detail.response,s=e.icons?e.icons.reverse():e.applications.reverse(),a=e.meta,n=s.length-1;return this.set("_applications",[]),this._totalApplications=a.total,this._next=a.next+"&limit="+this.size,0===a.total?(this._message="There are no applications.",this._handleEmptyLoad(),!1):(this._applicationsEmpty=!1,this._message="",void s.forEach(function(e,s){setTimeout(function(){this.push("_applications",e),this.push("_allApplications",e),s==n&&(this._loadMore=t.loadMore,this._applications.length===a.total&&(this._loadMore=!1),this._hideProgressBar(),this.fire("loaded",{applications:i.detail.response.icons}))}.bind(this),50*(s+1))}.bind(this)))},_computeHeaders:function(i){return{Authorization:"token "+i}},addApplications:function(i){var t=i.length;this._applicationsEmpty=!1,this._message="",this._renderedIndex=t-1;for(var e=0;e<t;e++)this.unshift("_applications",i[e]),this.unshift("_allApplications",i[e])},modifyApplications:function(i){for(var t=JSON.parse(JSON.stringify(this._applications)),e=t.length,s=JSON.parse(JSON.stringify(this._allApplications)),a=s.length,n=i.length,o=0;o<n;o++){for(var l=i[o],p=0;p<e;p++)if(l.self===t[p].self){t[p]=l;break}for(var r=0;r<a;r++)if(l.self===s[r].self){s[r]=l;break}}this.set("_applications",[]),this.set("_applications",t),this.set("_allApplications",[]),this.set("_allApplications",s)},reloadApplications:function(){this.set("_currentUrl",""),this._loadApplications()},removeApplications:function(i){for(var t=i.length,e=0;e<t;e++){for(var s=0;s<this._applications.length;s++)if(i[e].self===this._applications[s].self){this.splice("_applications",s,1);break}for(var s=0;s<this._allApplications.length;s++)if(i[e].self===this._allApplications[s].self){this.splice("_allApplications",s,1);break}}this.fire("applications-removed",{applications:i}),0===this._applications.length&&(this._message="You have removed all applications. Please add new ones.",this._handleEmptyLoad())},getFirstApplication:function(){return this._applications.length>0?this._applications[0]:{}},getAllApplications:function(){return this._applications},selectAllApplications:function(i){for(var t=this._applications,e=t.length,s=0;s<e;s++){var a=this.$$("#appscoApplicationItem_"+s);i?a.select():a.deselect()}},filterApplicationsByTerm:function(i){this._filterTerm=i,this._filterOrgunit.orgUnit?this._filterApplicationsByTermAndOrgunit():this._filterApplicationsByTerm()},filterApplicationsByOrgunit:function(i){this._filterOrgunit=i,this._filterTerm.trim().length>0?this._filterApplicationsByTermAndOrgunit():this._filterApplicationsByOrgunit()},_filterApplicationsByTerm:function(){var i=this._filterTerm,t=this._allApplications.length;return this.$$("#paperProgress").hidden=!1,t<this._applications.length&&(this._allApplications=JSON.parse(JSON.stringify(this._applications)),t=this._allApplications.length),0===t?(this.fire("filter-done"),!1):(this.set("_applications",[]),this._allApplications.forEach(function(e,s){if(e.title.toLowerCase().indexOf(i.toLowerCase())>=0){var a=JSON.parse(JSON.stringify(e));this.push("_applications",a)}s===t-1&&(this._applicationsEmpty=0===this._applications.length,this._message=this._applicationsEmpty?"There are no applications with asked term.":"",this._hideProgressBar(),this.fire("filter-done"))}.bind(this)),this._loadMore=!1,void(i.length<3&&this._applications.length<this._totalApplications&&(this._loadMore=!0)))},_hideProgressBar:function(){setTimeout(function(){this.$$("#paperProgress").hidden=!0}.bind(this),300)},_onItemsDomChange:function(){var i=this._renderedIndex;if(-1!=i&&this.company){this.animationConfig.entry.nodes=[];for(var t=0;t<=i;t++){var e=this.$$("#appscoApplicationItem_"+t);this.animationConfig.entry.nodes.push(e)}this.playAnimation("entry"),this._renderedIndex=-1}},_filterApplicationsByOrgunit:function(){var i=this._filterOrgunit,t=i.orgUnit,e=i.selected,s=0;if(this._applicationsEmpty=!1,this._message="",this._allApplications.length<this._applications.length&&(this._allApplications=JSON.parse(JSON.stringify(this._applications))),s=this._allApplications.length,e){this.set("_applications",[]);for(var a=0;a<s;a++){var n=this._allApplications[a],o=n.org_units,l=o.length,p=this.$$("#appscoApplicationItem_"+a);p&&p.deselect();for(var r=0;r<l;r++)if(o[r].name===t.name){this.push("_applications",n);break}}0===this._applications.length&&(this._message="There are no applications within "+t.name+" organization unit.",this._handleEmptyLoad())}else{this.set("_applications",this._allApplications);for(var a=0;a<s;a++){var p=this.$$("#appscoApplicationItem_"+a);p&&p.deselect()}this.set("_filterOrgunit",{})}},_filterApplicationsByTermAndOrgunit:function(){var i=this._filterOrgunit,t=i.orgUnit,e=i.selected,s=this._filterTerm,a=0;if(this._applicationsEmpty=!1,this._message="",this._allApplications.length<this._applications.length&&(this._allApplications=JSON.parse(JSON.stringify(this._applications))),a=this._allApplications.length,e){this.set("_applications",[]);for(var n=0;n<a;n++){var o=this._allApplications[n],l=o.org_units,p=l.length,r=this.$$("#appscoApplicationItem_"+n);r&&r.deselect();for(var h=0;h<p;h++)if(l[h].name===t.name&&o.title.toLowerCase().indexOf(s.toLowerCase())>=0){this.push("_applications",o);break}n===a-1&&this.fire("filter-done")}0===this._applications.length&&(this._message="There are no applications within "+t.name+" organization unit.",this._handleEmptyLoad())}else this.set("_applications",this._allApplications),this.set("_filterOrgunit",{}),this._filterApplicationsByTerm()}});</script>
+</dom-module>
+</body></html>

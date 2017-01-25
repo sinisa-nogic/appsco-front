@@ -1,0 +1,55 @@
+<html><head><link rel="import" href="../polymer/polymer.html">
+<link rel="import" href="../paper-button/paper-button.html">
+<link rel="import" href="../iron-ajax/iron-request.html">
+<link rel="import" href="../paper-dialog/paper-dialog.html">
+<link rel="import" href="../neon-animation/animations/fade-out-animation.html">
+<link rel="import" href="../neon-animation/animations/scale-up-animation.html">
+
+<link rel="import" href="../appsco-components/appsco-loader.html">
+
+
+
+</head><body><dom-module id="appsco-account-authorized-app-revoke">
+    <template>
+        <style>
+            :host {
+                display: block;
+                position: relative;
+                @apply(--account-authorized-app-revoke);
+            }
+            :host paper-dialog {
+                width: 670px;
+                top: 20vh;
+            @apply(--appsco-paper-dialog);
+            }
+            :host .buttons paper-button {
+            @apply(--paper-dialog-button);
+            }
+            :host .buttons paper-button[dialog-confirm] {
+            @apply(--paper-dialog-confirm-button);
+            }
+            :host .buttons paper-button[dialog-dismiss] {
+            @apply(--paper-dialog-dismiss-button);
+            }
+        </style>
+        <paper-dialog with-backdrop="" id="revokeDialog" entry-animation="scale-up-animation" exit-animation="fade-out-animation">
+
+            <div class="revoke-container">
+
+                <appsco-loader active="[[ _loader ]]" loader-alt="Appsco is removing application" multi-color=""></appsco-loader>
+
+                <h2>Revoke application [[ application.title ]]</h2>
+                <p>Are you sure you want to revoke access to [[ application.title ]]?</p>
+
+            </div>
+
+            <div class="buttons">
+                <paper-button dialog-dismiss="">Cancel</paper-button>
+                <paper-button dialog-confirm="" autofocus="" on-tap="_revokeApplication">Revoke</paper-button>
+            </div>
+        </paper-dialog>
+
+    </template>
+    <script>Polymer({is:"appsco-account-authorized-app-revoke",properties:{application:{type:Object,value:function(){return{}},notify:!0},authorizationToken:{type:String},_loader:{type:Boolean,value:!1}},open:function(){this.$.revokeDialog.open()},_revokeApplication:function(){var e=document.createElement("iron-request");this._loader=!0,e.send({url:this.application.revoke,method:"DELETE",handleAs:"json",headers:{Authorization:"token "+this.authorizationToken}}).then(function(){this._loader=!1,this.fire("application-revoked",{application:this.application}),this.$.revokeDialog.close()}.bind(this))}});</script>
+</dom-module>
+</body></html>

@@ -1,0 +1,24 @@
+<html><head><link rel="import" href="../polymer/polymer.html">
+
+<link rel="import" href="../paper-toggle-button/paper-toggle-button.html">
+<link rel="import" href="../iron-ajax/iron-request.html">
+
+
+
+</head><body><dom-module id="appsco-application-autologin">
+    <template>
+        <style>
+            :host {
+                display: inline-block;
+                position: relative;
+            @apply(--appsco-application-autologin);
+            }
+            :host paper-toggle-button {
+                cursor: pointer;
+            }
+        </style>
+        <paper-toggle-button id="switch">Auto Login</paper-toggle-button>
+    </template>
+    <script>Polymer({is:"appsco-application-autologin",properties:{application:{type:Object,value:function(){return{}},notify:!0},authorizationToken:{type:String,value:""}},listeners:{change:"_switch","application-changed":"_processAuthType"},attached:function(){this._processAuthType()},_processAuthType:function(){if(this.application&&this.application.application){this.$.switch.active="unpw"==this.application.auth_type,this.$.switch.disabled=!0;var t=document.createElement("iron-request"),i=this;t.send({url:this.application.application,method:"GET",handleAs:"json",headers:{Authorization:"token "+this.authorizationToken}}).then(function(){return"item"in t.response.application.auth_types&&"unpw"in t.response.application.auth_types?(i.$.switch.disabled=!1,!1):void i.fire("autologin-unavailable")})}},_switch:function(){var t=document.createElement("iron-request"),i=this;this.$.switch.disabled=!0;var e={url:this.application.meta.autologin,method:"POST",handleAs:"json",headers:{Authorization:"token "+this.authorizationToken}};t.send(e).then(function(){i.$.switch.disabled=!1,this.fire("autologin-changed")}.bind(this))}});</script>
+</dom-module>
+</body></html>

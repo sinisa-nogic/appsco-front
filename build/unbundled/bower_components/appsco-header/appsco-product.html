@@ -1,0 +1,79 @@
+<html><head><link rel="import" href="../polymer/polymer.html">
+<link rel="import" href="../paper-item/paper-item.html">
+<link rel="import" href="../paper-listbox/paper-listbox.html">
+<link rel="import" href="../iron-icons/iron-icons.html">
+<link rel="import" href="../paper-ripple/paper-ripple.html">
+
+<link rel="import" href="appsco-dropdown.html">
+
+
+
+</head><body><dom-module id="appsco-product">
+    <template>
+        <style>
+            :host {
+                display: inline-block;
+                font-size: 16px;
+                position: relative;
+
+            @apply(--appsco-product);
+            }
+            :host .product-list-action {
+                cursor: pointer;
+            }
+            :host appsco-dropdown {
+                min-width: 160px;
+                width: auto;
+                top: 25px;
+                right: -9px;
+
+            @apply(--appsco-product-dropdown);
+            }
+            :host paper-listbox {
+                padding: 0;
+            }
+            :host paper-listbox paper-item {
+                cursor: pointer;
+                height: 36px;
+                font-size: 14px;
+            }
+        </style>
+
+        <template is="dom-if" if="{{ _multiProducts }}" on-dom-change="_onMultiProductsChanged">
+
+            <div id="triggerDropdown" class="product-active product-list-action" on-tap="__toggleProductDropdown">
+                [[ _selectedProductLabel ]]
+                <iron-icon icon="arrow-drop-down"></iron-icon>
+            </div>
+
+            <appsco-dropdown open="{{ _pressed }}" trigger="[[ _triggerDropdown ]]">
+
+                <paper-listbox id="productList" selected="appsco-product" attr-for-selected="value" on-iron-select="_onItemSelect">
+
+                    <template is="dom-repeat" items="[[ _products ]]">
+                        <paper-item value="[[ item.value ]]" label="[[ item.label ]]">
+                            [[ item.label ]]
+                            <paper-ripple></paper-ripple>
+                        </paper-item>
+                    </template>
+
+                </paper-listbox>
+
+            </appsco-dropdown>
+
+
+        </template>
+
+        <template is="dom-if" if="{{ !_multiProducts }}">
+
+            <span class="product-active">
+                [[ _selectedProductLabel ]]
+            </span>
+
+        </template>
+
+    </template>
+
+    <script>Polymer({is:"appsco-product",properties:{partner:{type:Boolean,value:!1,notify:!0,observer:"_onPartnerChanged"},business:{type:Boolean,value:!1,notify:!0,observer:"_onBusinessChanged"},_products:{type:Array,value:function(){return[{label:"Personal",value:"appsco-product"}]}},_selectedProductLabel:{type:String,value:"Personal"},_multiProducts:{type:Boolean,value:!1},_pressed:{type:Boolean,value:!1,notify:!0},_triggerDropdown:{type:Object,notify:!0}},attached:function(){(this.partner||this.business)&&(this._multiProducts=!0),this._onPartnerChanged(this.partner),this._onBusinessChanged(this.business)},_onPartnerChanged:function(t){this._products&&t&&(this.push("_products",{label:"Partner",value:"appsco-partner-product"}),this._multiProducts=!0)},_onBusinessChanged:function(t){this._products&&t&&(this.push("_products",{label:"Business",value:"appsco-business-product"}),this._multiProducts=!0)},_onMultiProductsChanged:function(){this._multiProducts&&(this._triggerDropdown=this.$$("#triggerDropdown"))},_onItemSelect:function(){var t=this.$$("#productList").selectedItem;this._selectedProductLabel=t.label,this.fire("appsco-product-changed",{product:t.value}),this._pressed=!1},__toggleProductDropdown:function(){this._pressed=!this._pressed}});</script>
+</dom-module>
+</body></html>

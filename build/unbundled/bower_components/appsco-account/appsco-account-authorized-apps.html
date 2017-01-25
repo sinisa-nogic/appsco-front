@@ -1,0 +1,82 @@
+<html><head><link rel="import" href="../polymer/polymer.html">
+<link rel="import" href="../iron-flex-layout/iron-flex-layout.html">
+<link rel="import" href="../paper-styles/typography.html">
+<link rel="import" href="../iron-ajax/iron-ajax.html">
+<link rel="import" href="../paper-progress/paper-progress.html">
+<link rel="import" href="../paper-button/paper-button.html">
+
+<link rel="import" href="appsco-account-authorized-app.html">
+
+
+
+</head><body><dom-module id="appsco-account-authorized-apps">
+    <template>
+        <style>
+            :host {
+                display: block;
+                position: relative;
+                width: 100%;
+            @apply(--account-authorized-apps);
+            }
+            .authorized-apps {
+                padding-top: 10px;
+                position: relative;
+            @apply(--layout-vertical);
+            @apply(--account-authorized-apps-container);
+            }
+            :host .message {
+                color: var(--secondary-text-color);
+                font-style: italic;
+            @apply(--paper-font-body2);
+            }
+            :host paper-progress {
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                margin: auto;
+                width: 100%;
+            @apply(--account-authorized-apps-paper-progress);
+            }
+            :host appsco-account-authorized-app {
+            @apply(--account-authorized-app);
+            }
+            :host appsco-account-authorized-app:first-of-type {
+            @apply(--account-authorized-app-first);
+            }
+            :host .load-more-button {
+                display: block;
+                width: 120px;
+                margin: 20px auto 0;
+                text-align: center;
+                @apply(--load-more-button);
+            }
+        </style>
+
+        <iron-ajax id="ironAjaxAuthorizedApps" url="{{ _computedUrl }}" method="GET" headers="{{ _computedHeaders }}" handle-as="json" on-error="_handleError" on-response="_handleResponse">
+        </iron-ajax>
+
+        <div class="authorized-apps">
+
+            <paper-progress id="progress" indeterminate=""></paper-progress>
+
+            <template is="dom-repeat" items="{{ _authorizedApps }}">
+
+                <appsco-account-authorized-app application="[[ item ]]" short-view="[[ shortView ]]"></appsco-account-authorized-app>
+
+            </template>
+
+            <template is="dom-if" if="[[ _message ]]">
+                <p class="message">
+                    [[ _message ]]
+                </p>
+            </template>
+
+            <paper-button id="loadMore" class="load-more-button" hidden="[[ !loadMore ]]" on-tap="_loadMore">Load More</paper-button>
+
+        </div>
+    </template>
+
+    <script>Polymer({is:"appsco-account-authorized-apps",properties:{account:{type:Object,value:function(){return{}},notify:!0},authorizationToken:{type:String},authorizedAppsApi:{type:String},_nextPage:{type:Number,value:1},size:{type:Number,value:5},loadMore:{type:Boolean,value:!1},shortView:{type:Boolean,value:!1},_computedUrl:{type:String,computed:"_computeUrl(authorizedAppsApi)"},_computedHeaders:{type:Object,computed:"_computeHeaders(authorizationToken)"},_authorizedApps:{type:Array,value:function(){return[]},notify:!0},_message:{type:String}},_computeUrl:function(e){return e+"?page="+this._nextPage+"&limit="+this.size},_computeHeaders:function(e){return{Authorization:"token "+e}},loadAuthorizedApps:function(){this.$.progress.hidden=!1,this._authorizedApps=[],this._nextPage=1,this.$.ironAjaxAuthorizedApps.url=this._computeUrl(this.authorizedAppsApi),this.$.ironAjaxAuthorizedApps.generateRequest()},_loadMore:function(){this.$.progress.hidden=!1,this.$.ironAjaxAuthorizedApps.url=this._computeUrl(this.authorizedAppsApi),this.$.ironAjaxAuthorizedApps.generateRequest()},_handleError:function(e){this._message="We couldn't load applications at the moment. Please try again in a minute. If error continues contact us.",this._hideProgressBar()},_handleResponse:function(e){var t=e.detail.response,i=t.authorizations,o=this._authorizedApps.length;i&&i.length>0?(this._nextPage+=1,i.forEach(function(e,t){setTimeout(function(){this.push("_authorizedApps",i[t]),t===i.length-1&&(this._hideProgressBar(),i.length<this.size&&(this.$.loadMore.disabled=!0))}.bind(this),50*(t+1))}.bind(this))):i&&!i.length?(o?this.$.loadMore.disabled=!0:this._message="You don't have authorized applications.",this._hideProgressBar()):o||(this._message="We couldn't load applications at the moment.",this._hideProgressBar())},_hideProgressBar:function(){setTimeout(function(){this.$.progress.hidden=!0}.bind(this),500)}});</script>
+</dom-module>
+</body></html>

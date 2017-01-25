@@ -1,0 +1,56 @@
+<html><head><link rel="import" href="../polymer/polymer.html">
+
+<link rel="import" href="../paper-button/paper-button.html">
+<link rel="import" href="../iron-ajax/iron-request.html">
+
+<link rel="import" href="../paper-dialog/paper-dialog.html">
+<link rel="import" href="../neon-animation/animations/fade-out-animation.html">
+<link rel="import" href="../neon-animation/animations/scale-up-animation.html">
+
+<link rel="import" href="appsco-application-subscribers.html">
+<link rel="import" href="../appsco-components/appsco-loader.html">
+
+
+
+</head><body><dom-module id="appsco-application-subscriber-revoke">
+    <template>
+        <style>
+            :host {
+                display: block;
+                position: relative;
+                @apply(--appsco-application-subscriber-revoke);
+            }
+            :host paper-dialog {
+                width: 670px;
+                top: 20vh;
+            @apply(--appsco-paper-dialog);
+            }
+            :host .buttons paper-button {
+                @apply(--paper-dialog-button);
+            }
+            :host .buttons paper-button[dialog-confirm] {
+                @apply(--paper-dialog-confirm-button);
+            }
+            :host .buttons paper-button[dialog-dismiss] {
+                @apply(--paper-dialog-dismiss-button);
+            }
+        </style>
+        <paper-dialog with-backdrop="" id="removeDialog" entry-animation="scale-up-animation" exit-animation="fade-out-animation">
+
+            <h2>Revoke access for [[ revokeAccount.name ]]</h2>
+
+            <div class="remove-container">
+                <appsco-loader active="[[ _loader ]]" loader-alt="AppsCo is revoking access" multi-color=""></appsco-loader>
+                <p>Are you sure you want to revoke access on [[ application.title ]]?</p>
+            </div>
+
+            <div class="buttons">
+                <paper-button dialog-dismiss="">Cancel</paper-button>
+                <paper-button dialog-confirm="" autofocus="" on-tap="_revokeAccess">Revoke</paper-button>
+            </div>
+        </paper-dialog>
+
+    </template>
+    <script>Polymer({is:"appsco-application-subscriber-revoke",properties:{authorizationToken:{type:String,value:""},application:{type:Object,value:function(){return{}},notify:!0},_loader:{type:Boolean,value:!1},revokeAccount:{type:Object,value:function(){return{}}}},open:function(){this.$.removeDialog.open()},_revokeAccess:function(){var e=this.revokeAccount.self,o=this.application.meta.subscribers,t=document.createElement("iron-request");this._loader=!0,t.send({url:o,method:"DELETE",handleAs:"json",body:"account="+encodeURIComponent(e),headers:{Authorization:"token "+this.authorizationToken,"Content-Type":"application/x-www-form-urlencoded"}}).then(function(){this._loader=!1,this.fire("subscription-revoked",{application:this.application,account:this.revokeAccount}),this.$.removeDialog.close()}.bind(this))}});</script>
+</dom-module>
+</body></html>

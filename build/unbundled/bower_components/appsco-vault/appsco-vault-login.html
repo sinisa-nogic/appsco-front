@@ -1,0 +1,68 @@
+<html><head><link rel="import" href="../polymer/polymer.html">
+<link rel="import" href="../iron-form/iron-form.html">
+<link rel="import" href="../iron-flex-layout/iron-flex-layout.html">
+<link rel="import" href="../paper-input/paper-input.html">
+<link rel="import" href="../paper-input/paper-textarea.html">
+<link rel="import" href="../paper-button/paper-button.html">
+<link rel="import" href="../iron-a11y-keys/iron-a11y-keys.html">
+
+<link rel="import" href="../appsco-components/appsco-loader.html">
+<link rel="import" href="../appsco-components/appsco-form-error.html">
+
+
+
+</head><body><dom-module id="appsco-vault-login">
+    <template>
+        <style>
+            :host {
+                display: block;
+                position: relative;
+                @apply(--appsco-vault-login);
+
+                --paper-dropdown-menu: {
+                    display: block;
+                };
+            }
+            :host .submit-button {
+                margin: 20px 0 0 0;
+            }
+        </style>
+
+        <appsco-loader active="[[ _loader ]]" loader-alt="Appsco is saving vault item" multi-color=""></appsco-loader>
+
+        <appsco-form-error message="[[ _error ]]"></appsco-form-error>
+
+        <form is="iron-form" id="vaultLoginForm" method="POST" action="[[ _computedAction ]]" headers="{{ _computedHeaders }}" on-iron-form-presubmit="_onFormPresubmit" on-iron-form-error="_onFormError" on-iron-form-response="_onFormResponse">
+
+            <div class="input-container">
+                <paper-input id="name" name="vault_login[name]" label="Name" required="" value="[[ item.name ]]"></paper-input>
+            </div>
+
+            <div class="input-container">
+                <paper-input id="url" name="vault_login[url]" pattern="https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_\+.~#?&amp;//=]*)" error-message="Invalid Url" auto-validate="" label="Url" value="[[ item.url ]]"></paper-input>
+            </div>
+
+            <div class="input-container">
+                <paper-input id="username" name="vault_login[username]" label="Username" required="" value="[[ item.username ]]"></paper-input>
+            </div>
+
+            <div class="input-container">
+                <paper-input id="password" type="password" name="vault_login[password]" label="Password" required="" value="[[ item.password ]]"></paper-input>
+            </div>
+
+            <div class="input-container">
+                <paper-textarea id="note" label="Note" value="[[ item.note ]]" name="vault_login[note]"></paper-textarea>
+            </div>
+        </form>
+
+        <template is="dom-if" if="[[ !noSubmitAction ]]">
+            <paper-button id="submit" class="submit-button" on-tap="_submitForm">Save</paper-button>
+        </template>
+
+        <iron-a11y-keys target="[[ _target ]]" keys="enter" on-keys-pressed="_onEnter">
+        </iron-a11y-keys>
+
+    </template>
+    <script>Polymer({is:"appsco-vault-login",properties:{item:{type:Object,value:function(){return{}},observer:"_onItemChange"},noSubmitAction:{type:Boolean,value:!1},authorizationToken:{type:String,value:function(){return""}},_computedHeaders:{type:Object,computed:"_computeHeaders(authorizationToken)"},_loader:{type:Boolean,value:!1},_error:{type:String},vaultLoginApi:{type:String,notify:!0},_computedAction:{type:Object,computed:"_computeAction(item, vaultLoginApi)"},_updateAction:{type:Boolean,value:!1},_target:{type:Object,value:function(){return this.$.vaultLoginForm}}},_onItemChange:function(){for(key in this.item)return!1;this.item={name:"",url:"",username:"",password:"",note:""}},_computeHeaders:function(t){return{Authorization:"token "+t,"Content-Type":"application/x-www-form-urlencoded"}},_computeAction:function(t,e){return t.self?(this._updateAction=!0,t.self):(this._updateAction=!1,e)},_onEnter:function(){this._submitForm()},save:function(){this._submitForm()},_submitForm:function(){this.$.vaultLoginForm.submit()},_onFormPresubmit:function(){this._loader=!0,this._updateAction&&(this.$.vaultLoginForm.request.method="PATCH")},_onFormError:function(t){this._error=t.detail.error.message,this._loader=!1},_onFormResponse:function(t){var e=t.detail.response.item;e.displayTitle=e.title?e.title:e.name,e.vaultType="login",this.fire("vault-item-saved",{item:e}),this.reset(),this._loader=!1},reset:function(){this.$.name.invalid=!1,this.$.username.invalid=!1,this.$.password.invalid=!1,this._error="",this._loader=!1}});</script>
+</dom-module>
+</body></html>

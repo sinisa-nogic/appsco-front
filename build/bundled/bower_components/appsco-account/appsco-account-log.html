@@ -1,0 +1,87 @@
+<html><head><link rel="import" href="../polymer/polymer.html">
+<link rel="import" href="../iron-image/iron-image.html">
+<link rel="import" href="../iron-flex-layout/iron-flex-layout.html">
+<link rel="import" href="../paper-styles/typography.html">
+<link rel="import" href="../paper-styles/shadow.html">
+<link rel="import" href="../iron-ajax/iron-ajax.html">
+<link rel="import" href="../paper-button/paper-button.html">
+<link rel="import" href="../paper-progress/paper-progress.html">
+<link rel="import" href="../app-localize-behavior/app-localize-behavior.html">
+
+<link rel="import" href="appsco-account-log-item.html">
+
+
+
+</head><body><dom-module id="appsco-account-log">
+    <template>
+        <style>
+            :host {
+                display: block;
+                font-size: 14px;
+                color: var(--primary-text-color);
+            @apply(--appsco-account-log);
+            }
+            :host .account-log {
+                padding-top: 10px;
+                position: relative;
+            @apply(--layout-vertical);
+            @apply(--appsco-account-log-container);
+            }
+            :host appsco-account-log-item {
+            @apply(--appsco-account-log-item);
+            }
+            :host appsco-account-log-item:first-of-type {
+            @apply(--appsco-account-log-item-first);
+            }
+            :host .message {
+                color: var(--secondary-text-color);
+                font-style: italic;
+            @apply(--paper-font-body2);
+            }
+            :host paper-progress {
+                width: 100%;
+                position: absolute;
+                top: 0;
+                left: 0;
+            @apply(--account-log-paper-progress);
+            }
+            :host paper-button {
+                display: block;
+                width: 120px;
+                margin: 20px auto 0;
+                text-align: center;
+            @apply(--load-more-button);
+            }
+        </style>
+
+        <iron-ajax id="ironAjaxLog" url="{{ _computedUrl }}" method="GET" headers="{{ _computedHeaders }}" handle-as="json" on-error="_handleError" on-response="_handleResponse">
+        </iron-ajax>
+
+        <iron-ajax auto="" url="{{ _timezoneListUrl }}" handle-as="json" on-response="_onTimezoneListResponse">
+        </iron-ajax>
+
+        <iron-ajax auto="" url="{{ _countryListUrl }}" handle-as="json" on-response="_onCountryListResponse">
+        </iron-ajax>
+
+        <div class="account-log">
+
+            <paper-progress id="progress" indeterminate=""></paper-progress>
+
+            <template is="dom-repeat" items="[[ _logList ]]">
+                <appsco-account-log-item item="[[ _formatLogItem(item) ]]" short-view="[[ shortView ]]"></appsco-account-log-item>
+            </template>
+
+            <template is="dom-if" if="{{ _message }}">
+                <p class="message">
+                    [[ _message ]]
+                </p>
+            </template>
+
+            <paper-button id="loadMore" class="load-more-button" on-tap="_loadMore" hidden="[[ !loadMore ]]">Load More</paper-button>
+        </div>
+
+    </template>
+
+    <script>Polymer({is:"appsco-account-log",_next:"",properties:{authorizationToken:{type:String},logApi:{type:String},size:{type:Number,value:5},loadMore:{type:Boolean,value:!1},shortView:{type:Boolean,value:!1},_nextPage:{type:Number,value:1},_computedUrl:{type:String,computed:""},_timezoneListUrl:{type:String,value:function(){return this.resolveUrl("./data/timezone-list.json")}},_countryListUrl:{type:String,value:function(){return this.resolveUrl("./data/country-list.json")}},_computedHeaders:{type:Object,computed:"_computeHeaders(authorizationToken)"},_logList:{type:Array,value:function(){return[]},notify:!0},_timezoneList:{type:Array,value:function(){return[]}},_genderList:{type:Array,value:function(){return[{name:"Male",value:"m"},{name:"Female",value:"f"}]}},_countryList:{type:Array,value:function(){return[]}},_message:{type:String},language:{value:"en",type:String}},behaviors:[Polymer.AppLocalizeBehavior],attached:function(){this.loadResources(this.resolveUrl("data/locales.json"))},_onCountryListResponse:function(e,t){this._countryList=t.response},_onTimezoneListResponse:function(e,t){t.response.forEach(function(e,t){e.utc&&e.utc.forEach(function(e,t){var a={value:e,text:e.split("/")[1]};this.push("_timezoneList",a)}.bind(this))}.bind(this))},_computeUrl:function(e){return e+"?page="+this._nextPage+"&limit="+this.size},_computeHeaders:function(e){return{Authorization:"token "+e}},_formatLogUserLogged:function(e){return{icon:"icons:input",date:e.created_at.date,message:this.localize("account_log_user_logged"),address:e.ip}},_formatLogProfileChanged:function(e){var t=e.data,a="";for(property in t){var o=t[property],i=o.from,r=o.to;switch(property){case"timezone":this._timezoneList.forEach(function(e,t){e.value===i&&(i=e.text),e.value===r&&(r=e.text)});break;case"country":this._countryList.forEach(function(e,t){e.code===i&&(i=e.name),e.code===r&&(r=e.name)});break;case"gender":this._genderList.forEach(function(e,t){e.value===i&&(i=e.name),e.value===r&&(r=e.name)})}a+=" "+this.localize(property)+" "+this.localize("account_log_profile_changed","fromValue",i,"toValue",r)}return{icon:"editor:mode-edit",date:e.created_at.date,message:a,address:e.ip}},_formatLogProfileImageChanged:function(e){return{image:e.data.photo,date:e.created_at.date,message:this.localize("account_log_profile_image_changed"),address:e.ip}},_formatLogPasswordChanged:function(e){return{icon:"hardware:security",date:e.created_at.date,message:this.localize("account_log_password_changed"),address:e.ip}},_formatLogTokenGenerated:function(e){return{icon:"communication:vpn-key",date:e.created_at.date,message:this.localize("account_log_token_generated"),address:e.ip}},_formatLogApplicationRemoved:function(e){return{image:e.data.icon,date:e.created_at.date,message:this.localize("account_log_application_removed","application",e.data.title),address:e.ip}},_formatLog2FAEnabled:function(e){return{icon:"icons:check",date:e.created_at.date,message:this.localize("account_log_2fa_enabled"),address:e.ip}},_formatLog2FADisabled:function(e){return{icon:"icons:clear",date:e.created_at.date,message:this.localize("account_log_2fa_disabled"),address:e.ip}},_formatLogOauthAppAuthorized:function(e){return{icon:"icons:apps",date:e.created_at.date,message:this.localize("account_log_application_authorized","application",e.data.title),address:e.ip}},_formatLogAuthorizedAppRevoked:function(e){return{icon:"icons:undo",date:e.created_at.date,message:this.localize("account_log_application_revoked","application",e.data.title),address:e.ip}},_formatLogItem:function(e){var t={};switch(e.type){case"user_logged":t=this._formatLogUserLogged(e);break;case"user_profile_info_changed":t=this._formatLogProfileChanged(e);break;case"user_profile_photo_changed":t=this._formatLogProfileImageChanged(e);break;case"user_changed_password":t=this._formatLogPasswordChanged(e);break;case"user_generated_transfer_token":t=this._formatLogTokenGenerated(e);break;case"user_removed_application":t=this._formatLogApplicationRemoved(e);break;case"user_2fa_enabled":t=this._formatLog2FAEnabled(e);break;case"user_2fa_disabled":t=this._formatLog2FADisabled(e);break;case"user_oauth_app_authorized":t=this._formatLogOauthAppAuthorized(e);break;case"user_oauth_app_authorization_revoked":t=this._formatLogAuthorizedAppRevoked(e);break;default:console.log(e.type+"not supported yet.")}return t},loadLog:function(){this.$.progress.hidden=!1,this.set("_logList",[]),this.set("_message",""),this._nextPage=1,this.$.ironAjaxLog.url=this._computeUrl(this.logApi),this.$.ironAjaxLog.generateRequest()},_loadMore:function(){this.$.progress.hidden=!1,this.$.ironAjaxLog.url=this._computeUrl(this.logApi),this.$.ironAjaxLog.generateRequest()},_handleError:function(e){this.$.loadMore.disabled=!0,this._message="We couldn't load log at the moment. Please try again in a minute. If error continues contact us.",this._handleEmptyLog()},_handleResponse:function(e){var t=e.detail.response,a=[],o=this._logList.length;t&&(a=t.log,a&&a.length>0?(this.$.loadMore.disabled=!1,this._nextPage+=1,a.forEach(function(e,o){setTimeout(function(){this.push("_logList",a[o]),o===a.length-1&&(this._logList.length===t.meta.total&&(this.$.loadMore.disabled=!0),this._handleEmptyLog())}.bind(this),50*(o+1))}.bind(this))):a&&!a.length?(o||(this._message="The log is empty."),this.$.loadMore.disabled=!0,this._handleEmptyLog()):o||(this._message="We couldn't load log at the moment.",this._hideProgressBar(),this.fire("log-empty")))},_handleEmptyLog:function(){this._hideProgressBar(),this.fire("log-empty")},_hideProgressBar:function(){setTimeout(function(){this.$.progress.hidden=!0}.bind(this),500)}});</script>
+</dom-module>
+</body></html>

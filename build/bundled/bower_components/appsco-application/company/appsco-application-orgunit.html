@@ -1,0 +1,108 @@
+<html><head><link rel="import" href="../../polymer/polymer.html">
+<link rel="import" href="../../iron-flex-layout/iron-flex-layout.html">
+<link rel="import" href="../../paper-styles/typography.html">
+<link rel="import" href="../../paper-styles/shadow.html">
+<link rel="import" href="../../paper-button/paper-button.html">
+<link rel="import" href="../../iron-ajax/iron-ajax.html">
+<link rel="import" href="../../iron-ajax/iron-request.html">
+<link rel="import" href="../../paper-dialog/paper-dialog.html">
+<link rel="import" href="../../paper-dialog-scrollable/paper-dialog-scrollable.html">
+<link rel="import" href="../../neon-animation/animations/scale-up-animation.html">
+<link rel="import" href="../../neon-animation/animations/fade-out-animation.html">
+<link rel="import" href="../../paper-dropdown-menu/paper-dropdown-menu.html">
+<link rel="import" href="../../paper-listbox/paper-listbox.html">
+<link rel="import" href="../../paper-item/paper-item.html">
+
+<link rel="import" href="../../appsco-components/appsco-loader.html">
+<link rel="import" href="../../appsco-components/appsco-form-error.html">
+
+
+
+</head><body><dom-module id="appsco-application-orgunit">
+    <template>
+        <style>
+            :host {
+                display: block;
+                position: relative;
+            }
+            :host paper-dialog {
+                width: 670px;
+                top: 20vh;
+            @apply(--appsco-paper-dialog);
+            }
+            :host paper-dialog-scrollable::shadow .scrollable {
+                min-height: 80px;
+            }
+            paper-dropdown-menu {
+            --paper-input-container: {
+                 padding: 0;
+             };
+            }
+            :host paper-listbox {
+            @apply(--paper-listbox);
+                min-width: 225px;
+            }
+            :host paper-item:hover {
+            @apply(--paper-item-hover);
+            }
+            :host .message {
+                margin: 0;
+                color: var(--secondary-text-color);
+                font-style: italic;
+            @apply(--paper-font-body2);
+            }
+            :host .buttons {
+                margin-top: 20px;
+            }
+            :host .buttons paper-button {
+            @apply(--paper-dialog-button);
+            }
+            :host .buttons paper-button[dialog-confirm] {
+            @apply(--paper-dialog-confirm-button);
+            }
+            :host .buttons paper-button[dialog-dismiss] {
+            @apply(--paper-dialog-dismiss-button);
+            }
+        </style>
+
+        <iron-ajax id="orgunitsAjax" auto="" url="[[ companyOrgunitsApi ]]" on-response="_handleResponse" on-error="_handleError" headers="{{ _computedHeaders }}"></iron-ajax>
+
+        <paper-dialog id="dialog" with-backdrop="" entry-animation="scale-up-animation" exit-animation="fade-out-animation" on-iron-overlay-opened="_onDialogOpened" on-iron-overlay-closed="_onDialogClosed">
+
+            <h2>Add applications to organization unit</h2>
+
+            <paper-dialog-scrollable>
+                <div class="dialog-container">
+
+                    <appsco-loader active="[[ _loader ]]" loader-alt="Appsco is saving settings" multi-color=""></appsco-loader>
+
+                    <p>When application is added to organization unit it is shared to all users belonging to that unit.</p>
+                    <p>Choose organization unit to add selected applications to.</p>
+
+                    <div class="form">
+                        <template is="dom-if" if="[[ _message ]]">
+                            <p class="message">[[ _message ]]</p>
+                        </template>
+
+                        <paper-dropdown-menu label="Organization unit" horizontal-align="left" on-iron-overlay-closed="_onOrgunitsDropdownClosed">
+                            <paper-listbox id="orgunits" class="dropdown-content" attr-for-selected="value">
+                                <template is="dom-repeat" items="[[ _orgunits ]]">
+                                    <paper-item value="[[ item.self ]]" name="[[ item.name ]]">[[ item.name ]]</paper-item>
+                                </template>
+                            </paper-listbox>
+                        </paper-dropdown-menu>
+                    </div>
+
+                </div>
+            </paper-dialog-scrollable>
+
+            <div class="buttons">
+                <paper-button dialog-dismiss="">Cancel</paper-button>
+                <paper-button autofocus="" on-tap="_onAddAction">Add</paper-button>
+            </div>
+        </paper-dialog>
+
+    </template>
+    <script>Polymer({is:"appsco-application-orgunit",properties:{authorizationToken:{type:String},companyOrgunitsApi:{type:String},applications:{type:Array,value:function(){return[]}},_computedHeaders:{type:Object,computed:"_computeHeaders(authorizationToken)"},_orgunits:{type:Array,value:function(){return[]}},_message:{type:String},_loader:{type:Boolean,value:!1}},_computeHeaders:function(t){return{Authorization:"token "+t}},toggle:function(){this.$.dialog.toggle()},_onDialogOpened:function(){this.$.orgunitsAjax.generateRequest()},_onDialogClosed:function(){this.$.orgunits.select(0),this._loader=!1,this._error="",this._message=""},_onOrgunitsDropdownClosed:function(t){t.stopPropagation()},_handleResponse:function(t){var e=t.detail.response;this.set("_orgunits",[]),e&&e.orgunits.length>0?(this._message="",e.orgunits.forEach(function(t,e){this.push("_orgunits",t)}.bind(this))):this._message="There are no organization units."},_handleError:function(){this._message="We couldn't load organization units at the moment. Please try again in a minute."},_onAddAction:function(){var t=this.$.orgunits.selectedItem;if(this._loader=!0,!t)return this._message="Please choose organization unit to add applications to.",this._loader=!1,!1;var e=this.applications,o=e.length-1,n=document.createElement("iron-request"),i={url:t.value+"/applications",method:"POST",handleAs:"json",headers:{Authorization:"token "+this.authorizationToken,"Content-Type":"application/x-www-form-urlencoded"}},a="";this._message="";for(var s=0;s<=o;s++){var r=s===o?"":"&";a+="applications[]="+encodeURIComponent(e[s].self)+r}i.body=a,n.send(i).then(function(e){this.$.dialog.close(),this.fire("added-to-orgunit",{applications:e.response.applications,orgunit:{name:t.name,self:t.value}}),this._loader=!1}.bind(this))}});</script>
+</dom-module>
+</body></html>

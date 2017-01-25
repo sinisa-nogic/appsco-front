@@ -1,0 +1,113 @@
+<html><head><link rel="import" href="../polymer/polymer.html">
+<link rel="import" href="../iron-ajax/iron-ajax.html">
+<link rel="import" href="../iron-flex-layout/iron-flex-layout.html">
+<link rel="import" href="../paper-button/paper-button.html">
+<link rel="import" href="../paper-progress/paper-progress.html">
+<link rel="import" href="../neon-animation/neon-animation-runner-behavior.html">
+<link rel="import" href="../neon-animation/animations/transform-animation.html">
+
+<link rel="import" href="appsco-account-item.html">
+
+
+
+</head><body><dom-module id="appsco-accounts">
+    <template>
+        <style>
+            :host {
+                display: inline-block;
+                position: relative;
+            @apply(--appsco-accounts);
+            @apply(--layout-vertical);
+            @apply(--layout-center);
+
+                --paper-progress-container-color: var(--body-background-color);
+                --paper-progress-height: 2px;
+            }
+
+            :host div[accounts] {
+            @apply(--layout-horizontal);
+            @apply(--layout-wrap);
+            @apply(--layout-start);
+                margin-right: -10px;
+            @apply(--accounts-container);
+            }
+            :host([company]) div[accounts] {
+            @apply(--layout-vertical);
+            @apply(--layout-start);
+                margin-right: 0;
+            }
+            :host appsco-account-item {
+                margin: 0 10px 10px 0;
+            @apply(--appsco-accounts-item);
+            }
+            :host([company]) appsco-account-item {
+                width: 100%;
+                margin: 0 0 10px 0;
+            @apply(--appsco-accounts-item);
+            }
+
+            :host .accounts-container {
+                width: 100%;
+                min-height: 160px;
+                padding-top: 10px;
+                position: relative;
+            }
+            :host appsco-loader {
+                background-color: rgba(255, 255, 255, 0.4);
+            }
+            :host .load-more-box {
+                margin-top: 10px;
+                padding-top: 4px;
+                position: relative;
+            }
+            :host paper-progress {
+                min-width: 100px;
+                width: 100%;
+                position: absolute;
+                top: 0;
+                left: 0;
+            @apply(--accounts-progress-bar);
+            }
+            :host paper-button {
+                display: block;
+                width: 120px;
+                margin: 20px auto 0;
+                text-align: center;
+            @apply(--load-more-button);
+            }
+            :host .message {
+                font-style: italic;
+                opacity: 0.5;
+            }
+        </style>
+
+        <div class="accounts-container">
+            <iron-ajax auto="" id="accountsApiRequest" url="{{ _currentUrl }}" on-error="_onError" on-response="_onResponse" headers="{{ _computedHeaders }}" debounce-duration="300"></iron-ajax>
+
+            <paper-progress id="paperProgress" indeterminate=""></paper-progress>
+
+            <template is="dom-if" if="[[ _message ]]">
+                <p class="message">[[ _message ]]</p>
+            </template>
+
+            <template is="dom-if" if="[[ !_accountsEmpty ]]">
+                <div accounts="" company$="[[ company ]]">
+                    <template is="dom-repeat" items="{{ _accounts }}" on-dom-change="_onItemsDomChange">
+
+                        <appsco-account-item id="appscoAccountItem_[[ index ]]" class="accountitem" account="{{ item.account }}" company-role="{{ item }}" company="[[ company ]]"></appsco-account-item>
+
+                    </template>
+                </div>
+            </template>
+        </div>
+
+        <template is="dom-if" if="[[ !_accountsEmpty ]]">
+            <div class="load-more-box">
+                <paper-button on-tap="_loadMoreApps" id="loadMore" hidden$="[[ !_loadMore ]]">Load More</paper-button>
+            </div>
+        </template>
+    </template>
+
+    <script>Polymer({is:"appsco-accounts",properties:{company:{type:Boolean,value:!1,reflectToAttribute:!0},authorizationToken:{type:String,value:""},accountsApi:{type:String,value:"",notify:!0},size:{type:Number,value:10},loadMore:{type:Boolean,value:!1},_loadMore:{type:Boolean,value:!1},_computedHeaders:{type:Object,computed:"_computeHeaders(authorizationToken)"},_accounts:{type:Array,value:function(){return[]},notify:!0},_allAccounts:{type:Array,value:function(){return[]}},_accountsEmpty:{type:Boolean,value:!1},_message:{type:String,value:""},_currentUrl:{type:String,notify:!0},_next:{type:String},_totalAccounts:{type:Number,value:0},_renderedIndex:{type:Number,value:-1},_filterTerm:{type:String,value:""},_filterOrgunit:{type:Object,value:function(){return{}}},animationConfig:{value:function(){return{entry:{name:"transform-animation",transformOrigin:"1 1",transformFrom:"scale(1)",transformTo:"scale(1.08)",node:{},timing:{delay:200,duration:500}}}}}},behaviors:[Polymer.NeonAnimationRunnerBehavior],listeners:{"accounts-api-changed":"_loadAccounts"},ready:function(){this._currentUrl=this.accountsApi+"?page=1&extended=1&limit="+this.size,this.company&&(this.animationConfig.entry={name:"cascaded-animation",animation:"slide-from-left-animation",nodes:[],nodeDelay:50,timing:{duration:300}})},_loadAccounts:function(){this.$$("#paperProgress").hidden=!1,this._loadMore=!1,this._currentUrl=this.accountsApi+"?page=1&extended=1&limit="+this.size,this.set("_accounts",[])},_loadMoreApps:function(){this.$$("#paperProgress").hidden=!1,this._currentUrl=this._next},_onError:function(){this._message="We couldn't load accounts at the moment. Please try again in a minute.",this._handleEmptyLoad()},_handleEmptyLoad:function(){this._accountsEmpty=!0,this.fire("empty-load"),this._hideProgressBar()},_onResponse:function(t){var e=this,n=t.detail.response,s=n.company_roles.reverse(),i=n.meta,o=s.length-1;return this._totalAccounts=i.total,this._next=i.next+"&limit="+this.size,0===i.total?(this._message="Please add accounts to your company.",this._handleEmptyLoad(),!1):(this._accountsEmpty=!1,this._message="",void s.forEach(function(n,s){setTimeout(function(){e.push("_accounts",n),s==o&&(e._loadMore=e.loadMore,e._accounts.length===i.total&&(e._loadMore=!1),e._hideProgressBar(),e.fire("loaded",{accounts:t.detail.response.company_roles}))}.bind(this),50*(s+1))}))},_computeHeaders:function(t){return{Authorization:"token "+t}},addAccounts:function(t){var e=t.length;this._accountsEmpty=!1,this._message="",this._renderedIndex=e-1;for(var n=0;n<e;n++)this.unshift("_accounts",t[n])},modifyAccounts:function(t){for(var e=JSON.parse(JSON.stringify(this._accounts)),n=e.length,s=t.length,i=0;i<s;i++)for(var o=t[i],a=0;a<n;a++)if(o.account.self===e[a].account.self){e[a]=o;break}this.set("_accounts",[]),this.set("_accounts",e)},reloadAccounts:function(){this.set("_currentUrl",""),this._loadAccounts()},removeAccounts:function(t){for(var e=t.length,n=this._accounts,s=n.length,i=0;i<e;i++)for(var o=t[i],a=0;a<s;a++)if(o.self===n[a].self){this.splice("_accounts",a,1);break}this.fire("accounts-removed",{accounts:t}),0===this._accounts.length&&(this._message="You have removed all accounts from company. Please add new ones.",this._handleEmptyLoad())},getFirstAccount:function(){return this._accounts[0]},selectAllAccounts:function(t){for(var e=this._accounts,n=e.length,s=0;s<n;s++){var i=this.$$("#appscoAccountItem_"+s);t?i.select():i.deselect()}},filterByTerm:function(t){this._filterTerm=t,this._filterOrgunit.orgUnit?this._filterByTermAndOrgunit():this._filterByTerm()},filterByOrgunit:function(t){this._filterOrgunit=t,this._filterTerm.trim().length>0?this._filterByTermAndOrgunit():this._filterByOrgunit()},_filterByTerm:function(){var t=this._filterTerm,e=this._allAccounts.length;return this.$$("#paperProgress").hidden=!1,e<this._accounts.length&&(this._allAccounts=JSON.parse(JSON.stringify(this._accounts)),e=this._allAccounts.length),0===e?(this.fire("filter-done"),!1):(this.set("_accounts",[]),this._allAccounts.forEach(function(n,s){if(n.account.name.toLowerCase().indexOf(t.toLowerCase())>=0||n.account.email.toLowerCase().indexOf(t.toLowerCase())>=0){var i=JSON.parse(JSON.stringify(n));this.push("_accounts",i)}s===e-1&&(this._accountsEmpty=0===this._accounts.length,this._message=this._accountsEmpty?"There are no accounts with asked term.":"",this._hideProgressBar(),this.fire("filter-done"))}.bind(this)),this._loadMore=!1,void(t.length<3&&this._accounts.length<this._totalAccounts&&(this._loadMore=!0)))},_filterByOrgunit:function(){var t=this._filterOrgunit,e=t.orgUnit,n=t.selected,s=0;if(this._accountsEmpty=!1,this._message="",this._allAccounts.length<this._accounts.length&&(this._allAccounts=JSON.parse(JSON.stringify(this._accounts))),s=this._allAccounts.length,n){this.set("_accounts",[]);for(var i=0;i<s;i++){var o=this._allAccounts[i],a=o.account.org_units,r=a.length,c=this.$$("#appscoAccountItem_"+i);c&&c.deselect();for(var u=0;u<r;u++)if(a[u].name===e.name){this.push("_accounts",o);break}}0===this._accounts.length&&(this._message="There are no accounts within "+e.name+" organization unit.",this._handleEmptyLoad())}else{this.set("_accounts",this._allAccounts);for(var i=0;i<s;i++){var c=this.$$("#appscoAccountItem_"+i);c&&c.deselect()}this.set("_filterOrgunit",{})}},_filterByTermAndOrgunit:function(){var t=this._filterOrgunit,e=t.orgUnit,n=t.selected,s=this._filterTerm,i=0;if(this._accountsEmpty=!1,this._message="",this._allAccounts.length<this._accounts.length&&(this._allAccounts=JSON.parse(JSON.stringify(this._accounts))),i=this._allAccounts.length,n){this.set("_accounts",[]);for(var o=0;o<i;o++){var a=this._allAccounts[o],r=a.account.org_units,c=r.length,u=this.$$("#appscoAccountItem_"+o);u&&u.deselect();for(var h=0;h<c;h++)if(r[h].name===e.name&&(a.account.name.toLowerCase().indexOf(s.toLowerCase())>=0||a.account.email.toLowerCase().indexOf(s.toLowerCase())>=0)){this.push("_accounts",a);break}o===i-1&&this.fire("filter-done")}0===this._accounts.length&&(this._message="There are no accounts within "+e.name+" organization unit.",this._handleEmptyLoad())}else this.set("_accounts",this._allAccounts),this.set("_filterOrgunit",{}),this._filterByTerm()},_hideProgressBar:function(){setTimeout(function(){this.$$("#paperProgress").hidden=!0}.bind(this),300)},_onItemsDomChange:function(){var t=this._renderedIndex;if(-1!=t&&this.company){this.animationConfig.entry.nodes=[];for(var e=0;e<=t;e++){var n=this.$$("#appscoAccountItem_"+e);this.animationConfig.entry.nodes.push(n)}this.playAnimation("entry"),this._renderedIndex=-1}}});</script>
+</dom-module>
+</body></html>

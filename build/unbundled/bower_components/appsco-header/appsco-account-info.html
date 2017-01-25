@@ -1,0 +1,230 @@
+<html><head><link rel="import" href="../polymer/polymer.html">
+<link rel="import" href="../iron-flex-layout/iron-flex-layout-classes.html">
+<link rel="import" href="../iron-icons/iron-icons.html">
+<link rel="import" href="../paper-button/paper-button.html">
+<link rel="import" href="../iron-localstorage/iron-localstorage.html">
+<link rel="import" href="../iron-media-query/iron-media-query.html">
+<link rel="import" href="../iron-image/iron-image.html">
+
+<link rel="import" href="appsco-dropdown.html">
+<link rel="import" href="appsco-account-info-account.html">
+
+
+
+</head><body><dom-module id="appsco-account-info">
+    <template>
+        <style include="iron-flex iron-flex-alignment">
+            :host {
+                min-width: 32px;
+                font-size: 14px;
+                position: relative;
+                display: inline-block;
+
+            @apply(--appsco-account-info);
+            }
+            :host([display-name]) .account-info.hidden {
+                display: inline;
+            }
+            :host([display-name]) iron-icon.hidden {
+                display: inline-flex;
+            }
+            :host([display-name]) appsco-dropdown {
+                top: 30px;
+                right: -10px;
+            }
+            :host paper-button {
+            @apply(--paper-font-button);
+                max-width: 110px;
+                height: 26px;
+                padding: 0 6px;
+                line-height: 26px;
+                font-size: 12px;
+                margin: 0;
+                text-align: center;
+                display: block;
+            }
+            :host .truncate {
+            @apply(--paper-font-common-nowrap);
+                display: block;
+            }
+            :host .account-holder:after {
+                clear: both;
+            }
+            :host .user-holder {
+                height: 34px;
+                line-height: 34px;
+                font-size: 16px;
+                cursor: pointer;
+
+            @apply(--appsco-account-info-user-holder);
+            }
+            :host .account-img {
+                width: 32px;
+                height: 32px;
+                border-radius: 50%;
+
+            @apply(--appsco-account-info-account-img);
+            }
+            :host .account-info {
+                margin: 0 0 0 10px;
+                overflow: hidden;
+            }
+            :host .user-holder .account-info {
+                float: left;
+                max-width: 200px;
+            }
+            :host .my-account-button {
+                background-color: var(--primary-button-background-color, #00b4ff);
+                color: #ffffff;
+            }
+            :host .gray-button {
+                color: var(--secondary-text-color);
+            }
+            :host .link-button {
+                text-decoration: none;
+                color: var(--secondary-text-color);
+            }
+            :host .add-account-button {
+                background-color: var(--default-button-background-color, #f8f8f8);
+                border: 1px solid var(--divider-color);
+            }
+            :host appsco-dropdown {
+                top: 35px;
+                right: -6px;
+
+            @apply(--appsco-account-info-dropdown);
+            }
+            :host appsco-dropdown .info {
+                font-size: 11px;
+                background-color: var(--account-info-background-color, #edf9ff);
+                color: var(--secondary-text-color);
+
+            @apply(--appsco-account-info-box);
+            }
+            :host appsco-dropdown .actions {
+                background-color: var(--light-background-color, #f5f5f5);
+            }
+            :host appsco-dropdown .info {
+                padding: 6px 20px;
+            }
+            :host appsco-dropdown .actions {
+                padding: 10px 20px;
+            }
+            :host appsco-dropdown .account .info-lead {
+                font-size: 14px;
+                line-height: 14px;
+                margin: 0;
+                display: block;
+            }
+            :host appsco-dropdown .account .info-additional {
+                font-size: 12px;
+                line-height: 12px;
+                padding-top: 2px;
+            }
+            :host appsco-dropdown .active-account {
+                padding: 20px;
+                background-color: var(--hover-background-color, #ffffff);
+                border-top-left-radius: 4px;
+                border-top-right-radius: 4px;
+            }
+            :host appsco-dropdown .active-account .account-img {
+                width: 64px;
+                height: 64px;
+            }
+            :host .active-account .account-info {
+                margin-top: 2px;
+            }
+            :host .end-justified {
+            @apply(--layout-end-justified);
+            }
+            :host([mobile]) appsco-dropdown {
+                top: 35px;
+                right: -5px;
+            }
+            :host([mobile]) .hidden-xs {
+                display: none;
+            }
+        </style>
+
+        <iron-media-query query="(max-width: 600px)" query-matches="{{ mobile }}"></iron-media-query>
+
+        <div class="account-holder" hidden$="[[ !_accountExists }}">
+
+            <div id="triggerDropdown" class="user-holder layout horizontal center" on-tap="_toggleDropdown">
+
+                <iron-image src="[[ account.picture_url ]]" placeholder="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIwAAACMCAMAAACZHrEMAAAAqFBMVEUAAAAnNEEnNEEnNEEnNEEnNEE8rPcnNEEnNEEnNUI8rPc8rPc8rPcnNEEnNEEnNEEnNEEnNEE8rPc8rPc8rPc8rPcnNEE8rPcnNEE8rPcnNEH///88rPeTmqAoPlDJzNBdZ3Hx8/WBiI+us7g0gLUuWno1QU1OtPjk5+kxbZg9TFtswfprc3w6oebX2ds3lNO8wMShpqxQWmWu3fye1vszeKfU7f6Nz/toHOtWAAAAGnRSTlMAnyC/EO+fYEDPYO26r4+AcFA9IIAQ388wUFlk1w8AAASsSURBVHjazNbdqqtADAXg+XEYvajam1JWkFYLIiIb2/d/uHPgwPam7kmM7p7vCRbJJBmzXR4r6z2w8N5WMTe/7FrbAqsKW1/N73DxFJAUTtGZg7m6AFtRH5gnix5CPmbmCK4M2CCU+5cnt9jM5vtG8VDx+8VxFmp2n2ZlFXZRZUbtfMFOLmdtWU7Y0SlTlSVgV2F7cbISuys3FscVOEDhzAZ5wCFCbsQiDhONkMWB7BFZ+qmZb/TtNjdTr0ijyNJ3M70xd70wjT5L37S0om16SRp9lqmlH7QTP40+y4MSHsI0+izHp4ncLPo00STkSOqIpUNSYhe7gJSxJZZ2REpw5gdZIWmSvlFFZtaVSBqJbURSaVadkfYktifSzqtNCkgbiG1AWlhr1AlpLxJ4Ie20vUnoSKDD1kZlFzDMJDCD4fKuURU4vkjgCxzVm3UHFhIBi+Pfx+PDWNFNWtxJ5I6F4Eb5T4bxzMLow8hLYz8bxrJGSR9GPlDlp8OUzAupDyO7lxFcI4mM4IqcudYvPeF0O3w+zPcTrsEkP5R8tfmnAN+NBG7gK+RdwpMEnhBwiVnS//QEYuLrq100dyyYn+EAvnEigWkEXzB/XcH3IKEH+K6ywe5IrANbvfwetHOtn24r2zIDiQ0ABJsGfLQB+JYPp/oW6C9CbiKA/+PNIJoKfA2JNeCrjAXfRGIT+KzxECCxHnxeFmYmoRkC3iBB16cOEgYiA4m0SFCFaY6bJXmYvhUVpoeIgUyjKIwijP4kDD0StGFef2g1t50GgSCABrSBPhj7aHDcGgPZkk0lFlr+/880PDhpaumc4pwvONnN7ly35ks6VAAiw0c84FiADHjgPI9ZLvOx/LfjMrxnz6sULsMDZnUPGigJu6VxYHnUVrb/meCpDEiu3GUyTTsJb4ZAwHkGCbm7TAFKFXeZEhRx7jKgvHWXWYPCHzXTvipOBloi7k97A5pF7jIv2kZDfDrIrECD0T1QPoHWq7tMAZrSMJ85VJRc2/WId4fkag0GGbB44r/eBox44ACB/3o5GH6xb4a/7Yf71m1D0xoK7l3bhApQ8IFpaI6dSHw1EEW6o1lo9QhHyaHtZCJZZJJMdK36GBfBcqvJROxvu/RRROw+OVg/aGo5Iw7zW69DlDPqhiytlLOHspdLUn/62+TUJ7lkP3s8pXFlJdRyjfgrpCJjlGvUYf5dKyVVUaM0Dj+MKakH1Cln15xUhcN1MsMCmKo46+S3V+O+m7VjFYdhIAigU22x2nCglTE+llRxkYBJlf//tbsikKQ4CVtand4XDCPBNnPdzMV2/f70VRwNrpu52dbP0WBhTnl+mKvHubh7PWVqcSvnlJng+tfyKud1If98qNvdurjfMo/0vN6rdbP+XuvsoP1iHV2yg3ZosI6CIitaRxEFbN0wisg6IWCYNAQMk4aAYdIQMEwaAoZJQ8AwaQg7sblh7BaDuQgRB+hsDmbFIVOy5tKEo5ZgTYUFFSaxhuRZywDlhAXVpvTvv+WdklUjRStRrIpEtBSpopWI1jQFOyAkhYeJxXYSnuBGeceNmFnhTFmCFQVhRR+Rac40QhzRWeREIvZGhFJNjh/wS1HnPv+ePgAAAABJRU5ErkJggg==" sizing="contain" preload="" fade="" class="account-img flex-none">
+                </iron-image>
+
+                <template is="dom-if" if="{{ displayName }}">
+                    <span class="account-info truncate hidden-xs">[[ _accountDisplay ]]</span>
+
+                    <iron-icon icon="arrow-drop-down" class="hidden-xs"></iron-icon>
+                </template>
+            </div>
+
+            <appsco-dropdown id="accountInfoDropdown" trigger="[[ _triggerDropdown ]]" data-info$="[[ info ]]">
+
+                <template is="dom-if" if="[[ info ]]">
+                    <div class="info">
+                        [[ info ]]
+                    </div>
+                </template>
+
+                <div class="account-holder layout vertical">
+                    <div class="active-account account layout horizontal">
+                        <iron-image src="[[ account.picture_url ]]" placeholder="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIwAAACMCAMAAACZHrEMAAAAqFBMVEUAAAAnNEEnNEEnNEEnNEEnNEE8rPcnNEEnNEEnNUI8rPc8rPc8rPcnNEEnNEEnNEEnNEEnNEE8rPc8rPc8rPc8rPcnNEE8rPcnNEE8rPcnNEH///88rPeTmqAoPlDJzNBdZ3Hx8/WBiI+us7g0gLUuWno1QU1OtPjk5+kxbZg9TFtswfprc3w6oebX2ds3lNO8wMShpqxQWmWu3fye1vszeKfU7f6Nz/toHOtWAAAAGnRSTlMAnyC/EO+fYEDPYO26r4+AcFA9IIAQ388wUFlk1w8AAASsSURBVHjazNbdqqtADAXg+XEYvajam1JWkFYLIiIb2/d/uHPgwPam7kmM7p7vCRbJJBmzXR4r6z2w8N5WMTe/7FrbAqsKW1/N73DxFJAUTtGZg7m6AFtRH5gnix5CPmbmCK4M2CCU+5cnt9jM5vtG8VDx+8VxFmp2n2ZlFXZRZUbtfMFOLmdtWU7Y0SlTlSVgV2F7cbISuys3FscVOEDhzAZ5wCFCbsQiDhONkMWB7BFZ+qmZb/TtNjdTr0ijyNJ3M70xd70wjT5L37S0om16SRp9lqmlH7QTP40+y4MSHsI0+izHp4ncLPo00STkSOqIpUNSYhe7gJSxJZZ2REpw5gdZIWmSvlFFZtaVSBqJbURSaVadkfYktifSzqtNCkgbiG1AWlhr1AlpLxJ4Ie20vUnoSKDD1kZlFzDMJDCD4fKuURU4vkjgCxzVm3UHFhIBi+Pfx+PDWNFNWtxJ5I6F4Eb5T4bxzMLow8hLYz8bxrJGSR9GPlDlp8OUzAupDyO7lxFcI4mM4IqcudYvPeF0O3w+zPcTrsEkP5R8tfmnAN+NBG7gK+RdwpMEnhBwiVnS//QEYuLrq100dyyYn+EAvnEigWkEXzB/XcH3IKEH+K6ywe5IrANbvfwetHOtn24r2zIDiQ0ABJsGfLQB+JYPp/oW6C9CbiKA/+PNIJoKfA2JNeCrjAXfRGIT+KzxECCxHnxeFmYmoRkC3iBB16cOEgYiA4m0SFCFaY6bJXmYvhUVpoeIgUyjKIwijP4kDD0StGFef2g1t50GgSCABrSBPhj7aHDcGgPZkk0lFlr+/880PDhpaumc4pwvONnN7ly35ks6VAAiw0c84FiADHjgPI9ZLvOx/LfjMrxnz6sULsMDZnUPGigJu6VxYHnUVrb/meCpDEiu3GUyTTsJb4ZAwHkGCbm7TAFKFXeZEhRx7jKgvHWXWYPCHzXTvipOBloi7k97A5pF7jIv2kZDfDrIrECD0T1QPoHWq7tMAZrSMJ85VJRc2/WId4fkag0GGbB44r/eBox44ACB/3o5GH6xb4a/7Yf71m1D0xoK7l3bhApQ8IFpaI6dSHw1EEW6o1lo9QhHyaHtZCJZZJJMdK36GBfBcqvJROxvu/RRROw+OVg/aGo5Iw7zW69DlDPqhiytlLOHspdLUn/62+TUJ7lkP3s8pXFlJdRyjfgrpCJjlGvUYf5dKyVVUaM0Dj+MKakH1Cln15xUhcN1MsMCmKo46+S3V+O+m7VjFYdhIAigU22x2nCglTE+llRxkYBJlf//tbsikKQ4CVtand4XDCPBNnPdzMV2/f70VRwNrpu52dbP0WBhTnl+mKvHubh7PWVqcSvnlJng+tfyKud1If98qNvdurjfMo/0vN6rdbP+XuvsoP1iHV2yg3ZosI6CIitaRxEFbN0wisg6IWCYNAQMk4aAYdIQMEwaAoZJQ8AwaQg7sblh7BaDuQgRB+hsDmbFIVOy5tKEo5ZgTYUFFSaxhuRZywDlhAXVpvTvv+WdklUjRStRrIpEtBSpopWI1jQFOyAkhYeJxXYSnuBGeceNmFnhTFmCFQVhRR+Rac40QhzRWeREIvZGhFJNjh/wS1HnPv+ePgAAAABJRU5ErkJggg==" sizing="contain" preload="" fade="" class="account-img">
+                        </iron-image>
+
+                        <div class="account-info layout vertical">
+
+                            <template is="dom-if" if="[[ account.first_name ]]">
+                                <span class="info-lead truncate">[[ _accountDisplay ]]</span>
+                            </template>
+
+                            <span class="info-additional truncate">[[ account.email ]]</span>
+
+                            <div class="layout vertical end-justified flex">
+                                <paper-button class="my-account-button" on-tap="_onAccountSettingsAction">
+                                    My Account
+                                </paper-button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="account-holder layout vertical">
+
+                    <template is="dom-repeat" items="{{ accounts }}">
+
+                        <appsco-account-info-account account="{{ item }}">
+                        </appsco-account-info-account>
+
+                    </template>
+
+                </div>
+                <div class="actions layout horizontal">
+                    <div class="flex">
+                        <paper-button class="gray-button add-account-button" on-tap="_onAddAccountAction" disabled="">
+                            Add Account
+                        </paper-button>
+                    </div>
+
+                    <div>
+                        <a href="[[ logoutApi ]]" class="link-button" tabindex="-1" target="_self">
+                            <paper-button class="gray-button" on-tap="_onLogoutAccountAction">
+                                Logout
+                            </paper-button>
+                        </a>
+                    </div>
+                </div>
+            </appsco-dropdown>
+        </div>
+
+        <iron-localstorage id="localStorageAccounts" name="appsco-login-accounts" value="{{ accounts }}">
+        </iron-localstorage>
+
+    </template>
+
+    <script>Polymer({is:"appsco-account-info",properties:{mobile:{type:Boolean,value:!1,reflectToAttribute:!0},account:{type:Object,notify:!0},_accountDisplay:{type:String,computed:"_setAccountDisplay(account)"},_accountExists:{type:Boolean,value:!1},accounts:{type:Array,value:[]},info:{type:String},displayName:{type:Boolean,value:!1,reflectToAttribute:!0},logoutApi:{type:String}},listeners:{"account-changed":"_accountChanged"},attached:function(){this._triggerDropdown=this.$$("#triggerDropdown"),this._checkAccountInfo(),this._checkIfAccountExists()},_checkIfAccountExists:function(){var t=this.account;if(t)for(var o in t){this._accountExists=!0;break}else this._accountExists=!1},_setAccountDisplay:function(t){var o="";return""!=t.first_name&&(o=t.first_name+" "),""!=t.last_name&&(o+=t.last_name),""==t.first_name&&""==t.last_name&&(o=t.email),o},_checkAccountInfo:function(){var t=this.$.accountInfoDropdown;this.info&&""!=this.info.trim()&&(t.customStyle["--dropdown-caret-background-color"]="var(--info-background-color, #edf9ff)",t.updateStyles())},_accountChanged:function(){this._checkIfAccountExists(),this.account.company&&(this.info="This account is managed by "+this.account.company.name)},_toggleDropdown:function(){this.$.accountInfoDropdown.toggle()},_onAccountSettingsAction:function(){this.fire("account-settings",{account:this.account}),this._toggleDropdown()},_onAddAccountAction:function(){this.fire("account-add")},_onLogoutAccountAction:function(){this.fire("account-logout",{account:this.account})}});</script>
+</dom-module>
+</body></html>

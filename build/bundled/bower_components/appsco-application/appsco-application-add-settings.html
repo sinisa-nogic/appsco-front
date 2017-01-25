@@ -1,0 +1,64 @@
+<html><head><link rel="import" href="../polymer/polymer.html">
+<link rel="import" href="../iron-flex-layout/iron-flex-layout.html">
+<link rel="import" href="../paper-input/paper-textarea.html">
+<link rel="import" href="../paper-button/paper-button.html">
+<link rel="import" href="../iron-ajax/iron-request.html">
+<link rel="import" href="../iron-form/iron-form.html">
+<link rel="import" href="../paper-input/paper-input.html">
+
+<link rel="import" href="../neon-animation/neon-shared-element-animatable-behavior.html">
+<link rel="import" href="../neon-animation/animations/hero-animation.html">
+<link rel="import" href="../neon-animation/animations/fade-in-animation.html">
+<link rel="import" href="../neon-animation/animations/fade-out-animation.html">
+
+<link rel="import" href="../appsco-components/appsco-loader.html">
+<link rel="import" href="../appsco-components/appsco-form-error.html">
+<link rel="import" href="appsco-application-info.html">
+
+
+
+</head><body><dom-module id="appsco-application-add-settings">
+    <template>
+        <style>
+            :host {
+                display: block;
+            }
+            :host appsco-application-info {
+                margin-bottom: 10px;
+
+            --paper-font-caption: {
+                 font-size: 14px;
+             };
+            }
+        </style>
+
+        <appsco-application-info id="applicationHeader" application="{{ application }}">
+        </appsco-application-info>
+
+        <div id="appscoApplicationSettings">
+
+            <appsco-loader active="[[ _loader ]]" loader-alt="Appsco is saving application" multi-color=""></appsco-loader>
+
+            <appsco-form-error message="[[ _error ]]"></appsco-form-error>
+
+            <form is="iron-form" hidden="" id="addApplicationForm" method="post" action$="{{ _computedAction }}" headers="{{ _computedHeaders }}" on-iron-form-response="_onFormResponse">
+                <paper-input type="text" name="application[resource]" value="[[ application.self ]]"></paper-input>
+            </form>
+
+            <form id="saveApplicationForm">
+                <paper-input id="title" label="title" value="{{ _icon.title }}" name="configure_application[title]" required=""></paper-input>
+                <paper-input id="url" label="url" value="{{ _icon.url }}" pattern="https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_\+.~#?&amp;//=]*)" error-message="Invalid Url" required="" auto-validate="" name="configure_application[url]"></paper-input>
+
+                <div hidden$="[[ _computedAuthTypes ]]">
+                    <paper-input id="username" label="username" value="{{ _icon.claims.username }}" name="icon_claims[username]"></paper-input>
+                    <paper-input id="password" label="password" type="password" value="{{ _icon.claims.password }}" name="icon_claims[password]"></paper-input>
+                    <paper-textarea id="note" label="note" value="{{ _icon.claims.note }}" name="icon_claims[note]"></paper-textarea>
+                </div>
+            </form>
+
+        </div>
+    </template>
+
+    <script>Polymer({is:"appsco-application-add-settings",properties:{application:{type:Object,notify:!0},_selectedApplication:{type:Object},_icon:{type:Object,value:function(){return{}},notify:!0},authorizationToken:{type:String},dashboardApi:{type:String},_computedAction:{type:String,computed:"_computeAction(dashboardApi)"},_computedHeaders:{type:Object,computed:"_computeHeaders(authorizationToken)"},_computedAuthTypes:{type:Boolean,computed:"_computeAuthTypes(_selectedApplication)"},_loader:{type:Boolean,value:!1},_error:{type:String},animationConfig:{value:function(){return{entry:[{name:"hero-animation",id:"hero",toPage:this},{name:"fade-in-animation",node:this,timing:{duration:600}}],exit:{name:"fade-out-animation",node:this}}}},sharedElements:{value:function(){return{hero:this.$.applicationHeader}}}},behaviors:[Polymer.NeonSharedElementAnimatableBehavior],listeners:{"application-changed":"_onApplicationChanged"},_computeAction:function(e){return e+"/icons"},_computeHeaders:function(e){return{Authorization:"token "+e}},_computeAuthTypes:function(e){return!(e.auth_types&&(e.auth_types.item||e.auth_types.unpw))},_onApplicationChanged:function(){(!this._selectedApplication||this._selectedApplication&&!this._selectedApplication.auth_types)&&(this._selectedApplication=this.application),this._icon.claims=this.application.claims,this._icon.title&&""!=this._icon.title||this.set("_icon.title",this.application.title),this._icon.url&&""!=this._icon.url||this.set("_icon.url",this.application.url),setTimeout(function(){this.$.title.focus()}.bind(this),100)},_submit:function(){this._submitApplicationConfigure().then(function(e){e&&(this.application=e),this._submitNewClaims().then(function(e){e&&(this.application=e),this._onApplicationAdded()}.bind(this))}.bind(this))},_submitApplicationConfigure:function(){var e=this;return new Promise(function(t,i){var n="";if(e.application.title!=e.$.title.value&&(n=encodeURIComponent(e.$.title.name)+"="+encodeURIComponent(e.$.title.value)),e.application.url!=e.$.url.value&&(n+=""==n?"":"&",n+=encodeURIComponent(e.$.url.name)+"="+encodeURIComponent(e.$.url.value)),""!=n){var o={url:e.application.self+"/application",method:"PATCH",body:n,handleAs:"json",headers:{Authorization:"token "+e.authorizationToken,"Content-Type":"application/x-www-form-urlencoded"}},a=document.createElement("iron-request");a.send(o).then(function(){a.succeeded&&t(a.response.icon)})}else t(!1)})},_submitNewClaims:function(){var e=this;return new Promise(function(t,i){var n="";if(!e.application.claims||e.application.claims.username==e.$.username.value&&e.application.claims.password==e.$.password.value&&e.application.claims.note==e.$.note.value||(n=encodeURIComponent(e.$.username.name)+"="+encodeURIComponent(e.$.username.value)+"&"+encodeURIComponent(e.$.password.name)+"="+encodeURIComponent(e.$.password.value)+"&"+encodeURIComponent(e.$.note.name)+"="+encodeURIComponent(e.$.note.value)),""!=n){var o={url:e.application.self,method:"PATCH",body:n,handleAs:"json",headers:{Authorization:"token "+e.authorizationToken,"Content-Type":"application/x-www-form-urlencoded"}},a=document.createElement("iron-request");a.send(o).then(function(){a.succeeded&&t(a.response.icon)})}else t(!1)})},_onFormError:function(e){this._error=e.detail.error.message,this._loader=!1},_onFormResponse:function(e){var t=e.detail.response.icon;this.application=t,""!=this.$.username.value&&""!=this.$.password.value?this._submit():this._onApplicationAdded()},addApplication:function(){this._loader=!0,this.$.addApplicationForm.submit()},_onApplicationAdded:function(){this._loader=!1,this.fire("application-added",{application:this.application})},reset:function(){this._icon={},this._selectedApplication={},this.$.addApplicationForm.reset(),this.$.saveApplicationForm.reset(),this.$.url.invalid=!1}});</script>
+</dom-module>
+</body></html>

@@ -1,0 +1,98 @@
+<html><head><link rel="import" href="../polymer/polymer.html">
+<link rel="import" href="../paper-button/paper-button.html">
+<link rel="import" href="../iron-image/iron-image.html">
+<link rel="import" href="../iron-icon/iron-icon.html">
+<link rel="import" href="../iron-icons/iron-icons.html">
+
+<link rel="import" href="../appsco-components/appsco-loader.html">
+<link rel="import" href="../appsco-components/appsco-form-error.html">
+
+
+
+</head><body><dom-module id="appsco-account-image-settings">
+    <template>
+        <style>
+            :host {
+                display: inline-block;
+                position: relative;
+            @apply(--appsco-account-image-settings);
+            }
+            .upload-container {
+                width: 96px;
+                height: 96px;
+                margin-left: auto;
+                margin-right: auto;
+                overflow: hidden;
+                position: relative;
+            @apply(--account-image-upload-container);
+            }
+            :host appsco-loader, .upload-container, .account-image, .account-image-upload, .account-image::shadow #sizedImgDiv, .account-image::shadow #placeholder {
+                border-radius: var(--account-image-upload-radius, 50%);
+            }
+            .account-image, .account-image-upload, .icon-upload {
+                position: absolute;
+                top: 0;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                margin: auto;
+            }
+            .account-image {
+                width: 96px;
+                height: 96px;
+            --iron-image-placeholder: {
+                 background: #eeeeee;
+             };
+
+            @apply(--account-image);
+            }
+            .account-image-upload {
+                background-color: rgba(250, 250, 250, 0.8);
+                display: block;
+                opacity: 0;
+                z-index: 5;
+                cursor: pointer;
+            @apply(--account-image-upload-field);
+            }
+            .account-image-upload.no-image {
+                opacity: 1;
+            }
+            .account-image-upload:hover {
+                opacity: 1;
+                transition: opacity .2s ease-in;
+            }
+            .icon-upload {
+                width: 32px;
+                height: 32px;
+            @apply(--account-image-upload-icon);
+            }
+            .upload-file {
+                width: 0;
+                height: 0;
+                opacity: 0;
+            }
+        </style>
+
+        <appsco-form-error message="[[ _error ]]"></appsco-form-error>
+
+        <div class="upload-container">
+
+            <appsco-loader active="[[ _loader ]]" loader-alt="Appsco is saving application" multi-color=""></appsco-loader>
+
+            <iron-image class="account-image" src="[[ account.picture_url ]]" alt="Account image" sizing="contain"></iron-image>
+
+            <template is="dom-if" if="[[ !previewOnly ]]">
+                <label for="accountImage" class$="account-image-upload [[ _imagePreview ]]">
+                    <iron-icon icon="file-upload" class="icon-upload"></iron-icon>
+                </label>
+
+                <input type="file" accept="image/*" id="accountImage" name="account-image" class="upload-file" on-change="_onUploadImage">
+            </template>
+        </div>
+
+        <content select="[info]"></content>
+
+    </template>
+    <script>Polymer({is:"appsco-account-image-settings",properties:{account:{type:Object,value:function(){return{}},notify:!0},authorizationToken:{type:String,value:""},imageSettingsApi:{type:String},previewOnly:{type:Boolean,value:!1},_computedHeaders:{type:Object,computed:"_computeHeaders(authorizationToken)"},_imagePreview:{type:String,computed:"_computeImagePreviewClass(account)"},_loader:{type:Boolean,value:!1},_error:{type:String}},_validateImageFile:function(e){var t=["image/jpg","image/jpeg","image/png"],a=e.type,i=!0;if(e.size>1048576)this._error="Image size must be less than 1MB.",i=!1;else for(var n=0;n<t.length;n++){if(t[n]===a){i=!0;break}i=!1,n!==t.length-1||i||(this._error="Allowed file types are: jpg, jpeg and png.")}return i},_setNewImage:function(e){var t=new FileReader;t.onload=function(e){this.account.picture_url=e.target.result;var t=JSON.parse(JSON.stringify(this.account));this.account={},this.account=t}.bind(this),t.readAsDataURL(e)},_onUploadImage:function(e){var t=e.target;if(this._error="",t.files&&t.files[0]){var a=t.files[0],i=new FormData,n=new XMLHttpRequest;if(!this._validateImageFile(a))return!1;i.append("file",a,a.name),n.onreadystatechange=function(){4==n.readyState&&200==n.status&&this._setNewImage(a)}.bind(this),n.open("POST",this.imageSettingsApi,!0),n.setRequestHeader("Authorization",this._computedHeaders),n.send(i)}},_computeHeaders:function(e){return"token "+e},_computeImagePreviewClass:function(e){return e&&e.picture_url?"has-image":"no-image"},reset:function(){var e=JSON.parse(JSON.stringify(this.account));this.account={},this.account=e,this._error=""}});</script>
+</dom-module>
+</body></html>

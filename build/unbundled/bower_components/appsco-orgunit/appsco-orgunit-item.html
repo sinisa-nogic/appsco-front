@@ -1,0 +1,97 @@
+<html><head><link rel="import" href="../polymer/polymer.html">
+<link rel="import" href="../paper-item/paper-item.html">
+<link rel="import" href="../paper-item/paper-item.html">
+<link rel="import" href="../paper-styles/typography.html">
+<link rel="import" href="../paper-material/paper-material.html">
+<link rel="import" href="../iron-icon/iron-icon.html">
+<link rel="import" href="../iron-icons/iron-icons.html">
+<link rel="import" href="../iron-flex-layout/iron-flex-layout.html">
+<link rel="import" href="../neon-animation/neon-animation-runner-behavior.html">
+<link rel="import" href="../neon-animation/animations/fade-out-animation.html">
+<link rel="import" href="../neon-animation/animations/scale-up-animation.html">
+
+
+
+
+</head><body><dom-module id="appsco-orgunit-item">
+    <template>
+        <style>
+            :host {
+            @apply(--paper-font-body1);
+            @apply(--layout-horizontal);
+                position: relative;
+                width: 100%;
+                height: 24px;
+                line-height: 24px;
+                padding-left: 4px;
+                box-sizing: border-box;
+                cursor: pointer;
+                -webkit-touch-callout: none;
+                -webkit-user-select: none;
+                -moz-user-select: none;
+                -ms-user-select: none;
+                user-select: none;
+            @apply(--appsco-orgunit-item);
+            }
+            :host([selected]) {
+                background-color: #e8e8e8;
+            @apply(--appsco-orgunit-item-selected);
+            }
+            :host *[hidden] {
+                display: none;
+            }
+            :host .icon-options {
+                opacity: 0;
+                transition: opacity 0.1s linear;
+            }
+            :host(:hover) .icon-options {
+                opacity: 1;
+                transition: opacity 0.2s linear;
+            }
+            :host([_show-options]) .icon-options {
+                opacity: 1;
+            }
+            :host .flex {
+            @apply(--layout-flex);
+            }
+            :host paper-material {
+            @apply(--paper-listbox);
+            }
+            :host .options {
+                z-index: 10;
+                overflow: auto;
+                position: absolute;
+                right: 0;
+                background-color: white;
+                min-width: 150px;
+                display: none;
+            }
+            :host paper-item {
+                border-bottom: 1px solid rgba(0,0,0, 0.1);
+            @apply(--paper-font-caption);
+                min-height: 32px;
+            }
+            :host paper-item:last-child {
+                border-bottom: 0;
+            }
+            :host paper-item:hover {
+            @apply(--paper-item-hover);
+            }
+        </style>
+
+        <div class="flex" on-tap="_organizationUnitTapped">
+            [[ orgUnit.name ]]
+        </div>
+        <div>
+            <iron-icon id="iconOptions" class="icon-options" icon="icons:more-vert" on-tap="_toggleOptions"></iron-icon>
+            <paper-material id="options" class="options">
+                <paper-item on-tap="_modify" hidden$="[[ !modify ]]">Modify</paper-item>
+                <paper-item on-tap="_add" hidden$="[[ !add ]]">Add sub organization</paper-item>
+                <paper-item on-tap="_remove" hidden$="[[ !remove ]]">Remove</paper-item>
+            </paper-material>
+        </div>
+    </template>
+
+    <script>Polymer({is:"appsco-orgunit-item",properties:{orgUnit:{type:Object,value:function(){return{}}},modify:{type:Boolean,value:!1},add:{type:Boolean,value:!1},remove:{type:Boolean,value:!1},selected:{type:Boolean,value:!1,reflectToAttribute:!0},_showOptions:{type:Boolean,value:!1,reflectToAttribute:!0,observer:"_onShowOptionsChange"},animationConfig:{value:function(){return{entry:{name:"scale-up-animation",node:this.$.options,transformOrigin:"0 0",axis:"y",timing:{duration:200}},exit:{name:"fade-out-animation",node:this.$.options,timing:{duration:100}}}}}},behaviors:[Polymer.NeonAnimationRunnerBehavior],listeners:{"neon-animation-finish":"_onAnimationFinish"},ready:function(){Polymer.Gestures.add(document,"tap",this._handleDocumentClick.bind(this))},_isInPath:function(i,t){i=i||[];for(var n=0;n<i.length;n++)if(i[n]==t)return!0;return!1},_handleDocumentClick:function(i){var t=Polymer.dom(i).path;this._isInPath(t,this.$.iconOptions)||this._isInPath(t,this.$.options)||this._hideOptions()},_onShowOptionsChange:function(){this._animateOptions()},_hideOptions:function(){this._showOptions=!1},_animateOptions:function(){this._showOptions?(this.$.options.style.display="block",this.playAnimation("entry")):this.playAnimation("exit")},_toggleOptions:function(){this._showOptions=!this._showOptions},_modify:function(){this._hideOptions(),this.fire("modify-orgunit",{orgUnit:this.orgUnit})},_add:function(){this._hideOptions(),this.fire("add-orgunit",{orgUnit:this.orgUnit})},_remove:function(){this._hideOptions(),this.fire("remove-orgunit",{orgUnit:this.orgUnit})},_organizationUnitTapped:function(){this.selected=!this.selected,this.fire("selected",{orgUnit:this.orgUnit,selected:this.selected})},_onAnimationFinish:function(){this._showOptions||(this.$.options.style.display="none")},deSelect:function(){this.selected=!1}});</script>
+</dom-module>
+</body></html>

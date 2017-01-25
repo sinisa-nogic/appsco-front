@@ -1,0 +1,124 @@
+<html><head><link rel="import" href="../../polymer/polymer.html">
+<link rel="import" href="../../iron-flex-layout/iron-flex-layout.html">
+<link rel="import" href="../../paper-styles/typography.html">
+<link rel="import" href="../../paper-styles/shadow.html">
+<link rel="import" href="../../paper-button/paper-button.html">
+<link rel="import" href="../../iron-icon/iron-icon.html">
+<link rel="import" href="../../iron-icons/iron-icons.html">
+<link rel="import" href="../../paper-input/paper-input.html">
+<link rel="import" href="../../iron-image/iron-image.html">
+<link rel="import" href="../../iron-ajax/iron-request.html">
+<link rel="import" href="../../paper-dialog/paper-dialog.html">
+<link rel="import" href="../../paper-dialog-scrollable/paper-dialog-scrollable.html">
+<link rel="import" href="../../neon-animation/animations/scale-up-animation.html">
+
+<link rel="import" href="../../appsco-components/appsco-loader.html">
+<link rel="import" href="../../appsco-components/appsco-form-error.html">
+<link rel="import" href="appsco-card-item.html">
+
+
+
+</head><body><dom-module id="appsco-company-application-add">
+    <template>
+        <style>
+            :host {
+                display: block;
+                position: relative;
+            @apply(--appsco-company-application-add);
+            }
+            :host paper-dialog {
+                width: 670px;
+                top: 20vh;
+            @apply(--appsco-paper-dialog);
+            }
+            :host paper-dialog-scrollable::shadow .scrollable {
+                min-height: 80px;
+            }
+            :host paper-input {
+            --paper-input-container-label: {
+                 left: 4px;
+             };
+            --paper-input-container-input: {
+                 padding: 0 4px;
+             };
+            }
+            :host .application-list {
+            @apply(--layout-horizontal);
+            @apply(--layout-wrap);
+                margin-top: 0;
+                position: relative;
+            }
+            :host .message {
+                margin: 0;
+                color: var(--secondary-text-color);
+                font-style: italic;
+            @apply(--paper-font-body2);
+            }
+            :host .buttons {
+                margin-top: 10px;
+            }
+            :host .buttons paper-button {
+                margin-top: 10px;
+            @apply(--paper-dialog-button);
+            }
+            :host .buttons paper-button[dialog-confirm] {
+            @apply(--paper-dialog-confirm-button);
+            }
+            :host .buttons paper-button[dialog-dismiss] {
+            @apply(--paper-dialog-dismiss-button);
+            }
+            :host .message {
+                color: var(--secondary-text-color);
+                font-style: italic;
+            @apply(--paper-font-body2);
+            }
+        </style>
+
+        <paper-dialog id="dialog" with-backdrop="" entry-animation="scale-up-animation" exit-animation="fade-out-animation" on-iron-overlay-opened="_onDialogOpened" on-iron-overlay-closed="_onDialogClosed">
+
+            <h2>Add one or more applications</h2>
+
+            <paper-dialog-scrollable>
+                <div class="dialog-container">
+
+                    <appsco-loader active="[[ _addLoader ]]" loader-alt="Appsco is adding applications" multi-color=""></appsco-loader>
+
+                    <div class="application-list">
+
+                        <appsco-form-error message="[[ _error ]]"></appsco-form-error>
+
+                        <template is="dom-repeat" items="[[ _selectedApplications ]]">
+                            <appsco-card-item item="[[ _mapToItem(item) ]]" remove-action="" on-selected="_onAddedApplicationSelect"></appsco-card-item>
+                        </template>
+                    </div>
+
+                    <paper-input id="search" label="search applications" error-message="Please type three or more letters." on-keyup="_search">
+                    </paper-input>
+
+                    <div class="application-list">
+
+                        <appsco-loader active="[[ _searchLoader ]]" loader-alt="Appsco is searching applications" multi-color=""></appsco-loader>
+
+                        <template is="dom-repeat" items="[[ _searchList ]]">
+                            <appsco-card-item item="[[ _mapToItem(item) ]]" on-selected="_onApplicationSelect"></appsco-card-item>
+                        </template>
+
+                        <template is="dom-if" if="[[ _message ]]">
+                            <p class="message">
+                                [[ _message ]]
+                            </p>
+                        </template>
+                    </div>
+                </div>
+            </paper-dialog-scrollable>
+
+            <div class="buttons">
+                <paper-button dialog-dismiss="">Cancel</paper-button>
+                <paper-button autofocus="" on-tap="_onAddApplicationsAction">Add</paper-button>
+            </div>
+        </paper-dialog>
+
+    </template>
+    <script>Polymer({is:"appsco-company-application-add",properties:{authorizationToken:{type:String},companyApi:{type:String},applicationsTemplateApi:{type:String},size:{type:Number,value:12},_searchList:{type:Array,value:function(){return[]}},_message:{type:String},_selectedApplications:{type:Array,value:function(){return[]}},_searchLoader:{type:Boolean,value:!1},_addLoader:{type:Boolean,value:!1}},toggle:function(){this.$.dialog.toggle()},_onDialogOpened:function(){this.$.search.focus()},_onDialogClosed:function(){this.set("_searchList",[]),this.set("_selectedApplications",[]),this.$.search.value="",this._searchLoader=!1,this._addLoader=!1,this._message="",this._error=""},_search:function(e){var t=/^Backspace$/i,i=/^\w$/,s=this.$.search.value,a=s.length;if(this._searchLoader=!0,this._message="",0===a)return this._message="",this._searchLoader=!1,this.set("_searchList",[]),!1;if(a<3||!i.test(e.key)&&!t.test(e.key))return this._message="Please type three or more letters.",this._searchLoader=!1,this.set("_searchList",[]),!1;var o=document.createElement("iron-request"),n=this.applicationsTemplateApi+"?extended=1&limit="+this.size+"&term="+s;this._message="";var r={url:n,method:"GET",handleAs:"json",headers:{Authorization:"token "+this.authorizationToken}};o.send(r).then(function(){var e=o.response.applications;e&&e.length>0?this.set("_searchList",e):(this.set("_searchList",[]),this._message="There are no applications with asked title."),this._searchLoader=!1}.bind(this))},_mapToItem:function(e){return{image:e.icon_url,title:e.title}},_onApplicationSelect:function(e){this.push("_selectedApplications",e.model.item)},_onAddedApplicationSelect:function(e){this.splice("_selectedApplications",e.detail.application,1)},_onAddApplicationsAction:function(){var e=this._selectedApplications,t=e.length-1,i=document.createElement("iron-request"),s={url:this.companyApi+"/applications",method:"POST",handleAs:"json",headers:{Authorization:"token "+this.authorizationToken,"Content-Type":"application/x-www-form-urlencoded"}},a="";this._addLoader=!0;for(var o=0;o<=t;o++){var n=o===t?"":"&";a+="application_templates[]="+encodeURIComponent(e[o].self)+n}s.body=a,i.send(s).then(function(e){this.$.dialog.close(),this.fire("applications-added",{applications:e.response.applications}),this.set("_selectedApplications",[]),this._addLoader=!1}.bind(this))}});</script>
+</dom-module>
+</body></html>

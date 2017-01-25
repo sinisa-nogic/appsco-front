@@ -1,0 +1,73 @@
+<html><head><link rel="import" href="../polymer/polymer.html">
+<link rel="import" href="../iron-ajax/iron-request.html">
+<link rel="import" href="../paper-button/paper-button.html">
+<link rel="import" href="../paper-dialog/paper-dialog.html">
+<link rel="import" href="../paper-input/paper-input.html">
+<link rel="import" href="../paper-input/paper-textarea.html">
+<link rel="import" href="../neon-animation/animations/fade-out-animation.html">
+<link rel="import" href="../neon-animation/animations/scale-up-animation.html">
+<link rel="import" href="../iron-a11y-keys/iron-a11y-keys.html">
+
+<link rel="import" href="../appsco-components/appsco-loader.html">
+<link rel="import" href="../appsco-components/appsco-form-error.html">
+
+
+
+</head><body><dom-module id="appsco-orgunit-modify">
+    <template>
+        <style>
+            :host {
+                display: block;
+                position: relative;
+            @apply(--appsco-orgunit-modify);
+            }
+            :host paper-dialog {
+                width: 670px;
+            }
+            :host .buttons paper-button {
+            @apply(--paper-dialog-button);
+            }
+            :host .buttons paper-button[dialog-confirm] {
+            @apply(--paper-dialog-confirm-button);
+            }
+            :host .buttons paper-button[dialog-dismiss] {
+            @apply(--paper-dialog-dismiss-button);
+            }
+        </style>
+        <paper-dialog with-backdrop="" id="modifyDialog" entry-animation="scale-up-animation" exit-animation="fade-out-animation" on-iron-overlay-opened="_onDialogOpened" on-iron-overlay-closed="_onDialogClosed">
+
+            <div class="remove-container">
+
+                <appsco-loader active="[[ _loader ]]" loader-alt="Appsco is removing organization unit" multi-color=""></appsco-loader>
+
+                <template is="dom-if" if="[[ _isModify(orgUnit) ]]">
+                    <h2>Modify organization unit [[ orgUnit.name ]]</h2>
+                </template>
+                <template is="dom-if" if="[[ !_isModify(orgUnit) ]]">
+                    <h2>Add new organization unit</h2>
+                </template>
+
+                <appsco-form-error message="[[ _error ]]"></appsco-form-error>
+
+                <paper-input id="name" label="name" value="[[ orgUnit.name ]]" name="org_unit[name]" error-message="Please enter organization unit name." on-keyup="_onKeyup"></paper-input>
+                <paper-textarea id="description" label="description" value="[[ orgUnit.description ]]" name="org_unit[description]"></paper-textarea>
+            </div>
+
+            <div class="buttons">
+                <paper-button dialog-dismiss="">Cancel</paper-button>
+                <template is="dom-if" if="[[ _isModify(orgUnit) ]]">
+                    <paper-button autofocus="" on-tap="_modify">Modify</paper-button>
+                </template>
+                <template is="dom-if" if="[[ !_isModify(orgUnit) ]]">
+                    <paper-button autofocus="" on-tap="_add">Add</paper-button>
+                </template>
+            </div>
+        </paper-dialog>
+
+        <iron-a11y-keys keys="enter" on-keys-pressed="_onEnter">
+        </iron-a11y-keys>
+
+    </template>
+    <script>Polymer({is:"appsco-orgunit-modify",properties:{authorizationToken:{type:String,value:""},orgUnit:{type:Object,value:function(){return{}},notify:!0},parent:{type:Object,value:function(){return{}},notify:!0},_loader:{type:Boolean,value:!1},_error:{type:String}},_onKeyup:function(e){"Enter"!==e.code&&(e.target.invalid=!1)},_onEnter:function(){this._isModify(this.orgUnit)?this._modify():this._add()},_isModify:function(e){return Object.keys(e).length>0},open:function(){this.$.modifyDialog.open()},_close:function(){this.$.modifyDialog.close()},_onDialogOpened:function(){this.$.name.value=this.orgUnit.name,this.$.description.value=this.orgUnit.description,this.$.name.focus()},_onDialogClosed:function(){this.$.name.value="",this.$.description.value="",this.$.name.invalid=!1,this._error=""},_validate:function(){var e=this.$.name,n=e.value?e.value:"";return 0!==n.trim().length||(e.invalid=!0,e.focus(),!1)},_add:function(){if(this._validate()){var e=document.createElement("iron-request");this._loader=!0,e.send({url:this.parent.self,method:"POST",handleAs:"json",body:this._prepBody(),headers:{Authorization:"token "+this.authorizationToken,"Content-Type":"application/x-www-form-urlencoded"}}).then(function(e){this._loader=!1,this.fire("orgunit-added",{orgUnit:e.response.orgunit}),this.$.modifyDialog.close()}.bind(this),function(e){this._loader=!1,this._error="We couldn't save your changes. Please try again in a minute."}.bind(this))}},_modify:function(){if(this._validate()){var e=document.createElement("iron-request");this._loader=!0,e.send({url:this.orgUnit.self,method:"PATCH",handleAs:"json",body:this._prepBody(),headers:{Authorization:"token "+this.authorizationToken,"Content-Type":"application/x-www-form-urlencoded"}}).then(function(e){this._loader=!1,this.fire("orgunit-modified",{orgUnit:e.response.orgunit}),this.$.modifyDialog.close()}.bind(this),function(e){this._loader=!1,this._error="We couldn't save your changes. Please try again in a minute."}.bind(this))}},_prepBody:function(){var e=this.$.name,n=e.value?e.value:"",t=this.$.description,i=t.value?t.value:"",o="";return o=encodeURIComponent(e.name)+"="+encodeURIComponent(n),o+=""==o?"":"&",o+=encodeURIComponent(t.name)+"="+encodeURIComponent(i)}});</script>
+</dom-module>
+</body></html>

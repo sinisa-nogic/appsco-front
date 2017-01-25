@@ -1,0 +1,125 @@
+<html><head><link rel="import" href="../polymer/polymer.html">
+<link rel="import" href="../iron-form/iron-form.html">
+<link rel="import" href="../iron-flex-layout/iron-flex-layout.html">
+<link rel="import" href="../paper-input/paper-input.html">
+<link rel="import" href="../paper-input/paper-textarea.html">
+<link rel="import" href="../paper-button/paper-button.html">
+<link rel="import" href="../iron-a11y-keys/iron-a11y-keys.html">
+
+<link rel="import" href="../appsco-components/appsco-loader.html">
+<link rel="import" href="../appsco-components/appsco-form-error.html">
+
+<link rel="import" href="../vaadin-date-picker/vaadin-date-picker.html">
+
+
+
+</head><body><dom-module id="appsco-vault-software-license">
+    <template>
+        <style>
+            :host {
+                display: block;
+                position: relative;
+            @apply(--appsco-vault-software-license);
+
+            --paper-dropdown-menu: {
+                 display: block;
+             };
+            }
+            :host .submit-button {
+                margin: 20px 0 0 0;
+            }
+            :host form {
+            @apply(--layout-horizontal);
+            @apply(--vault-form-responsive);
+            }
+            :host form .form-left, :host form .form-right {
+            @apply(--layout-flex);
+            }
+            :host form .form-left {
+                padding-right: 10px;
+            @apply(--form-responsive-section-left);
+            }
+            :host form .form-right {
+                padding-left: 10px;
+            @apply(--form-responsive-section-right);
+            }
+            :host .date-container {
+                height: 62px;
+                cursor: pointer;
+            }
+        </style>
+
+        <appsco-loader active="[[ _loader ]]" loader-alt="Appsco is saving vault item" multi-color=""></appsco-loader>
+
+        <appsco-form-error message="[[ _error ]]"></appsco-form-error>
+
+        <form is="iron-form" id="vaultSoftwareLicenseForm" method="POST" action="[[ _computedAction ]]" headers="{{ _computedHeaders }}" on-iron-form-presubmit="_onFormPresubmit" on-iron-form-error="_onFormError" on-iron-form-response="_onFormResponse">
+
+            <div class="form-left">
+                <div class="input-container">
+                    <paper-input id="name" name="vault_software_license[name]" label="Name" required="" value="[[ item.name ]]"></paper-input>
+                </div>
+
+                <div class="input-container">
+                    <paper-textarea label="Licence key" value="[[ item.licenceKey ]]" name="vault_software_license[licenceKey]"></paper-textarea>
+                </div>
+
+                <div class="input-container">
+                    <paper-textarea label="Licence" value="[[ item.licence ]]" name="vault_software_license[licence]"></paper-textarea>
+                </div>
+
+                <div class="input-container">
+                    <paper-input name="vault_software_license[version]" label="Version" value="[[ item.version ]]"></paper-input>
+                </div>
+
+                <div class="input-container">
+                    <paper-input name="vault_software_license[publisher]" label="Publisher" value="[[ item.publisher ]]"></paper-input>
+                </div>
+
+                <div class="input-container">
+                    <paper-input name="vault_software_license[supportEmail]" label="Support email" value="[[ item.supportEmail ]]"></paper-input>
+                </div>
+
+                <div class="input-container">
+                    <paper-input name="vault_software_license[website]" pattern="https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_\+.~#?&amp;//=]*)" error-message="Invalid Url" auto-validate="" label="Website" value="[[ item.website ]]"></paper-input>
+                </div>
+            </div>
+
+            <div class="form-right">
+                <div class="input-container">
+                    <paper-input name="vault_software_license[price]" label="Price" value="[[ item.price ]]"></paper-input>
+                </div>
+
+                <div class="input-container date-container">
+                    <vaadin-date-picker id="purchaseDate" label="Purchase date" value="[[ item.purchaseDate ]]"></vaadin-date-picker>
+                </div>
+
+                <div class="input-container">
+                    <paper-input name="vault_software_license[orderNumber]" label="Order number" value="[[ item.orderNumber ]]"></paper-input>
+                </div>
+
+                <div class="input-container">
+                    <paper-input name="vault_software_license[numberOfLicences]" label="Number of licences" value="[[ item.numberOfLicences ]]" auto-validate="" pattern="[0-9]*" error-message="Digits only!"></paper-input>
+                </div>
+
+                <div class="input-container">
+                    <paper-input name="vault_software_license[orderTotal]" label="Order total" value="[[ item.orderTotal ]]"></paper-input>
+                </div>
+
+                <div class="input-container">
+                    <paper-textarea label="Note" value="[[ item.note ]]" name="vault_software_license[note]"></paper-textarea>
+                </div>
+            </div>
+        </form>
+
+        <template is="dom-if" if="[[ !noSubmitAction ]]">
+            <paper-button id="submit" class="submit-button" on-tap="_submitForm">Save</paper-button>
+        </template>
+
+        <iron-a11y-keys target="[[ _target ]]" keys="enter" on-keys-pressed="_onEnter">
+        </iron-a11y-keys>
+
+    </template>
+    <script>Polymer({is:"appsco-vault-software-license",properties:{item:{type:Object,value:function(){return{}},observer:"_onItemChange"},noSubmitAction:{type:Boolean,value:!1},authorizationToken:{type:String,value:function(){return""}},_computedHeaders:{type:Object,computed:"_computeHeaders(authorizationToken)"},_computedAction:{type:Object,computed:"_computeAction(item, vaultSoftwareLicenseApi)"},_updateAction:{type:Boolean,value:!1},_target:{type:Object,value:function(){return this.$.vaultSoftwareLicenseForm}},_loader:{type:Boolean,value:!1},_error:{type:String},vaultSoftwareLicenseApi:{type:String,notify:!0}},_onItemChange:function(){for(key in this.item){if(this.item.purchaseDate){var e=this.item.purchaseDate.date.split(" ");this.$.purchaseDate.value=e[0]}return!1}this.item={name:"",licenceKey:"",licence:"",version:"",publisher:"",supportEmail:"",website:"",price:"",orderNumber:"",numberOfLicences:"",orderTotal:"",note:""}},_computeHeaders:function(e){return{Authorization:"token "+e,"Content-Type":"application/x-www-form-urlencoded"}},_computeAction:function(e,t){return e.self?(this._updateAction=!0,e.self):(this._updateAction=!1,t)},_onEnter:function(){this._submitForm()},save:function(){this._submitForm()},_submitForm:function(){this.$.vaultSoftwareLicenseForm.submit()},_onFormPresubmit:function(){if(this._loader=!0,this._updateAction&&(this.$.vaultSoftwareLicenseForm.request.method="PATCH"),this.$.purchaseDate.value){var e=new Date(this.$.purchaseDate.value);this.$.vaultSoftwareLicenseForm.request.body["vault_software_license[purchaseDate][day]"]=e.getDate(),this.$.vaultSoftwareLicenseForm.request.body["vault_software_license[purchaseDate][month]"]=e.getMonth()+1,this.$.vaultSoftwareLicenseForm.request.body["vault_software_license[purchaseDate][year]"]=e.getFullYear()}},_onFormError:function(e){e.detail.request.response.message?this._error=e.detail.request.response.message:this._error=e.detail.error.message,this._loader=!1},_onFormResponse:function(e){var t=e.detail.response.item;t.displayTitle=t.title?t.title:t.name,t.vaultType="software-licence",this.fire("vault-item-saved",{item:t}),this.reset(),this._loader=!1},reset:function(){this.$.name.invalid=!1,this._error="",this._loader=!1}});</script>
+</dom-module>
+</body></html>

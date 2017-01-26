@@ -89,7 +89,7 @@
                 --app-primary-color-1: #39C2D7;
                 --app-secondary-color: #273441;
                 --app-secondary-color-1: #1183A4;
-                --app-danger-color: #ff0000;
+                --app-danger-color: #db4437;
                 --body-background-color: #f5f8fa;
                 --app-primary-color-dark: #414042;
                 --success-color: #5AC099;
@@ -172,11 +172,11 @@
                 font-size: 14px;
             }
             .drawer-list div[head] {
-                background-color: var(--app-primary-color);
+                background-color: #279FBC;
                 color: #ffffff;
             }
             .drawer-list div[head].business {
-                /*margin-top: 14px;*/
+                background-color: #5AC099;
             }
             .drawer-list div[disabled] {
                 opacity: 0.4;
@@ -429,7 +429,7 @@
                                     authorization-token="[[ authorizationToken ]]"
                                     filter-api="[[ api.dashboards ]]?extended=1"
                                     on-add-application="_onCompanyAddApplication"
-                                    on-search="_onSearchApplications"
+                                    on-search="_onSearchCompanyApplications"
                                     on-page-global-info="_onInfoAction"
                                     on-page-global-filters="_onFiltersAction"
                                     on-share="_onShareApplications"
@@ -441,7 +441,7 @@
                             <appsco-manage-application-page-actions
                                     name="manage-application"
                                     on-back="_showCompanyApplicationsPage"
-                                    on-resource-section="_onResourceActionApplicationPage"></appsco-manage-application-page-actions>
+                                    on-resource-section="_onResourceActionManageApplicationPage"></appsco-manage-application-page-actions>
 
                             <appsco-directory-page-actions
                                     id="appscoDirectoryPageActions"
@@ -554,16 +554,16 @@
                     <appsco-applications-page
                             id="appscoApplicationsPage"
                             name="applications"
-                            application="{{ application }}"
+                            application="{{ _companyApplication }}"
                             selected-applications="{{ _selectedApplications }}"
-                            application-log="[[ application.meta.log ]]"
+                            application-log="[[ _companyApplication.meta.log ]]"
                             authorization-token="[[ authorizationToken ]]"
                             computed-headers="[[ _computedHeaders ]]"
                             company-applications-api="[[ companyApplicationsApi ]]"
                             company-orgunits-api="[[ companyOrgunitsApi ]]"
                             on-loaded="_onLoadedApplications"
-                            on-edit-application="_onEditApplication"
-                            on-info-edit-application="_onInfoEditApplication"
+                            on-edit-application="_onEditCompanyApplication"
+                            on-info-edit-application="_onInfoEditCompanyApplication"
                             on-share-company-application="_onShareCompanyApplication"
                             on-show-bulk-actions="_onShowBulkActions"
                             on-hide-bulk-actions="_onHideApplicationsBulkActions"
@@ -575,9 +575,9 @@
                             id="appscoManageApplicationPage"
                             name="manage-application"
                             route="[[ subroute ]]"
-                            application="{{ application }}"
+                            application="{{ _companyApplication }}"
                             company-api="[[ companyApi ]]"
-                            application-log="[[ application.meta.log ]]"
+                            application-log="[[ _companyApplication.meta.log ]]"
                             authorization-token="[[ authorizationToken ]]"
                             accounts-api="[[ api.accounts ]]"
                             account="{{ account }}"
@@ -736,7 +736,7 @@
         <appsco-application-remove-orgunit
                 id="appscoApplicationRemoveOrgunit"
                 authorization-token="[[ authorizationToken ]]"
-                application="[[ application ]]"
+                application="[[ _companyApplication ]]"
                 on-application-removed-from-orgunit="_onApplicationRemovedFromOrgunit"></appsco-application-remove-orgunit>
 
         <appsco-company-application-share
@@ -749,7 +749,7 @@
 
         <appsco-application-assignee-claims
                 id="appscoApplicationAssigneeClaims"
-                application="[[ application ]]"
+                application="[[ _companyApplication ]]"
                 authorization-token="[[ authorizationToken ]]"
                 on-claims-changed="_onAssigneeClaimsChanged"
                 ></appsco-application-assignee-claims>
@@ -920,6 +920,16 @@
                  * Selected application.
                  */
                 application: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    }
+                },
+
+                /**
+                 * Selected company application.
+                 */
+                _companyApplication: {
                     type: Object,
                     value: function() {
                         return {};
@@ -1151,10 +1161,6 @@
                 this.page = '404';
                 this._pageName = 'Not Found';
             },
-
-            _backTo: function() {
-                this._business ? this._showCompanyApplicationsPage() : this._showHomePage();
-            },
             /**
              * Routing END
              */
@@ -1311,7 +1317,7 @@
                 var term = event.detail.term;
 
                 this._showProgressBar();
-                this._business ? this.$.appscoApplicationsPage.filterApplicationsByTerm(term) : this.$.appscoHomePage.filterApplicationsByTerm(term);
+                this.$.appscoHomePage.filterApplicationsByTerm(term);
             },
 
             _onGroupSelected: function(event) {
@@ -1338,13 +1344,13 @@
                     applications = [application],
                     message = application.title + ' was successfully saved.';
 
+                this.application = application;
                 this.$.appscoHomePage.addApplications(applications);
                 this._notify(message);
             },
 
             _onEditApplication: function() {
-                var routePath = this._business ? 'manage-application/' : 'application/';
-                this.set('route.path', routePath + this.application.alias);
+                this.set('route.path', 'application/' + this.application.alias);
             },
 
             _onInfoEditApplication: function() {
@@ -1358,7 +1364,7 @@
              * Application page START
              */
             _onResourceActionApplicationPage: function() {
-                this._business ? this.$.appscoManageApplicationPage.toggleResource() : this.$.appscoApplicationPage.toggleResource();
+                this.$.appscoApplicationPage.toggleResource();
             },
 
             _onShareApplication: function() {
@@ -1619,6 +1625,24 @@
             /**
              * Applications page START
              */
+            _onSearchCompanyApplications: function(event) {
+                var term = event.detail.term;
+
+                this._showProgressBar();
+                this.$.appscoApplicationsPage.filterApplicationsByTerm(term);
+            },
+
+            _onResourceActionManageApplicationPage: function() {
+                this.$.appscoManageApplicationPage.toggleResource();
+            },
+
+            _onEditCompanyApplication: function() {
+                this.set('route.path', 'manage-application/' + this._companyApplication.alias);
+            },
+
+            _onInfoEditCompanyApplication: function() {
+                this._onEditCompanyApplication();
+            },
 
             _refreshOrgunits: function(data) {
                 var applicationsPage = this.$.appscoApplicationsPage.$ ? this.$.appscoApplicationsPage : null,
@@ -1749,7 +1773,7 @@
                 }
 
                 if (applications.length === 1) {
-                    this.application = applications[0];
+                    this._companyApplication = applications[0];
                 }
             },
 
@@ -1768,8 +1792,8 @@
                 var applications = event.detail.applications,
                     application = applications[applications.length - 1];
 
-                this.set('application', {});
-                this.set('application', application);
+                this.set('_companyApplication', {});
+                this.set('_companyApplication', application);
 
                 this._notify('Selected applications were successfully shared.');
             },
@@ -1784,8 +1808,8 @@
 
             _onAssigneeClaimsChanged: function(event) {
                 this._notify('Claims for ' + event.detail.assignee.display_name + ' were successfully changed.');
-                this.set('application', {});
-                this.set('application', event.detail.application);
+                this.set('_companyApplication', {});
+                this.set('_companyApplication', event.detail.application);
             },
 
             _onRevokeAssigneeAccess: function(event) {
@@ -1799,8 +1823,8 @@
                 var application = event.detail.application;
 
                 this._notify('Access for ' + event.detail.assignee.display_name + ' on ' + application.title + ' revoked.');
-                this.set('application', {});
-                this.set('application', application);
+                this.set('_companyApplication', {});
+                this.set('_companyApplication', application);
             },
 
             _onRemoveApplications: function() {
@@ -1841,7 +1865,7 @@
 
             _onRemoveApplicationFromOrgunit: function(event) {
                 this.$.appscoApplicationRemoveOrgunit.orgunit = event.detail.orgunit;
-                this.application = event.detail.application;
+                this._companyApplication = event.detail.application;
                 this.$.appscoApplicationRemoveOrgunit.toggle();
             },
 
@@ -1852,7 +1876,7 @@
                     this.$.appscoApplicationsPage.modifyApplications([application]);
                 }
 
-                this.application = application;
+                this._companyApplication = application;
                 this._notify(application.title + ' has been removed from ' + event.detail.orgunit.name + ' organization unit.');
             },
             /**

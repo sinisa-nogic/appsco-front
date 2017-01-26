@@ -45,13 +45,12 @@ Custom property | Description | Default
 
         <appsco-form-error message="[[ _error ]]"></appsco-form-error>
 
-        <!--https://my-dev.appsco.com/api/v2/dashboards/341/icons-->
         <form is="iron-form"
               hidden
               id="addLinkForm"
               method="post"
-              action$="[[ _computedAction ]]"
-              headers="{{ _computedHeaders }}"
+              action="[[ _computedAction ]]"
+              headers="[[ _computedHeaders ]]"
               on-iron-form-response="_onFormResponse">
             <paper-input type="text" name="application[resource]" value="[[ _linkSelf ]]"></paper-input>
         </form>
@@ -203,6 +202,14 @@ Custom property | Description | Default
                 }
             },
 
+            _showLoader: function() {
+                this._loader = true;
+            },
+
+            _hideLoader: function() {
+                this._loader = false;
+            },
+
             /**
              * Configures application with given title and url.
              *
@@ -246,7 +253,7 @@ Custom property | Description | Default
              */
             _onFormError: function(event) {
                 this._error = event.detail.error.message;
-                this._loader = false;
+                this._hideLoader();
             },
 
             /**
@@ -267,6 +274,8 @@ Custom property | Description | Default
                     this.fire('link-added', {
                         application: application
                     });
+
+                    this._hideLoader();
 
                 }.bind(this));
             },
@@ -289,7 +298,7 @@ Custom property | Description | Default
                     urlInput.focus();
                 }
                 else if (!titleInput.invalid && !urlInput.invalid) {
-                    this._loader = true;
+                    this._showLoader();
                     this.$.addLinkForm.submit();
                 }
             },

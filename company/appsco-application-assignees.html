@@ -48,8 +48,8 @@ Contains info about application assignees (accounts to whom app is shared).
             }
             :host .message {
                 color: var(--secondary-text-color);
-                font-style: italic;
             @apply(--paper-font-body2);
+            @apply(--info-message);
             }
             :host appsco-application-assignee {
                 width: 100%;
@@ -160,11 +160,6 @@ Contains info about application assignees (accounts to whom app is shared).
                     reflectToAttribute: true
                 },
 
-                _attached: {
-                    type: Boolean,
-                    value: false
-                },
-
                 /**
                  * Next page of assignees to load.
                  */
@@ -221,17 +216,8 @@ Contains info about application assignees (accounts to whom app is shared).
                 }
             },
 
-            attached: function() {
-                this._attached = true;
+            _onApplicationChanged: function() {
                 this.load();
-            },
-
-            _onApplicationChanged: function(application) {
-
-                if (this._attached && application.self) {
-                    this.load();
-                }
-
             },
 
             /**
@@ -266,7 +252,9 @@ Contains info about application assignees (accounts to whom app is shared).
                 this._message = '';
                 this._nextPage = 1;
 
-                this.$.getAssigneesCall.generateRequest();
+                if (this.application.meta && this.application.meta.subscribers) {
+                    this.$.getAssigneesCall.generateRequest();
+                }
             },
 
             _loadMore: function() {
@@ -323,7 +311,8 @@ Contains info about application assignees (accounts to whom app is shared).
                                     this._moreAssignees = false;
                                 }
 
-                                this._handleEmpty();
+                                this._hideProgressBar();
+                                this.fire('assignees-loaded');
                             }
 
                         }.bind(this), (index + 1) * 50 );
@@ -336,18 +325,14 @@ Contains info about application assignees (accounts to whom app is shared).
                     if (!currentLength) {
                         this._message = 'You haven\'t shared this application to anyone yet.';
                     }
-                    else {
-                        this._moreAssignees = false;
-                    }
 
+                    this._moreAssignees = false;
                     this._handleEmpty();
                 }
                 else if (!currentLength) {
                     this._message = 'We couldn\'t load assignees at the moment.';
-                    this._hideProgressBar();
                     this._moreAssignees = false;
-
-                    this.fire('log-empty');
+                    this._handleEmpty();
                 }
             },
 

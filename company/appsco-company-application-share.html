@@ -176,6 +176,17 @@ Provides functionality of sharing applications to users.
                 },
 
                 /**
+                 * Applications which are shared.
+                 * This array is populated from sharing API response.
+                 */
+                _responseApplications: {
+                    type: Array,
+                    value: function() {
+                        return [];
+                    }
+                },
+
+                /**
                  * Application list from search.
                  */
                 _searchList: {
@@ -356,6 +367,8 @@ Provides functionality of sharing applications to users.
 
                 appRequest.send(options).then(function() {
 
+                    this.push('_responseApplications', appRequest.response);
+
                     if (more) {
                         this.$.dialog.close();
 
@@ -365,10 +378,11 @@ Provides functionality of sharing applications to users.
                          * @event applications-shared
                          */
                         this.fire('applications-shared', {
-                            applications: this.applications
+                            applications: this._responseApplications
                         });
 
                         this.set('_selectedAccounts', []);
+                        this.set('_responseApplications', []);
                         this._shareLoader = false;
                     }
                 }.bind(this));

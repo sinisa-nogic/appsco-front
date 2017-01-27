@@ -52,7 +52,7 @@ Custom property | Description | Default
             @apply(--appsco-paper-dialog);
             }
             :host paper-dialog-scrollable > * {
-            @apply(--paper-dialog-scrollable-child);
+                @apply(--paper-dialog-scrollable-child);
             }
             :host neon-animated-pages > * {
             @apply(--neon-animated-pages);
@@ -99,13 +99,14 @@ Custom property | Description | Default
                             applications-template-api="[[ applicationsTemplateApi ]]"
                             selected-application="{{ _selectedApplication }}"
                             on-application-select="_onApplicationSelect"
+                            on-add-custom-application="_onAddCustomApplication"
                             on-add-link="_onAddLink">
                     </appsco-application-add-search>
 
                     <appsco-application-add-settings
                             id="appscoApplicationAddSettings"
                             name="appsco-application-add-settings"
-                            application="{{ _selectedApplication }}"
+                            application="[[ _selectedApplication ]]"
                             authorization-token="[[ authorizationToken ]]"
                             dashboard-api="[[ dashboardApi ]]"
                             on-application-added="_onApplicationAdded">
@@ -189,6 +190,20 @@ Custom property | Description | Default
                  */
                 dashboardApi: {
                     type: String
+                },
+
+                _customApplication: {
+                    type: Object,
+                    value: function() {
+                        return {
+                            title: 'Item',
+                            auth_types: {
+                                item: 'icon_item'
+                            },
+                            self: 'https://my-dev.appsco.com/api/v2/applications/1463130184',
+                            custom_application: true
+                        }
+                    }
                 },
 
                 _dialogTitle: {
@@ -281,6 +296,18 @@ Custom property | Description | Default
              */
             _onApplicationSelect: function() {
                 this._selected = 'appsco-application-add-settings';
+            },
+
+            /**
+             * Called after clicked on Add Custom Application action.
+             * It shows appsco-application-add-custom-application page.
+             *
+             * @private
+             */
+            _onAddCustomApplication: function() {
+                this.set('_selectedApplication', this._customApplication);
+                this._onApplicationSelect();
+                this._dialogTitle = 'Add custom application';
             },
 
             /**

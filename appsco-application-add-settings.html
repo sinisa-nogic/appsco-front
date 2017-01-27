@@ -51,10 +51,11 @@ Custom property | Description | Default
             }
         </style>
 
-        <appsco-application-info
-                id="applicationHeader"
-                application="{{ application }}">
-        </appsco-application-info>
+        <div id="applicationHeader">
+            <template is="dom-if" if="[[ !application.custom_application ]]">
+                <appsco-application-info application="[[ application ]]"></appsco-application-info>
+            </template>
+        </div>
 
         <div id="appscoApplicationSettings">
 
@@ -65,27 +66,30 @@ Custom property | Description | Default
             <form is="iron-form"
                   hidden
                   id="addApplicationForm"
-                  method="post"
-                  action$="{{ _computedAction }}"
-                  headers="{{ _computedHeaders }}"
+                  method="POST"
+                  action$="[[ _computedAction ]]"
+                  headers="[[ _computedHeaders ]]"
                   on-iron-form-response="_onFormResponse">
                 <paper-input type="text" name="application[resource]" value="[[ application.self ]]"></paper-input>
             </form>
 
-            <form id="saveApplicationForm">
+            <form is="iron-form"
+                  id="saveApplicationForm">
                 <paper-input
                         id="title"
                         label="title"
                         value="{{ _icon.title }}"
                         name="configure_application[title]"
                         required
+                        auto-validate
+                        error-message="Please enter application title."
                         ></paper-input>
                 <paper-input
                         id="url"
                         label="url"
                         value="{{ _icon.url }}"
                         pattern="https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)"
-                        error-message="Invalid Url"
+                        error-message="Url is invalid."
                         required
                         auto-validate
                         name="configure_application[url]"
@@ -179,7 +183,7 @@ Custom property | Description | Default
                  */
                 _computedHeaders: {
                     type: Object,
-                    computed: "_computeHeaders(authorizationToken)"
+                    computed: '_computeHeaders(authorizationToken)'
                 },
 
                 /**
@@ -188,7 +192,7 @@ Custom property | Description | Default
                  */
                 _computedAuthTypes: {
                     type: Boolean,
-                    computed: "_computeAuthTypes(_selectedApplication)"
+                    computed: '_computeAuthTypes(_selectedApplication)'
                 },
 
                 /**
@@ -448,7 +452,7 @@ Custom property | Description | Default
              */
             _onFormError: function(event) {
                 this._error = event.detail.error.message;
-                this._loader = false;
+                this._hideLoader();
             },
 
             /**
@@ -475,8 +479,12 @@ Custom property | Description | Default
              * Submits form which adds application as item.
              */
             addApplication: function() {
-                this._loader = true;
-                this.$.addApplicationForm.submit();
+
+                if (this.$.saveApplicationForm.validate()) {
+                    this._showLoader();
+                    this.$.addApplicationForm.submit();
+                }
+
             },
 
             /**
@@ -486,7 +494,7 @@ Custom property | Description | Default
              * @private
              */
             _onApplicationAdded: function() {
-                this._loader = false;
+                this._hideLoader();
 
                 /**
                  * Fired after application has been added.
@@ -498,6 +506,14 @@ Custom property | Description | Default
                 });
             },
 
+            _showLoader: function() {
+                this._loader = true;
+            },
+
+            _hideLoader: function() {
+                this._loader = false;
+            },
+
             /**
              * Resets component.
              */
@@ -506,7 +522,7 @@ Custom property | Description | Default
                 this._selectedApplication = {};
                 this.$.addApplicationForm.reset();
                 this.$.saveApplicationForm.reset();
-                this.$.url.invalid = false;
+                this._hideLoader();
             }
         });
     </script>

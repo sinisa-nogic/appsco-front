@@ -69,7 +69,7 @@ Custom property | Description | Default
                 width: 100px;
             }
             :host .application-list {
-                margin-top: 0px;
+                margin-top: 0;
                 position: relative;
             }
             :host .message {
@@ -77,10 +77,14 @@ Custom property | Description | Default
                 color: var(--secondary-text-color);
                 font-style: italic;
             @apply(--paper-font-body2);
+            @apply(--info-message);
             }
-            :host .add-link-container {
+            :host .or-add-container {
                 color: var(--secondary-text-color);
                 line-height: 24px;
+            }
+            :host .add-custom-app-container {
+                margin-top: 10px;
             }
             :host .link-button {
                 padding: 0;
@@ -122,11 +126,18 @@ Custom property | Description | Default
             </template>
         </div>
 
-        <template is="dom-if" if="[[ !_searchActive ]]">
-            <div class="add-link-container">
+        <template is="dom-if" if="[[ _customApplicationAction ]]">
+            <div class="or-add-container add-custom-app-container">
                 or
-                <paper-button id="addLinkAction"
-                              class="link-button"
+                <paper-button class="link-button"
+                              on-tap="_onAddCustomApplication">Add custom application</paper-button>
+            </div>
+        </template>
+
+        <template is="dom-if" if="[[ !_searchActive ]]">
+            <div class="or-add-container add-link-container">
+                or
+                <paper-button class="link-button"
                               on-tap="_onAddLink">Add link</paper-button>
             </div>
         </template>
@@ -189,6 +200,11 @@ Custom property | Description | Default
                 },
 
                 _searchActive: {
+                    type: Boolean,
+                    value: false
+                },
+
+                _customApplicationAction: {
                     type: Boolean,
                     value: false
                 },
@@ -264,6 +280,7 @@ Custom property | Description | Default
 
                 if (searchLength === 0) {
                     this._searchActive = false;
+                    this._hideCustomApplicationAction();
                     this._message = '';
                     this._loader = false;
                     this.set('_searchList', []);
@@ -277,6 +294,7 @@ Custom property | Description | Default
                     this._message = 'Please type three or more letters.';
                     this._loader = false;
                     this.set('_searchList', []);
+                    this._hideCustomApplicationAction();
                     return;
                 }
 
@@ -299,10 +317,12 @@ Custom property | Description | Default
 
                     if (applications && applications.length > 0) {
                         me.set('_searchList', applications);
+                        me._customApplicationAction = false;
                     }
                     else {
                         me.set('_searchList', []);
                         me._message = 'There are no applications with asked title. Please check your input.';
+                        me._showCustomApplicationAction()   ;
                     }
 
                     me._loader = false;
@@ -329,8 +349,19 @@ Custom property | Description | Default
                 this.fire('application-select');
             },
 
+            _onAddCustomApplication: function(event) {
+                this.sharedElements.hero = Polymer.dom(event).rootTarget;
+
+                /**
+                 * Fired on Add Custom Application action.
+                 *
+                 * @event add-custom-application
+                 */
+                this.fire('add-custom-application');
+            },
+
             _onAddLink: function() {
-                this.sharedElements.hero = this.$$('#addLinkAction');
+                this.sharedElements.hero = Polymer.dom(event).rootTarget;
 
                 /**
                  * Fired on Add Link action.
@@ -338,6 +369,14 @@ Custom property | Description | Default
                  * @event add-link
                  */
                 this.fire('add-link');
+            },
+
+            _showCustomApplicationAction: function() {
+                this._customApplicationAction = true;
+            },
+
+            _hideCustomApplicationAction: function() {
+                this._customApplicationAction = false;
             },
 
             /**
@@ -354,6 +393,8 @@ Custom property | Description | Default
                 this.$.search.value = '';
                 this._searchList = [];
                 this._searchActive = false;
+                this._message = '';
+                this._hideCustomApplicationAction();
             }
         });
     </script>

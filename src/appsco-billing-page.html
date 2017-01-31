@@ -111,8 +111,12 @@
                 padding: 10px;
                 color: var(--primary-text-color);
             }
+            :host div[info] {
+                height: 100%;
+            }
             :host div[info] > * {
                 padding: 10px;
+                box-sizing: border-box;
             }
             :host .flex-horizontal {
                 @apply(--layout-horizontal);
@@ -155,8 +159,18 @@
                 background-color: var(--app-primary-color);
                 padding: 10px 0 5px 10px;
             }
-            :host .info-padding {
+            :host .info-content-container {
+                height: calc(100% - 64px - 38px - 40px);
+                position: relative;
+            }
+            :host .info-content {
                 padding: 10px;
+                overflow: auto;
+                position: absolute;
+                top: 0;
+                right: 0;
+                bottom: 0;
+                left: 0;
             }
             :host .border-bottom {
                 border-bottom: 1px solid #dbdbdb;
@@ -201,6 +215,17 @@
                 right: 0;
                 padding: 0;
                 color: #ffffff;
+            }
+            :host div[info] .info-actions {
+                padding: 0;
+                position: absolute;
+                bottom: 0;
+                left: 0;
+                right: 0;
+            }
+            :host .send-invoice-button {
+                @apply(--primary-button);
+                border-radius: 0;
             }
             :host([medium-screen]) .subscription-plan {
                 min-width: inherit;
@@ -420,9 +445,9 @@
             </div>
 
             <div info class="flex-vertical">
-                <div class="info-padding info-header">
+                <div class="info-header">
                     <appsco-brand
-                            logo="http://appsco.loc/bundles/appscodashboardapproot/img/footer-logo.png?1.0.6"
+                            logo="/images/appsco-logo-white.png"
                             logo-width="118"
                             logo-height="38">
                     </appsco-brand>
@@ -432,62 +457,73 @@
                                        on-tap="_onCloseInfoAction"></paper-icon-button>
                 </div>
 
-                <div class="info-padding mt10">
-                    <appsco-date-format class="small"
-                                        date="[[ _selectedInvoice.date.date ]]"
-                                        options='{"year": "numeric", "month": "long", "day": "numeric", "hour": "2-digit", "minute": "2-digit"}'
-                    ></appsco-date-format>
-                </div>
+                <appsco-date-format class="small"
+                                    date="[[ _selectedInvoice.date.date ]]"
+                                    options='{"year": "numeric", "month": "long", "day": "numeric", "hour": "2-digit", "minute": "2-digit"}'
+                ></appsco-date-format>
 
-                <div class="info-padding flex-vertical">
-                    <div class="flex-horizontal">
-                        <span class="item-quantity small op3 border-bottom">Quantity</span>
-                        <span class="item-item flex op3 border-bottom">Item</span>
-                        <span class="item-price op3 border-bottom">Price</span>
-                    </div>
+                <div class="info-content-container">
+                    <div class="info-content">
+                        <div class="flex-horizontal">
+                            <span class="item-quantity small op3 border-bottom">Quantity</span>
+                            <span class="item-item flex op3 border-bottom">Item</span>
+                            <span class="item-price op3 border-bottom">Price</span>
+                        </div>
 
-                    <template is="dom-repeat" items="{{ _selectedInvoice.items }}">
-                        <div class="flex-horizontal mt10">
-                            <span class="item-quantity border-bottom font12">[[ item.quantity ]]</span>
-                            <span class="flex item-item border-bottom font12">AppsCo Licenses</span>
+                        <template is="dom-repeat" items="{{ _selectedInvoice.items }}">
+                            <div class="flex-horizontal">
+                                <span class="item-quantity border-bottom font12">[[ item.quantity ]]</span>
+                                <span class="flex item-item border-bottom font12">AppsCo Licenses</span>
                             <span class="item-price border-bottom font12">
                                 <appsco-price
                                         price="[[ item.amount ]]"
                                         currency="[[ item.currency ]]"
-                                ></appsco-price>
+                                        ></appsco-price>
                             </span>
+                            </div>
+                        </template>
+
+                        <div class="flex-horizontal">
+                            <span class="item-quantity font12">&nbsp;</span>
+                            <span class="flex item-item font12">Tax</span>
+                            <span class="item-price font12">[[ _selectedInvoice.tax ]]</span>
                         </div>
-                    </template>
-                    <div class="flex-horizontal mt10">
-                        <span class="item-quantity font12">&nbsp;</span>
-                        <span class="flex item-item font12">Tax</span>
-                        <span class="item-price font12">[[ _selectedInvoice.tax ]]</span>
-                    </div>
-                    <div class="flex-horizontal mt10">
-                        <span class="item-quantity font12  border-bottom">&nbsp;</span>
-                        <span class="flex item-item font12  border-bottom">Tax Percent</span>
-                        <span class="item-price font12  border-bottom">[[ _selectedInvoice.tax_percent ]]</span>
-                    </div>
-                    <div class="flex-horizontal mt10">
-                        <span class="item-quantity font12">&nbsp;</span>
-                        <span class="flex item-item font12"><strong>Total</strong></span>
+                        <div class="flex-horizontal">
+                            <span class="item-quantity font12  border-bottom">&nbsp;</span>
+                            <span class="flex item-item font12  border-bottom">Tax Percent</span>
+                            <span class="item-price font12  border-bottom">[[ _selectedInvoice.tax_percent ]]</span>
+                        </div>
+                        <div class="flex-horizontal">
+                            <span class="item-quantity font12">&nbsp;</span>
+                            <span class="flex item-item font12"><strong>Total</strong></span>
                         <span class="item-price font12"><strong>
                             <appsco-price
                                     price="[[ _selectedInvoice.total ]]"
                                     currency="[[ _selectedInvoice.currency ]]"
-                            ></appsco-price>
+                                    ></appsco-price>
                         </strong></span>
+                        </div>
+
+                        <div class="flex-vertical mt20">
+                            <span class="font12">Invoice ID</span>
+                            <span class="font12">[[ _selectedInvoice.id ]]</span>
+                        </div>
+
+                        <div class="flex-vertical mt10">
+                            <span class="font12">Purchased from</span>
+                            <span class="font12">AppsCo</span>
+                            <span class="font12">12345 AppsCo address</span>
+                            <span class="font12">AppsCo Country</span>
+                        </div>
                     </div>
                 </div>
-                <div class="info-padding flex-vertical">
-                    <span class="font12">Invoice ID</span>
-                    <span class="font12">[[ _selectedInvoice.id ]]</span>
-                </div>
-                <div class="info-padding flex-vertical">
-                    <span class="font12">Purchased from</span>
-                    <span class="font12">AppsCo</span>
-                    <span class="font12">12345 AppsCo address</span>
-                    <span class="font12">AppsCo Country</span>
+
+                <div class="info-actions flex-horizontal">
+                    <paper-button
+                            class="send-invoice-button flex"
+                            on-tap="_onSendInvoice">
+                        Send invoice
+                    </paper-button>
                 </div>
             </div>
         </appsco-content>
@@ -498,6 +534,14 @@
             is: 'appsco-billing-page',
 
             properties: {
+
+                account: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    },
+                    notify: true
+                },
 
                 _subscription: {
                     type: Object,
@@ -851,6 +895,12 @@
 
             _onCancelSubscription: function() {
                 this.fire('cancel-subscription');
+            },
+
+            _onSendInvoice: function() {
+                this.fire('send-invoice', {
+                    invoice: this._selectedInvoice
+                });
             }
 
         });

@@ -64,6 +64,7 @@
 <link rel="import" href="upgrade/appsco-upgrade-action.html">
 <link rel="import" href="billing/appsco-subscription-cancel.html">
 <link rel="import" href="billing/appsco-credit-card.html">
+<link rel="import" href="billing/appsco-billing-send-invoice.html">
 
 <link rel="import" href="vault/appsco-vault-page-actions.html">
 <link rel="import" href="vault/appsco-vault-manage-item.html">
@@ -500,6 +501,7 @@
                             id="appscoApplicationPage"
                             name="application"
                             route="[[ subroute ]]"
+                            company="[[ _company ]]"
                             application="{{ application }}"
                             applications-api="[[ api.icons ]]"
                             application-log="[[ application.meta.log ]]"
@@ -636,9 +638,10 @@
                             id="appscoBillingPage"
                             name="billing"
                             company-api="[[ companyApi ]]"
-                            account="{{ account }}"
+                            account="[[ account ]]"
                             authorization-token="[[ authorizationToken ]]"
-                            on-manage-credit-card="_onManageCreditCard"></appsco-billing-page>
+                            on-manage-credit-card="_onManageCreditCard"
+                            on-send-invoice="_onSendInvoice"></appsco-billing-page>
 
                     <appsco-company-settings-page
                             id="appscoCompanySettingsPage"
@@ -829,6 +832,14 @@
                 on-credit-card-added="_onCreditCardAdded">
         </appsco-credit-card>
 
+        <appsco-billing-send-invoice
+                id="appscoBillingSendInvoice"
+                account="[[ account ]]"
+                authorization-token="[[ authorizationToken ]]"
+                company-api="[[ companyApi ]]"
+                on-invoice-sent="_onInvoiceSent">
+        </appsco-billing-send-invoice>
+
         <template is="dom-if" if="[[ api.me ]]">
             <iron-ajax auto
                        url="[[ api.me ]]"
@@ -844,7 +855,7 @@
                        headers="{{ _computedHeaders }}"></iron-ajax>
         </template>
 
-        <template is="dom-if" if="[[ _business ]]">
+        <template is="dom-if" if="[[ _company ]]">
             <template is="dom-if" if="[[ api.companies ]]">
                 <iron-ajax auto
                            url="[[ api.companies ]]"
@@ -860,10 +871,10 @@
 
             properties: {
 
-                _business: {
+                _company: {
                     type: Boolean,
-                    computed: '_computeBusiness(page)',
-                    observer: '_onBusinessChange'
+                    computed: '_computeCompany(page)',
+                    observer: '_onCompanyChange'
                 },
 
                 page: {
@@ -1089,9 +1100,9 @@
                 return account.company ? true : false;
             },
 
-            _onBusinessChange: function() {
+            _onCompanyChange: function() {
 
-                if (this._business) {
+                if (this._company) {
                     this.customStyle['--app-primary-color'] = '#5AC099';
 
                     // Without click new value of CSS variable doesn't apply to children components.
@@ -2035,6 +2046,15 @@
                 this.$.appscoBillingPage.setCreditCard(event.detail.credit_card);
                 this._notify('Credit card has been successfully saved.');
             },
+
+            _onSendInvoice: function(event) {
+                this.$.appscoBillingSendInvoice.setInvoice(event.detail.invoice);
+                this.$.appscoBillingSendInvoice.toggle();
+            },
+
+            _onInvoiceSent: function(event) {
+                this._notify('Invoice has been sent to ' + event.detail.sentTo + '.');
+            },
             /**
              * Billing page END
              */
@@ -2099,7 +2119,7 @@
 
             },
 
-            _computeBusiness: function(page) {
+            _computeCompany: function(page) {
                 return (page === 'applications' ||
                         page === 'manage-application' ||
                         page === 'directory' ||
@@ -2125,6 +2145,7 @@
             _companySettingsChanged: function(e) {
                 this.account = {};
                 this.account = e.detail.account;
+                this._notify('Company settings were successfully saved.');
             },
 
             _upgradedToBusiness: function(e) {

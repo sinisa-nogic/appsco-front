@@ -5,6 +5,7 @@
 <link rel="import" href="../paper-button/paper-button.html">
 <link rel="import" href="../paper-dialog/paper-dialog.html">
 <link rel="import" href="../paper-dialog-scrollable/paper-dialog-scrollable.html">
+<link rel="import" href="../iron-ajax/iron-ajax.html">
 <link rel="import" href="../iron-ajax/iron-request.html">
 <link rel="import" href="../neon-animation/neon-animated-pages.html">
 <link rel="import" href="../neon-animation/neon-animation-runner-behavior.html">
@@ -52,7 +53,7 @@ Custom property | Description | Default
             @apply(--appsco-paper-dialog);
             }
             :host paper-dialog-scrollable > * {
-                @apply(--paper-dialog-scrollable-child);
+            @apply(--paper-dialog-scrollable-child);
             }
             :host neon-animated-pages > * {
             @apply(--neon-animated-pages);
@@ -75,6 +76,18 @@ Custom property | Description | Default
             @apply(--paper-dialog-dismiss-button);
             }
         </style>
+
+        <iron-ajax auto
+                   url="[[ linkApi ]]"
+                   on-response="_onLinkResponse"
+                   headers="[[ _computedHeaders ]]">
+        </iron-ajax>
+
+        <iron-ajax auto
+                   url="[[ itemApi ]]"
+                   on-response="_onItemResponse"
+                   headers="[[ _computedHeaders ]]">
+        </iron-ajax>
 
         <paper-dialog
                 with-backdrop
@@ -99,7 +112,7 @@ Custom property | Description | Default
                             applications-template-api="[[ applicationsTemplateApi ]]"
                             selected-application="{{ _selectedApplication }}"
                             on-application-select="_onApplicationSelect"
-                            on-add-custom-application="_onAddCustomApplication"
+                            on-add-item="_onAddItem"
                             on-add-link="_onAddLink">
                     </appsco-application-add-search>
 
@@ -115,6 +128,7 @@ Custom property | Description | Default
                     <appsco-application-add-link
                             id="appscoApplicationAddLink"
                             name="appsco-application-add-link"
+                            link="[[ _link ]]"
                             authorization-token="[[ authorizationToken ]]"
                             dashboard-api="[[ dashboardApi ]]"
                             on-link-added="_onLinkAdded">
@@ -169,6 +183,26 @@ Custom property | Description | Default
                 },
 
                 /**
+                 * Link application resource.
+                 */
+                _link: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    }
+                },
+
+                /**
+                 * Item application resource.
+                 */
+                _item: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    }
+                },
+
+                /**
                  * Authorization token
                  */
                 authorizationToken: {
@@ -192,18 +226,29 @@ Custom property | Description | Default
                     type: String
                 },
 
-                _customApplication: {
+                /**
+                 * Get custom link resource API link.
+                 * API to get custom link resource.
+                 */
+                linkApi: {
+                    type: String
+                },
+
+                /**
+                 * Get custom item API link.
+                 * API to get custom item resource.
+                 */
+                itemApi: {
+                    type: String
+                },
+
+                /**
+                 * Computed headers.
+                 * It contains authorization token.
+                 */
+                _computedHeaders: {
                     type: Object,
-                    value: function() {
-                        return {
-                            title: 'Item',
-                            auth_types: {
-                                item: 'icon_item'
-                            },
-                            self: 'https://my-dev.appsco.com/api/v2/applications/1463130184',
-                            custom_application: true
-                        }
-                    }
+                    computed: '_computeHeaders(authorizationToken)'
                 },
 
                 _dialogTitle: {
@@ -255,6 +300,27 @@ Custom property | Description | Default
             },
 
             /**
+             * Computes authorization headers.
+             *
+             * @param {Object} authorizationToken
+             * @returns {{Authorization: string}}
+             * @private
+             */
+            _computeHeaders: function (authorizationToken) {
+                return {
+                    'Authorization': 'token ' + authorizationToken
+                }
+            },
+
+            _onLinkResponse: function(event) {
+                this.set('_link', event.detail.response);
+            },
+
+            _onItemResponse: function(event) {
+                this.set('_item', event.detail.response);
+            },
+
+            /**
              * Called after selected page has been changed.
              * According to selected page it shows / hides add application action (_addAction).
              *
@@ -300,12 +366,12 @@ Custom property | Description | Default
 
             /**
              * Called after clicked on Add Custom Application action.
-             * It shows appsco-application-add-custom-application page.
+             * It sets selected application to Item resource.
              *
              * @private
              */
-            _onAddCustomApplication: function() {
-                this.set('_selectedApplication', this._customApplication);
+            _onAddItem: function() {
+                this.set('_selectedApplication', this._item);
                 this._onApplicationSelect();
                 this._dialogTitle = 'Add custom application';
             },

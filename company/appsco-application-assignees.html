@@ -127,8 +127,7 @@ Contains info about application assignees (accounts to whom app is shared).
                     type: Object,
                     value: function() {
                         return {};
-                    },
-                    observer: '_onApplicationChanged'
+                    }
                 },
 
                 authorizationToken: {
@@ -178,8 +177,7 @@ Contains info about application assignees (accounts to whom app is shared).
                  * Computed action.
                  */
                 _computedAction: {
-                    type: String,
-                    computed: "_computeAction(application, _nextPage)"
+                    type: String
                 },
 
                 /**
@@ -217,6 +215,15 @@ Contains info about application assignees (accounts to whom app is shared).
                 }
             },
 
+            observers: [
+                '_computeAction(application, _nextPage, size)',
+                '_onApplicationChanged(application)'
+            ],
+
+            attached: function() {
+                this.load();
+            },
+
             _onApplicationChanged: function() {
                 this.load();
             },
@@ -227,8 +234,8 @@ Contains info about application assignees (accounts to whom app is shared).
              * @param {Object} application
              * @private
              */
-            _computeAction: function (application, nextPage) {
-                return application.self ? application.meta.subscribers + '?page=' + nextPage + '&limit=' + this.size + '&extended=1' : '';
+            _computeAction: function (application, nextPage, size) {
+                this._computedAction = application.meta ? application.meta.subscribers + '?page=' + nextPage + '&limit=' + size + '&extended=1' : '';
             },
 
             /**
@@ -253,9 +260,7 @@ Contains info about application assignees (accounts to whom app is shared).
                 this._message = '';
                 this._nextPage = 1;
 
-                if (this.application.meta && this.application.meta.subscribers) {
-                    this.$.getAssigneesCall.generateRequest();
-                }
+                this.$.getAssigneesCall.generateRequest();
             },
 
             _loadMore: function() {

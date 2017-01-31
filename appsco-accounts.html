@@ -477,6 +477,28 @@ Custom property | Description | Default
                 }
             },
 
+            setOrgunit: function(orgunit) {
+                var allAccounts = JSON.parse(JSON.stringify(this._accounts)),
+                        allLength = allAccounts.length;
+
+                for (var i = 0; i < allLength; i++) {
+                    var account = allAccounts[i],
+                            orgunits = account.account.org_units,
+                            length = orgunits.length;
+
+                    for (var j = 0; j < length; j++) {
+                        if (orgunit.alias === orgunits[j].alias) {
+                            allAccounts[i].account.org_units[j].name = orgunit.name;
+                            break;
+                        }
+                    }
+
+                }
+
+                this.set('_accounts', []);
+                this.set('_accounts', allAccounts);
+            },
+
             filterByTerm: function(term) {
                 this._filterTerm = term;
 
@@ -575,7 +597,7 @@ Custom property | Description | Default
 
                         for (var j = 0; j < orgunitsLength; j++) {
 
-                            if (orgunits[j].name === orgunit.name) {
+                            if (orgunits[j].alias === orgunit.alias) {
                                 this.push('_accounts', account);
                                 break;
                             }
@@ -627,7 +649,7 @@ Custom property | Description | Default
 
                         for (var j = 0; j < orgunitsLength; j++) {
 
-                            if (orgunits[j].name === orgunit.name &&
+                            if (orgunits[j].alias === orgunit.alias &&
                                     (account.account.name.toLowerCase().indexOf(term.toLowerCase()) >= 0 || account.account.email.toLowerCase().indexOf(term.toLowerCase()) >= 0)) {
                                 this.push('_accounts', account);
                                 break;

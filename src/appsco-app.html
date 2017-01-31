@@ -672,6 +672,8 @@
                 authorization-token="[[ authorizationToken ]]"
                 applications-template-api="[[ api.applicationTemplates ]]"
                 dashboard-api="[[ addAppApi ]]"
+                link-api="[[ api.link ]]"
+                item-api="[[ api.item ]]"
                 on-application-added="_onApplicationAdded"
                 on-link-added="_onApplicationAdded">
         </appsco-application-add>
@@ -1223,7 +1225,22 @@
                 var response = event.detail.response;
 
                 if (response && response.meta.total > 0) {
-                    this.addAppApi = response.dashboards[0].self;
+                    var dashboards = response.dashboards,
+                        length = dashboards.length;
+
+                    dashboardsLoop:
+                    for (var i = 0; i < length; i++) {
+                        var dashboardRoles = dashboards[i].roles,
+                            rolesLength = dashboardRoles.length;
+
+                        for (var j = 0; j < rolesLength; j++) {
+                            if ('owner' === dashboardRoles[j].toLowerCase()) {
+                                this.addAppApi = dashboards[i].self;
+                                break dashboardsLoop;
+                            }
+                        }
+
+                    }
                 }
 
             },

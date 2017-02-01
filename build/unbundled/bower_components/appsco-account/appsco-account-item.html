@@ -16,6 +16,7 @@
         <style>
             :host {
                 display: none;
+                color: var(--primary-text-color);
             }
             :host .item {
                 text-align: center;
@@ -25,7 +26,6 @@
             @apply(--shadow-elevation-2dp);
                 position: relative;
                 background-color: var(--background-color, #fff);
-                color: var(--color, #333);
                 padding: 0 4px;
                 cursor: pointer;
             @apply(--appsco-account-item);
@@ -37,6 +37,23 @@
                 width: 52px;
                 height: 52px;
                 margin: 24px 0 8px 0;
+            }
+            :host .account-initials {
+                position: relative;
+                background-color: var(--body-background-color, #f5f8fa);
+                color: var(--primary-text-color);
+            }
+            :host .account-initials .initials {
+                position: absolute;
+                top: 0;
+                right: 0;
+                bottom: 0;
+                left: 0;
+                margin: auto;
+                line-height: 52px;
+                text-align: center;
+                text-transform: uppercase;
+                font-size: 18px;
             }
             :host .account-title {
                 display: block;
@@ -127,7 +144,16 @@
         </style>
 
         <div class="item" on-tap="_onAccountAction">
-            <iron-image class="account-icon" placeholder="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAABGdBTUEAALGPC/xhBQAAAI5JREFUeAHt1YEJwCAQBEFN/60KYgMRbGMnHXjs5Ofa5x/h7wu//T3dAAqIL4BAPIChAAXEF0AgHoCfIAIIxBdAIB6AK4AAAvEFEIgH4AoggEB8AQTiAbgCCCAQXwCBeACuAAIIxBdAIB6AK4AAAvEFEIgH4AoggEB8AQTiAbgCCCAQXwCBeACuAAIIxBe4yV0EThqVC64AAAAASUVORK5CYII=" sizing="cover" preload="" fade="" src="[[ account.picture_url ]]"></iron-image>
+
+            <template is="dom-if" if="[[ account.picture_url ]]">
+                <iron-image class="account-icon" sizing="cover" preload="" fade="" src="[[ account.picture_url ]]"></iron-image>
+            </template>
+
+            <template is="dom-if" if="[[ !account.picture_url ]]">
+                <div class="account-icon account-initials">
+                    <span class="initials">[[ _accountInitials ]]</span>
+                </div>
+            </template>
 
             <div class="account-info account-basic-info">
                 <span class="info-label account-title">[[ account.display_name ]]</span>
@@ -160,6 +186,6 @@
 
     </template>
 
-    <script>Polymer({is:"appsco-account-item",properties:{company:{type:Boolean,value:!1,reflectToAttribute:!0},account:{type:Object,value:function(){return{}}},companyRole:{type:Object,value:function(){return{}}},_orgUnits:{type:String,computed:"_computeOrganizationUnits(company, account)"},active:{type:Boolean,value:!1,reflectToAttribute:!0},animationConfig:{value:function(){return{entry:{name:"fade-in-animation",node:this,timing:{duration:200}},exit:{name:"fade-out-animation",node:this,timing:{duration:100}}}}}},behaviors:[Polymer.NeonAnimationRunnerBehavior],attached:function(){this.style.display="inline-block",this.playAnimation("entry")},_computeOrganizationUnits:function(t,n){if(t&&n.org_units){for(var i="",e=n.org_units,o=e.length,a=0;a<o;a++)i+=e[a].name,i+=a===o-1?"":", ";return i}return""},_onEdit:function(t){t.stopPropagation(),this.fire("edit",{account:this.account,role:this.companyRole})},_onAccountAction:function(){this.active=!this.active,this.fire("account",{account:this.account,role:this.companyRole})},select:function(){this.active=!0},deselect:function(){this.active=!1}});</script>
+    <script>Polymer({is:"appsco-account-item",properties:{company:{type:Boolean,value:!1,reflectToAttribute:!0},account:{type:Object,value:function(){return{}}},companyRole:{type:Object,value:function(){return{}}},_orgUnits:{type:String,computed:"_computeOrganizationUnits(company, account)"},_accountInitials:{type:String,computed:"_computeAccountInitials(account)"},active:{type:Boolean,value:!1,reflectToAttribute:!0},animationConfig:{value:function(){return{entry:{name:"fade-in-animation",node:this,timing:{duration:200}},exit:{name:"fade-out-animation",node:this,timing:{duration:100}}}}}},behaviors:[Polymer.NeonAnimationRunnerBehavior],attached:function(){this.style.display="inline-block",this.playAnimation("entry")},_computeOrganizationUnits:function(t,n){if(t&&n.org_units){for(var i="",e=n.org_units,o=e.length,a=0;a<o;a++)i+=e[a].name,i+=a===o-1?"":", ";return i}return""},_computeAccountInitials:function(t){var n="";return t.self&&t.first_name.length>0&&t.last_name.length>0?n=t.first_name.substring(0,1)+t.last_name.substring(0,1):t.self&&t.name&&(n=t.name.substring(0,2)),n},_onEdit:function(t){t.stopPropagation(),this.fire("edit",{account:this.account,role:this.companyRole})},_onAccountAction:function(){this.active=!this.active,this.fire("account",{account:this.account,role:this.companyRole})},select:function(){this.active=!0},deselect:function(){this.active=!1}});</script>
 </dom-module>
 </body></html>

@@ -9,7 +9,7 @@
 
 <link rel="import" href="../../bower_components/appsco-components/appsco-loader.html">
 
-</head><body><dom-module id="appsco-subscription-cancel">
+</head><body><dom-module id="appsco-billing-send-invoice">
     <template>
         <style>
             :host {
@@ -38,26 +38,25 @@
 
         <paper-dialog id="dialog" with-backdrop="" entry-animation="scale-up-animation" exit-animation="fade-out-animation" on-iron-overlay-closed="_onDialogClosed">
 
-            <h2>Cancel subscription</h2>
+            <h2>Send invoice</h2>
 
             <appsco-loader active="[[ _loader ]]" loader-alt="Appsco is processing request" multi-color=""></appsco-loader>
 
             <paper-dialog-scrollable>
                 <div class="dialog-container">
                     <div>
-                        <p>If you cancel subscription it will still remain active until subscription period end.</p>
-                        <p>Please confirm subscription canceling.</p>
+                        <p>Invoice will be sent to the contact email specified in company settings: [[ account.company.contact_email ]]</p>
                     </div>
                 </div>
             </paper-dialog-scrollable>
 
             <div class="buttons">
                 <paper-button dialog-dismiss="">Cancel</paper-button>
-                <paper-button autofocus="" on-tap="_onConfirm">Confirm</paper-button>
+                <paper-button autofocus="" on-tap="_onSend">Send</paper-button>
             </div>
         </paper-dialog>
 
     </template>
-    <script>Polymer({is:"appsco-subscription-cancel",properties:{authorizationToken:{type:String},companyApi:{type:String},_subscriptionApi:{type:String,computed:"_computeSubscriptionApi(companyApi)"},_headers:{type:Object,computed:"_computeHeaders(authorizationToken)"},_loader:{type:Boolean,value:!1}},_computeHeaders:function(e){return{Authorization:"token "+e,"Content-Type":"application/x-www-form-urlencoded"}},_computeSubscriptionApi:function(e){return e+"/billing/subscription"},toggle:function(){this.$.dialog.toggle()},_onDialogClosed:function(){this._loader=!1},_onConfirm:function(){var e=document.createElement("iron-request"),i={url:this._subscriptionApi,method:"DELETE",handleAs:"json",headers:this._headers};this._loader=!0,e.send(i).then(function(e){this.$.dialog.close(),this.fire("subscription-canceled",{subscription:e.response})}.bind(this))}});</script>
+    <script>Polymer({is:"appsco-billing-send-invoice",properties:{account:{type:Object,value:function(){return{}}},invoice:{type:Object,value:function(){return{}}},authorizationToken:{type:String},companyApi:{type:String},_sendInvoiceApi:{type:String,computed:"_computeSendInvoiceApi(companyApi, invoice)"},_headers:{type:Object,computed:"_computeHeaders(authorizationToken)"},_loader:{type:Boolean,value:!1}},_computeHeaders:function(e){return{Authorization:"token "+e,"Content-Type":"application/x-www-form-urlencoded"}},_computeSendInvoiceApi:function(e,n){return e+"/billing/invoice/"+n.id+"/send"},toggle:function(){this.$.dialog.toggle()},_onDialogClosed:function(){this._loader=!1},_onSend:function(){var e=document.createElement("iron-request"),n={url:this._sendInvoiceApi,method:"POST",handleAs:"json",headers:this._headers};this._loader=!0,e.send(n).then(function(e){this.$.dialog.close(),this.fire("invoice-sent",{sentTo:this.account.company.contact_email})}.bind(this))},setInvoice:function(e){this.set("invoice",e)}});</script>
 </dom-module>
 </body></html>

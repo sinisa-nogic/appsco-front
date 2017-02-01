@@ -141,7 +141,7 @@
 
             <paper-card heading="Subscribers" class="appsco-application-subscribers">
                 <div class="card-content">
-                    <appsco-application-subscribers id="appscoApplicationSubscribers" application="[[ application ]]" authorization-token="[[ authorizationToken ]]">
+                    <appsco-application-subscribers id="appscoApplicationSubscribers" application="[[ application ]]" authorization-token="[[ authorizationToken ]]" preview="">
                     </appsco-application-subscribers>
                 </div>
 
@@ -239,14 +239,15 @@
             :host .load-more-button {
                 @apply(--load-more-button);
             }
-            :host .subscriber {
+            :host .subscriber-container {
                 @apply(--layout-horizontal);
                 @apply(--layout-center);
+                border-bottom: 1px solid var(--divider-color);
             }
-            :host .subscriber > appsco-list-item {
+            :host .subscriber-container appsco-application-subscriber {
                 @apply(--layout-flex);
             }
-            :host .subscriber paper-button {
+            :host .subscriber-container paper-button {
                 padding: 2px 4px;
                 font-size: 12px;
                 opacity: 0.6;
@@ -277,8 +278,9 @@
 
                 <template is="dom-repeat" items="{{ _subscribers }}">
 
-                    <div class="subscriber">
-                        <appsco-list-item item="[[ _mapToListItem(item) ]]"></appsco-list-item>
+                    <div class="subscriber-container">
+
+                        <appsco-application-subscriber subscriber="[[ item ]]"></appsco-application-subscriber>
 
                         <div class="actions" hidden$="[[ _owner(item) ]]">
                             <paper-button on-tap="_revoke">Revoke</paper-button>
@@ -310,6 +312,10 @@
                  };
 
                 --resource-width: 300px;
+
+                --subscriber-initials: {
+                     background-color: var(--divider-color);
+                 };
             }
             :host paper-icon-button::shadow paper-ripple {
                 width: 150%;
@@ -417,7 +423,7 @@
 
                 <p class="application-title">[[ application.title ]]</p>
 
-                <appsco-application-subscribers class="appsco-application-subscribers" application="[[ application ]]" authorization-token="[[ authorizationToken ]]" size="5">
+                <appsco-application-subscribers class="appsco-application-subscribers" application="[[ application ]]" authorization-token="[[ authorizationToken ]]" size="5" preview="">
                 </appsco-application-subscribers>
 
                 <div class="resource-actions flex-horizontal">
@@ -445,7 +451,7 @@
 
                         <appsco-application-subscribers-page id="appscoApplicationSubscribersPage" name="appsco-application-subscribers-page" application="{{ application }}" authorization-token="[[ authorizationToken ]]" on-back="_onResourceBack" account="[[ account ]]"></appsco-application-subscribers-page>
 
-                        <appsco-application-log-page id="appscoApplicationSubscribersPage" name="appsco-application-log-page" application="[[ application ]]" authorization-token="[[ authorizationToken ]]" on-back="_onResourceBack">
+                        <appsco-application-log-page id="appscoApplicationSubscribersPage" name="appsco-application-log-page" application="[[ application ]]" authorization-token="[[ authorizationToken ]]" company="[[ company ]]" on-back="_onResourceBack">
                         </appsco-application-log-page>
 
                     </neon-animated-pages>
@@ -459,6 +465,6 @@
 
     </template>
 
-    <script>Polymer({is:"appsco-application-page",properties:{route:{type:Object,value:function(){return{}}},application:{type:Object,value:function(){return{}},notify:!0},_selected:{type:String,value:"appsco-application-components-page",notify:!0},authorizationToken:{type:String,value:""},_computedHeaders:{type:Object,computed:"_computeHeaders(authorizationToken)"},accountsApi:{type:String,value:""},applicationsApi:{type:String,notify:!0},account:{type:Object,value:function(){return{}}},_subscribers:{type:Array,value:function(){return[]}},mediumScreen:{type:Boolean,value:!1,reflectToAttribute:!0},tabletScreen:{type:Boolean,value:!1,reflectToAttribute:!0},mobileScreen:{type:Boolean,value:!1,reflectToAttribute:!0},animationConfig:{value:function(){return{entry:{name:"fade-in-animation",node:this,timing:{duration:300}},exit:{name:"fade-out-animation",node:this,timing:{duration:200}}}}},pageLoaded:{type:Boolean,value:!1}},behaviors:[Polymer.NeonAnimatableBehavior],observers:["_updateScreen(mediumScreen, tabletScreen, mobileScreen)"],attached:function(){this.pageLoaded=!1,(this.mobileScreen||this.tabletScreen||this.mediumScreen)&&this.updateStyles(),this._getApplication()},_updateScreen:function(e,t,i){this.updateStyles(),i?this.$.appscoContent.hideSection("resource"):this.$.appscoContent.resourceActive||this.$.appscoContent.showSection("resource")},_computeHeaders:function(e){return{Authorization:"token "+e}},_pageLoaded:function(){this.pageLoaded=!0,this.fire("page-loaded")},_getApplication:function(){var e=this.applicationsApi+this.route.path;this.application.self||(this.$.ironAjaxGetApplication.url=e,this.$.ironAjaxGetApplication.generateRequest())},_onApplicationResponse:function(e){var t=e.detail.response.icon;t.owner?this.application=e.detail.response.icon:this._onApplicationError()},_onApplicationError:function(e){this.fire("error")},_onApplicationSettings:function(){this._selected="appsco-application-settings-page"},_onAllSubscribers:function(){this._selected="appsco-application-subscribers-page"},_onAllLog:function(){this._selected="appsco-application-log-page"},_onApplicationSettingsSaved:function(){this._showApplicationComponentsPage()},_onApplicationSettingsBack:function(){this.$.appscoApplicationSettingsPage.resetPage(),this._showApplicationComponentsPage()},_onResourceBack:function(){this._showApplicationComponentsPage()},_showApplicationComponentsPage:function(){this._selected="appsco-application-components-page"},_onShareApplication:function(){this.fire("share-application")},_onRemoveApplication:function(){this.fire("remove-application")},resetPage:function(){this._showApplicationComponentsPage()},toggleResource:function(){this.$.appscoContent.toggleSection("resource")},_onPageAnimationFinish:function(e){var t=(e.detail.fromPage,e.detail.toPage);switch(t.getAttribute("name")){case"appsco-application-settings-page":t.setPage()}}});</script>
+    <script>Polymer({is:"appsco-application-page",properties:{route:{type:Object,value:function(){return{}}},application:{type:Object,value:function(){return{}},notify:!0},company:{type:Boolean,value:!1},_selected:{type:String,value:"appsco-application-components-page",notify:!0},authorizationToken:{type:String,value:""},_computedHeaders:{type:Object,computed:"_computeHeaders(authorizationToken)"},accountsApi:{type:String,value:""},applicationsApi:{type:String,notify:!0},account:{type:Object,value:function(){return{}}},_subscribers:{type:Array,value:function(){return[]}},mediumScreen:{type:Boolean,value:!1,reflectToAttribute:!0},tabletScreen:{type:Boolean,value:!1,reflectToAttribute:!0},mobileScreen:{type:Boolean,value:!1,reflectToAttribute:!0},animationConfig:{value:function(){return{entry:{name:"fade-in-animation",node:this,timing:{duration:300}},exit:{name:"fade-out-animation",node:this,timing:{duration:200}}}}},pageLoaded:{type:Boolean,value:!1}},behaviors:[Polymer.NeonAnimatableBehavior],observers:["_updateScreen(mediumScreen, tabletScreen, mobileScreen)"],attached:function(){this.pageLoaded=!1,(this.mobileScreen||this.tabletScreen||this.mediumScreen)&&this.updateStyles(),this._getApplication()},_updateScreen:function(e,t,i){this.updateStyles(),i?this.$.appscoContent.hideSection("resource"):this.$.appscoContent.resourceActive||this.$.appscoContent.showSection("resource")},_computeHeaders:function(e){return{Authorization:"token "+e}},_pageLoaded:function(){this.pageLoaded=!0,this.fire("page-loaded")},_getApplication:function(){var e=this.applicationsApi+this.route.path;this.application.self||(this.$.ironAjaxGetApplication.url=e,this.$.ironAjaxGetApplication.generateRequest())},_onApplicationResponse:function(e){var t=e.detail.response.icon;t.owner?this.application=e.detail.response.icon:this._onApplicationError()},_onApplicationError:function(e){this.fire("error")},_onApplicationSettings:function(){this._selected="appsco-application-settings-page"},_onAllSubscribers:function(){this._selected="appsco-application-subscribers-page"},_onAllLog:function(){this._selected="appsco-application-log-page"},_onApplicationSettingsSaved:function(){this._showApplicationComponentsPage()},_onApplicationSettingsBack:function(){this.$.appscoApplicationSettingsPage.resetPage(),this._showApplicationComponentsPage()},_onResourceBack:function(){this._showApplicationComponentsPage()},_showApplicationComponentsPage:function(){this._selected="appsco-application-components-page"},_onShareApplication:function(){this.fire("share-application")},_onRemoveApplication:function(){this.fire("remove-application")},resetPage:function(){this._showApplicationComponentsPage()},toggleResource:function(){this.$.appscoContent.toggleSection("resource")},_onPageAnimationFinish:function(e){var t=(e.detail.fromPage,e.detail.toPage);switch(t.getAttribute("name")){case"appsco-application-settings-page":t.setPage()}}});</script>
 </dom-module>
 </body></html>

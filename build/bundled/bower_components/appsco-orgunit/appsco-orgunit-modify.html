@@ -2,6 +2,7 @@
 <link rel="import" href="../iron-ajax/iron-request.html">
 <link rel="import" href="../paper-button/paper-button.html">
 <link rel="import" href="../paper-dialog/paper-dialog.html">
+<link rel="import" href="../paper-dialog-scrollable/paper-dialog-scrollable.html">
 <link rel="import" href="../paper-input/paper-input.html">
 <link rel="import" href="../paper-input/paper-textarea.html">
 <link rel="import" href="../neon-animation/animations/fade-out-animation.html">
@@ -21,8 +22,15 @@
                 position: relative;
             @apply(--appsco-orgunit-modify);
             }
-            :host paper-dialog {
+            paper-dialog {
                 width: 670px;
+
+            --paper-dialog-title: {
+                 margin-top: 24px;
+             };
+            }
+            :host paper-dialog-scrollable > * {
+            @apply(--paper-dialog-scrollable-child);
             }
             :host .buttons paper-button {
             @apply(--paper-dialog-button);
@@ -36,22 +44,26 @@
         </style>
         <paper-dialog with-backdrop="" id="modifyDialog" entry-animation="scale-up-animation" exit-animation="fade-out-animation" on-iron-overlay-opened="_onDialogOpened" on-iron-overlay-closed="_onDialogClosed">
 
-            <div class="remove-container">
+            <template is="dom-if" if="[[ _isModify(orgUnit) ]]">
+                <h2 class="title">Modify organization unit [[ orgUnit.name ]]</h2>
+            </template>
 
-                <appsco-loader active="[[ _loader ]]" loader-alt="Appsco is removing organization unit" multi-color=""></appsco-loader>
+            <template is="dom-if" if="[[ !_isModify(orgUnit) ]]">
+                <h2 class="title">Add new organization unit</h2>
+            </template>
 
-                <template is="dom-if" if="[[ _isModify(orgUnit) ]]">
-                    <h2>Modify organization unit [[ orgUnit.name ]]</h2>
-                </template>
-                <template is="dom-if" if="[[ !_isModify(orgUnit) ]]">
-                    <h2>Add new organization unit</h2>
-                </template>
+            <paper-dialog-scrollable>
 
-                <appsco-form-error message="[[ _error ]]"></appsco-form-error>
+                <div class="remove-container">
 
-                <paper-input id="name" label="name" value="[[ orgUnit.name ]]" name="org_unit[name]" error-message="Please enter organization unit name." on-keyup="_onKeyup"></paper-input>
-                <paper-textarea id="description" label="description" value="[[ orgUnit.description ]]" name="org_unit[description]"></paper-textarea>
-            </div>
+                    <appsco-loader active="[[ _loader ]]" loader-alt="Appsco is removing organization unit" multi-color=""></appsco-loader>
+
+                    <appsco-form-error message="[[ _error ]]"></appsco-form-error>
+
+                    <paper-input id="name" label="name" value="[[ orgUnit.name ]]" name="org_unit[name]" error-message="Please enter organization unit name." on-keyup="_onKeyup"></paper-input>
+                    <paper-textarea id="description" label="description" value="[[ orgUnit.description ]]" name="org_unit[description]"></paper-textarea>
+                </div>
+            </paper-dialog-scrollable>
 
             <div class="buttons">
                 <paper-button dialog-dismiss="">Cancel</paper-button>

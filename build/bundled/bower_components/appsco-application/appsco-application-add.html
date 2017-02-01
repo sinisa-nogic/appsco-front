@@ -5,13 +5,14 @@
 <link rel="import" href="../paper-button/paper-button.html">
 <link rel="import" href="../paper-dialog/paper-dialog.html">
 <link rel="import" href="../paper-dialog-scrollable/paper-dialog-scrollable.html">
+<link rel="import" href="../iron-ajax/iron-ajax.html">
 <link rel="import" href="../iron-ajax/iron-request.html">
-
 <link rel="import" href="../neon-animation/neon-animated-pages.html">
 <link rel="import" href="../neon-animation/neon-animation-runner-behavior.html">
 <link rel="import" href="../neon-animation/animations/scale-up-animation.html">
 <link rel="import" href="../neon-animation/animations/fade-in-animation.html">
 <link rel="import" href="../neon-animation/animations/fade-out-animation.html">
+<link rel="import" href="../iron-a11y-keys/iron-a11y-keys.html">
 
 <link rel="import" href="appsco-application-add-search.html">
 <link rel="import" href="appsco-application-add-settings.html">
@@ -30,19 +31,16 @@
                 top: 20vh;
             @apply(--appsco-paper-dialog);
             }
-            :host paper-dialog-scrollable::shadow .scrollable {
-                min-height: 100px;
+            :host paper-dialog-scrollable > * {
+            @apply(--paper-dialog-scrollable-child);
             }
             :host neon-animated-pages > * {
-                padding: 0 24px;
             @apply(--neon-animated-pages);
             }
             :host neon-animated-pages > .iron-selected {
                 position: relative;
-                padding: 0;
             }
             :host .buttons {
-                margin-top: 10px;
                 padding-right: 24px;
             }
             :host .buttons paper-button {
@@ -58,6 +56,12 @@
             }
         </style>
 
+        <iron-ajax auto="" url="[[ linkApi ]]" on-response="_onLinkResponse" headers="[[ _computedHeaders ]]">
+        </iron-ajax>
+
+        <iron-ajax auto="" url="[[ itemApi ]]" on-response="_onItemResponse" headers="[[ _computedHeaders ]]">
+        </iron-ajax>
+
         <paper-dialog with-backdrop="" id="addApplicationDialog" entry-animation="scale-up-animation" exit-animation="fade-out-animation" on-iron-overlay-opened="_onDialogOpened" on-iron-overlay-closed="_onDialogClosed">
 
             <h2>[[ _dialogTitle ]]</h2>
@@ -65,13 +69,13 @@
             <paper-dialog-scrollable>
                 <neon-animated-pages class="flex" selected="{{ _selected }}" attr-for-selected="name" on-neon-animation-finish="_onPageAnimationFinish">
 
-                    <appsco-application-add-search id="appscoApplicationAddSearch" name="appsco-application-add-search" authorization-token="[[ authorizationToken ]]" applications-template-api="[[ applicationsTemplateApi ]]" selected-application="{{ _selectedApplication }}" on-application-select="_onApplicationSelect" on-add-link="_onAddLink">
+                    <appsco-application-add-search id="appscoApplicationAddSearch" name="appsco-application-add-search" authorization-token="[[ authorizationToken ]]" applications-template-api="[[ applicationsTemplateApi ]]" selected-application="{{ _selectedApplication }}" on-application-select="_onApplicationSelect" on-add-item="_onAddItem" on-add-link="_onAddLink">
                     </appsco-application-add-search>
 
-                    <appsco-application-add-settings id="appscoApplicationAddSettings" name="appsco-application-add-settings" application="{{ _selectedApplication }}" authorization-token="[[ authorizationToken ]]" dashboard-api="[[ dashboardApi ]]" on-application-added="_onApplicationAdded">
+                    <appsco-application-add-settings id="appscoApplicationAddSettings" name="appsco-application-add-settings" application="[[ _selectedApplication ]]" authorization-token="[[ authorizationToken ]]" dashboard-api="[[ dashboardApi ]]" on-application-added="_onApplicationAdded">
                     </appsco-application-add-settings>
 
-                    <appsco-application-add-link id="appscoApplicationAddLink" name="appsco-application-add-link" authorization-token="[[ authorizationToken ]]" dashboard-api="[[ dashboardApi ]]" on-link-added="_onLinkAdded">
+                    <appsco-application-add-link id="appscoApplicationAddLink" name="appsco-application-add-link" link="[[ _link ]]" authorization-token="[[ authorizationToken ]]" dashboard-api="[[ dashboardApi ]]" on-link-added="_onLinkAdded">
                     </appsco-application-add-link>
 
                 </neon-animated-pages>
@@ -85,8 +89,11 @@
             </div>
         </paper-dialog>
 
+        <iron-a11y-keys keys="enter" on-keys-pressed="_onEnter">
+        </iron-a11y-keys>
+
     </template>
 
-    <script>Polymer({is:"appsco-application-add",properties:{_selected:{type:String,value:"appsco-application-add-search",notify:!0},_selectedApplication:{type:Object,value:function(){return{}},notify:!0},authorizationToken:{type:String,value:""},applicationsTemplateApi:{type:String},dashboardApi:{type:String},_dialogTitle:{type:String,value:"Add application"},_addAction:{type:Boolean,value:!1},animationConfig:{value:function(){return{entry:{name:"fade-in-animation",node:this.$.addApplicationAction,timing:{duration:300}},exit:{name:"fade-out-animation",node:this.$.addApplicationAction,timing:{duration:200}}}}}},behaviors:[Polymer.NeonAnimationRunnerBehavior],listeners:{"_selected-changed":"_onSelectedChanged","neon-animation-finish":"_onAddActionAnimationFinish"},_onSelectedChanged:function(){"appsco-application-add-search"!=this._selected?(this.$.addApplicationAction.style.display="block",this.playAnimation("entry"),this._addAction=!0):(this._addAction=!1,this.playAnimation("exit"))},_onAddActionAnimationFinish:function(){this._addAction||(this.$.addApplicationAction.style.display="none")},_onApplicationSelect:function(){this._selected="appsco-application-add-settings"},_onAddLink:function(){this._selected="appsco-application-add-link",this._dialogTitle="Add link"},_onDialogOpened:function(){this._dialogTitle="Add application",this.$.appscoApplicationAddSearch.setup()},_onDialogClosed:function(){this.$.appscoApplicationAddSearch.reset(),this.$.appscoApplicationAddSettings.reset(),this.$.appscoApplicationAddLink.reset(),this._selected="appsco-application-add-search",this._dialogTitle="Add application"},_onAddApplication:function(){this._selectedApplication.self?this.$.appscoApplicationAddSettings.addApplication():this.$.appscoApplicationAddLink.addLink()},_onApplicationAdded:function(){this._closeDialog()},_onLinkAdded:function(){this._closeDialog()},_closeDialog:function(){this.$.addApplicationDialog.close(),this.$.addApplicationAction.disabled=!1},toggle:function(){this.$.addApplicationDialog.toggle()},_onPageAnimationFinish:function(i){var t=i.detail.fromPage,a=i.detail.toPage;switch(t.getAttribute("name")){case"appsco-application-add-settings":case"appsco-application-add-link":case"appsco-application-add-search":t.reset()}switch(a.getAttribute("name")){case"appsco-application-add-link":case"appsco-application-add-search":a.setup()}}});</script>
+    <script>Polymer({is:"appsco-application-add",properties:{_selected:{type:String,value:"appsco-application-add-search",notify:!0},_selectedApplication:{type:Object,value:function(){return{}},notify:!0},_link:{type:Object,value:function(){return{}}},_item:{type:Object,value:function(){return{}}},authorizationToken:{type:String,value:""},applicationsTemplateApi:{type:String},dashboardApi:{type:String},linkApi:{type:String},itemApi:{type:String},_computedHeaders:{type:Object,computed:"_computeHeaders(authorizationToken)"},_dialogTitle:{type:String,value:"Add application"},_addAction:{type:Boolean,value:!1},animationConfig:{value:function(){return{entry:{name:"fade-in-animation",node:this.$.addApplicationAction,timing:{duration:300}},exit:{name:"fade-out-animation",node:this.$.addApplicationAction,timing:{duration:200}}}}}},behaviors:[Polymer.NeonAnimationRunnerBehavior],listeners:{"_selected-changed":"_onSelectedChanged","neon-animation-finish":"_onAddActionAnimationFinish"},_computeHeaders:function(i){return{Authorization:"token "+i}},_onLinkResponse:function(i){this.set("_link",i.detail.response)},_onItemResponse:function(i){this.set("_item",i.detail.response)},_onSelectedChanged:function(){"appsco-application-add-search"!=this._selected?(this.$.addApplicationAction.style.display="block",this.playAnimation("entry"),this._addAction=!0):(this._addAction=!1,this.playAnimation("exit"))},_onAddActionAnimationFinish:function(){this._addAction||(this.$.addApplicationAction.style.display="none")},_onApplicationSelect:function(){this._selected="appsco-application-add-settings"},_onAddItem:function(){this.set("_selectedApplication",this._item),this._onApplicationSelect(),this._dialogTitle="Add custom application"},_onAddLink:function(){this._selected="appsco-application-add-link",this._dialogTitle="Add link"},_onDialogOpened:function(){this._dialogTitle="Add application",this.$.appscoApplicationAddSearch.setup()},_onDialogClosed:function(){this._selectedApplication={},this.$.appscoApplicationAddSearch.reset(),this.$.appscoApplicationAddSettings.reset(),this.$.appscoApplicationAddLink.reset(),this._selected="appsco-application-add-search",this._dialogTitle="Add application"},_onEnter:function(){this._onAddApplication()},_onAddApplication:function(){this._selectedApplication.self?this.$.appscoApplicationAddSettings.addApplication():this.$.appscoApplicationAddLink.addLink()},_onApplicationAdded:function(){this._closeDialog()},_onLinkAdded:function(){this._closeDialog()},_closeDialog:function(){this.$.addApplicationDialog.close(),this.$.addApplicationAction.disabled=!1},toggle:function(){this.$.addApplicationDialog.toggle()},_onPageAnimationFinish:function(i){var t=i.detail.fromPage,n=i.detail.toPage;switch(t.getAttribute("name")){case"appsco-application-add-settings":case"appsco-application-add-link":case"appsco-application-add-search":t.reset()}switch(n.getAttribute("name")){case"appsco-application-add-link":case"appsco-application-add-search":n.setup()}}});</script>
 </dom-module>
 </body></html>

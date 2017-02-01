@@ -32,8 +32,8 @@
                 top: 20vh;
             @apply(--appsco-paper-dialog);
             }
-            :host paper-dialog-scrollable::shadow .scrollable {
-                min-height: 80px;
+            :host paper-dialog-scrollable > * {
+            @apply(--paper-dialog-scrollable-child);
             }
             :host .usercard {
                 display: inline-block;
@@ -91,14 +91,7 @@
                 top: 4px;
                 right: 4px;
             }
-            :host .search-list {
-                margin-top: 10px;
-            }
-            :host .buttons {
-                margin-top: 20px;
-            }
             :host .buttons paper-button {
-                margin-top: 10px;
             @apply(--paper-dialog-button);
             }
             :host .buttons paper-button[dialog-confirm] {
@@ -108,9 +101,11 @@
             @apply(--paper-dialog-dismiss-button);
             }
             :host .message {
+                margin: 0;
                 color: var(--secondary-text-color);
                 font-style: italic;
             @apply(--paper-font-body2);
+            @apply(--info-message);
             }
         </style>
 
@@ -171,6 +166,6 @@
         </paper-dialog>
 
     </template>
-    <script>Polymer({is:"appsco-application-share",behaviors:[Polymer.NeonAnimationRunnerBehavior],_removeFromAccounts:function(e){this.animationConfig.exit.node=this.$$("#accountItem_"+e.model.index),this.playAnimation("exit",{account:e.model,remove:!0,removeFrom:"_accounts"})},_share:function(e){this._error="",this.animationConfig.exit.node=this.$$("#searchItem_"+e.model.index),this.playAnimation("exit",{account:e.model,id:"#searchItem_"+e.model.index,remove:!0,removeFrom:"_searchList",entry:!0}),this.animationConfig.exit.node=this.$$("#searchItem_"+e.model.index),this.push("_accounts",e.model.item)},properties:{animationConfig:{type:Object,value:function(){return{entry:{name:"fade-in-animation",timing:{duration:200}},exit:{name:"fade-out-animation",timing:{duration:200}}}}},size:{type:Number,value:8},authorizationToken:{type:String,value:""},application:{type:Object,value:function(){return{}},notify:!0},_computedHeaders:{type:Object,computed:"_computeHeaders(authorizationToken)"},_accounts:{type:Array,value:function(){return[]}},_searchList:{type:Array,value:function(){return[]}},_message:{type:String},accountsApi:{type:String},_loader:{type:Boolean,value:!1},_shareLoader:{type:Boolean,value:!1},_error:{type:String}},listeners:{"on-request":"_loading","neon-animation-finish":"_animationFinish"},_shareToUser:function(e){var t=document.createElement("iron-request"),i=this;return t.send({url:e.self+"/share",method:"POST",handleAs:"json",body:"icon="+encodeURIComponent(this.application.self),headers:{Authorization:"token "+i.authorizationToken,"Content-Type":"application/x-www-form-urlencoded"}}),t},_shareApplication:function(){var e=this,t=this._accounts.length-1;this._accounts.forEach(function(i,n){e._shareToUser(i),n===t&&(this.$.shareDialog.close(),this.set("_accounts",[]),this._shareLoader=!1,this.fire("application-shared",{application:this.application}))}.bind(this))},_shareApplicationAction:function(){this._accounts.length>0?(this._shareLoader=!0,setTimeout(function(){this._shareApplication()}.bind(this),500)):(this._error="Please add at least one user to share application to.",this.$.search.focus())},_animationFinish:function(e){if("remove"in e.detail&&(this.splice(e.detail.removeFrom,e.detail.account.index,1),"entry"in e.detail)){var t=this.$$("#accountItem_"+(this._accounts.length-1));t.style.display="inline-block",this.animationConfig.entry.node=t,this.playAnimation("entry")}},_computeHeaders:function(e){return{Authorization:"token "+e}},_search:function(e){var t=/^Backspace$/i,i=/^\w$/,n=this;if(this._loader=!0,this.set("_message",""),setTimeout(function(){this._error=""}.bind(this),500),this.$.search.value.length<3||!i.test(e.key)&&!t.test(e.key))return this._message="Please type three or more letters.",this._loader=!1,void this.set("_searchList",[]);var o=document.createElement("iron-request"),a=this.accountsApi+"?extended=1&limit="+this.size+"&term="+this.$.search.value;this._message="";var s={url:a,method:"GET",handleAs:"json",headers:{Authorization:"token "+this.authorizationToken}};o.send(s).then(function(){var e=o.response.accounts;e&&e.length>0?n.set("_searchList",e):(n.set("_searchList",[]),n._message="There are no accounts with asked term. Please check your input."),n._loader=!1})},toggle:function(){this.$.shareDialog.toggle()},_onDialogOpened:function(){this.$.search.focus()},_onDialogClosed:function(){this.set("_searchList",[]),this.set("_accounts",[]),this.$.search.value="",this._shareLoader=!1,this._error=""}});</script>
+    <script>Polymer({is:"appsco-application-share",behaviors:[Polymer.NeonAnimationRunnerBehavior],_removeFromAccounts:function(e){this.animationConfig.exit.node=this.$$("#accountItem_"+e.model.index),this.playAnimation("exit",{account:e.model,remove:!0,removeFrom:"_accounts"})},_share:function(e){this._error="",this.animationConfig.exit.node=this.$$("#searchItem_"+e.model.index),this.playAnimation("exit",{account:e.model,id:"#searchItem_"+e.model.index,remove:!0,removeFrom:"_searchList",entry:!0}),this.animationConfig.exit.node=this.$$("#searchItem_"+e.model.index),this.push("_accounts",e.model.item)},properties:{animationConfig:{type:Object,value:function(){return{entry:{name:"fade-in-animation",timing:{duration:200}},exit:{name:"fade-out-animation",timing:{duration:200}}}}},size:{type:Number,value:8},authorizationToken:{type:String,value:""},application:{type:Object,value:function(){return{}},notify:!0},_computedHeaders:{type:Object,computed:"_computeHeaders(authorizationToken)"},_accounts:{type:Array,value:function(){return[]}},_searchList:{type:Array,value:function(){return[]}},_message:{type:String},accountsApi:{type:String},_loader:{type:Boolean,value:!1},_shareLoader:{type:Boolean,value:!1},_error:{type:String}},listeners:{"on-request":"_loading","neon-animation-finish":"_animationFinish"},_shareToUser:function(e){var t=document.createElement("iron-request"),i=this;return t.send({url:e.self+"/share",method:"POST",handleAs:"json",body:"icon="+encodeURIComponent(this.application.self),headers:{Authorization:"token "+i.authorizationToken,"Content-Type":"application/x-www-form-urlencoded"}}),t},_shareApplication:function(){var e=this,t=this._accounts.length-1;this._accounts.forEach(function(i,n){e._shareToUser(i),n===t&&(this.$.shareDialog.close(),this.set("_accounts",[]),this._shareLoader=!1,this.fire("application-shared",{application:this.application}))}.bind(this))},_shareApplicationAction:function(){this._accounts.length>0?(this._shareLoader=!0,setTimeout(function(){this._shareApplication()}.bind(this),500)):(this._error="Please add at least one user to share application to.",this.$.search.focus())},_animationFinish:function(e){if("remove"in e.detail&&(this.splice(e.detail.removeFrom,e.detail.account.index,1),"entry"in e.detail)){var t=this.$$("#accountItem_"+(this._accounts.length-1));t.style.display="inline-block",this.animationConfig.entry.node=t,this.playAnimation("entry")}},_computeHeaders:function(e){return{Authorization:"token "+e}},_search:function(e){var t=/^Backspace$/i,i=/^\w$/,n=this;if(this._loader=!0,this.set("_message",""),setTimeout(function(){this._error=""}.bind(this),500),this.$.search.value.length<3||!i.test(e.key)&&!t.test(e.key))return this._message="Please type three or more letters.",this._loader=!1,void this.set("_searchList",[]);var o=document.createElement("iron-request"),a=this.accountsApi+"?extended=1&limit="+this.size+"&term="+this.$.search.value;this._message="";var s={url:a,method:"GET",handleAs:"json",headers:{Authorization:"token "+this.authorizationToken}};o.send(s).then(function(){var e=o.response.accounts;e&&e.length>0?n.set("_searchList",e):(n.set("_searchList",[]),n._message="There are no accounts with asked term. Please check your input."),n._loader=!1})},toggle:function(){this.$.shareDialog.toggle()},_onDialogOpened:function(){this.$.search.focus()},_onDialogClosed:function(){this.set("_searchList",[]),this.set("_accounts",[]),this.$.search.value="",this._shareLoader=!1,this._error="",this._message=""}});</script>
 </dom-module>
 </body></html>

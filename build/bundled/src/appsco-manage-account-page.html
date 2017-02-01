@@ -327,6 +327,7 @@
                 color: var(--secondary-text-color);
                 font-style: italic;
                 @apply(--paper-font-body2);
+                @apply(--info-message);
             }
         </style>
 
@@ -387,6 +388,75 @@
     <script>Polymer({is:"appsco-account-orgunits-page",properties:{role:{type:Object,notify:!0},animationConfig:{value:function(){return{entry:[{name:"hero-animation",id:"hero",toPage:this,timing:{duration:300}},{name:"fade-in-animation",node:this,timing:{duration:500}}],exit:{name:"slide-right-animation",node:this,timing:{duration:200}}}}},sharedElements:{value:function(){return{hero:this.$.card}}}},behaviors:[Polymer.NeonSharedElementAnimatableBehavior],_back:function(){this.fire("back")},_onAddToOrgunit:function(){this.fire("add-to-orgunit",{role:this.role})}});</script>
 </dom-module>
 
+<dom-module id="appsco-company-account-change-password" assetpath="../bower_components/appsco-account/company/">
+    <template>
+        <style>
+            :host {
+                display: block;
+                position: relative;
+            }
+            :host .submit-button {
+                margin: 20px 0 0 0;
+            }
+        </style>
+
+        <appsco-loader active="[[ _loader ]]" loader-alt="Appsco is processing request" multi-color=""></appsco-loader>
+
+        <appsco-form-error message="[[ _error ]]"></appsco-form-error>
+
+        <form is="iron-form" id="accountChangePasswordForm" method="POST" action="[[ accountChangePasswordApi ]]" headers="[[ _computedHeaders ]]" on-iron-form-presubmit="_onFormPresubmit" on-iron-form-error="_onFormError" on-iron-form-response="_onFormResponse">
+
+            <paper-input id="newPassword" name="update_account_password[newPassword][plainPassword][first]" label="New password" type="password" required="" error-message="Please type in new password." on-keyup="_validateForm"></paper-input>
+
+            <paper-input id="newPasswordRepeat" name="update_account_password[newPassword][plainPassword][second]" label="Repeat new password" type="password" required="" error-message="Please repeat new password." on-keyup="_validateForm"></paper-input>
+        </form>
+
+        <paper-button id="submit" class="submit-button" on-tap="_submitForm">Save</paper-button>
+
+        <iron-a11y-keys target="[[ _target ]]" keys="enter" on-keys-pressed="_onEnter">
+        </iron-a11y-keys>
+
+    </template>
+    <script>Polymer({is:"appsco-company-account-change-password",properties:{authorizationToken:{type:String},accountChangePasswordApi:{type:String},_computedHeaders:{type:Object,computed:"_computeHeaders(authorizationToken)"},_loader:{type:Boolean,value:!1},_error:{type:String},_validForm:{type:Boolean,value:!0},_target:{type:Object,value:function(){return this.$.accountChangePasswordForm}}},_computeHeaders:function(e){return{Authorization:"token "+e}},_onEnter:function(){this._submitForm()},_submitForm:function(){this._validForm=!this.$.newPassword.invalid&&!this.$.newPasswordRepeat.invalid,this._validForm&&this.$.accountChangePasswordForm.submit()},_validateForm:function(){var e=this.$.newPassword,t=""==e.value.trim()?null:e.value,a=this.$.newPasswordRepeat,o=""==a.value.trim()?null:a.value;t&&(t.length<8?(e.errorMessage="Password must be at least 8 characters long.",e.invalid=!0):t.match(new RegExp("[A-Z]"))?t.match(new RegExp("[0-9]"))?e.invalid=!1:(e.errorMessage="Password must have at least one digital letter.",e.invalid=!0):(e.errorMessage="Password must have at least one capital letter.",e.invalid=!0)),t&&o&&t!==o?(a.errorMessage="This has to be equal to new password.",a.invalid=!0):t===o&&(a.invalid=!1)},_onFormPresubmit:function(e){this._validForm&&(this._loader=!0)},_onFormError:function(e){this._error=e.detail.error.message,this._loader=!1},_onFormResponse:function(){this.$.accountChangePasswordForm.reset(),this.fire("password-changed"),this._loader=!1},setUp:function(){this.$.newPassword.focus()},reset:function(){this.$.accountChangePasswordForm.reset(),this._error=""}});</script>
+</dom-module>
+<dom-module id="appsco-manage-account-change-password-page" assetpath="directory/">
+    <template>
+        <style include="webkit-scrollbar-style">
+            :host {
+                @apply(--full-page);
+
+                --paper-card-header: {
+                     border-bottom: 1px solid var(--divider-color);
+                 };
+            }
+            :host paper-card {
+                @apply(--full-page-paper-card);
+            }
+            .page-close-action {
+                @apply(--page-close-action);
+            }
+            appsco-company-account-change-password {
+                --paper-button: {
+                     padding: 4px 8px;
+                     background-color: var(--app-primary-color);
+                     color: #ffffff;
+                 };
+            }
+        </style>
+
+        <paper-card heading="Change password" id="card">
+            <paper-icon-button icon="close" title="Close" class="page-close-action" on-tap="_back"></paper-icon-button>
+
+            <div class="card-content layout vertical">
+                <appsco-company-account-change-password id="appscoAccountChangePassword" authorization-token="[[ authorizationToken ]]" account-change-password-api="[[ changePasswordApi ]]"></appsco-company-account-change-password>
+            </div>
+        </paper-card>
+
+    </template>
+
+    <script>Polymer({is:"appsco-manage-account-change-password-page",properties:{authorizationToken:{type:String},changePasswordApi:{type:String},animationConfig:{value:function(){return{entry:[{name:"hero-animation",id:"hero",toPage:this,timing:{duration:300}},{name:"fade-in-animation",node:this,timing:{duration:500}}],exit:{name:"slide-right-animation",node:this,timing:{duration:200}}}}},sharedElements:{value:function(){return{hero:this.$.card}}}},behaviors:[Polymer.NeonSharedElementAnimatableBehavior],_back:function(){this.fire("back")},setPage:function(){this.$.appscoAccountChangePassword.setUp()},resetPage:function(){this.$.appscoAccountChangePassword.reset()}});</script>
+</dom-module>
+
 </div><dom-module id="appsco-manage-account-page">
     <template>
         <style include="webkit-scrollbar-style">
@@ -426,18 +496,26 @@
                 border-bottom: 1px solid var(--divider-color);
                 position: relative;
             }
-            .resource-header .action-share {
-                color: var(--app-secondary-color);
+            .account-initials {
+                width: 96px;
+                height: 96px;
+                margin-left: auto;
+                margin-right: auto;
+                position: relative;
+                background-color: var(--divider-color);
+                border-radius: 50%;
+            }
+            .account-initials .initials {
                 position: absolute;
                 top: 0;
                 right: 0;
-            }
-            .account-image {
-                width: 64px;
-                height: 64px;
-                margin: 0 auto;
-                border-radius: 50%;
-                display: block;
+                bottom: 0;
+                left: 0;
+                margin: auto;
+                line-height: 96px;
+                text-align: center;
+                text-transform: uppercase;
+                font-size: 24px;
             }
             .account-info {
                 margin-top: 10px;
@@ -505,8 +583,16 @@
             <div class="flex-vertical" resource="">
 
                 <div class="resource-header">
-                    <appsco-account-image-settings id="appscoAccountImageSettings" account="{{ account }}" authorization-token="[[ authorizationToken ]]" image-settings-api="[[ imageSettingsApi ]]" preview-only="">
-                    </appsco-account-image-settings>
+                    <template is="dom-if" if="[[ account.picture_url ]]">
+                        <appsco-account-image-settings id="appscoAccountImageSettings" account="{{ account }}" authorization-token="[[ authorizationToken ]]" image-settings-api="[[ imageSettingsApi ]]" preview-only="">
+                        </appsco-account-image-settings>
+                    </template>
+
+                    <template is="dom-if" if="[[ !account.picture_url ]]">
+                        <div class="account-icon account-initials">
+                            <span class="initials">[[ _accountInitials ]]</span>
+                        </div>
+                    </template>
                 </div>
 
                 <div class="account-info">
@@ -550,8 +636,8 @@
                         <appsco-account-orgunits-page name="appsco-account-orgunits-page" role="[[ role ]]" authorization-token="[[ authorizationToken ]]" on-back="_onResourceBack">
                         </appsco-account-orgunits-page>
 
-                        <appsco-account-change-password-page name="appsco-account-change-password-page" authorization-token="[[ authorizationToken ]]" change-password-api="[[ changePasswordApi ]]" on-password-changed="_onPasswordChanged" on-back="_onResourceBack">
-                        </appsco-account-change-password-page>
+                        <appsco-manage-account-change-password-page name="appsco-manage-account-change-password-page" authorization-token="[[ authorizationToken ]]" change-password-api="[[ changePasswordApi ]]" on-password-changed="_onPasswordChanged" on-back="_onResourceBack">
+                        </appsco-manage-account-change-password-page>
 
                     </neon-animated-pages>
                 </div>
@@ -566,6 +652,6 @@
 
     </template>
 
-    <script>Polymer({is:"appsco-manage-account-page",properties:{route:{type:Object,value:function(){return{}}},role:{type:Object,value:function(){return{}},observer:"_onRoleChange"},account:{type:Object,value:function(){return{}},notify:!0},authorizationToken:{type:String},_notificationsApi:{type:String,computed:"_computeNotificationsApi(role)"},_logApi:{type:String,computed:"_computeLogApi(role)"},_twoFaApi:{type:String,computed:"_computeTwoFaApi(role)"},settingsApi:{type:String,computed:"_computeSettingsApi(role)"},imageSettingsApi:{type:String},changePasswordApi:{type:String,computed:"_computeChangePasswordApi(role)"},_computedHeaders:{type:Object,computed:"_computeHeaders(authorizationToken)"},_selected:{type:String,value:"appsco-account-components-page",notify:!0},mediumScreen:{type:Boolean,value:!1,reflectToAttribute:!0},tabletScreen:{type:Boolean,value:!1,reflectToAttribute:!0},mobileScreen:{type:Boolean,value:!1,reflectToAttribute:!0},animationConfig:{value:function(){return{entry:{name:"fade-in-animation",node:this,timing:{duration:300}},exit:{name:"fade-out-animation",node:this,timing:{duration:200}}}}},pageLoaded:{type:Boolean,value:!1}},behaviors:[Polymer.NeonAnimatableBehavior],observers:["_updateScreen(mediumScreen, tabletScreen, mobileScreen)"],attached:function(){this.pageLoaded=!1,(this.mobileScreen||this.tabletScreen||this.mediumScreen)&&this.updateStyles(),this._getAccount()},_updateScreen:function(e,t,o){this.updateStyles(),o?this.$.appscoContent.hideSection("resource"):this.$.appscoContent.resourceActive||this.$.appscoContent.showSection("resource")},_computeHeaders:function(e){return{Authorization:"token "+e}},_computeSettingsApi:function(e){return e.self},_computeNotificationsApi:function(e){return e.self+"/notifications"},_computeLogApi:function(e){return e.meta?e.meta.log:""},_computeTwoFaApi:function(e){return e.self+"/2fa"},_computeChangePasswordApi:function(e){return e.self+"/change-password"},_pageLoaded:function(){this.pageLoaded=!0,this.fire("page-loaded")},_getAccount:function(){var e=this.companyApi+"/directory/roles"+this.route.path;this.role.self||(this.$.ironAjaxGetAccount.url=e,this.$.ironAjaxGetAccount.generateRequest())},_onAccountResponse:function(e){this.set("role",e.detail.response)},_onAccountError:function(){this.fire("error")},_onRoleChange:function(e){e.self&&(this.$.appscoManageAccountComponentsPage.load(),this.account=e.account)},_onResourceBack:function(){this._showAccountComponentsPage()},refreshLog:function(){this.$.appscoManageAccountComponentsPage.loadLog(),this.$.appscoAccountLogPage.loadLog()},_onSettingsSaved:function(e){this._showAccountComponentsPage(),this.refreshLog(),this.set("role.account",e.detail.account)},_onPasswordChanged:function(){this._showAccountComponentsPage(),this.refreshLog()},_showAccountComponentsPage:function(){this._selected="appsco-account-components-page"},resetPage:function(){this._showAccountComponentsPage()},toggleResource:function(){this.$.appscoContent.toggleSection("resource")},_onAccountSettings:function(){this._selected="appsco-account-settings-page"},_onAllNotifications:function(){this._selected="appsco-account-notifications-page"},_onWholeLog:function(){this._selected="appsco-account-log-page"},_onManageOrgunits:function(){this._selected="appsco-account-orgunits-page"},_onChangePassword:function(){this.$.appscoManageAccountComponentsPage.sharedElements={hero:this.$.changePasswordHero},this._selected="appsco-account-change-password-page"},_onPageAnimationFinish:function(e){var t=e.detail.fromPage,o=e.detail.toPage;switch(t.getAttribute("name")){case"appsco-account-settings-page":case"appsco-account-change-password-page":t.resetPage()}switch(o.getAttribute("name")){case"appsco-account-settings-page":case"appsco-account-change-password-page":o.setPage()}}});</script>
+    <script>Polymer({is:"appsco-manage-account-page",properties:{route:{type:Object,value:function(){return{}}},role:{type:Object,value:function(){return{}},observer:"_onRoleChange"},account:{type:Object,value:function(){return{}},notify:!0},authorizationToken:{type:String},_accountInitials:{type:String,computed:"_computeAccountInitials(account)"},_notificationsApi:{type:String,computed:"_computeNotificationsApi(role)"},_logApi:{type:String,computed:"_computeLogApi(role)"},_twoFaApi:{type:String,computed:"_computeTwoFaApi(role)"},settingsApi:{type:String,computed:"_computeSettingsApi(role)"},imageSettingsApi:{type:String},changePasswordApi:{type:String,computed:"_computeChangePasswordApi(role)"},_computedHeaders:{type:Object,computed:"_computeHeaders(authorizationToken)"},_selected:{type:String,value:"appsco-account-components-page",notify:!0},mediumScreen:{type:Boolean,value:!1,reflectToAttribute:!0},tabletScreen:{type:Boolean,value:!1,reflectToAttribute:!0},mobileScreen:{type:Boolean,value:!1,reflectToAttribute:!0},animationConfig:{value:function(){return{entry:{name:"fade-in-animation",node:this,timing:{duration:300}},exit:{name:"fade-out-animation",node:this,timing:{duration:200}}}}},pageLoaded:{type:Boolean,value:!1}},behaviors:[Polymer.NeonAnimatableBehavior],observers:["_updateScreen(mediumScreen, tabletScreen, mobileScreen)"],attached:function(){this.pageLoaded=!1,(this.mobileScreen||this.tabletScreen||this.mediumScreen)&&this.updateStyles(),this._getAccount()},_updateScreen:function(e,t,o){this.updateStyles(),o?this.$.appscoContent.hideSection("resource"):this.$.appscoContent.resourceActive||this.$.appscoContent.showSection("resource")},_computeAccountInitials:function(e){var t="";return e.self&&e.first_name.length>0&&e.last_name.length>0?t=e.first_name.substring(0,1)+e.last_name.substring(0,1):e.self&&e.name&&(t=e.name.substring(0,2)),t},_computeHeaders:function(e){return{Authorization:"token "+e}},_computeSettingsApi:function(e){return e.self},_computeNotificationsApi:function(e){return e.self+"/notifications"},_computeLogApi:function(e){return e.meta?e.meta.log:""},_computeTwoFaApi:function(e){return e.self+"/2fa"},_computeChangePasswordApi:function(e){return e.self+"/change-password"},_pageLoaded:function(){this.pageLoaded=!0,this.fire("page-loaded")},_getAccount:function(){var e=this.companyApi+"/directory/roles"+this.route.path;this.role.self||(this.$.ironAjaxGetAccount.url=e,this.$.ironAjaxGetAccount.generateRequest())},_onAccountResponse:function(e){this.set("role",e.detail.response)},_onAccountError:function(){this.fire("error")},_onRoleChange:function(e){e.self&&(this.$.appscoManageAccountComponentsPage.load(),this.account=e.account)},_onResourceBack:function(){this._showAccountComponentsPage()},refreshLog:function(){this.$.appscoManageAccountComponentsPage.loadLog(),this.$.appscoAccountLogPage.loadLog()},_onSettingsSaved:function(e){this._showAccountComponentsPage(),this.refreshLog(),this.set("role.account",e.detail.account)},_onPasswordChanged:function(e){this._showAccountComponentsPage(),this.refreshLog(),e.stopPropagation(),this.fire(e.type,{account:this.account})},_showAccountComponentsPage:function(){this._selected="appsco-account-components-page"},resetPage:function(){this._showAccountComponentsPage()},toggleResource:function(){this.$.appscoContent.toggleSection("resource")},_onAccountSettings:function(){this._selected="appsco-account-settings-page"},_onAllNotifications:function(){this._selected="appsco-account-notifications-page"},_onWholeLog:function(){this._selected="appsco-account-log-page"},_onManageOrgunits:function(){this._selected="appsco-account-orgunits-page"},_onChangePassword:function(){this.$.appscoManageAccountComponentsPage.sharedElements={hero:this.$.changePasswordHero},this._selected="appsco-manage-account-change-password-page"},_onPageAnimationFinish:function(e){var t=e.detail.fromPage,o=e.detail.toPage;switch(t.getAttribute("name")){case"appsco-account-settings-page":case"appsco-manage-account-change-password-page":t.resetPage()}switch(o.getAttribute("name")){case"appsco-account-settings-page":case"appsco-manage-account-change-password-page":o.setPage()}}});</script>
 </dom-module>
 </body></html>

@@ -150,6 +150,7 @@
                 color: var(--secondary-text-color);
                 font-style: italic;
             @apply(--paper-font-body2);
+            @apply(--info-message);
             }
             :host paper-progress {
                 position: absolute;
@@ -1130,6 +1131,78 @@
     </template>
 
     <script>Polymer({is:"appsco-account-transfer-token-page",properties:{partner:{type:Object,value:function(){return{}}},authorizationToken:{type:String},transferTokenApi:{type:String},animationConfig:{value:function(){return{entry:[{name:"hero-animation",id:"hero",toPage:this,timing:{duration:300}},{name:"fade-in-animation",node:this,timing:{duration:500}}],exit:{name:"slide-right-animation",node:this,timing:{duration:200}}}}},sharedElements:{value:function(){return{hero:this.$.card}}}},behaviors:[Polymer.NeonSharedElementAnimatableBehavior],_back:function(){this.fire("back")},resetPage:function(){this.$.appscoAccountTransferToken.reset()}});</script>
+</dom-module>
+
+<dom-module id="appsco-account-change-password" assetpath="../bower_components/appsco-account/">
+    <template>
+        <style>
+            :host {
+                display: block;
+                position: relative;
+            @apply(--appsco-account-change-password);
+            }
+            :host .submit-button {
+                margin: 20px 0 0 0;
+            }
+        </style>
+
+        <appsco-loader active="[[ _loader ]]" loader-alt="Appsco is processing request" multi-color=""></appsco-loader>
+
+        <appsco-form-error message="[[ _error ]]"></appsco-form-error>
+
+        <form is="iron-form" id="accountChangePasswordForm" method="POST" action="[[ accountChangePasswordApi ]]" headers="[[ _computedHeaders ]]" on-iron-form-presubmit="_onFormPresubmit" on-iron-form-error="_onFormError" on-iron-form-response="_onFormResponse">
+
+            <paper-input id="oldPassword" name="change_password[oldPassword]" label="Old password" type="password" required="" auto-validate="" error-message="Please type in old password." on-keyup="_validateForm"></paper-input>
+
+            <paper-input id="newPassword" name="change_password[newPassword][plainPassword][first]" label="New password" type="password" required="" error-message="Please type in new password." on-keyup="_validateForm"></paper-input>
+
+            <paper-input id="newPasswordRepeat" name="change_password[newPassword][plainPassword][second]" label="Repeat new password" type="password" required="" error-message="Please repeat new password." on-keyup="_validateForm"></paper-input>
+        </form>
+
+        <paper-button id="submit" class="submit-button" on-tap="_submitForm">Save</paper-button>
+
+        <iron-a11y-keys target="[[ _target ]]" keys="enter" on-keys-pressed="_onEnter">
+        </iron-a11y-keys>
+
+    </template>
+    <script>Polymer({is:"appsco-account-change-password",properties:{authorizationToken:{type:String},accountChangePasswordApi:{type:String},_computedHeaders:{type:Object,computed:"_computeHeaders(authorizationToken)"},_loader:{type:Boolean,value:!1},_error:{type:String},_validForm:{type:Boolean,value:!0},_target:{type:Object,value:function(){return this.$.accountChangePasswordForm}}},_computeHeaders:function(e){return{Authorization:"token "+e}},_onEnter:function(){this._submitForm()},_submitForm:function(){this._validForm=!this.$.newPassword.invalid&&!this.$.newPasswordRepeat.invalid,this._validForm&&this.$.accountChangePasswordForm.submit()},_validateForm:function(){var e=this.$.newPassword,t=""==e.value.trim()?null:e.value,o=this.$.newPasswordRepeat,r=""==o.value.trim()?null:o.value;t&&(t.length<8?(e.errorMessage="Password must be at least 8 characters long.",e.invalid=!0):t.match(new RegExp("[A-Z]"))?t.match(new RegExp("[0-9]"))?t==this.$.oldPassword.value?(e.errorMessage="New password must be different from old one.",e.invalid=!0):e.invalid=!1:(e.errorMessage="Password must have at least one digital letter.",e.invalid=!0):(e.errorMessage="Password must have at least one capital letter.",e.invalid=!0)),t&&r&&t!==r?(o.errorMessage="This has to be equal to new password.",o.invalid=!0):t===r&&(o.invalid=!1)},_onFormPresubmit:function(e){this._validForm&&(this._loader=!0)},_onFormError:function(e){this._error=e.detail.error.message,this._loader=!1},_onFormResponse:function(){this.$.accountChangePasswordForm.reset(),this.fire("password-changed"),this._loader=!1},setUp:function(){this.$.oldPassword.focus()},reset:function(){this.$.accountChangePasswordForm.reset(),this._error=""}});</script>
+</dom-module>
+<dom-module id="appsco-account-change-password-page" assetpath="account/">
+    <template>
+        <style include="webkit-scrollbar-style">
+            :host {
+                @apply(--full-page);
+
+                --paper-card-header: {
+                     border-bottom: 1px solid var(--divider-color);
+                 };
+            }
+            :host paper-card {
+                @apply(--full-page-paper-card);
+            }
+            .page-close-action {
+                @apply(--page-close-action);
+            }
+            appsco-account-change-password {
+                --paper-button: {
+                     padding: 4px 8px;
+                    background-color: var(--app-primary-color);
+                    color: #ffffff;
+                 };
+            }
+        </style>
+
+        <paper-card heading="Change password" id="card">
+            <paper-icon-button icon="close" title="Close" class="page-close-action" on-tap="_back"></paper-icon-button>
+
+            <div class="card-content layout vertical">
+                <appsco-account-change-password id="appscoAccountChangePassword" authorization-token="[[ authorizationToken ]]" account-change-password-api="[[ changePasswordApi ]]"></appsco-account-change-password>
+            </div>
+        </paper-card>
+
+    </template>
+
+    <script>Polymer({is:"appsco-account-change-password-page",properties:{authorizationToken:{type:String},changePasswordApi:{type:String},animationConfig:{value:function(){return{entry:[{name:"hero-animation",id:"hero",toPage:this,timing:{duration:300}},{name:"fade-in-animation",node:this,timing:{duration:500}}],exit:{name:"slide-right-animation",node:this,timing:{duration:200}}}}},sharedElements:{value:function(){return{hero:this.$.card}}}},behaviors:[Polymer.NeonSharedElementAnimatableBehavior],_back:function(){this.fire("back")},setPage:function(){this.$.appscoAccountChangePassword.setUp()},resetPage:function(){this.$.appscoAccountChangePassword.reset()}});</script>
 </dom-module>
 
 </div><dom-module id="appsco-account-page">

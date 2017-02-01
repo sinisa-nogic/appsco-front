@@ -49,7 +49,7 @@
                 width: 100px;
             }
             :host .application-list {
-                margin-top: 0px;
+                margin-top: 0;
                 position: relative;
             }
             :host .message {
@@ -57,10 +57,14 @@
                 color: var(--secondary-text-color);
                 font-style: italic;
             @apply(--paper-font-body2);
+            @apply(--info-message);
             }
-            :host .add-link-container {
+            :host .or-add-container {
                 color: var(--secondary-text-color);
                 line-height: 24px;
+            }
+            :host .add-custom-app-container {
+                margin-top: 10px;
             }
             :host .link-button {
                 padding: 0;
@@ -98,15 +102,22 @@
             </template>
         </div>
 
-        <template is="dom-if" if="[[ !_searchActive ]]">
-            <div class="add-link-container">
+        <template is="dom-if" if="[[ _customApplicationAction ]]">
+            <div class="or-add-container add-custom-app-container">
                 or
-                <paper-button id="addLinkAction" class="link-button" on-tap="_onAddLink">Add link</paper-button>
+                <paper-button class="link-button" on-tap="_onAddItem">Add custom application</paper-button>
+            </div>
+        </template>
+
+        <template is="dom-if" if="[[ !_searchActive ]]">
+            <div class="or-add-container add-link-container">
+                or
+                <paper-button class="link-button" on-tap="_onAddLink">Add link</paper-button>
             </div>
         </template>
 
     </template>
 
-    <script>Polymer({is:"appsco-application-add-search",properties:{selectedApplication:{type:Object,notify:!0},_searchList:{type:Array,value:function(){return[]}},_message:{type:String},authorizationToken:{type:String},applicationsTemplateApi:{type:String},size:{type:Number,value:12},_searchActive:{type:Boolean,value:!1},_loader:{type:Boolean,value:!1},animationConfig:{value:function(){return{entry:{name:"scale-up-animation",node:this},exit:[{name:"hero-animation",id:"hero",fromPage:this,timing:{duration:300}},{name:"fade-out-animation",node:this,timing:{duration:100}}]}}},sharedElements:{value:function(){return{hero:{}}}}},behaviors:[Polymer.NeonSharedElementAnimatableBehavior],_search:function(e){var t=/^Backspace$/i,i=/^\w$/,s=this.$.search.value,a=s.length,n=this;if(this._loader=!0,this._searchActive=!0,this.set("_message",""),0===a)return this._searchActive=!1,this._message="",this._loader=!1,void this.set("_searchList",[]);if(a<3||!i.test(e.key)&&!t.test(e.key))return this._message="Please type three or more letters.",this._loader=!1,void this.set("_searchList",[]);var r=document.createElement("iron-request"),o=this.applicationsTemplateApi+"?extended=1&limit="+this.size+"&term="+s;this._message="";var h={url:o,method:"GET",handleAs:"json",headers:{Authorization:"token "+this.authorizationToken}};r.send(h).then(function(){var e=r.response.applications;e&&e.length>0?n.set("_searchList",e):(n.set("_searchList",[]),n._message="There are no applications with asked title. Please check your input."),n._loader=!1})},_onApplicationSelect:function(e){this.sharedElements.hero=this.$$("#searchItem_"+e.model.index),this.selectedApplication=e.model.item,this.fire("application-select")},_onAddLink:function(){this.sharedElements.hero=this.$$("#addLinkAction"),this.fire("add-link")},setup:function(){this.$.search.focus()},reset:function(){this.$.search.value="",this._searchList=[],this._searchActive=!1}});</script>
+    <script>Polymer({is:"appsco-application-add-search",properties:{selectedApplication:{type:Object,notify:!0},_searchList:{type:Array,value:function(){return[]}},_message:{type:String},authorizationToken:{type:String},applicationsTemplateApi:{type:String},size:{type:Number,value:12},_searchActive:{type:Boolean,value:!1},_customApplicationAction:{type:Boolean,value:!1},_loader:{type:Boolean,value:!1},animationConfig:{value:function(){return{entry:{name:"scale-up-animation",node:this},exit:[{name:"hero-animation",id:"hero",fromPage:this,timing:{duration:300}},{name:"fade-out-animation",node:this,timing:{duration:100}}]}}},sharedElements:{value:function(){return{hero:{}}}}},behaviors:[Polymer.NeonSharedElementAnimatableBehavior],_search:function(e){var t=/^Backspace$/i,i=/^\w$/,s=this.$.search.value,o=s.length,a=this;if(this._loader=!0,this._searchActive=!0,this.set("_message",""),0===o)return this._searchActive=!1,this._hideCustomApplicationAction(),this._message="",this._loader=!1,void this.set("_searchList",[]);if(o<3||!i.test(e.key)&&!t.test(e.key))return this._message="Please type three or more letters.",this._loader=!1,this.set("_searchList",[]),void this._hideCustomApplicationAction();var n=document.createElement("iron-request"),r=this.applicationsTemplateApi+"?extended=1&limit="+this.size+"&term="+s;this._message="";var h={url:r,method:"GET",handleAs:"json",headers:{Authorization:"token "+this.authorizationToken}};n.send(h).then(function(){var e=n.response.applications;e&&e.length>0?(a.set("_searchList",e),a._customApplicationAction=!1):(a.set("_searchList",[]),a._message="There are no applications with asked title. Please check your input.",a._showCustomApplicationAction()),a._loader=!1})},_onApplicationSelect:function(e){this.sharedElements.hero=this.$$("#searchItem_"+e.model.index),this.selectedApplication=e.model.item,this.fire("application-select")},_onAddItem:function(e){this.sharedElements.hero=Polymer.dom(e).rootTarget,this.fire("add-item")},_onAddLink:function(){this.sharedElements.hero=Polymer.dom(event).rootTarget,this.fire("add-link")},_showCustomApplicationAction:function(){this._customApplicationAction=!0},_hideCustomApplicationAction:function(){this._customApplicationAction=!1},setup:function(){this.$.search.focus()},reset:function(){this.$.search.value="",this._searchList=[],this._searchActive=!1,this._message="",this._hideCustomApplicationAction()}});</script>
 </dom-module>
 </body></html>

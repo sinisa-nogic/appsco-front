@@ -32,6 +32,7 @@
                 color: var(--secondary-text-color);
                 font-style: italic;
             @apply(--paper-font-body2);
+            @apply(--info-message);
             }
         </style>
         <iron-ajax on-request="_loading" auto="" url="[[ _currentUrl ]]" on-response="_handleResponse" on-error="_handleError" headers="{{ _computedHeaders }}" debounce-duration="300">
@@ -43,7 +44,7 @@
             </div>
 
             <template is="dom-repeat" items="{{ _accounts }}" id="message" index-as="current">
-                <appsco-application-subscriber item="[[ item ]]"></appsco-application-subscriber>
+                <appsco-application-subscriber subscriber="[[ item ]]" preview="[[ preview ]]"></appsco-application-subscriber>
             </template>
         </div>
 
@@ -59,6 +60,6 @@
 
     </template>
 
-    <script>Polymer({is:"appsco-application-subscribers",_next:"",properties:{_accounts:{type:Array,value:function(){return[]},notify:!0},size:{type:Number,value:5},authorizationToken:{type:String,value:""},application:{type:Object,value:function(){return{}},notify:!0},_currentUrl:{type:String,value:"",notify:!0},_computedHeaders:{type:Object,computed:"_computeHeaders(authorizationToken)"},_totalSubscribers:{type:Number},_loadMore:{type:Boolean,value:!1},_message:{type:String}},listeners:{"application-changed":"_init","on-request":"_loading"},attached:function(){this._init()},_init:function(t){this.set("_message",""),this.set("_accounts",[]),this.set("_currentUrl",""),this.set("_totalSubscribers",null),this.application&&this.application.meta&&(this._next=this.application.meta.subscribers+"?page=1&extended=1&limit=","all"!=t&&(this._next=this._next+this.size),this._currentUrl=this._next)},_computeHeaders:function(t){return{Authorization:"token "+t}},_handleResponse:function(t){var e=this,s=t.detail.response;this._loadMore||this.set("_accounts",[]),this._loadMore=!1,s&&s.accounts.length>0?(s.accounts.forEach(function(s,i){setTimeout(function(){e.push("_accounts",s),i===t.detail.response.accounts.length-1&&(e._totalSubscribers=t.detail.response.meta.total,e.fire("subscribers-load",{subscribers:t.detail.response}))},50*(i+1))}),this._next=t.detail.response.meta.next+"&limit="+this.size,setTimeout(function(){e.$.progress.hidden=!0},600+100*t.detail.response.accounts.length)):(this._message="There are no subscribers for this application.",this.$.progress.hidden=!0)},_handleError:function(){this._message="We couldn't load subscribers at the moment. Please try again in a minute.",this.$.progress.hidden=!0},_loading:function(){this.$.progress.hidden=!1},loadMore:function(){this._loadMore=!0,this._currentUrl=this._next}});</script>
+    <script>Polymer({is:"appsco-application-subscribers",_next:"",properties:{_accounts:{type:Array,value:function(){return[]},notify:!0},size:{type:Number,value:5},authorizationToken:{type:String,value:""},application:{type:Object,value:function(){return{}},notify:!0},preview:{type:Boolean,value:!1},_currentUrl:{type:String,value:"",notify:!0},_computedHeaders:{type:Object,computed:"_computeHeaders(authorizationToken)"},_totalSubscribers:{type:Number},_loadMore:{type:Boolean,value:!1},_message:{type:String}},listeners:{"application-changed":"_init","on-request":"_loading"},attached:function(){this._init()},_init:function(t){return this.set("_message",""),this.set("_accounts",[]),this.set("_currentUrl",""),this.set("_totalSubscribers",null),!!this.application.owner&&void(this.application&&this.application.meta&&(this._next=this.application.meta.subscribers+"?page=1&extended=1&limit=","all"!=t&&(this._next=this._next+this.size),this._currentUrl=this._next))},_computeHeaders:function(t){return{Authorization:"token "+t}},_handleResponse:function(t){var e=this,i=t.detail.response;this._loadMore||this.set("_accounts",[]),this._loadMore=!1,i&&i.accounts.length>0?(i.accounts.forEach(function(i,s){setTimeout(function(){e.push("_accounts",i),s===t.detail.response.accounts.length-1&&(e._totalSubscribers=t.detail.response.meta.total,e.fire("subscribers-load",{subscribers:t.detail.response}))},50*(s+1))}),this._next=t.detail.response.meta.next+"&limit="+this.size,setTimeout(function(){e.$.progress.hidden=!0},600+100*t.detail.response.accounts.length)):(this._message="There are no subscribers for this application.",this.$.progress.hidden=!0)},_handleError:function(){this._message="We couldn't load subscribers at the moment. Please try again in a minute.",this.$.progress.hidden=!0},_loading:function(){this.$.progress.hidden=!1},loadMore:function(){this._loadMore=!0,this._currentUrl=this._next}});</script>
 </dom-module>
 </body></html>

@@ -14,7 +14,7 @@
 <link rel="import" href="account/appsco-account-notifications-page.html">
 <link rel="import" href="account/appsco-account-log-page.html">
 <link rel="import" href="directory/appsco-account-orgunits-page.html">
-<link rel="import" href="account/appsco-account-change-password-page.html">
+<link rel="import" href="directory/appsco-manage-account-change-password-page.html">
 
 <dom-module id="appsco-manage-account-page">
     <template>
@@ -237,14 +237,13 @@
                                 on-back="_onResourceBack">
                         </appsco-account-orgunits-page>
 
-                        <appsco-account-change-password-page
-                                name="appsco-account-change-password-page"
+                        <appsco-manage-account-change-password-page
+                                name="appsco-manage-account-change-password-page"
                                 authorization-token="[[ authorizationToken ]]"
                                 change-password-api="[[ changePasswordApi ]]"
-                                company
                                 on-password-changed="_onPasswordChanged"
                                 on-back="_onResourceBack">
-                        </appsco-account-change-password-page>
+                        </appsco-manage-account-change-password-page>
 
                     </neon-animated-pages>
                 </div>
@@ -547,9 +546,14 @@
                 this.set('role.account', event.detail.account);
             },
 
-            _onPasswordChanged: function() {
+            _onPasswordChanged: function(event) {
                 this._showAccountComponentsPage();
                 this.refreshLog();
+
+                event.stopPropagation();
+                this.fire(event.type, {
+                    account: this.account
+                });
             },
 
             _showAccountComponentsPage: function() {
@@ -586,7 +590,7 @@
                     'hero': this.$.changePasswordHero
                 };
 
-                this._selected = 'appsco-account-change-password-page';
+                this._selected = 'appsco-manage-account-change-password-page';
             },
 
             _onPageAnimationFinish: function(event) {
@@ -595,7 +599,7 @@
 
                 switch(fromPage.getAttribute('name')) {
                     case 'appsco-account-settings-page':
-                    case 'appsco-account-change-password-page':
+                    case 'appsco-manage-account-change-password-page':
                         fromPage.resetPage();
                         break;
 
@@ -605,7 +609,7 @@
 
                 switch(toPage.getAttribute('name')) {
                     case 'appsco-account-settings-page':
-                    case 'appsco-account-change-password-page':
+                    case 'appsco-manage-account-change-password-page':
                         toPage.setPage();
                         break;
 

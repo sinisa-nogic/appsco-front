@@ -542,7 +542,9 @@
                             on-disable-advanced-settings="_onDisableAdvancedSettings"
                             on-enable-advanced-settings="_onEnableAdvancedSettings"
                             on-twofa-enabled="_onTwoFaEnabled"
-                            on-twofa-disabled="_onTwoFaDisabled"></appsco-account-page>
+                            on-twofa-disabled="_onTwoFaDisabled"
+                            on-revoke-authorized-application="_onRevokeAuthorizedApplication"
+                            on-token-generated="_onTokenGenerated"></appsco-account-page>
 
                     <appsco-vault-page
                             id="appscoVaultPage"
@@ -655,7 +657,8 @@
                             account="{{ account }}"
                             authorization-token="[[ authorizationToken ]]"
                             computed-headers="[[ _computedHeaders ]]"
-                            on-settings-changed="_companySettingsChanged"
+                            on-company-settings-changed="_onCompanySettingsChanged"
+                            on-company-logo-changed="_onCompanyLogoChanged"
                     ></appsco-company-settings-page>
 
                     <appsco-not-found-page name="404"></appsco-not-found-page>
@@ -1094,7 +1097,21 @@
                 'page-loaded': '_onPageLoaded',
                 'filter-done': '_onPageLoaded',
                 'upgrade-active': '_fireUpgrade',
-                'cancel-subscription': '_onCancelSubscription'
+                'cancel-subscription': '_onCancelSubscription',
+                'application-added': '_reloadAccountLog',
+                'link-added': '_reloadAccountLog',
+                'application-removed': '_reloadAccountLog',
+                'application-revoked': '_reloadAccountLog',
+                'account-added': '_reloadAccountLog',
+                'accounts-added': '_reloadAccountLog',
+                'added-to-orgunit': '_reloadAccountLog',
+                'account-removed-from-orgunit': '_reloadAccountLog',
+                'accounts-removed': '_reloadAccountLog',
+                'orgunit-added': '_reloadAccountLog',
+                'orgunit-modified': '_reloadAccountLog',
+                'orgunit-removed': '_reloadAccountLog',
+                'company-settings-changed': '_reloadAccountLog',
+                'company-logo-changed': '_reloadAccountLog',
             },
 
             attached: function() {
@@ -1590,7 +1607,7 @@
 
                 this._authorizedApplication = {};
                 this._notify(application.title + ' was successfully revoked.');
-                this.$.appscoAccountPage.onApplicationRevoked();
+                this.$.appscoAccountPage.reloadAuthorizedApplications();
             },
 
             _onDisableAdvancedSettings: function() {
@@ -1602,11 +1619,21 @@
             },
 
             _onTwoFaEnabled: function() {
-                this._notify("Two-factor authentication enabled.")
+                this._notify("Two-factor authentication enabled.");
             },
 
             _onTwoFaDisabled: function() {
-                this._notify("Two-factor authentication disabled.")
+                this._notify("Two-factor authentication disabled.");
+            },
+
+            _reloadAccountLog: function() {
+                if (this.$.appscoAccountPage.$) {
+                    this.$.appscoAccountPage.reloadLog();
+                }
+            },
+
+            _onTokenGenerated: function() {
+                this._notify("Transfer token was successfully generated.");
             },
             /**
              * Account page END
@@ -2193,10 +2220,16 @@
                 return "AppsCo";
             },
 
-            _companySettingsChanged: function(e) {
+            _onCompanySettingsChanged: function(e) {
                 this.account = {};
                 this.account = e.detail.account;
                 this._notify('Company settings were successfully saved.');
+            },
+
+            _onCompanyLogoChanged: function(event) {
+                this.account = {};
+                this.account = event.detail.account;
+                this._notify('Company logo was successfully saved.');
             },
 
             _upgradedToBusiness: function(e) {

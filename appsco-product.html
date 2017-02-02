@@ -62,13 +62,13 @@ Custom property | Description | Default
             }
         </style>
 
-        <template is="dom-if" if="{{ _multiProducts }}"
+        <template is="dom-if" if="[[ _multiProducts ]]"
                   on-dom-change="_onMultiProductsChanged">
 
             <div id="triggerDropdown"
                  class="product-active product-list-action"
-                 on-tap="__toggleProductDropdown">
-                [[ _selectedProductLabel ]]
+                 on-tap="_toggleProductDropdown">
+                [[ _selectedProduct.label ]]
                 <iron-icon icon="arrow-drop-down"></iron-icon>
             </div>
 
@@ -76,7 +76,10 @@ Custom property | Description | Default
                     open="{{ _pressed }}"
                     trigger="[[ _triggerDropdown ]]">
 
-                <paper-listbox id="productList" selected="appsco-product" attr-for-selected="value" on-iron-select="_onItemSelect">
+                <paper-listbox id="productList"
+                               selected="[[ _selectedProduct.value ]]"
+                               attr-for-selected="value"
+                               on-iron-activate="_onItemActivate">
 
                     <template is="dom-repeat" items="[[ _products ]]">
                         <paper-item value="[[ item.value ]]" label="[[ item.label ]]">
@@ -92,10 +95,10 @@ Custom property | Description | Default
 
         </template>
 
-        <template is="dom-if" if="{{ !_multiProducts }}">
+        <template is="dom-if" if="[[ !_multiProducts ]]">
 
             <span class="product-active">
-                [[ _selectedProductLabel ]]
+                [[ _selectedProduct.label ]]
             </span>
 
         </template>
@@ -136,10 +139,15 @@ Custom property | Description | Default
                     }
                 },
 
-                /** Label of selected product to display.*/
-                _selectedProductLabel: {
-                    type: String,
-                    value: 'Personal'
+                _productToSelect: {
+                    type: String
+                },
+
+                _selectedProduct: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    }
                 },
 
                 _multiProducts: {
@@ -168,12 +176,27 @@ Custom property | Description | Default
 
             attached: function() {
 
+                this.set('_selectedProduct', this._products[0]);
+
                 if (this.partner || this.business) {
                     this._multiProducts = true;
                 }
 
                 this._onPartnerChanged(this.partner);
                 this._onBusinessChanged(this.business);
+            },
+
+            setProduct: function(product) {
+                var products = this._products,
+                        length = products.length;
+
+                this.set('_productToSelect', product);
+
+                for (var i = 0; i < length; i++) {
+                    if (product === products[i].value) {
+                        this.set('_selectedProduct', products[i]);
+                    }
+                }
             },
 
             _onPartnerChanged: function(partner) {
@@ -186,6 +209,7 @@ Custom property | Description | Default
                     });
 
                     this._multiProducts = true;
+                    this.setProduct(this._productToSelect);
                 }
 
             },
@@ -199,6 +223,7 @@ Custom property | Description | Default
                     });
 
                     this._multiProducts = true;
+                    this.setProduct(this._productToSelect);
                 }
 
             },
@@ -212,22 +237,27 @@ Custom property | Description | Default
             },
 
             /**
-             * Listens to iron-select event of paper-listbox.
+             * Listens to iron-activate event of product list.
              * It sets label of selected product to display.
              * It fires event that product is changed: appsco-product-changed.
              *
              * @private
              */
-            _onItemSelect: function() {
-                var item = this.$$('#productList').selectedItem;
+            _onItemActivate: function(event) {
+                var item = {};
 
-                this._selectedProductLabel = item.label;
+                this.$$('#productList').select(event.detail.selected);
+
+                item = this.$$('#productList').selectedItem;
+
+                this._selectedProduct = item;
 
                 this.fire('appsco-product-changed', {
                     product: item.value
                 });
 
                 this._pressed = false;
+
             },
 
             /**
@@ -235,7 +265,7 @@ Custom property | Description | Default
              *
              * @private
              */
-            __toggleProductDropdown: function() {
+            _toggleProductDropdown: function() {
                 this._pressed = !this._pressed;
             }
 

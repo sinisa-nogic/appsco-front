@@ -1,4 +1,40 @@
-<html><head><meta charset="UTF-8"><link rel="import" href="appsco-app.html"></head><body><div hidden="" by-vulcanize=""><dom-module id="appsco-manage-account-components-page" assetpath="directory/">
+<html><head><meta charset="UTF-8"><link rel="import" href="appsco-app.html"></head><body><div hidden="" by-vulcanize=""><dom-module id="appsco-account-roles" assetpath="../bower_components/appsco-account/company/">
+    <template>
+        <style>
+            :host {
+                display: block;
+                @apply(--appsco-account-roles);
+            }
+            :host paper-toggle-button {
+                cursor: pointer;
+            }
+            .info {
+                margin-top: 10px;
+            }
+            .info p {
+                margin-top: 5px;
+                margin-bottom: 0;
+            }
+        </style>
+
+        <paper-toggle-button id="administratorSwitch" active$="[[ _admin ]]">Company administrator</paper-toggle-button>
+
+        <div class="info">
+            <template is="dom-if" if="[[ _admin ]]">
+                <p>The account has administrator role within the company.</p>
+                <p>He is allowed to manage applications, other accounts and settings of the company.</p>
+            </template>
+
+            <template is="dom-if" if="[[ !_admin ]]">
+                <p>Give the account administrator role within the company.</p>
+                <p>He will be allowed to manage applications, other accounts and settings of the company.</p>
+            </template>
+        </div>
+
+    </template>
+    <script>Polymer({is:"appsco-account-roles",properties:{account:{type:Object,value:function(){return{}}},authorizationToken:{type:String},_admin:{type:Boolean,computed:"_computeAdminState(account)"}},listeners:{"administratorSwitch.change":"_onAdministratorSwitch"},_computeAdminState:function(t){return t.roles&&t.roles.indexOf("COMPANY_ROLE_ADMIN")!=-1},_onAdministratorSwitch:function(t){var e=document.createElement("iron-request"),n={url:this.account.self+"/admin",method:"POST",handleAs:"json",headers:{Authorization:"token "+this.authorizationToken}};this.$.administratorSwitch.disabled=!0,e.send(n).then(function(){var t=e.response;this.set("account",t),this.$.administratorSwitch.disabled=!1,this.fire("account-role-changed",{account:t,role:{name:"Administrator",value:this._computeAdminState(t)}})}.bind(this))}});</script>
+</dom-module>
+<dom-module id="appsco-manage-account-components-page" assetpath="directory/">
     <template>
         <style>
             :host {
@@ -240,6 +276,13 @@
 
                 <div class="card-actions">
                     <paper-button on-tap="_onAccountNotifications">ALL</paper-button>
+                </div>
+            </paper-card>
+
+            <paper-card heading="Company roles" class="appsco-account-roles">
+                <div class="card-content">
+                    <appsco-account-roles id="appscoAccountRoles" account="[[ role ]]" authorization-token="[[ authorizationToken ]]">
+                    </appsco-account-roles>
                 </div>
             </paper-card>
         </div>

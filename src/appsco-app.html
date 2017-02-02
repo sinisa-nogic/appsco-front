@@ -279,7 +279,9 @@
                 data="{{routeData}}"
                 tail="{{subroute}}"></app-route>
 
-        <paper-toast id="toast" text="[[ _toastMessage ]]"></paper-toast>
+        <paper-toast id="toast"
+                     text="[[ _toastMessage ]]"
+                     on-iron-overlay-closed="_onToastMessageClosed"></paper-toast>
 
         <appsco-header
                 account="[[ account ]]"
@@ -635,6 +637,7 @@
                             on-password-changed="_onCompanyAccountPasswordChanged"
                             on-add-to-orgunit="_onAddAccountToOrgunit"
                             on-remove-from-orgunit="_onRemoveAccountFromOrgunit"
+                            on-account-role-changed="_onAccountRoleChanged"
                             on-error="_onError"></appsco-manage-account-page>
 
                     <appsco-billing-page
@@ -2038,6 +2041,21 @@
                 this._role = role;
                 this._notify(role.name + ' has been removed from ' + event.detail.orgunit.name + ' organization unit.');
             },
+
+            _onAccountRoleChanged: function(event) {
+                var accountName = event.detail.account.account.name,
+                    role = event.detail.role,
+                    message = '';
+
+                if (role.value) {
+                    message = role.name + ' role is given to ' + accountName + '.';
+                }
+                else {
+                    message = role.name + ' role is revoked from ' + accountName + '.';
+                }
+
+                this._notify(message);
+            },
             /**
              * Manage Account page END
              */
@@ -2237,8 +2255,22 @@
             },
 
             _notify: function(message) {
-                this._toastMessage = message;
-                this.$.toast.open();
+                var toast = this.$.toast;
+
+                if (toast.opened) {
+                    toast.cancel();
+                    this._toastMessage = message;
+                }
+                else {
+                    this._toastMessage = message;
+                    toast.open();
+                }
+            },
+
+            _onToastMessageClosed: function(event) {
+                if (event.detail.canceled) {
+                    this.$.toast.open();
+                }
             },
 
             _onError: function() {

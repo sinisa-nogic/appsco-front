@@ -82,7 +82,7 @@ Custom property | Description | Default
                 padding-top: 4px;
                 position: relative;
             }
-            :host paper-progress {
+            :host .applications-progress-bar {
                 min-width: 100px;
                 width: 100%;
                 position: absolute;
@@ -93,7 +93,7 @@ Custom property | Description | Default
             :host paper-button {
                 display: block;
                 width: 120px;
-                margin: 20px auto 0;
+                margin: 10px auto 0;
                 text-align: center;
             @apply(--load-more-button);
             }
@@ -116,7 +116,9 @@ Custom property | Description | Default
                     debounce-duration="300"
                     ></iron-ajax>
 
-            <paper-progress id="paperProgress" indeterminate></paper-progress>
+            <paper-progress id="paperProgress"
+                            class="applications-progress-bar"
+                            indeterminate></paper-progress>
 
             <template is="dom-if" if="[[ _message ]]">
                 <p class="message">[[ _message ]]</p>
@@ -139,8 +141,9 @@ Custom property | Description | Default
         </div>
 
         <template is="dom-if" if="[[ !_applicationsEmpty ]]">
-            <div class="load-more-box">
-                <paper-button on-tap="_loadMoreApps" id="loadMore" hidden$="[[ !_loadMore ]]">Load More</paper-button>
+            <div class="load-more-box" hidden$="[[ !_loadMore ]]">
+                <paper-progress id="loadMoreProgress" indeterminate></paper-progress>
+                <paper-button on-tap="_loadMoreApps" id="loadMore">Load More</paper-button>
             </div>
         </template>
     </template>
@@ -318,7 +321,7 @@ Custom property | Description | Default
             },
 
             _loadMoreApps: function () {
-                this.$$('#paperProgress').hidden = false;
+                this.$$('#loadMoreProgress').hidden = false;
                 this._currentUrl = this._next;
             },
 
@@ -347,8 +350,6 @@ Custom property | Description | Default
                         meta = response.meta,
                         iconsCount = icons.length - 1;
 
-                this.set('_applications', []);
-
                 this._totalApplications = meta.total;
                 this._next = meta.next + '&limit=' + this.size;
 
@@ -361,14 +362,15 @@ Custom property | Description | Default
                 this._applicationsEmpty = false;
                 this._message = '';
 
-                icons.forEach(function (el, index) {
+                icons.forEach(function(el, index) {
 
                     setTimeout( function() {
 
-                        this.push('_applications', el);
                         this.push('_allApplications', el);
+                        this.push('_applications', el);
 
                         if (index == iconsCount) {
+
                             this._loadMore = me.loadMore;
 
                             if (this._applications.length === meta.total) {
@@ -386,6 +388,10 @@ Custom property | Description | Default
                             this.fire('loaded', {
                                 applications: e.detail.response.icons
                             });
+
+                            if (this._filterOrgunit.selected) {
+                                this._filterApplicationsByOrgunit();
+                            }
                         }
 
                     }.bind(this), (index + 1) * 50 );
@@ -602,6 +608,7 @@ Custom property | Description | Default
 
                 setTimeout(function() {
                     this.$$('#paperProgress').hidden = true;
+                    this.$$('#loadMoreProgress').hidden = true;
                 }.bind(this), 300);
 
             },
@@ -641,7 +648,8 @@ Custom property | Description | Default
                 allLength = this._allApplications.length;
 
                 if (!selected) {
-                    this.set('_applications', this._allApplications);
+
+                    this.set('_applications', JSON.parse(JSON.stringify(this._allApplications)));
 
                     for (var i = 0; i < allLength; i++) {
                         var applicationItem = this.$$('#appscoApplicationItem_' + i);

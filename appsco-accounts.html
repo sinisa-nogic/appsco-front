@@ -82,7 +82,7 @@ Custom property | Description | Default
                 padding-top: 4px;
                 position: relative;
             }
-            :host paper-progress {
+            :host .accounts-progress-bar {
                 min-width: 100px;
                 width: 100%;
                 position: absolute;
@@ -116,7 +116,9 @@ Custom property | Description | Default
                     debounce-duration="300"
                     ></iron-ajax>
 
-            <paper-progress id="paperProgress" indeterminate></paper-progress>
+            <paper-progress id="paperProgress"
+                            class="accounts-progress-bar"
+                            indeterminate></paper-progress>
 
             <template is="dom-if" if="[[ _message ]]">
                 <p class="message">[[ _message ]]</p>
@@ -140,8 +142,9 @@ Custom property | Description | Default
         </div>
 
         <template is="dom-if" if="[[ !_accountsEmpty ]]">
-            <div class="load-more-box">
-                <paper-button on-tap="_loadMoreApps" id="loadMore" hidden$="[[ !_loadMore ]]">Load More</paper-button>
+            <div class="load-more-box" hidden$="[[ !_loadMore ]]">
+                <paper-progress id="loadMoreProgress" indeterminate></paper-progress>
+                <paper-button on-tap="_loadMoreAccounts" id="loadMore">Load More</paper-button>
             </div>
         </template>
     </template>
@@ -315,10 +318,11 @@ Custom property | Description | Default
                 this._loadMore = false;
                 this._currentUrl = this.accountsApi + "?page=1&extended=1&limit=" + this.size;
                 this.set('_accounts', []);
+                this.set('_allAccounts', []);
             },
 
-            _loadMoreApps: function () {
-                this.$$('#paperProgress').hidden = false;
+            _loadMoreAccounts: function () {
+                this.$$('#loadMoreProgress').hidden = false;
                 this._currentUrl = this._next;
             },
 
@@ -363,9 +367,11 @@ Custom property | Description | Default
 
                     setTimeout( function() {
 
-                        me.push("_accounts", el);
+                        me.push('_accounts', el);
+                        me.push('_allAccounts', el);
 
                         if (index == accountsCount) {
+
                             me._loadMore = me.loadMore;
 
                             if (me._accounts.length === meta.total) {
@@ -383,6 +389,10 @@ Custom property | Description | Default
                             me.fire('loaded', {
                                 accounts: e.detail.response.company_roles
                             });
+
+                            if (me._filterOrgunit.selected) {
+                                me._filterByOrgunit();
+                            }
                         }
 
                     }.bind(this), (index + 1) * 50 );
@@ -405,21 +415,30 @@ Custom property | Description | Default
 
                 for (var i = 0; i < length; i++) {
                     this.unshift('_accounts', accounts[i]);
+                    this.unshift('_allAccounts', accounts[i]);
                 }
             },
 
             modifyAccounts: function(accounts) {
-                var allAccounts = JSON.parse(JSON.stringify(this._accounts)),
-                        length = allAccounts.length,
+                var _accounts = JSON.parse(JSON.stringify(this._accounts)),
+                        _length = _accounts.length,
+                        allAccounts = JSON.parse(JSON.stringify(this._allAccounts)),
+                        allLength = allAccounts.length,
                         lengthModify = accounts.length;
 
                 for (var i = 0; i < lengthModify; i++) {
                     var account = accounts[i];
 
                     for (var j = 0; j < length; j++) {
+                        if (account.account.self === _accounts[j].account.self) {
+                            _accounts[j] = account;
+                            break;
+                        }
+                    }
 
-                        if (account.account.self === allAccounts[j].account.self) {
-                            allAccounts[j] = account;
+                    for (var k = 0; k < allLength; k++) {
+                        if (account.account.self === _allAccounts[k].account.self) {
+                            _allAccounts[k] = account;
                             break;
                         }
                     }
@@ -427,7 +446,10 @@ Custom property | Description | Default
                 }
 
                 this.set('_accounts', []);
-                this.set('_accounts', allAccounts);
+                this.set('_accounts', _accounts);
+
+                this.set('_allAccounts', []);
+                this.set('_allAccounts', allAccounts);
             },
 
             reloadAccounts: function() {
@@ -438,7 +460,9 @@ Custom property | Description | Default
             removeAccounts: function(accounts) {
                 var length = accounts.length,
                         _accounts = this._accounts,
-                        _length = _accounts.length;
+                        _length = _accounts.length,
+                        allAccounts = this._allAccounts,
+                        allLength = allAccounts.length;
 
                 for (var i = 0; i < length; i++) {
                     var account = accounts[i];
@@ -447,6 +471,14 @@ Custom property | Description | Default
 
                         if (account.self === _accounts[j].self) {
                             this.splice('_accounts', j, 1);
+                            break;
+                        }
+                    }
+
+                    for (var k = 0; k < allLength; k++) {
+
+                        if (account.self === allAccounts[k].self) {
+                            this.splice('_allAccounts', k, 1);
                             break;
                         }
                     }
@@ -474,17 +506,33 @@ Custom property | Description | Default
             },
 
             setOrgunit: function(orgunit) {
-                var allAccounts = JSON.parse(JSON.stringify(this._accounts)),
+                var _accounts = JSON.parse(JSON.stringify(this._accounts)),
+                        _length = _accounts.length,
+                        allAccounts = JSON.parse(JSON.stringify(this._allAccounts)),
                         allLength = allAccounts.length;
 
-                for (var i = 0; i < allLength; i++) {
-                    var account = allAccounts[i],
+                for (var i = 0; i < _length; i++) {
+                    var account = _accounts[i],
                             orgunits = account.account.org_units,
                             length = orgunits.length;
 
                     for (var j = 0; j < length; j++) {
                         if (orgunit.alias === orgunits[j].alias) {
-                            allAccounts[i].account.org_units[j].name = orgunit.name;
+                            _accounts[i].account.org_units[j].name = orgunit.name;
+                            break;
+                        }
+                    }
+
+                }
+
+                for (var j = 0; j < allLength; j++) {
+                    var account = allAccounts[j],
+                            orgunits = account.account.org_units,
+                            length = orgunits.length;
+
+                    for (var k = 0; k < length; k++) {
+                        if (orgunit.alias === orgunits[k].alias) {
+                            allAccounts[j].account.org_units[k].name = orgunit.name;
                             break;
                         }
                     }
@@ -492,7 +540,10 @@ Custom property | Description | Default
                 }
 
                 this.set('_accounts', []);
-                this.set('_accounts', allAccounts);
+                this.set('_accounts', _accounts);
+
+                this.set('_allAccounts', []);
+                this.set('_allAccounts', allAccounts);
             },
 
             filterByTerm: function(term) {
@@ -567,6 +618,7 @@ Custom property | Description | Default
 
                 if (!selected) {
                     this.set('_accounts', this._allAccounts);
+//                    this.set('_accounts', JSON.parse(JSON.stringify(this._allAccounts)));
 
                     for (var i = 0; i < allLength; i++) {
                         var item = this.$$('#appscoAccountItem_' + i);
@@ -670,6 +722,7 @@ Custom property | Description | Default
 
                 setTimeout(function() {
                     this.$$('#paperProgress').hidden = true;
+                    this.$$('#loadMoreProgress').hidden = true;
                 }.bind(this), 300);
 
             },

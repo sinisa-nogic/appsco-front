@@ -283,7 +283,7 @@
                      text="[[ _toastMessage ]]"
                      on-iron-overlay-closed="_onToastMessageClosed"></paper-toast>
 
-        <appsco-header
+        <appsco-header id="appscoHeader"
                 account="[[ account ]]"
                 brand-logo="[[ _brandLogo ]]"
                 brand-logo-width="38"
@@ -293,13 +293,13 @@
                 notifications-api="[[ api.notifications ]]"
                 logout-api="[[ api.logout ]]"
                 notifications-size="5"
+                product-business="[[ account.company_admin ]]"
+                product-partner="[[ account.partner ]]"
+                domain="{{ domain }}"
                 on-appsco-product-changed="_onAppscoProductChangeAction"
                 on-account-chat="_onAccountChat"
                 on-account-settings="_onAccountSettingsAction"
                 on-all-notifications="_onAllNotifications"
-                product-business="[[ account.company_admin ]]"
-                product-partner="[[ account.partner ]]"
-                domain="{{ domain }}"
         ></appsco-header>
 
         <app-drawer-layout fullbleed force-narrow>
@@ -1134,9 +1134,9 @@
                 return account.company ? account.company_admin : false;
             },
 
-            _onCompanyChange: function() {
+            _updateStyle: function(company) {
 
-                if (this._company) {
+                if (company) {
                     this.customStyle['--app-primary-color'] = '#5AC099';
 
                     // Without click new value of CSS variable doesn't apply to children components.
@@ -1149,6 +1149,18 @@
                 }
 
                 this.updateStyles();
+
+            },
+
+            _setProduct: function(company) {
+                var appscoHeader = this.$.appscoHeader;
+
+                company ? appscoHeader.setProduct('appsco-business-product') : appscoHeader.setProduct('appsco-product');
+            },
+
+            _onCompanyChange: function(company) {
+                this._updateStyle(company);
+                this._setProduct(company);
             },
 
             _apiChanged: function() {
@@ -2204,6 +2216,10 @@
                         page === 'manage-account' ||
                         page === 'billing' ||
                         page === 'company-settings');
+            },
+
+            _computePanel: function(company) {
+                return company ? 'appsco-business-product' : 'appsco-product';
             },
 
             _computeBrandLogo: function(account) {

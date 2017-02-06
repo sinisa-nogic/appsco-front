@@ -12,6 +12,8 @@
 <link rel="import" href="../../bower_components/paper-dialog-scrollable/paper-dialog-scrollable.html">
 <link rel="import" href="../../bower_components/paper-toggle-button/paper-toggle-button.html">
 <link rel="import" href="../../bower_components/neon-animation/animations/scale-up-animation.html">
+<link rel="import" href="../../bower_components/gold-email-input/gold-email-input.html">
+<link rel="import" href="../../bower_components/iron-a11y-keys/iron-a11y-keys.html">
 
 <link rel="import" href="../../bower_components/appsco-components/appsco-loader.html">
 <link rel="import" href="../../bower_components/appsco-components/appsco-form-error.html">
@@ -126,13 +128,13 @@
                         </p>
                         <div class="flex-horizontal">
                             <div class="flex">
-                                <paper-input
-                                        id="accountEmail"
-                                        label="Email"
-                                        value=""
-                                        name="register_account[email]"
-                                        error-message="Please provide email."
-                                ></paper-input>
+                                <gold-email-input id="accountEmail"
+                                                  label="Email"
+                                                  value=""
+                                                  name="register_account[email]"
+                                                  required
+                                                  auto-validate
+                                                  error-message="Please provide valid email."></gold-email-input>
                             </div>
                             <div class="baseline">
                                 <paper-toggle-button id="sendActivationEmail">Send Activation Email</paper-toggle-button>
@@ -147,6 +149,9 @@
                 <paper-button autofocus on-tap="_onAddAccountAction">Add</paper-button>
             </div>
         </paper-dialog>
+
+        <iron-a11y-keys keys="enter"
+                        on-keys-pressed="_onEnter"></iron-a11y-keys>
 
     </template>
     <script>
@@ -206,7 +211,17 @@
                 this._error = '';
             },
 
+            _onEnter: function() {
+                this._onAddAccountAction();
+            },
+
             _onAddAccountAction: function() {
+
+                if (this.$.accountEmail.value === '' || this.$.accountEmail.invalid) {
+                    this.$.accountEmail.invalid = true;
+                    return false;
+                }
+
                 var
                     request = document.createElement('iron-request'),
                     options = {

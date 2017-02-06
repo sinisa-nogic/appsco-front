@@ -5,11 +5,13 @@
 <link rel="import" href="../bower_components/iron-icons/communication-icons.html">
 <link rel="import" href="../bower_components/iron-icon/iron-icon.html">
 <link rel="import" href="../bower_components/iron-ajax/iron-request.html">
+<link rel="import" href="../bower_components/iron-a11y-keys/iron-a11y-keys.html">
+<link rel="import" href="../bower_components/gold-email-input/gold-email-input.html">
 
 <link rel="import" href="company/appsco-company-image-settings.html">
 
 <link rel="import" href="../bower_components/appsco-page/appsco-content.html">
-<!--<link rel="import" href="account/appsco-account-components-page.html">-->
+<link rel="import" href="../bower_components/appsco-components/appsco-loader.html">
 
 
 <dom-module id="appsco-company-settings-page">
@@ -53,8 +55,8 @@
                 margin-top: 10px;
                 font-size: 14px;
             }
-            .company-info p {
-                margin: 4px 0;
+            .info {
+                margin-bottom: 0;
             }
             :host .flex-horizontal {
                 @apply(--layout-horizontal);
@@ -112,8 +114,11 @@
 
                 <div class="account-components">
                     <div class="company-settings">
+
+                        <appsco-loader active="[[ _loader ]]" loader-alt="Appsco is processing request" multi-color></appsco-loader>
+
                         <h2>Company Settings</h2>
-                        <p>
+                        <p class="info">
                             Company name is used to distinguish company applications from users personal applications.
                             It is used in branding and can be displayed in login screen along with company logo.
                             Beside this usage company name will also be shown in filtering on personal home screen under "All applications" section.
@@ -126,16 +131,16 @@
                                 required
                                 error-message="Please type in company name."
                         ></paper-input>
-                        <p>
+                        <p class="info">
                             Company contact email will be displayed in user profile section and used for contact purposes.
                         </p>
-                        <paper-input
-                                id="contactEmail"
-                                label="Contact email"
-                                value="[[ account.company.contact_email ]]"
-                                name="company_settings[contactEmail]"
-                                error-message="Please type in contact email."
-                        ></paper-input>
+                        <gold-email-input id="contactEmail"
+                                          label="Contact email"
+                                          value="[[ account.company.contact_email ]]"
+                                          name="company_settings[contactEmail]"
+                                          auto-validate
+                                          error-message="Please type in correct email."
+                        ></gold-email-input>
 
                         <paper-button on-tap="_updateCompanySettings">Save</paper-button>
                     </div>
@@ -143,6 +148,9 @@
 
             </div>
         </appsco-content>
+
+        <iron-a11y-keys keys="enter"
+                        on-keys-pressed="_onEnter"></iron-a11y-keys>
 
     </template>
 
@@ -178,6 +186,11 @@
                 _computedHeaders: {
                     type: Object,
                     computed: "_computeHeaders(authorizationToken)"
+                },
+
+                _loader: {
+                    type: Boolean,
+                    value: false
                 },
 
                 /**
@@ -226,12 +239,29 @@
 
             },
 
+            _showLoader: function() {
+                this._loader = true;
+            },
+
+            _hideLoader: function() {
+                this._loader = false;
+            },
+
+            _onEnter: function() {
+                this._updateCompanySettings();
+            },
+
             _updateCompanySettings: function() {
-                var body = "",
-                    me = this;
+                var body = '',
                 body = encodeURIComponent(this.$.companyName.name) + "=" + encodeURIComponent(this.$.companyName.value);
                 body += '&';
                 body += encodeURIComponent(this.$.contactEmail.name) + "=" + encodeURIComponent(this.$.contactEmail.value);
+
+                if (this.$.contactEmail.invalid) {
+                    return false;
+                }
+
+                this._showLoader();
 
                 var options = {
                     url: this.account.company.meta.settings,
@@ -247,12 +277,14 @@
                 var request = document.createElement('iron-request');
                 request.send(options).then(function() {
                     if (request.succeeded) {
-                        me.set('account.company', request.response);
-                        me.fire('company-settings-changed', {
-                            account: me.account
+                        this.set('account.company', request.response);
+                        this.fire('company-settings-changed', {
+                            account: this.account
                         });
                     }
-                });
+
+                    this._hideLoader();
+                }.bind(this));
             },
 
             _companyLogoChanged: function(e) {

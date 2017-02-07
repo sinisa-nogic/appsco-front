@@ -7,7 +7,7 @@
 <link rel="import" href="../../bower_components/iron-icons/iron-icons.html">
 <link rel="import" href="../../bower_components/paper-input/paper-input.html">
 <link rel="import" href="../../bower_components/iron-image/iron-image.html">
-<link rel="import" href="../../bower_components/iron-ajax/iron-request.html">
+<link rel="import" href="../../bower_components/iron-form/iron-form.html">
 <link rel="import" href="../../bower_components/paper-dialog/paper-dialog.html">
 <link rel="import" href="../../bower_components/paper-dialog-scrollable/paper-dialog-scrollable.html">
 <link rel="import" href="../../bower_components/paper-toggle-button/paper-toggle-button.html">
@@ -38,6 +38,10 @@
                 --paper-input-container-label: {
                     left: 4px;
                 };
+            }
+            :host appsco-loader {
+                margin: 0 !important;
+                padding: 0 !important;
             }
             :host .message {
                 margin: 0;
@@ -85,68 +89,81 @@
 
             <h2>Add account to Directory</h2>
 
+            <appsco-loader active="[[ _loader ]]"
+                           loader-alt="Appsco is processing request"
+                           multi-color></appsco-loader>
+
             <paper-dialog-scrollable>
                 <div class="dialog-container">
 
-                    <appsco-loader active="[[ _addLoader ]]"
-                               loader-alt="Appsco is adding account"
-                               multi-color></appsco-loader>
-
                     <appsco-form-error message="[[ _error ]]"></appsco-form-error>
 
-                    <div>
-                        <p class="info">
-                            First name and last name are important since they associate degree of confidence.
-                            They will be used for log purposes, statistics and other reporting activities.
-                            Beside usage in AppsCo they can also be used for integration with other tools.
-                        </p>
-                        <div class="flex-horizontal">
-                            <div class="flex">
-                                <paper-input
-                                        id="accountFirstName"
-                                        label="First name"
-                                        value=""
-                                        name="register_account[firstName]"
-                                        required
-                                        error-message="Please provide first name."
-                                ></paper-input>
+                    <form is="iron-form"
+                          id="addAccountForm"
+                          method="POST"
+                          action="[[ directoryRolesApi ]]"
+                          headers="[[ _headers ]]"
+                          on-iron-form-error="_onFormError"
+                          on-iron-form-response="_onFormResponse">
+                        <div>
+                            <p class="info">
+                                First name and last name are important since they associate degree of confidence.
+                                They will be used for log purposes, statistics and other reporting activities.
+                                Beside usage in AppsCo they can also be used for integration with other tools.
+                            </p>
+                            <div class="flex-horizontal">
+                                <div class="flex">
+                                    <paper-input
+                                            id="accountFirstName"
+                                            label="First name"
+                                            name="register_account[firstName]"
+                                            required
+                                            auto-validate
+                                            error-message="Please provide first name."
+                                    ></paper-input>
+                                </div>
+                                <div class="flex">
+                                    <paper-input
+                                            id="accountLastName"
+                                            label="Last name"
+                                            name="register_account[lastName]"
+                                            required
+                                            auto-validate
+                                            error-message="Please provide last name."
+                                    ></paper-input>
+                                </div>
                             </div>
-                            <div class="flex">
-                                <paper-input
-                                        id="accountLastName"
-                                        label="Last name"
-                                        value=""
-                                        name="register_account[lastName]"
-                                        required
-                                        error-message="Please provide last name."
-                                ></paper-input>
+                            <p class="info mt">
+                                Email is used as part of credentials for accessing the system.
+                                Email can be used for log purposes, statistics and other reporting activities.
+                            </p>
+                            <div class="flex-horizontal">
+                                <div class="flex">
+                                    <gold-email-input id="accountEmail"
+                                                      label="Email"
+                                                      value=""
+                                                      name="register_account[email]"
+                                                      required
+                                                      auto-validate
+                                                      error-message="Please provide valid email."></gold-email-input>
+                                </div>
+                                <div class="baseline">
+                                    <paper-toggle-button id="sendActivationEmail"
+                                                         name="register_account[sendActivationMail]">Send Activation Email</paper-toggle-button>
+                                </div>
                             </div>
+
+                            <paper-input name="register_account[companyRoles][COMPANY_ROLE_EMPLOYEE]"
+                                         value="COMPANY_ROLE_EMPLOYEE"
+                                         hidden></paper-input>
                         </div>
-                        <p class="info mt">
-                            Email is used as part of credentials for accessing the system.
-                            Email can be used for log purposes, statistics and other reporting activities.
-                        </p>
-                        <div class="flex-horizontal">
-                            <div class="flex">
-                                <gold-email-input id="accountEmail"
-                                                  label="Email"
-                                                  value=""
-                                                  name="register_account[email]"
-                                                  required
-                                                  auto-validate
-                                                  error-message="Please provide valid email."></gold-email-input>
-                            </div>
-                            <div class="baseline">
-                                <paper-toggle-button id="sendActivationEmail">Send Activation Email</paper-toggle-button>
-                            </div>
-                        </div>
-                    </div>
+                    </form>
                 </div>
             </paper-dialog-scrollable>
 
             <div class="buttons">
                 <paper-button dialog-dismiss>Cancel</paper-button>
-                <paper-button autofocus on-tap="_onAddAccountAction">Add</paper-button>
+                <paper-button autofocus on-tap="_submitForm">Add</paper-button>
             </div>
         </paper-dialog>
 
@@ -168,22 +185,30 @@
                     type: String
                 },
 
-                /**
-                 * Company API link.
-                 * API in which company to add application.
-                 */
-                companyApi: {
+                directoryRolesApi: {
                     type: String
+                },
+
+                _headers: {
+                    type: Object,
+                    computed: '_computeHeaders(authorizationToken)'
                 },
 
                 /**
                  * Indicates if add application loader should be displayed or not.
                  */
-                _addLoader: {
+                _loader: {
                     type: Boolean,
                     value: false
                 }
 
+            },
+
+            _computeHeaders: function(authorizationToken) {
+                return {
+                    'Authorization': 'token ' + authorizationToken,
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                };
             },
 
             /**
@@ -199,6 +224,7 @@
              * @private
              */
             _onDialogOpened: function() {
+                this.$.accountFirstName.focus();
             },
 
             /**
@@ -207,84 +233,38 @@
              * @private
              */
             _onDialogClosed: function() {
-                this._addLoader = false;
+                this._loader = false;
                 this._error = '';
+                this.$.addAccountForm.reset();
             },
 
             _onEnter: function() {
-                this._onAddAccountAction();
+                this._submitForm();
             },
 
-            _onAddAccountAction: function() {
+            _submitForm: function() {
+                var form = this.$.addAccountForm;
 
-                if (this.$.accountEmail.value === '' || this.$.accountEmail.invalid) {
-                    this.$.accountEmail.invalid = true;
-                    return false;
+                if (form.validate()) {
+                    this._loader = true;
+                    form.submit();
                 }
+            },
 
-                var
-                    request = document.createElement('iron-request'),
-                    options = {
-                        url: this.companyApi + '/directory/roles',
-                        method: 'POST',
-                        handleAs: 'json',
-                        headers: {
-                            'Authorization': 'token ' + this.authorizationToken,
-                            'Content-Type': 'application/x-www-form-urlencoded'
-                        }
-                    },
-                    body = encodeURIComponent(this.$.accountFirstName.name) +
-                            '=' +
-                            encodeURIComponent(this.$.accountFirstName.value) +
-                            '&' +
-                            encodeURIComponent(this.$.accountLastName.name) +
-                            "=" +
-                            encodeURIComponent(this.$.accountLastName.value) +
-                            '&' +
-                            encodeURIComponent(this.$.accountEmail.name) +
-                            "=" +
-                            encodeURIComponent(this.$.accountEmail.value) +
-                            '&' +
-                            encodeURIComponent('register_account[companyRoles][COMPANY_ROLE_EMPLOYEE]') +
-                            "=" +
-                            encodeURIComponent('COMPANY_ROLE_EMPLOYEE')
-                    ;
-                if(this.$.sendActivationEmail.active) {
-                    body += '&' +
-                            encodeURIComponent('register_account[sendActivationMail]') +
-                            "=" +
-                            encodeURIComponent('true')
-                    ;
-                }
-                this._addLoader = true;
+            _onFormError: function(event) {
+                this._error = event.detail.request.response.message;
+                this._loader = false;
+            },
 
-                options.body = body;
+            _onFormResponse: function(event) {
+                this.$.dialog.close();
 
-                request.send(options).then(
-                        function(request) {
-                            this.$.dialog.close();
-
-                            /**
-                             * Fired when application has been shared.
-                             *
-                             * @event application-shared
-                             */
-                            this.fire('account-added', {
-                                account: request.response
-                            });
-
-                            this._addLoader = false;
-                            this.$.accountFirstName.value = "";
-                            this.$.accountLastName.value = "";
-                            this.$.accountEmail.value = "";
-                            this.$.sendActivationEmail.active = false;
-
-                        }.bind(this),
-                        function() {
-                            this._error = request.response.message;
-                            this._addLoader = false;
-                        }.bind(this)
-                );
+                /**
+                 * @event account-added
+                 */
+                this.fire('account-added', {
+                    account: event.detail.response
+                });
             }
         });
     </script>

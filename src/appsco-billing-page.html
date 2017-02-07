@@ -204,6 +204,7 @@
             }
             :host .invoice-list {
                 margin-top: 10px;
+                position: relative;
             }
             .invoice-list-title {
                 font-weight: 400;
@@ -226,6 +227,9 @@
             :host .send-invoice-button {
                 @apply(--primary-button);
                 border-radius: 0;
+            }
+            :host .plan-upcoming-invoice {
+                min-height: 260px;
             }
             .message {
                 @apply(--info-message);
@@ -301,36 +305,34 @@
                                    loader-alt="Appsco is loading payment method"
                                    multi-color></appsco-loader>
 
-                    <template is="dom-if" if="[[ _cc ]]">
+                    <template is="dom-if" if="[[ _paymentMethod ]]">
                         <img class="credit-card-logo"
                                     src="[[ _computedCCLogo ]]"
                                     alt="[[ _cc.brand ]]">
 
                         <div class="mt20">
-                            <template is="dom-if" if="[[ _cc.id ]]">
-                                <p>
-                                    [[ _cc.brand]] **** **** **** [[ _cc.last4 ]]
-                                </p>
-                                <p>
-                                    Expires [[ _cc.exp_month ]]/[[ _cc.exp_year  ]]
-                                </p>
-                                <p>
-                                    Cardholder: [[ _cc.name ]]
-                                </p>
-                            </template>
-
-                            <template is="dom-if" if="[[ !_cc.id ]]">
-                                <p class="message">
-                                    No payment method has been created yet.
-                                    Please go and add new one.
-                                </p>
-                            </template>
+                            <p>
+                                [[ _cc.brand]] **** **** **** [[ _cc.last4 ]]
+                            </p>
+                            <p>
+                                Expires [[ _cc.exp_month ]]/[[ _cc.exp_year  ]]
+                            </p>
+                            <p>
+                                Cardholder: [[ _cc.name ]]
+                            </p>
                         </div>
+                    </template>
+
+                    <template is="dom-if" if="[[ !_paymentMethod ]]">
+                        <p class="message">
+                            No payment method has been created yet.
+                            Please go and add new one.
+                        </p>
                     </template>
                 </div>
 
                 <div class="resource-actions flex-horizontal">
-                    <template is="dom-if" if="[[ !_cc.id ]]">
+                    <template is="dom-if" if="[[ !_paymentMethod ]]">
                         <paper-button
                                 class="manage-button flex"
                                 on-tap="_onManageCreditCard">
@@ -338,7 +340,7 @@
                         </paper-button>
                     </template>
 
-                    <template is="dom-if" if="[[ _cc.id ]]">
+                    <template is="dom-if" if="[[ _paymentMethod ]]">
                         <paper-button
                                 class="manage-button flex"
                                 on-tap="_onManageCreditCard">
@@ -363,14 +365,15 @@
                     </div>
                 </template>
 
-                <template is="dom-if" if="[[ !_cc.brand ]]">
+                <template is="dom-if" if="[[ _paymentMethodInfo ]]">
                     <div class="subscription-info">
                         Please add payment method before you subscribe to one of AppsCo packages.
                     </div>
                 </template>
 
-                <template is="dom-if" if="[[ _cc.brand ]]">
-                    <div class="plan-upcoming-invoice flex-horizontal flex-start">
+                <div class="plan-upcoming-invoice flex-horizontal flex-start">
+
+                    <template is="dom-if" if="[[ _cc.brand ]]">
                         <paper-card heading="Subscription plan" class="subscription-plan">
                             <appsco-loader active="[[ _subscriptionLoader ]]"
                                            loader-alt="Appsco is loading subscription model"
@@ -433,7 +436,7 @@
 
                         </paper-card>
 
-                        <template is="dom-if" if="[[ _upcomingInvoice.date ]]">
+                        <template is="dom-if" if="[[ _subscription.plan ]]">
                             <paper-card heading="Upcoming invoice" class="flex">
                                 <appsco-loader active="[[ _upcomingInvoiceLoader ]]"
                                                loader-alt="Appsco is loading subscription model"
@@ -470,18 +473,29 @@
                                 </div>
                             </paper-card>
                         </template>
-                    </div>
-                </template>
+                    </template>
+                </div>
 
-                <template is="dom-if" if="[[ _invoicesExists ]]">
+                <template is="dom-if" if="[[ _subscription.plan ]]">
                     <div class="invoice-list flex-vertical">
+
+                        <appsco-loader active="[[ _invoiceListLoader ]]"
+                                       loader-alt="Appsco is loading invoices"
+                                       multi-color></appsco-loader>
+
                         <h2 class="invoice-list-title">Invoice list</h2>
 
-                        <template is="dom-repeat" items="[[ _invoices ]]">
-                            <appsco-billing-invoice id="invoiceItem_[[ index ]]"
-                                                    class="appsco-billing-invoice"
-                                                    invoice="[[ item ]]"
-                                                    on-tap="_onInvoiceAction"></appsco-billing-invoice>
+                        <template is="dom-if" if="[[ _invoicesExists ]]">
+                            <template is="dom-repeat" items="[[ _invoices ]]">
+                                <appsco-billing-invoice id="invoiceItem_[[ index ]]"
+                                                        class="appsco-billing-invoice"
+                                                        invoice="[[ item ]]"
+                                                        on-tap="_onInvoiceAction"></appsco-billing-invoice>
+                            </template>
+                        </template>
+
+                        <template is="dom-if" if="[[ !_invoicesExists ]]">
+                            <p class="message">There are no invoices yet.</p>
                         </template>
                     </div>
                 </template>
@@ -611,6 +625,23 @@
                     }
                 },
 
+                _upcomingInvoice: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    }
+                },
+
+                _paymentMethod: {
+                    type: Boolean,
+                    computed: '_computePaymentMethod(_cc)'
+                },
+
+                _paymentMethodInfo: {
+                    type: Boolean,
+                    value: false
+                },
+
                 _invoices: {
                     type: Array,
                     value: function() {
@@ -626,7 +657,7 @@
                 _selectedInvoice: {
                     type: Object,
                     value: function() {
-                        return false;
+                        return {};
                     }
                 },
 
@@ -658,17 +689,22 @@
 
                 _ccLoader: {
                     type: Boolean,
-                    value: false
+                    value: true
                 },
 
                 _subscriptionLoader: {
                     type: Boolean,
-                    value: false
+                    value: true
                 },
 
                 _upcomingInvoiceLoader: {
                     type: Boolean,
-                    value: false
+                    value: true
+                },
+
+                _invoiceListLoader: {
+                    type: Boolean,
+                    value: true
                 },
 
                 authorizationToken: {
@@ -724,9 +760,9 @@
             attached: function() {
 
                 this.pageLoaded = false;
-                this._ccLoader = true;
-                this._subscriptionLoader = true;
-                this._upcomingInvoiceLoader = true;
+//                this._ccLoader = true;
+//                this._subscriptionLoader = true;
+//                this._upcomingInvoiceLoader = true;
 
                 if (this.mobileScreen || this.tabletScreen || this.mediumScreen) {
                     this.updateStyles();
@@ -764,7 +800,11 @@
             },
 
             _computeTrialPeriod: function(account, subscription) {
-                return (account.company.remaining_trial_period > 0 && !subscription.plan);
+                return (account.company && account.company.remaining_trial_period > 0 && !subscription.plan);
+            },
+
+            _computePaymentMethod: function(cc) {
+                return cc.id ? true : false;
             },
 
             _computeSubscriptionCanceled: function(subscription) {
@@ -777,6 +817,7 @@
             },
 
             setCreditCard: function(cc) {
+                this._paymentMethodInfo = false;
                 this._ccLoader = true;
                 this.set('_cc', cc);
 
@@ -827,13 +868,17 @@
 
             },
 
-            _handleCCResponse: function(e) {
+            _handleCCResponse: function(event) {
+                var response = event.detail.response;
 
-                if(null == e.detail.response) {
-                    return;
+                if (null == response || 0 === response.length) {
+                    this._paymentMethodInfo = true;
+                    this._ccLoader = false;
+                    return false;
                 }
 
-                this.set('_cc', e.detail.response);
+                this.set('_cc', response);
+                this._paymentMethodInfo = false;
                 this._ccLoader = false;
             },
 
@@ -869,9 +914,10 @@
             },
 
             _handleUpcomingInvoiceResponse: function(e) {
-                if(null == e.detail.response) {
+                if (null == e.detail.response) {
                     return;
                 }
+
                 this._upcomingInvoice = e.detail.response;
                 this._upcomingInvoiceLoader = false;
             },
@@ -879,6 +925,7 @@
             _loadInvoiceList: function() {
                 this.set('_invoices', []);
                 this._invoicesExists = false;
+                this._invoiceListLoader = true;
                 this.$.invoiceListCall.generateRequest();
             },
 
@@ -886,6 +933,7 @@
                 var response = event.detail.response;
 
                 if (null == response) {
+                    this._invoiceListLoader = false;
                     return false;
                 }
 
@@ -903,6 +951,7 @@
                             this.push('_invoices', el);
 
                             if (index === response.length - 1) {
+                                this._invoiceListLoader = false;
                                 this._toggleCancelSubscriptionAction();
                             }
 
@@ -911,6 +960,7 @@
                     }.bind(this));
                 }
                 else {
+                    this._invoiceListLoader = false;
                     this._toggleCancelSubscriptionAction();
                 }
             },

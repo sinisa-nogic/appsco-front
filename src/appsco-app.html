@@ -77,6 +77,8 @@
 <link rel="import" href="../bower_components/appsco-account/company/appsco-account-remove-orgunit.html">
 <link rel="import" href="../bower_components/appsco-account/company/appsco-account-remove.html">
 
+<link rel="import" href="audit-log/appsco-audit-log-page-actions.html">
+
 <link rel="import" href="shared-styles.html">
 <link rel="import" href="webkit-scrollbar-style.html">
 
@@ -227,6 +229,7 @@
                 position: absolute;
                 top: 64px;
                 left: 0;
+                z-index: 10;
             }
             :host([tablet-screen]) {
                 --appsco-paper-dialog: {
@@ -335,9 +338,9 @@
                         <div name="vault" href="/vault" disabled>
                             <iron-icon icon="icons:compare-arrows"></iron-icon> <span class="menu-text">Provisioning</span>
                         </div>
-                        <div name="vault" href="/vault" disabled>
+                        <a name="audit log" href="/audit-log">
                             <iron-icon icon="icons:reorder"></iron-icon> <span class="menu-text">Audit</span>
-                        </div>
+                        </a>
                         <div name="vault" href="/vault" disabled>
                             <iron-icon icon="icons:donut-large"></iron-icon> <span class="menu-text">Statistics</span>
                             <!--icons:track-changes-->
@@ -472,10 +475,13 @@
                                     on-back="_showCompanyDirectoryPage"
                                     on-resource-section="_onResourceActionManageAccountPage"></appsco-manage-account-page-actions>
 
+                            <appsco-audit-log-page-actions
+                                    name="audit-log"
+                                    on-resource-section="_onResourceActionAuditLogPage"></appsco-audit-log-page-actions>
+
                             <appsco-billing-page-actions
                                     name="billing"
                                     on-resource-section="_onResourceActionBillingPage"></appsco-billing-page-actions>
-
                         </neon-animated-pages>
 
                     </app-toolbar>
@@ -642,6 +648,12 @@
                             on-remove-from-orgunit="_onRemoveAccountFromOrgunit"
                             on-account-role-changed="_onAccountRoleChanged"
                             on-error="_onError"></appsco-manage-account-page>
+
+                    <appsco-audit-log-page
+                            id="appscoAuditLogPage"
+                            name="audit-log"
+                            authorization-token="[[ authorizationToken ]]"
+                            company-api="[[ companyApi ]]"></appsco-audit-log-page>
 
                     <appsco-billing-page
                             id="appscoBillingPage"
@@ -1200,6 +1212,9 @@
 
                     case 'company-settings':
                         return 'Company Settings';
+
+                    case 'audit-log':
+                        return 'Audit Log';
 
                     default:
                         return page;
@@ -2111,6 +2126,16 @@
              */
 
             /**
+             * Audit Log page START
+             */
+            _onResourceActionAuditLogPage: function() {
+                this.$.appscoAuditLogPage.toggleResource();
+            },
+            /**
+             * Audit Log page END
+             */
+
+            /**
              * Billing page START
              */
             _onResourceActionBillingPage: function() {
@@ -2198,6 +2223,10 @@
                         this.$.appscoManageAccountPage.pageLoaded ? this._hideProgressBar() : this._showProgressBar();
                         break;
 
+                    case 'audit-log':
+                        this.$.appscoAuditLogPage.pageLoaded ? this._hideProgressBar() : this._showProgressBar();
+                        break;
+
                     default:
                         this._hideProgressBar();
                 }
@@ -2226,7 +2255,8 @@
                         page === 'directory' ||
                         page === 'manage-account' ||
                         page === 'billing' ||
-                        page === 'company-settings');
+                        page === 'company-settings' ||
+                        page === 'audit-log');
             },
 
             _computePanel: function(company) {
@@ -2264,6 +2294,11 @@
                 this.account = e.detail.account;
 
                 this.set('routeData.page', 'company-settings');
+                this._notify('Upgrade to AppsCo business succeeded.');
+
+                setTimeout(function() {
+                    this._notify('Please setup your company settings.');
+                }.bind(this), 2000);
             },
 
             _onPageAnimationFinish: function(event) {
@@ -2304,6 +2339,14 @@
 
                         if (toPage.$) {
                             toPage.setDefaultAccount();
+                        }
+
+                        break;
+
+                    case 'audit-log':
+
+                        if (toPage.$) {
+                            toPage.reloadLog();
                         }
 
                         break;

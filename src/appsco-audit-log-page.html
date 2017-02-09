@@ -1,0 +1,660 @@
+<link rel="import" href="../bower_components/polymer/polymer.html">
+<link rel="import" href="../bower_components/paper-tabs/paper-tabs.html">
+<link rel="import" href="../bower_components/neon-animation/neon-animated-pages.html">
+<link rel="import" href="../bower_components/neon-animation/animations/fade-in-animation.html">
+<link rel="import" href="../bower_components/neon-animation/animations/fade-out-animation.html">
+<link rel="import" href="../bower_components/iron-flex-layout/iron-flex-layout.html">
+<link rel="import" href="../bower_components/iron-ajax/iron-ajax.html">
+<link rel="import" href="../bower_components/iron-media-query/iron-media-query.html">
+<link rel="import" href="../bower_components/paper-dropdown-menu/paper-dropdown-menu.html">
+<link rel="import" href="../bower_components/paper-listbox/paper-listbox.html">
+<link rel="import" href="../bower_components/paper-item/paper-item.html">
+<link rel="import" href="../bower_components/vaadin-date-picker/vaadin-date-picker.html">
+<link rel="import" href="../bower_components/paper-input/paper-input.html">
+
+<link rel="import" href="../bower_components/appsco-page/appsco-content.html">
+<link rel="import" href="audit-log/appsco-audit-log.html">
+
+<dom-module id="appsco-audit-log-page">
+    <template>
+        <style include="shared-styles webkit-scrollbar-style">
+            :host {
+                display: block;
+                background-color: #ffffff;
+
+                --resource-width: 318px;
+                --resource-background-color: var(--body-background-color);
+
+                --paper-dropdown-menu: {
+                     width: 100%;
+                 };
+                --paper-input-container-label: {
+                     font-size: 14px;
+                 };
+                --paper-input-container-input: {
+                     font-size: 14px;
+                 };
+
+                --audit-log-list: {
+                     padding-top: 2px;
+                 };
+
+                --paper-input-container: {
+                     padding-bottom: 0;
+                 };
+                --paper-input-container-color: var(--secondary-text-color);
+                --paper-input-container-input-color: var(--primary-text-color);
+                --paper-input-container-focus-color: var(--primary-text-color);
+                --paper-input-prefix: {
+                     color: var(--secondary-text-color);
+                 };
+            }
+            .input-icon {
+                width: 18px;
+                height: 18px;
+            }
+            .search-icon {
+                margin-right: 5px;
+            }
+            paper-dropdown-menu {
+                --paper-input-container: {
+                     padding-bottom: 0;
+                 };
+                --paper-input-container-input: {
+                     font-size: 14px;
+                     cursor: pointer;
+                 };
+            }
+            appsco-audit-log {
+                min-width: 730px;
+            }
+            :host .resource-header {
+                border-bottom: 1px solid var(--divider-color);
+            }
+            :host div[content] {
+                height: 100%;
+                overflow: auto;
+            }
+            :host div[content] > * {
+                padding: 0 10px 10px 10px;
+                height: 100%;
+            }
+            :host div[resource] > *, :host div[info] > * {
+                padding: 10px;
+                box-sizing: border-box;
+            }
+            :host([tabletScreen900]) {
+                --resource-width: 250px;
+            }
+            :host([tablet-screen]) {
+                --resource-width: 250px;
+            }
+            :host([mobile-screen]) {
+                --resource-width: 100%;
+            }
+        </style>
+
+        <iron-media-query query="(max-width: 900px)" query-matches="{{ tabletScreen900 }}"></iron-media-query>
+        <iron-media-query query="(max-width: 800px)" query-matches="{{ tabletScreen }}"></iron-media-query>
+        <iron-media-query query="(max-width: 600px)" query-matches="{{ mobileScreen }}"></iron-media-query>
+
+        <iron-ajax auto
+                   method="GET"
+                   url="[[ auditLogEventTypesApi ]]"
+                   headers="[[ _headers ]]"
+                   handle-as="json"
+                   on-response="_onEventTypesResponse"></iron-ajax>
+
+        <appsco-content id="appscoContent" resource-active>
+
+            <div class="flex-vertical" resource>
+                <div class="resource-header">
+                    Filters
+                </div>
+
+                <div class="filters">
+                    <div class="filter">
+                        <paper-input label="Filter log by account"
+                                     on-keyup="_onFilterSearch"
+                                     id="searchInput">
+                            <div prefix>
+                                <iron-icon icon="icons:search"
+                                           class="input-icon search-icon"></iron-icon>
+                            </div>
+
+                            <template is="dom-if" if="[[ _clearSearch ]]">
+                                <paper-icon-button icon="clear"
+                                                   id="clear"
+                                                   class="input-icon"
+                                                   suffix
+                                                   on-tap="_onClearSearch"></paper-icon-button>
+                            </template>
+
+                        </paper-input>
+                    </div>
+
+                    <div class="filter">
+                        <iron-ajax
+                                auto
+                                url="[[ _timeZoneListUrl ]]"
+                                handle-as="json"
+                                on-response="_onTimezoneListResponse">
+                        </iron-ajax>
+
+                        <paper-dropdown-menu id="filterEventTypes"
+                                             label="Event type"
+                                             horizontal-align="left">
+                            <paper-listbox id="filterListEventTypes"
+                                           class="dropdown-content"
+                                           attr-for-selected="value"
+                                           on-iron-activate="_onFilterEventType">
+                                <template is="dom-repeat" items="[[ _eventTypeList ]]">
+                                    <paper-item value="[[ item.value ]]" >[[ item.text ]]</paper-item>
+                                </template>
+                            </paper-listbox>
+                        </paper-dropdown-menu>
+                    </div>
+
+                    <div class="filter">
+                        <vaadin-date-picker
+                                id="filterDateFrom"
+                                label="Date from"
+                                on-value-changed="_onFilterDateFrom"></vaadin-date-picker>
+                    </div>
+
+                    <div class="filter">
+                        <vaadin-date-picker
+                                id="filterDateTo"
+                                label="Date to"
+                                on-value-changed="_onFilterDateTo"></vaadin-date-picker>
+                    </div>
+                </div>
+            </div>
+
+            <div content>
+                <appsco-audit-log id="appscoAuditLog"
+                                  authorization-token="[[ authorizationToken ]]"
+                                  audit-log-api="[[ _auditLogApi ]]"
+                                  on-loaded="_pageLoaded"
+                                  on-empty-load="_onAuditLogEmptyLoad"></appsco-audit-log>
+            </div>
+
+        </appsco-content>
+
+    </template>
+
+    <script>
+        Polymer({
+            is: 'appsco-audit-log-page',
+
+            properties: {
+
+                authorizationToken: {
+                    type: String
+                },
+                
+                companyApi: {
+                    type: String
+                },
+
+                /**
+                 * Get audit log event types link.
+                 */
+                auditLogEventTypesApi: {
+                    type: String,
+                    computed: '_computeAuditLogEventTypesApi(companyApi)'
+                },
+
+                /**
+                 * Get audit log link.
+                 */
+                _auditLogApi: {
+                    type: String,
+                    computed: '_computeAuditLogApi(companyApi)'
+                },
+
+                _headers: {
+                    type: Object,
+                    computed: '_computeHeaders(authorizationToken)'
+                },
+
+                _eventTypeList: {
+                    type: Array,
+                    value: function() {
+                        return [{
+                            value: '',
+                            text: 'All event types'
+                        }];
+                    }
+                },
+
+                _filterEventType: {
+                    type: String
+                },
+
+                _filterFromDate: {
+                    type: String
+                },
+
+                _filterToDate: {
+                    type: String
+                },
+
+                _clearSearch: {
+                    type: Boolean,
+                    value: false
+                },
+
+                mobileScreen: {
+                    type: Boolean,
+                    value: false,
+                    reflectToAttribute: true
+                },
+
+                tabletScreen: {
+                    type: Boolean,
+                    value: false,
+                    reflectToAttribute: true
+                },
+
+                tabletScreen900: {
+                    type: Boolean,
+                    value: false,
+                    reflectToAttribute: true
+                },
+
+                /**
+                 * Animation config.
+                 */
+                animationConfig: {
+                    value: function() {
+                        return {
+                            'entry': {
+                                name: 'fade-in-animation',
+                                node: this,
+                                timing: {
+                                    duration: 300
+                                }
+                            },
+                            'exit': {
+                                name: 'fade-out-animation',
+                                node: this,
+                                timing: {
+                                    duration: 200
+                                }
+                            }
+                        }
+                    }
+                },
+
+                pageLoaded: {
+                    type: Boolean,
+                    value: false
+                }
+            },
+
+            behaviors: [
+                Polymer.NeonAnimatableBehavior
+            ],
+
+            observers: [
+                '_updateScreen(mobileScreen, tabletScreen, tabletScreen900)'
+            ],
+
+            attached: function() {
+
+                this.pageLoaded = false;
+
+                if (this.mobileScreen || this.tabletScreen || this.tabletScreen900) {
+                    this.updateStyles();
+                }
+
+                this._setValidFromDate();
+            },
+
+            _updateScreen: function(mobile, tablet, tablet900) {
+                this.updateStyles();
+            },
+
+            _pageLoaded: function() {
+                this.pageLoaded = true;
+                this.fire('page-loaded');
+            },
+
+            initializePage: function() {},
+
+            resetPage: function() {},
+
+            _computeAuditLogEventTypesApi: function(companyApi) {
+                return companyApi + '/log/events';
+            },
+
+            _computeAuditLogApi: function(companyApi) {
+                return companyApi + '/log';
+            },
+
+            _computeHeaders: function (authorizationToken) {
+                return {
+                    'Authorization': 'token ' + authorizationToken,
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                }
+            },
+
+            _setValidFromDate: function() {
+                var date = new Date(),
+                    day = date.getDate(),
+                    month = date.getMonth() + 1,
+                    year = date.getFullYear();
+
+                if (day < 10) {
+                    day = '0' + day;
+                }
+
+                if (month < 10) {
+                    month= '0' + month
+                }
+
+                date = year + '-' + month + '-' + day;
+
+                this.$.filterDateFrom.max = date;
+            },
+
+            _setValidToDate: function(date) {
+                this.$.filterDateTo.min = date;
+            },
+
+            _onFilterDateFrom: function(event) {
+                var fromDate = event.detail.value;
+
+                this._filterFromDate = fromDate ? fromDate + ' 00:00:00' : '';
+                this._setValidToDate(fromDate);
+                this._filterLog();
+            },
+
+            _onFilterDateTo: function(event) {
+                this._filterToDate = event.detail.value ? event.detail.value + ' 23:59:59' : '';
+                this._filterLog();
+            },
+
+            _onFilterEventType: function(event) {
+                this._filterEventType = event.detail.selected;
+                this._filterLog();
+            },
+
+            _onFilterSearch: function () {
+                var term = this.$.searchInput.value;
+
+                this.set('_clearSearch', (term.length > 0));
+
+                if (term.length < 3) {
+                    term = '';
+                }
+
+                this.$.appscoAuditLog.filterLogByTerm(term);
+            },
+
+            _onClearSearch: function () {
+                this.$.searchInput.value = '';
+                this._onFilterSearch();
+            },
+
+            _formatEventType: function(item) {
+                switch (item) {
+                    case 'account_login_attempt':
+                        return {
+                            value: item,
+                            text: 'Account attempted login'
+                        };
+
+                    case 'account_update_profile':
+                        return {
+                            value: item,
+                            text: 'Account updated profile'
+                        };
+
+                    case 'account_updated_profile_image':
+                        return {
+                            value: item,
+                            text: 'Account updated profile image'
+                        };
+
+                    case 'account_changed_password':
+                        return {
+                            value: item,
+                            text: 'Account changed password'
+                        };
+
+                    case 'account_generated_partner_token':
+                        return {
+                            value: item,
+                            text: 'Account generated partner token'
+                        };
+
+                    case 'account_enabled_two_fa':
+                        return {
+                            value: item,
+                            text: 'Account enabled two-factor authentication'
+                        };
+
+                    case 'account_disabled_two_fa':
+                        return {
+                            value: item,
+                            text: 'Account disabled two-factor authentication'
+                        };
+
+                    case 'account_authorized_application':
+                        return {
+                            value: item,
+                            text: 'Account authorized application'
+                        };
+
+                    case 'account_revoked_authorization':
+                        return {
+                            value: item,
+                            text: 'Account revoked authorization'
+                        };
+
+                    case 'company_role_added':
+                        return {
+                            value: item,
+                            text: 'Account added to company'
+                        };
+
+                    case 'company_role_removed':
+                        return {
+                            value: item,
+                            text: 'Account removed from company'
+                        };
+
+                    case 'orgunit_created':
+                        return {
+                            value: item,
+                            text: 'Organization unit created'
+                        };
+
+                    case 'orgunit_updated':
+                        return {
+                            value: item,
+                            text: 'Organization unit updated'
+                        };
+
+                    case 'org_unit_removed':
+                        return {
+                            value: item,
+                            text: 'Organization unit removed'
+                        };
+
+                    case 'orgunit_added':
+                        return {
+                            value: item,
+                            text: 'Account added to organization unit'
+                        };
+
+                    case 'application_added_to_orgunit':
+                        return {
+                            value: item,
+                            text: 'Application added to organization unit'
+                        };
+
+                    case 'company_settings_updated':
+                        return {
+                            value: item,
+                            text: 'Company settings updated'
+                        };
+
+                    case 'company_logo_updated':
+                        return {
+                            value: item,
+                            text: 'Company logo changed'
+                        };
+
+                    case 'company_role_promoted_to_admin':
+                        return {
+                            value: item,
+                            text: 'Account promoted to administrator'
+                        };
+
+                    case 'company_role_demoted_from_admin':
+                        return {
+                            value: item,
+                            text: 'Account demoted from administrator'
+                        };
+
+                    case 'company_role_account_updated':
+                        return {
+                            value: item,
+                            text: 'Account updated by administrator'
+                        };
+
+                    case 'company_role_account_password_changed':
+                        return {
+                            value: item,
+                            text: 'Account password changed by administrator'
+                        };
+
+                    case 'company_roles_imported':
+                        return {
+                            value: item,
+                            text: 'Accounts imported to company'
+                        };
+
+                    case 'account_added_to_orgunit':
+                        return {
+                            value: item,
+                            text: 'Account added to organization unit'
+                        };
+
+                    case 'company_role_removed_from_orgunit':
+                        return {
+                            value: item,
+                            text: 'Account removed from organization unit'
+                        };
+
+                    case 'application_remove_from_orgunit':
+                        return {
+                            value: item,
+                            text: 'Application removed from organization unit'
+                        };
+
+                    case 'application_created':
+                        return {
+                            value: item,
+                            text: 'Application created'
+                        };
+
+                    case 'application_updated':
+                        return {
+                            value: item,
+                            text: 'Application updated'
+                        };
+
+                    case 'application_removed':
+                        return {
+                            value: item,
+                            text: 'Application removed from company'
+                        };
+
+                    case 'application_icon_removed':
+                        return {
+                            value: item,
+                            text: 'Application removed for account'
+                        };
+
+                    case 'application_shared':
+                        return {
+                            value: item,
+                            text: 'Application shared'
+                        };
+
+                    case 'application_claims_updated':
+                        return {
+                            value: item,
+                            text: 'Application claims updated'
+                        };
+
+                    case 'application_icon_claims_updated':
+                        return {
+                            value: item,
+                            text: 'Account\'s application claims updated'
+                        };
+
+                    case 'subscription_updated':
+                        return {
+                            value: item,
+                            text: 'Subscription updated'
+                        };
+
+                    case 'subscription_canceled':
+                        return {
+                            value: item,
+                            text: 'Subscription canceled'
+                        };
+
+                    case 'invoice_sent':
+                        return {
+                            value: item,
+                            text: 'Invoice sent'
+                        };
+
+                    case 'credit_card_created':
+                        return {
+                            value: item,
+                            text: 'Credit card created'
+                        };
+
+                    default:
+//                        console.log(item + ' not supported yet.');
+                }
+
+            },
+
+            _onEventTypesResponse: function(event) {
+                var response = event.detail.response;
+
+                if (response && response.length > 0) {
+
+                    response.forEach(function(item, index) {
+                        this.push('_eventTypeList', this._formatEventType(item));
+                    }.bind(this));
+
+                }
+            },
+
+            _onAuditLogEmptyLoad: function() {
+                this._pageLoaded();
+            },
+
+            reloadLog: function() {
+                this.$.appscoAuditLog.reloadLog();
+            },
+
+            _filterLog: function() {
+                this.$.appscoAuditLog.filter(this._filterEventType, this._filterFromDate, this._filterToDate);
+            },
+
+            toggleResource: function() {
+                this.$.appscoContent.toggleSection('resource');
+            }
+        });
+    </script>
+</dom-module>

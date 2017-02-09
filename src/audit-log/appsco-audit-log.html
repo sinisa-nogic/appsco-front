@@ -1,0 +1,870 @@
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../bower_components/iron-image/iron-image.html">
+<link rel="import" href="../../bower_components/iron-flex-layout/iron-flex-layout.html">
+<link rel="import" href="../../bower_components/paper-styles/typography.html">
+<link rel="import" href="../../bower_components/paper-styles/shadow.html">
+<link rel="import" href="../../bower_components/iron-ajax/iron-ajax.html">
+<link rel="import" href="../../bower_components/paper-button/paper-button.html">
+<link rel="import" href="../../bower_components/paper-progress/paper-progress.html">
+<link rel="import" href="../../bower_components/app-localize-behavior/app-localize-behavior.html">
+<link rel="import" href="../../bower_components/vaadin-grid/vaadin-grid.html">
+
+<link rel="import" href="../../bower_components/appsco-components/appsco-date-format.html">
+
+<!--
+`appsco-audit-log`
+Used to present company audit log. Each log record is presented in a new row.
+
+Example:
+    <body>
+        <appsco-audit-log
+            audit-log-api=""
+            authorization-token=""></appsco-audit-log>
+
+### Styling
+
+`<appsco-audit-log>` provides the following custom properties and mixins for styling:
+
+Custom property | Description | Default
+----------------|-------------|----------
+`--appsco-audit-log` | Mixin applied to the root element | `{}`
+`--appsco-audit-log-item` | Mixin applied to log record | `{}`
+`--appsco-audit-log-progress` | Mixin applied to paper-progress element | `{}`
+`--load-more-button` | Mixin applied to Load More button | `{}`
+-->
+
+<dom-module id="appsco-audit-log">
+    <template>
+        <style>
+            :host {
+                display: block;
+                font-size: 14px;
+                color: var(--primary-text-color);
+                @apply(--appsco-audit-log);
+            }
+            .audit-log {
+                padding-top: 10px;
+                overflow: hidden;
+                @apply(--layout-vertical);
+                @apply(--layout-center);
+                @apply(--audit-log-list);
+            }
+            .log-record {
+                width: 100%;
+                margin-bottom: 10px;
+                @apply(--layout-horizontal);
+                @apply(--layout-center);
+            }
+            .log-header {
+                margin-bottom: 4px;
+                border-bottom: 1px solid var(--divider-color);
+            }
+            .log-record > * {
+                padding: 6px 10px;
+            }
+            .log-header > * {
+                padding: 10px;
+            }
+            .log-record .account-info {
+                width: 20%;
+                @apply(--layout-horizontal);
+                @apply(--layout-center);
+            }
+            .log-record .event {
+                width: 45%;
+            }
+            .log-record .ip-address {
+                width: 15%;
+            }
+            .log-record .date {
+                width: 20%;
+            }
+            :host .account-icon, :host .account-icon::shadow #sizedImgDiv, :host .account-icon::shadow #placeholder {
+                border-radius: 50%;
+            }
+            :host .account-icon {
+                width: 32px;
+                height: 32px;
+                margin-right: 5px;
+            }
+            :host .account-initials {
+                position: relative;
+                background-color: var(--body-background-color, #f5f8fa);
+                color: var(--primary-text-color);
+            }
+            :host .account-initials .initials {
+                position: absolute;
+                top: 0;
+                right: 0;
+                bottom: 0;
+                left: 0;
+                margin: auto;
+                line-height: 32px;
+                text-align: center;
+                text-transform: uppercase;
+                font-size: 14px;
+            }
+            :host .message {
+                color: var(--secondary-text-color);
+                font-style: italic;
+                @apply(--paper-font-body2);
+                @apply(--info-message);
+            }
+            :host paper-progress {
+                width: 100%;
+                position: absolute;
+                top: 0;
+                left: 0;
+                @apply(--appsco-audit-log-progress);
+            }
+        </style>
+
+        <iron-ajax id="ironAjaxLog"
+                   auto
+                   url="[[ auditLogApi ]]"
+                   method="POST"
+                   headers="[[ _headers ]]"
+                   handle-as="json"
+                   on-error="_onLogError"
+                   on-response="_onLogResponse">
+        </iron-ajax>
+
+        <iron-ajax
+                auto
+                url="[[ _timezoneListUrl ]]"
+                handle-as="json"
+                on-response="_onTimezoneListResponse">
+        </iron-ajax>
+
+        <iron-ajax
+                auto
+                url="[[ _countryListUrl ]]"
+                handle-as="json"
+                on-response="_onCountryListResponse">
+        </iron-ajax>
+
+        <div class="audit-log">
+
+            <paper-progress id="progress" indeterminate></paper-progress>
+
+            <div class="log-record log-header">
+                <div class="account-info">Account</div>
+                <div class="event">Event</div>
+                <div class="ip-address">IP Address</div>
+                <div class="date">Date</div>
+            </div>
+
+            <template is="dom-repeat"
+                      items="[[ _logList ]]">
+                <div class="log-record">
+                    <div class="account-info">
+                        <template is="dom-if" if="[[ item.account.picture_url ]]">
+                            <iron-image class="account-icon"
+                                        sizing="cover"
+                                        preload fade
+                                        src="[[ item.account.picture_url ]]"></iron-image>
+                        </template>
+
+                        <template is="dom-if" if="[[ !item.account.picture_url ]]">
+                            <div class="account-icon account-initials">
+                                <span class="initials">[[ _accountInitials(item.account) ]]</span>
+                            </div>
+                        </template>
+
+                        <div class="account">[[ item.account.name ]]</div>
+                    </div>
+                    <div class="event">[[ item.event ]]</div>
+                    <div class="ip-address">[[ item.ip_address ]]</div>
+                    <div class="date">
+                        <appsco-date-format date="[[ item.date ]]"
+                                            options="[[ _dateFormat ]]"></appsco-date-format>
+                        <!--[[ item.date ]]-->
+                    </div>
+                </div>
+            </template>
+        </div>
+
+        <template is="dom-if" if="[[ _message ]]">
+            <p class="message">
+                [[ _message ]]
+            </p>
+        </template>
+
+    </template>
+
+    <script>
+        Polymer({
+
+            is: 'appsco-audit-log',
+
+            properties: {
+
+                /**
+                 * Authorization token
+                 */
+                authorizationToken: {
+                    type: String
+                },
+
+                /**
+                 * Get audit log link.
+                 */
+                auditLogApi: {
+                    type: String
+                },
+
+                /**
+                 * Computed headers.
+                 * It contains authorization token.
+                 */
+                _headers: {
+                    type: Object,
+                    computed: '_computeHeaders(authorizationToken)'
+                },
+
+                /**
+                 * Log list.
+                 */
+                _logList: {
+                    type: Array,
+                    value: function() {
+                        return [];
+                    }
+                },
+
+                _wholeLogList: {
+                    type: Array,
+                    value: function() {
+                        return [];
+                    }
+                },
+
+                _timezoneListUrl: {
+                    type: String,
+                    value: function() {
+                        return this.resolveUrl('./data/timezone-list.json');
+                    }
+                },
+
+                _countryListUrl: {
+                    type: String,
+                    value: function() {
+                        return this.resolveUrl('./data/country-list.json');
+                    }
+                },
+
+                _timezoneList: {
+                    type: Array,
+                    value: function() {
+                        return [];
+                    }
+                },
+
+                _genderList: {
+                    type: Array,
+                    value: function() {
+                        return [
+                            {
+                                name: 'Male',
+                                value: 'm'
+                            },
+                            {
+                                name: 'Female',
+                                value: 'f'
+                            }
+                        ];
+                    }
+                },
+
+                /**
+                 * Country list to get name of country from.
+                 * Country code = account.country.
+                 *
+                 * This is loaded from local data/country-list.json.
+                 */
+                _countryList: {
+                    type: Array,
+                    value: function() {
+                        return [];
+                    }
+                },
+
+                _searchTerm: {
+                    type: String,
+                    value: ''
+                },
+
+                /**
+                 * Message to display instead of log.
+                 */
+                _message: {
+                    type: String
+                },
+
+                language: {
+                    value: 'en',
+                    type: String
+                },
+
+                _dateFormat: {
+                    type: Object,
+                    value: function() {
+                        return {
+                            weekday: 'long',
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                        }
+                    }
+                }
+            },
+
+            behaviors: [
+                Polymer.AppLocalizeBehavior
+            ],
+
+            attached: function() {
+                this.loadResources(this.resolveUrl('data/locales.json'));
+            },
+
+            /**
+             * Computes authorization headers.
+             *
+             * @param {Object} authorizationToken
+             * @returns {{ Authorization: string }}
+             * @private
+             */
+            _computeHeaders: function (authorizationToken) {
+                return {
+                    'Authorization': 'token ' + authorizationToken,
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                }
+            },
+
+            _accountInitials: function(account) {
+                var name = account.name.split(' ');
+
+                if (name.length > 1) {
+                    return name[0].substring(0, 1) + name[1].substring(0, 1);
+                }
+
+                return account.name.substring(0, 2);
+            },
+
+            _onCountryListResponse: function(event, ironRequest) {
+                this._countryList = ironRequest.response;
+            },
+
+            _onTimezoneListResponse: function(event, ironRequest) {
+
+                ironRequest.response.forEach(function(zone, i) {
+
+                    if (zone.utc) {
+
+                        zone.utc.forEach(function(utc, index) {
+                            var item = {
+                                value: utc,
+                                text: utc.split('/')[1]
+                            };
+
+                            this.push('_timezoneList', item);
+                        }.bind(this));
+
+                    }
+
+                }.bind(this));
+
+            },
+
+            _formatLogAccountUpdateProfile: function(item) {
+                var data = item.data,
+                        logItem = {},
+                        message = '';
+
+                for (property in data) {
+                    var propertyValue = data[property],
+                        from = propertyValue.from,
+                        to = propertyValue.to;
+
+                    switch (property) {
+                        case 'timezone':
+                            this._timezoneList.forEach(function(zone, index) {
+
+                                if (zone.value === from) {
+                                    from = zone.text;
+                                }
+
+                                if (zone.value === to) {
+                                    to = zone.text;
+                                }
+
+                            });
+
+                            break;
+
+                        case 'country':
+                            this._countryList.forEach(function(country, index) {
+
+                                if (country.code === from) {
+                                    from = country.name;
+                                }
+
+                                if (country.code === to) {
+                                    to = country.name;
+                                }
+
+                            });
+
+                            break;
+
+                        case 'gender':
+                            this._genderList.forEach(function(gender, index) {
+
+                                if (gender.value === from) {
+                                    from = gender.name;
+                                }
+
+                                if (gender.value === to) {
+                                    to = gender.name;
+                                }
+
+                            });
+
+                            break;
+
+                        default:
+//                            console.log('Property ' + property + ' change isn\'t supported in log.' );
+                    }
+
+                    message += ' ' + this.localize(property) + ' ' + this.localize('account_log_profile_changed', 'fromValue', from, 'toValue', to);
+                }
+
+                return message;
+            },
+
+            _formatLogApplicationUpdated: function(item) {
+                var data = item.data,
+                    message = '';
+
+                for (property in data) {
+                    var propertyValue = data[property],
+                        from = propertyValue.from,
+                        to = propertyValue.to;
+
+                    message += ' ' + this.localize(property) + ' ' + this.localize('application_updated', 'fromValue', from, 'toValue', to);
+                }
+
+                return message;
+            },
+
+            _formatLogCompanySettingsUpdated: function(item) {
+                var data = item.data,
+                    message = '';
+
+                for (property in data) {
+                    var propertyValue = data[property],
+                        from = propertyValue.from,
+                        to = propertyValue.to;
+
+                    message += ' ' + this.localize(property) + ' ' + this.localize('log_company_settings_updated', 'fromValue', from, 'toValue', to);
+                }
+
+                return message;
+            },
+
+            _formatLogCompanyRoleAccountUpdated: function(item) {
+                var data = item.data,
+                    message = '';
+
+                for (property in data) {
+                    var propertyValue = data[property],
+                        from = propertyValue.from,
+                        to = propertyValue.to;
+
+                    switch (property) {
+                        case 'timezone':
+                            this._timezoneList.forEach(function(zone, index) {
+
+                                if (zone.value === from) {
+                                    from = zone.text;
+                                }
+
+                                if (zone.value === to) {
+                                    to = zone.text;
+                                }
+
+                            });
+
+                            break;
+
+                        case 'country':
+                            this._countryList.forEach(function(country, index) {
+
+                                if (country.code === from) {
+                                    from = country.name;
+                                }
+
+                                if (country.code === to) {
+                                    to = country.name;
+                                }
+
+                            });
+
+                            break;
+
+                        case 'gender':
+                            this._genderList.forEach(function(gender, index) {
+
+                                if (gender.value === from) {
+                                    from = gender.name;
+                                }
+
+                                if (gender.value === to) {
+                                    to = gender.name;
+                                }
+
+                            });
+
+                            break;
+
+                        default:
+//                            console.log('Property ' + property + ' change isn\'t supported in log.' );
+                    }
+
+                    message += ' ' + this.localize(property) + ' ' + this.localize('company_role_account_updated', 'account', item.affected_account_display_name, 'fromValue', from, 'toValue', to);
+                }
+
+                return message;
+            },
+
+            /**
+             * Maps log as object dependent on log type.
+             *
+             * @param {Object} item
+             * @returns {{ item: object }}
+             * @private
+             */
+            _formatLogItem: function(item) {
+                var logItem = {
+                    account: {
+                        picture_url: item.initiatior_image,
+                        name: item.initiatior_display_name
+                    },
+                    ip_address: item.ip,
+                    date: item.created_at.date
+                };
+
+                switch (item.type) {
+                    case 'account_login_attempt':
+                        logItem.event = this.localize('account_login_attempt', 'application', item.data.application.title);
+                        break;
+
+                    case 'account_update_profile':
+                        logItem.event = this._formatLogAccountUpdateProfile(item);
+                        break;
+
+                    case 'account_updated_profile_image':
+                        logItem.event = this.localize('account_log_profile_image_changed');
+                        break;
+
+                    case 'account_changed_password':
+                        logItem.event = this.localize('account_log_password_changed');
+                        break;
+
+                    case 'account_generated_partner_token':
+                        logItem.event = this.localize('account_log_token_generated');
+                        break;
+
+                    case 'account_enabled_two_fa':
+                        logItem.event = this.localize('account_log_2fa_enabled');
+                        break;
+
+                    case 'account_disabled_two_fa':
+                        logItem.event = this.localize('account_log_2fa_disabled');
+                        break;
+
+                    case 'account_authorized_application':
+                        logItem.event = this.localize('account_log_application_authorized', 'application', item.data.title);
+                        break;
+
+                    case 'account_revoked_authorization':
+                        logItem.event = this.localize('account_log_application_revoked', 'application', item.data.title);
+                        break;
+
+                    case 'company_role_added':
+                        logItem.event = this.localize('company_role_added', 'account', item.data.role.account.name);
+                        break;
+
+                    case 'company_role_removed':
+                        logItem.event = this.localize('company_role_removed', 'account', item.data.role.account.name);
+                        break;
+
+                    case 'orgunit_created':
+                        logItem.event = this.localize('orgunit_created', 'orgunit', item.data.orgunit.name);
+                        break;
+
+                    case 'orgunit_updated':
+                        logItem.event = this.localize('orgunit_updated', 'fromValue', item.data.name.from, 'toValue', item.data.name.to);
+                        break;
+
+                    case 'org_unit_removed':
+                        logItem.event = this.localize('org_unit_removed', 'orgunit', item.data.orgunit.name);
+                        break;
+
+                    case 'orgunit_added':
+                        logItem.event = this.localize('account_log_role_added_to_orgunit', 'account', item.data.role.account.name, 'orgunit', item.data.orgunit.name);
+                        break;
+
+                    case 'application_added_to_orgunit':
+                        logItem.event = this.localize('application_added_to_orgunit', 'application', item.data.application.title, 'orgunit', item.data.orgunit.name);
+                        break;
+
+                    case 'company_settings_updated':
+                        logItem.event = this._formatLogCompanySettingsUpdated(item);
+                        break;
+
+                    case 'company_logo_updated':
+                        logItem.event = this.localize('log_company_logo_changed');
+                        break;
+
+                    case 'company_role_promoted_to_admin':
+                        logItem.event = this.localize('company_role_promoted_to_admin', 'account', item.affected_account_display_name);
+                        break;
+
+                    case 'company_role_demoted_from_admin':
+                        logItem.event = this.localize('company_role_demoted_from_admin', 'account', item.affected_account_display_name);
+                        break;
+
+                    case 'company_role_account_updated':
+                        logItem.event = this._formatLogCompanyRoleAccountUpdated(item);
+                        break;
+
+                    case 'company_role_account_password_changed':
+                        logItem.event = this.localize('company_role_account_password_changed', 'account', item.affected_account_display_name);
+                        break;
+
+                    case 'company_roles_imported':
+                        logItem.event = this.localize('company_roles_imported', 'number', item.data.imporeted_roles);
+                        break;
+
+                    case 'account_added_to_orgunit':
+                        logItem.event = this.localize('account_added_to_orgunit', 'account', item.affected_account_display_name, 'orgunit', item.data.orgunit.name);
+                        break;
+
+                    case 'company_role_removed_from_orgunit':
+                        logItem.event = this.localize('company_role_removed_from_orgunit', 'account', item.data.role.account.name, 'orgunit', item.data.org_unit.name);
+                        break;
+
+                    case 'application_remove_from_orgunit':
+                        logItem.event = this.localize('application_removed_from_orgunit', 'application', item.data.application.title, 'orgunit', item.data.name);
+                        break;
+
+                    case 'application_created':
+                        logItem.event = this.localize('application_created', 'application', item.data.title);
+                        break;
+
+                    case 'application_updated':
+                        logItem.event = this._formatLogApplicationUpdated(item);
+                        break;
+
+                    case 'application_removed':
+                        logItem.event = this.localize('application_removed', 'application', item.data.application.title);
+                        break;
+
+                    case 'application_icon_removed':
+                        logItem.event = this.localize('application_icon_removed', 'application', item.data.application.title, 'account', item.affected_account_display_name);
+                        break;
+
+                    case 'application_shared':
+                        logItem.event = this.localize('application_shared', 'application', item.data.application.title, 'account', item.affected_account_display_name);
+                        break;
+
+                    case 'application_claims_updated':
+
+                            if (item.data.application) {
+                                logItem.event = this.localize('application_claims_updated', 'application', item.data.application.title, 'account', item.affected_account_display_name);
+                            }
+                            else {
+                                logItem.event = this.localize('application_claims_updated_raw');
+                            }
+
+                        break;
+
+                    case 'application_icon_claims_updated':
+
+                        if (item.data.application) {
+                            logItem.event = this.localize('application_icon_claims_updated', 'application', item.data.application.title, 'account', item.affected_account_display_name);
+                        }
+                        else {
+                            logItem.event = this.localize('application_icon_claims_updated_raw', 'account', item.affected_account_display_name);
+                        }
+
+                        break;
+
+                    case 'subscription_updated':
+                        logItem.event = this.localize('subscription_updated', 'plan', item.data.subscription_plan, 'licences', item.data.appsco_licences);
+                        break;
+
+                    case 'subscription_canceled':
+                        logItem.event = this.localize('subscription_canceled');
+                        break;
+
+                    case 'invoice_sent':
+                        logItem.event = this.localize('invoice_sent', 'invoice', item.data.invoice_id);
+                        break;
+
+                    case 'credit_card_created':
+
+                        if (item.data.brand) {
+                            logItem.event = this.localize('credit_card_created', 'brand', item.data.brand, 'number', item.data.last4);
+                        }
+                        else {
+                            logItem.event = this.localize('credit_card_created_raw');
+                        }
+
+                        break;
+
+                    default:
+//                        console.log(item.type + ' not supported yet.');
+                }
+
+                return logItem;
+
+            },
+
+            /**
+             * Handles error on get log API request.
+             * @param {Object} event Event from error response.
+             *
+             * @private
+             */
+            _onLogError: function(event) {
+                this._message = 'We couldn\'t load log at the moment. Please try again in a minute. If error continues contact us.';
+                this._handleEmptyLog();
+            },
+
+            /**
+             * Handles response on get log API request.
+             * @param {Object} event Event from response.
+             *
+             * @private
+             */
+            _onLogResponse: function(event) {
+                var response = event.detail.response;
+
+                if (response) {
+
+                    if (response.length > 0) {
+
+                        this.set('_message', '');
+
+                        response.forEach(function(log, i) {
+                            var record = this._formatLogItem(response[i]);
+
+                            setTimeout(function() {
+
+                                this.push('_logList', record);
+                                this.push('_wholeLogList', record);
+
+                                if (i === (response.length - 1)) {
+                                    this.fire('loaded');
+                                    this._hideProgressBar();
+                                }
+
+                            }.bind(this), (i + 1) * 50);
+
+                        }.bind(this));
+                    }
+                    else {
+                        this._message = 'There are no asked log records.';
+                        this._handleEmptyLog();
+                    }
+                }
+            },
+
+            _handleEmptyLog: function() {
+                this._hideProgressBar();
+                this.fire('empty-load');
+            },
+
+            _hideProgressBar: function() {
+
+                setTimeout(function() {
+                    this.$.progress.hidden = true;
+                }.bind(this), 500);
+
+            },
+
+            reloadLog: function() {
+                this.set('_logList', []);
+                this.set('_wholeLogList', []);
+                this.set('_message', '');
+                this.$.ironAjaxLog.generateRequest();
+            },
+
+            filter: function(filterEventType, filterFromDate, filterToDate) {
+                var body = '';
+
+                this.$.progress.hidden = false;
+
+                if (filterEventType) {
+                    body += body == '' ? '' : '&';
+                    body += encodeURIComponent('event') + '=' + encodeURIComponent(filterEventType);
+                }
+
+                if (filterFromDate) {
+                    body += body == '' ? '' : '&';
+                    body += encodeURIComponent('from') + '=' + encodeURIComponent(filterFromDate);
+                }
+
+                if (filterToDate) {
+                    body += body == '' ? '' : '&';
+                    body += encodeURIComponent('to') + '=' + encodeURIComponent(filterToDate);
+                }
+
+                this.set('_logList', []);
+                this.set('_wholeLogList', []);
+                this.set('_message', '');
+                this.$.ironAjaxLog.body = body;
+            },
+
+            filterLogByTerm: function(term) {
+                var length = this._wholeLogList.length;
+
+                this._searchTerm = term;
+
+                this.$.progress.hidden = false;
+                this._message = '';
+
+                if (length === 0) {
+                    this.fire('filter-done');
+                    return false;
+                }
+
+                this.set('_logList', []);
+
+                this._wholeLogList.forEach(function(item, index) {
+
+                    if (item.account.name.toLowerCase().indexOf(term.toLowerCase()) >= 0) {
+                        var oldElem = JSON.parse(JSON.stringify(item));
+
+                        this.push('_logList', oldElem);
+                    }
+
+                    if (index === length - 1) {
+
+                        if (this._logList.length === 0) {
+                            this._message = 'There are no logs with asked term.';
+                        }
+
+                        this._hideProgressBar();
+                        this.fire('filter-done');
+                    }
+
+                }.bind(this));
+            }
+        });
+    </script>
+</dom-module>

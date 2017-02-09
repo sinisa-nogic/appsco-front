@@ -7,11 +7,13 @@
 <link rel="import" href="../../bower_components/iron-icons/iron-icons.html">
 <link rel="import" href="../../bower_components/paper-input/paper-input.html">
 <link rel="import" href="../../bower_components/iron-image/iron-image.html">
-<link rel="import" href="../../bower_components/iron-ajax/iron-request.html">
+<link rel="import" href="../../bower_components/iron-form/iron-form.html">
 <link rel="import" href="../../bower_components/paper-dialog/paper-dialog.html">
 <link rel="import" href="../../bower_components/paper-dialog-scrollable/paper-dialog-scrollable.html">
 <link rel="import" href="../../bower_components/paper-toggle-button/paper-toggle-button.html">
 <link rel="import" href="../../bower_components/neon-animation/animations/scale-up-animation.html">
+<link rel="import" href="../../bower_components/gold-email-input/gold-email-input.html">
+<link rel="import" href="../../bower_components/iron-a11y-keys/iron-a11y-keys.html">
 
 <link rel="import" href="../../bower_components/appsco-components/appsco-loader.html">
 <link rel="import" href="../../bower_components/appsco-components/appsco-form-error.html">
@@ -36,6 +38,10 @@
                 --paper-input-container-label: {
                     left: 4px;
                 };
+            }
+            :host appsco-loader {
+                margin: 0 !important;
+                padding: 0 !important;
             }
             :host .message {
                 margin: 0;
@@ -78,50 +84,56 @@
 
             <h2>Add account to Directory</h2>
 
+            <appsco-loader active="[[ _loader ]]" loader-alt="Appsco is processing request" multi-color=""></appsco-loader>
+
             <paper-dialog-scrollable>
                 <div class="dialog-container">
 
-                    <appsco-loader active="[[ _addLoader ]]" loader-alt="Appsco is adding account" multi-color=""></appsco-loader>
-
                     <appsco-form-error message="[[ _error ]]"></appsco-form-error>
 
-                    <div>
-                        <p class="info">
-                            First name and last name are important since they associate degree of confidence.
-                            They will be used for log purposes, statistics and other reporting activities.
-                            Beside usage in AppsCo they can also be used for integration with other tools.
-                        </p>
-                        <div class="flex-horizontal">
-                            <div class="flex">
-                                <paper-input id="accountFirstName" label="First name" value="" name="register_account[firstName]" required="" error-message="Please provide first name."></paper-input>
+                    <form is="iron-form" id="addAccountForm" method="POST" action="[[ directoryRolesApi ]]" headers="[[ _headers ]]" on-iron-form-error="_onFormError" on-iron-form-response="_onFormResponse">
+                        <div>
+                            <p class="info">
+                                First name and last name are important since they associate degree of confidence.
+                                They will be used for log purposes, statistics and other reporting activities.
+                                Beside usage in AppsCo they can also be used for integration with other tools.
+                            </p>
+                            <div class="flex-horizontal">
+                                <div class="flex">
+                                    <paper-input id="accountFirstName" label="First name" name="register_account[firstName]" required="" auto-validate="" error-message="Please provide first name."></paper-input>
+                                </div>
+                                <div class="flex">
+                                    <paper-input id="accountLastName" label="Last name" name="register_account[lastName]" required="" auto-validate="" error-message="Please provide last name."></paper-input>
+                                </div>
                             </div>
-                            <div class="flex">
-                                <paper-input id="accountLastName" label="Last name" value="" name="register_account[lastName]" required="" error-message="Please provide last name."></paper-input>
+                            <p class="info mt">
+                                Email is used as part of credentials for accessing the system.
+                                Email can be used for log purposes, statistics and other reporting activities.
+                            </p>
+                            <div class="flex-horizontal">
+                                <div class="flex">
+                                    <gold-email-input id="accountEmail" label="Email" value="" name="register_account[email]" required="" auto-validate="" error-message="Please provide valid email."></gold-email-input>
+                                </div>
+                                <div class="baseline">
+                                    <paper-toggle-button id="sendActivationEmail" name="register_account[sendActivationMail]">Send Activation Email</paper-toggle-button>
+                                </div>
                             </div>
+
+                            <paper-input name="register_account[companyRoles][COMPANY_ROLE_EMPLOYEE]" value="COMPANY_ROLE_EMPLOYEE" hidden=""></paper-input>
                         </div>
-                        <p class="info mt">
-                            Email is used as part of credentials for accessing the system.
-                            Email can be used for log purposes, statistics and other reporting activities.
-                        </p>
-                        <div class="flex-horizontal">
-                            <div class="flex">
-                                <paper-input id="accountEmail" label="Email" value="" name="register_account[email]" error-message="Please provide email."></paper-input>
-                            </div>
-                            <div class="baseline">
-                                <paper-toggle-button id="sendActivationEmail">Send Activation Email</paper-toggle-button>
-                            </div>
-                        </div>
-                    </div>
+                    </form>
                 </div>
             </paper-dialog-scrollable>
 
             <div class="buttons">
                 <paper-button dialog-dismiss="">Cancel</paper-button>
-                <paper-button autofocus="" on-tap="_onAddAccountAction">Add</paper-button>
+                <paper-button autofocus="" on-tap="_submitForm">Add</paper-button>
             </div>
         </paper-dialog>
 
+        <iron-a11y-keys keys="enter" on-keys-pressed="_onEnter"></iron-a11y-keys>
+
     </template>
-    <script>Polymer({is:"appsco-directory-add-account",properties:{authorizationToken:{type:String},companyApi:{type:String},_addLoader:{type:Boolean,value:!1}},toggle:function(){this.$.dialog.toggle()},_onDialogOpened:function(){},_onDialogClosed:function(){this._addLoader=!1,this._error=""},_onAddAccountAction:function(){var e=document.createElement("iron-request"),o={url:this.companyApi+"/directory/roles",method:"POST",handleAs:"json",headers:{Authorization:"token "+this.authorizationToken,"Content-Type":"application/x-www-form-urlencoded"}},t=encodeURIComponent(this.$.accountFirstName.name)+"="+encodeURIComponent(this.$.accountFirstName.value)+"&"+encodeURIComponent(this.$.accountLastName.name)+"="+encodeURIComponent(this.$.accountLastName.value)+"&"+encodeURIComponent(this.$.accountEmail.name)+"="+encodeURIComponent(this.$.accountEmail.value)+"&"+encodeURIComponent("register_account[companyRoles][COMPANY_ROLE_EMPLOYEE]")+"="+encodeURIComponent("COMPANY_ROLE_EMPLOYEE");this.$.sendActivationEmail.active&&(t+="&"+encodeURIComponent("register_account[sendActivationMail]")+"="+encodeURIComponent("true")),this._addLoader=!0,o.body=t,e.send(o).then(function(e){this.$.dialog.close(),this.fire("account-added",{account:e.response}),this._addLoader=!1,this.$.accountFirstName.value="",this.$.accountLastName.value="",this.$.accountEmail.value="",this.$.sendActivationEmail.active=!1}.bind(this),function(){this._error=e.response.message,this._addLoader=!1}.bind(this))}});</script>
+    <script>Polymer({is:"appsco-directory-add-account",properties:{authorizationToken:{type:String},directoryRolesApi:{type:String},_headers:{type:Object,computed:"_computeHeaders(authorizationToken)"},_loader:{type:Boolean,value:!1}},_computeHeaders:function(o){return{Authorization:"token "+o,"Content-Type":"application/x-www-form-urlencoded"}},toggle:function(){this.$.dialog.toggle()},_onDialogOpened:function(){this.$.accountFirstName.focus()},_onDialogClosed:function(){this._loader=!1,this._error="",this.$.addAccountForm.reset()},_onEnter:function(){this._submitForm()},_submitForm:function(){var o=this.$.addAccountForm;o.validate()&&(this._loader=!0,o.submit())},_onFormError:function(o){this._error=o.detail.request.response.message,this._loader=!1},_onFormResponse:function(o){this.$.dialog.close(),this.fire("account-added",{account:o.detail.response})}});</script>
 </dom-module>
 </body></html>

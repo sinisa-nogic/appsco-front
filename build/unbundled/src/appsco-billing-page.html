@@ -204,6 +204,7 @@
             }
             :host .invoice-list {
                 margin-top: 10px;
+                position: relative;
             }
             .invoice-list-title {
                 font-weight: 400;
@@ -226,6 +227,9 @@
             :host .send-invoice-button {
                 @apply(--primary-button);
                 border-radius: 0;
+            }
+            :host .plan-upcoming-invoice {
+                min-height: 260px;
             }
             .message {
                 @apply(--info-message);
@@ -277,40 +281,38 @@
                 <div>
                     <appsco-loader active="[[ _ccLoader ]]" loader-alt="Appsco is loading payment method" multi-color=""></appsco-loader>
 
-                    <template is="dom-if" if="[[ _cc ]]">
+                    <template is="dom-if" if="[[ _paymentMethod ]]">
                         <img class="credit-card-logo" src="[[ _computedCCLogo ]]" alt="[[ _cc.brand ]]">
 
                         <div class="mt20">
-                            <template is="dom-if" if="[[ _cc.id ]]">
-                                <p>
-                                    [[ _cc.brand]] **** **** **** [[ _cc.last4 ]]
-                                </p>
-                                <p>
-                                    Expires [[ _cc.exp_month ]]/[[ _cc.exp_year  ]]
-                                </p>
-                                <p>
-                                    Cardholder: [[ _cc.name ]]
-                                </p>
-                            </template>
-
-                            <template is="dom-if" if="[[ !_cc.id ]]">
-                                <p class="message">
-                                    No payment method has been created yet.
-                                    Please go and add new one.
-                                </p>
-                            </template>
+                            <p>
+                                [[ _cc.brand]] **** **** **** [[ _cc.last4 ]]
+                            </p>
+                            <p>
+                                Expires [[ _cc.exp_month ]]/[[ _cc.exp_year  ]]
+                            </p>
+                            <p>
+                                Cardholder: [[ _cc.name ]]
+                            </p>
                         </div>
+                    </template>
+
+                    <template is="dom-if" if="[[ !_paymentMethod ]]">
+                        <p class="message">
+                            No payment method has been created yet.
+                            Please go and add new one.
+                        </p>
                     </template>
                 </div>
 
                 <div class="resource-actions flex-horizontal">
-                    <template is="dom-if" if="[[ !_cc.id ]]">
+                    <template is="dom-if" if="[[ !_paymentMethod ]]">
                         <paper-button class="manage-button flex" on-tap="_onManageCreditCard">
                             Add payment method
                         </paper-button>
                     </template>
 
-                    <template is="dom-if" if="[[ _cc.id ]]">
+                    <template is="dom-if" if="[[ _paymentMethod ]]">
                         <paper-button class="manage-button flex" on-tap="_onManageCreditCard">
                             Change payment method
                         </paper-button>
@@ -333,14 +335,15 @@
                     </div>
                 </template>
 
-                <template is="dom-if" if="[[ !_cc.brand ]]">
+                <template is="dom-if" if="[[ _paymentMethodInfo ]]">
                     <div class="subscription-info">
                         Please add payment method before you subscribe to one of AppsCo packages.
                     </div>
                 </template>
 
-                <template is="dom-if" if="[[ _cc.brand ]]">
-                    <div class="plan-upcoming-invoice flex-horizontal flex-start">
+                <div class="plan-upcoming-invoice flex-horizontal flex-start">
+
+                    <template is="dom-if" if="[[ _cc.brand ]]">
                         <paper-card heading="Subscription plan" class="subscription-plan">
                             <appsco-loader active="[[ _subscriptionLoader ]]" loader-alt="Appsco is loading subscription model" multi-color=""></appsco-loader>
                             <div class="card-content flex-vertical">
@@ -392,7 +395,7 @@
 
                         </paper-card>
 
-                        <template is="dom-if" if="[[ _upcomingInvoice.date ]]">
+                        <template is="dom-if" if="[[ _subscription.plan ]]">
                             <paper-card heading="Upcoming invoice" class="flex">
                                 <appsco-loader active="[[ _upcomingInvoiceLoader ]]" loader-alt="Appsco is loading subscription model" multi-color=""></appsco-loader>
                                 <div class="card-content flex-vertical">
@@ -415,15 +418,24 @@
                                 </div>
                             </paper-card>
                         </template>
-                    </div>
-                </template>
+                    </template>
+                </div>
 
-                <template is="dom-if" if="[[ _invoicesExists ]]">
+                <template is="dom-if" if="[[ _subscription.plan ]]">
                     <div class="invoice-list flex-vertical">
+
+                        <appsco-loader active="[[ _invoiceListLoader ]]" loader-alt="Appsco is loading invoices" multi-color=""></appsco-loader>
+
                         <h2 class="invoice-list-title">Invoice list</h2>
 
-                        <template is="dom-repeat" items="[[ _invoices ]]">
-                            <appsco-billing-invoice id="invoiceItem_[[ index ]]" class="appsco-billing-invoice" invoice="[[ item ]]" on-tap="_onInvoiceAction"></appsco-billing-invoice>
+                        <template is="dom-if" if="[[ _invoicesExists ]]">
+                            <template is="dom-repeat" items="[[ _invoices ]]">
+                                <appsco-billing-invoice id="invoiceItem_[[ index ]]" class="appsco-billing-invoice" invoice="[[ item ]]" on-tap="_onInvoiceAction"></appsco-billing-invoice>
+                            </template>
+                        </template>
+
+                        <template is="dom-if" if="[[ !_invoicesExists ]]">
+                            <p class="message">There are no invoices yet.</p>
                         </template>
                     </div>
                 </template>
@@ -502,6 +514,6 @@
         </appsco-content>
     </template>
 
-    <script>Polymer({is:"appsco-billing-page",properties:{account:{type:Object,value:function(){return{}},notify:!0},_trialPeriod:{type:Boolean,computed:"_computeTrialPeriod(account, _subscription)"},_subscription:{type:Object,value:function(){return{}},observer:"_onSubscriptionChanged"},_cc:{type:Object,value:function(){return{}}},_invoices:{type:Array,value:function(){return[]}},_invoicesExists:{type:Boolean,value:!1},_selectedInvoice:{type:Object,value:function(){return!1}},_selectedIndex:{type:Number,value:-1},_subscriptionCanceled:{type:Boolean,computed:"_computeSubscriptionCanceled(_subscription)",observer:"_toggleCancelSubscriptionAction"},_cancelSubscription:{type:Boolean,value:!1},companyApi:{type:String},_subscriptionApi:{type:String,computed:"_computeSubscriptionApi(companyApi)"},_ccLoader:{type:Boolean,value:!1},_subscriptionLoader:{type:Boolean,value:!1},_upcomingInvoiceLoader:{type:Boolean,value:!1},authorizationToken:{type:String},_computedHeaders:{type:Object,computed:"_computeHeaders(authorizationToken)"},mediumScreen:{type:Boolean,value:!1,reflectToAttribute:!0},tabletScreen:{type:Boolean,value:!1,reflectToAttribute:!0},mobileScreen:{type:Boolean,value:!1,reflectToAttribute:!0},pageLoaded:{type:Boolean,value:!1},_computedCCLogo:{type:String,computed:"_computeCCLogo(_cc)"}},observers:["_updateScreen(mediumScreen, tabletScreen, mobileScreen)"],attached:function(){this.pageLoaded=!1,this._ccLoader=!0,this._subscriptionLoader=!0,this._upcomingInvoiceLoader=!0,(this.mobileScreen||this.tabletScreen||this.mediumScreen)&&this.updateStyles(),this._pageLoaded()},_updateScreen:function(e,t,i){this.updateStyles(),i?this.$.appscoContent.hideSection("resource"):this.$.appscoContent.resourceActive||this.$.appscoContent.showSection("resource")},_computeHeaders:function(e){return{Authorization:"token "+e}},_computeSubscriptionApi:function(e){return e+"/billing/subscription"},_computeTrialPeriod:function(e,t){return e.company.remaining_trial_period>0&&!t.plan},_computeSubscriptionCanceled:function(e){return"canceled"===e.status},_pageLoaded:function(){this.pageLoaded=!0,this.fire("page-loaded")},setCreditCard:function(e){this._ccLoader=!0,this.set("_cc",e),setTimeout(function(){this._ccLoader=!1}.bind(this),1e3)},setSubscription:function(e){this._subscriptionLoader=!0,this._subscription=e,setTimeout(function(){this._subscriptionLoader=!1}.bind(this),1e3)},toggleResource:function(){this.$.appscoContent.toggleSection("resource")},_onManageCreditCard:function(){this.fire("manage-credit-card")},_onSubscriptionChanged:function(e){for(key in e)return this._loadUpcomingInvoice(),this._loadInvoiceList(),!1},_toggleCancelSubscriptionAction:function(){this._subscription.status&&!this._subscriptionCanceled?setTimeout(function(){this._cancelSubscription=!0}.bind(this),1e3):this._cancelSubscription=!1},_handleCCResponse:function(e){null!=e.detail.response&&(this.set("_cc",e.detail.response),this._ccLoader=!1)},_computeCCLogo:function(e){var t="/images/cc/";return t+=e.brand?"American Express"===e.brand?"amex.png":e.brand.toLowerCase().replace(" ","_")+".png":"unknown.png"},_handleSubscriptionResponse:function(e){null!=e.detail.response&&(this._subscription=e.detail.response,this._subscriptionLoader=!1)},_loadUpcomingInvoice:function(){this._upcomingInvoiceLoader=!0,this.$.upcomingInvoiceCall.generateRequest()},_handleUpcomingInvoiceResponse:function(e){null!=e.detail.response&&(this._upcomingInvoice=e.detail.response,this._upcomingInvoiceLoader=!1)},_loadInvoiceList:function(){this.set("_invoices",[]),this._invoicesExists=!1,this.$.invoiceListCall.generateRequest()},_handleInvoicesResponse:function(e){var t=e.detail.response;return null!=t&&void(t.length>0?(this._invoicesExists=!0,t.forEach(function(e,i){0===i&&(this.lastInvoice=e),setTimeout(function(){this.push("_invoices",e),i===t.length-1&&this._toggleCancelSubscriptionAction()}.bind(this),50*(i+1))}.bind(this))):this._toggleCancelSubscriptionAction())},_onInvoiceAction:function(e){var t=e.model.item;t.id!=this._selectedInvoice.id?(this._selectedInvoice=t,this._selectedIndex!==-1&&this.$$("#invoiceItem_"+this._selectedIndex).deselect(),this._selectedIndex=e.model.index,this.$$("#invoiceItem_"+this._selectedIndex).select(),this._infoShown||this._showInfo()):this._onCloseInfoAction()},_onCloseInfoAction:function(){this._hideInfo(),this._deselectInvoice()},_deselectInvoice:function(){this._hideInfo(),this.$$("#invoiceItem_"+this._selectedIndex).deselect(),this._selectedInvoice={},this._selectedIndex=-1},_showInfo:function(){this.$.appscoContent.showSection("info"),this._infoShown=!0},_hideInfo:function(){this.$.appscoContent.hideSection("info"),this._infoShown=!1},_onChangePlan:function(){this.fire("upgrade-active")},_onCancelSubscription:function(){this.fire("cancel-subscription")},_onSendInvoice:function(){this.fire("send-invoice",{invoice:this._selectedInvoice})}});</script>
+    <script>Polymer({is:"appsco-billing-page",properties:{account:{type:Object,value:function(){return{}},notify:!0},_trialPeriod:{type:Boolean,computed:"_computeTrialPeriod(account, _subscription)"},_subscription:{type:Object,value:function(){return{}},observer:"_onSubscriptionChanged"},_cc:{type:Object,value:function(){return{}}},_upcomingInvoice:{type:Object,value:function(){return{}}},_paymentMethod:{type:Boolean,computed:"_computePaymentMethod(_cc)"},_paymentMethodInfo:{type:Boolean,value:!1},_invoices:{type:Array,value:function(){return[]}},_invoicesExists:{type:Boolean,value:!1},_selectedInvoice:{type:Object,value:function(){return{}}},_selectedIndex:{type:Number,value:-1},_subscriptionCanceled:{type:Boolean,computed:"_computeSubscriptionCanceled(_subscription)",observer:"_toggleCancelSubscriptionAction"},_cancelSubscription:{type:Boolean,value:!1},companyApi:{type:String},_subscriptionApi:{type:String,computed:"_computeSubscriptionApi(companyApi)"},_ccLoader:{type:Boolean,value:!0},_subscriptionLoader:{type:Boolean,value:!0},_upcomingInvoiceLoader:{type:Boolean,value:!0},_invoiceListLoader:{type:Boolean,value:!0},authorizationToken:{type:String},_computedHeaders:{type:Object,computed:"_computeHeaders(authorizationToken)"},mediumScreen:{type:Boolean,value:!1,reflectToAttribute:!0},tabletScreen:{type:Boolean,value:!1,reflectToAttribute:!0},mobileScreen:{type:Boolean,value:!1,reflectToAttribute:!0},pageLoaded:{type:Boolean,value:!1},_computedCCLogo:{type:String,computed:"_computeCCLogo(_cc)"}},observers:["_updateScreen(mediumScreen, tabletScreen, mobileScreen)"],attached:function(){this.pageLoaded=!1,(this.mobileScreen||this.tabletScreen||this.mediumScreen)&&this.updateStyles(),this._pageLoaded()},_updateScreen:function(e,t,i){this.updateStyles(),i?this.$.appscoContent.hideSection("resource"):this.$.appscoContent.resourceActive||this.$.appscoContent.showSection("resource")},_computeHeaders:function(e){return{Authorization:"token "+e}},_computeSubscriptionApi:function(e){return e+"/billing/subscription"},_computeTrialPeriod:function(e,t){return e.company&&e.company.remaining_trial_period>0&&!t.plan},_computePaymentMethod:function(e){return!!e.id},_computeSubscriptionCanceled:function(e){return"canceled"===e.status},_pageLoaded:function(){this.pageLoaded=!0,this.fire("page-loaded")},setCreditCard:function(e){this._paymentMethodInfo=!1,this._ccLoader=!0,this.set("_cc",e),setTimeout(function(){this._ccLoader=!1}.bind(this),1e3)},setSubscription:function(e){this._subscriptionLoader=!0,this._subscription=e,setTimeout(function(){this._subscriptionLoader=!1}.bind(this),1e3)},toggleResource:function(){this.$.appscoContent.toggleSection("resource")},_onManageCreditCard:function(){this.fire("manage-credit-card")},_onSubscriptionChanged:function(e){for(key in e)return this._loadUpcomingInvoice(),this._loadInvoiceList(),!1},_toggleCancelSubscriptionAction:function(){this._subscription.status&&!this._subscriptionCanceled?setTimeout(function(){this._cancelSubscription=!0}.bind(this),1e3):this._cancelSubscription=!1},_handleCCResponse:function(e){var t=e.detail.response;return null==t||0===t.length?(this._paymentMethodInfo=!0,this._ccLoader=!1,!1):(this.set("_cc",t),this._paymentMethodInfo=!1,void(this._ccLoader=!1))},_computeCCLogo:function(e){var t="/images/cc/";return t+=e.brand?"American Express"===e.brand?"amex.png":e.brand.toLowerCase().replace(" ","_")+".png":"unknown.png"},_handleSubscriptionResponse:function(e){null!=e.detail.response&&(this._subscription=e.detail.response,this._subscriptionLoader=!1)},_loadUpcomingInvoice:function(){this._upcomingInvoiceLoader=!0,this.$.upcomingInvoiceCall.generateRequest()},_handleUpcomingInvoiceResponse:function(e){null!=e.detail.response&&(this._upcomingInvoice=e.detail.response,this._upcomingInvoiceLoader=!1)},_loadInvoiceList:function(){this.set("_invoices",[]),this._invoicesExists=!1,this._invoiceListLoader=!0,this.$.invoiceListCall.generateRequest()},_handleInvoicesResponse:function(e){var t=e.detail.response;return null==t?(this._invoiceListLoader=!1,!1):void(t.length>0?(this._invoicesExists=!0,t.forEach(function(e,i){0===i&&(this.lastInvoice=e),setTimeout(function(){this.push("_invoices",e),i===t.length-1&&(this._invoiceListLoader=!1,this._toggleCancelSubscriptionAction())}.bind(this),50*(i+1))}.bind(this))):(this._invoiceListLoader=!1,this._toggleCancelSubscriptionAction()))},_onInvoiceAction:function(e){var t=e.model.item;t.id!=this._selectedInvoice.id?(this._selectedInvoice=t,this._selectedIndex!==-1&&this.$$("#invoiceItem_"+this._selectedIndex).deselect(),this._selectedIndex=e.model.index,this.$$("#invoiceItem_"+this._selectedIndex).select(),this._infoShown||this._showInfo()):this._onCloseInfoAction()},_onCloseInfoAction:function(){this._hideInfo(),this._deselectInvoice()},_deselectInvoice:function(){this._hideInfo(),this.$$("#invoiceItem_"+this._selectedIndex).deselect(),this._selectedInvoice={},this._selectedIndex=-1},_showInfo:function(){this.$.appscoContent.showSection("info"),this._infoShown=!0},_hideInfo:function(){this.$.appscoContent.hideSection("info"),this._infoShown=!1},_onChangePlan:function(){this.fire("upgrade-active")},_onCancelSubscription:function(){this.fire("cancel-subscription")},_onSendInvoice:function(){this.fire("send-invoice",{invoice:this._selectedInvoice})}});</script>
 </dom-module>
 </body></html>

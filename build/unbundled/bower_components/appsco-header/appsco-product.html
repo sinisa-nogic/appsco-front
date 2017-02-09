@@ -39,16 +39,16 @@
             }
         </style>
 
-        <template is="dom-if" if="{{ _multiProducts }}" on-dom-change="_onMultiProductsChanged">
+        <template is="dom-if" if="[[ _multiProducts ]]" on-dom-change="_onMultiProductsChanged">
 
-            <div id="triggerDropdown" class="product-active product-list-action" on-tap="__toggleProductDropdown">
-                [[ _selectedProductLabel ]]
+            <div id="triggerDropdown" class="product-active product-list-action" on-tap="_toggleProductDropdown">
+                [[ _selectedProduct.label ]]
                 <iron-icon icon="arrow-drop-down"></iron-icon>
             </div>
 
             <appsco-dropdown open="{{ _pressed }}" trigger="[[ _triggerDropdown ]]">
 
-                <paper-listbox id="productList" selected="appsco-product" attr-for-selected="value" on-iron-select="_onItemSelect">
+                <paper-listbox id="productList" selected="[[ _selectedProduct.value ]]" attr-for-selected="value" on-iron-activate="_onItemActivate">
 
                     <template is="dom-repeat" items="[[ _products ]]">
                         <paper-item value="[[ item.value ]]" label="[[ item.label ]]">
@@ -64,16 +64,16 @@
 
         </template>
 
-        <template is="dom-if" if="{{ !_multiProducts }}">
+        <template is="dom-if" if="[[ !_multiProducts ]]">
 
             <span class="product-active">
-                [[ _selectedProductLabel ]]
+                [[ _selectedProduct.label ]]
             </span>
 
         </template>
 
     </template>
 
-    <script>Polymer({is:"appsco-product",properties:{partner:{type:Boolean,value:!1,notify:!0,observer:"_onPartnerChanged"},business:{type:Boolean,value:!1,notify:!0,observer:"_onBusinessChanged"},_products:{type:Array,value:function(){return[{label:"Personal",value:"appsco-product"}]}},_selectedProductLabel:{type:String,value:"Personal"},_multiProducts:{type:Boolean,value:!1},_pressed:{type:Boolean,value:!1,notify:!0},_triggerDropdown:{type:Object,notify:!0}},attached:function(){(this.partner||this.business)&&(this._multiProducts=!0),this._onPartnerChanged(this.partner),this._onBusinessChanged(this.business)},_onPartnerChanged:function(t){this._products&&t&&(this.push("_products",{label:"Partner",value:"appsco-partner-product"}),this._multiProducts=!0)},_onBusinessChanged:function(t){this._products&&t&&(this.push("_products",{label:"Business",value:"appsco-business-product"}),this._multiProducts=!0)},_onMultiProductsChanged:function(){this._multiProducts&&(this._triggerDropdown=this.$$("#triggerDropdown"))},_onItemSelect:function(){var t=this.$$("#productList").selectedItem;this._selectedProductLabel=t.label,this.fire("appsco-product-changed",{product:t.value}),this._pressed=!1},__toggleProductDropdown:function(){this._pressed=!this._pressed}});</script>
+    <script>Polymer({is:"appsco-product",properties:{partner:{type:Boolean,value:!1,notify:!0,observer:"_onPartnerChanged"},business:{type:Boolean,value:!1,notify:!0,observer:"_onBusinessChanged"},_products:{type:Array,value:function(){return[{label:"Personal",value:"appsco-product"}]}},_productToSelect:{type:String},_selectedProduct:{type:Object,value:function(){return{}}},_multiProducts:{type:Boolean,value:!1},_pressed:{type:Boolean,value:!1,notify:!0},_triggerDropdown:{type:Object,notify:!0}},attached:function(){this.set("_selectedProduct",this._products[0]),(this.partner||this.business)&&(this._multiProducts=!0),this._onPartnerChanged(this.partner),this._onBusinessChanged(this.business)},setProduct:function(t){var e=this._products,s=e.length;this.set("_productToSelect",t);for(var o=0;o<s;o++)t===e[o].value&&this.set("_selectedProduct",e[o])},_onPartnerChanged:function(t){this._products&&t&&(this.push("_products",{label:"Partner",value:"appsco-partner-product"}),this._multiProducts=!0,this.setProduct(this._productToSelect))},_onBusinessChanged:function(t){this._products&&t&&(this.push("_products",{label:"Business",value:"appsco-business-product"}),this._multiProducts=!0,this.setProduct(this._productToSelect))},_onMultiProductsChanged:function(){this._multiProducts&&(this._triggerDropdown=this.$$("#triggerDropdown"))},_onItemActivate:function(t){var e={};this.$$("#productList").select(t.detail.selected),e=this.$$("#productList").selectedItem,this._selectedProduct=e,this.fire("appsco-product-changed",{product:e.value}),this._pressed=!1},_toggleProductDropdown:function(){this._pressed=!this._pressed}});</script>
 </dom-module>
 </body></html>

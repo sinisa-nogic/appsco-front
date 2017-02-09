@@ -1,0 +1,258 @@
+<link rel="import" href="../bower_components/polymer/polymer.html">
+<link rel="import" href="../bower_components/paper-icon-button/paper-icon-button.html">
+<link rel="import" href="../bower_components/iron-icons/iron-icons.html">
+<link rel="import" href="../bower_components/paper-material/paper-material.html">
+<link rel="import" href="../bower_components/iron-media-query/iron-media-query.html">
+<link rel="import" href="../bower_components/iron-ajax/iron-ajax.html">
+<link rel="import" href="../bower_components/iron-icon/iron-icon.html">
+<link rel="import" href="../bower_components/iron-image/iron-image.html">
+
+<link rel="import" href="../bower_components/appsco-page/appsco-content.html">
+<link rel="import" href="../bower_components/appsco-components/appsco-loader.html">
+
+
+<link rel="import" href="../bower_components/paper-progress/paper-progress.html">
+
+<link rel="import" href="shared-styles.html">
+
+<dom-module id="appsco-statistics-page">
+    <template>
+        <style include="webkit-scrollbar-style">
+            :host {
+                display: block;
+                color: var(--primary-text-color);
+                font-size: 14px;
+
+                --appsco-content-sections: {
+                    padding: 0;
+                };
+            }
+            :host div[content] {
+                padding: 10px;
+                color: var(--primary-text-color);
+            }
+            :host div[info] {
+                padding: 10px;
+                color: var(--primary-text-color);
+            }
+            :host .flex-horizontal {
+                @apply(--layout-horizontal);
+                @apply(--layout-center);
+            }
+            :host .flex-vertical {
+                @apply(--layout-vertical);
+            }
+            :host .flex {
+                @apply(--layout-flex);
+            }
+            :host .flex-start {
+                @apply(--layout-start);
+            }
+
+            :host([medium-screen]) .subscription-plan {
+                min-width: inherit;
+                @apply(--layout-flex);
+            }
+            :host([tablet-screen]) {
+                --info-width: 100%;
+                --resource-width: 240px;
+            }
+            :host([tablet-screen]) .plan-upcoming-invoice {
+                @apply(--layout-vertical);
+            }
+            :host([tablet-screen]) .subscription-plan {
+                margin-right: 0;
+                margin-bottom: 10px;
+            }
+            :host([tablet-screen]) .plan-upcoming-invoice paper-card{
+                @apply(--layout-flex-none);
+                width: 100%;
+            }
+            :host([mobile-screen]) {
+                --resource-width: 180px;
+            }
+        </style>
+
+        <iron-ajax
+                auto
+                url="[[ companyApi ]]/statistics/twofa"
+                handle-as="json"
+                headers="[[ _computedHeaders ]]"
+                on-response="_handleTwoFaResponse"
+        ></iron-ajax>
+
+        <iron-ajax
+                auto
+                url="[[ companyApi ]]/statistics/licences"
+                handle-as="json"
+                headers="[[ _computedHeaders ]]"
+                on-response="_handleLicencesResponse"
+        ></iron-ajax>
+
+        <iron-ajax
+                auto
+                url="[[ companyApi ]]/statistics/user-password-scores"
+                handle-as="json"
+                headers="[[ _computedHeaders ]]"
+                on-response="_handleUserPasswordsScoresResponse"
+        ></iron-ajax>
+
+        <iron-ajax
+                auto
+                url="[[ companyApi ]]/statistics/application-security"
+                handle-as="json"
+                headers="[[ _computedHeaders ]]"
+                on-response="_handleApplicationSecurityResponse"
+        ></iron-ajax>
+
+        <iron-ajax
+                auto
+                url="[[ companyApi ]]/statistics/application-usage"
+                handle-as="json"
+                headers="[[ _computedHeaders ]]"
+                on-response="_handleApplicationUsageResponse"
+        ></iron-ajax>
+
+        <iron-media-query query="(max-width: 1200px)" query-matches="{{ mediumScreen }}"></iron-media-query>
+        <iron-media-query query="(max-width: 800px)" query-matches="{{ tabletScreen }}"></iron-media-query>
+        <iron-media-query query="(max-width: 600px)" query-matches="{{ mobileScreen }}"></iron-media-query>
+
+        <appsco-content id="appscoContent">
+
+            <div content>
+                Content
+
+            </div>
+            <div info active>
+                <div class="flex-horizontal">
+                    <span>2fa on </span>
+                    <paper-progress value="{{ twofa.active }}" min="0" max="10" class="green"></paper-progress>
+                </div>
+                <div class="flex-horizontal">
+                    <span>2fa off </span>
+                    <paper-progress value="{{ twofa.inactive }}" min="0" max="10" class="red"></paper-progress>
+                </div>
+            </div>
+        </appsco-content>
+    </template>
+
+    <script>
+        Polymer({
+            is: 'appsco-statistics-page',
+
+            properties: {
+
+                companyApi: {
+                    type: String
+                },
+
+                authorizationToken: {
+                    type: String
+                },
+
+                /**
+                 * Computed headers.
+                 * It contains authorization token.
+                 */
+                _computedHeaders: {
+                    type: Object,
+                    computed: "_computeHeaders(authorizationToken)"
+                },
+
+                /**
+                 * Indicates if it is medium screen size.
+                 * It uses iron-media-query.
+                 */
+                mediumScreen: {
+                    type: Boolean,
+                    value: false,
+                    reflectToAttribute: true
+                },
+
+                tabletScreen: {
+                    type: Boolean,
+                    value: false,
+                    reflectToAttribute: true
+                },
+
+                mobileScreen: {
+                    type: Boolean,
+                    value: false,
+                    reflectToAttribute: true
+                },
+
+                pageLoaded: {
+                    type: Boolean,
+                    value: false
+                }
+            },
+
+            observers: [
+                '_updateScreen(mediumScreen, tabletScreen, mobileScreen)'
+            ],
+
+            attached: function() {
+
+                this.pageLoaded = false;
+
+                if (this.mobileScreen || this.tabletScreen || this.mediumScreen) {
+                    this.updateStyles();
+                }
+
+                this._pageLoaded();
+                this.$.appscoContent.showSection('info');
+            },
+
+            _updateScreen: function(medium, tablet, mobile) {
+                this.updateStyles();
+            },
+
+            /**
+             * Computes authorization headers.
+             *
+             * @param {Object} authorizationToken
+             * @returns {{ Authorization: string }}
+             * @private
+             */
+            _computeHeaders: function (authorizationToken) {
+                return {
+                    'Authorization': 'token ' + authorizationToken
+                }
+            },
+
+            _computeSubscriptionApi: function(companyApi) {
+                return companyApi + '/billing/subscription';
+            },
+
+            _pageLoaded: function() {
+                this.pageLoaded = true;
+                this.fire('page-loaded');
+            },
+
+            _handleTwoFaResponse: function(event) {
+                var response = event.detail.response;
+                this.twofa = response;
+            },
+
+            _handleLicencesResponse: function(event) {
+                var response = event.detail.response;
+                console.log(response);
+            },
+
+            _handleUserPasswordsScoresResponse: function(event) {
+                var response = event.detail.response;
+                console.log(response);
+            },
+
+            _handleApplicationSecurityResponse: function(event) {
+                var response = event.detail.response;
+                console.log(response);
+            },
+
+            _handleApplicationUsageResponse: function(event) {
+                var response = event.detail.response;
+                console.log(response);
+            }
+        });
+    </script>
+</dom-module>

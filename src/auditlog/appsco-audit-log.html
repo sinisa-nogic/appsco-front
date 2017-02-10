@@ -97,7 +97,6 @@
         </style>
 
         <iron-ajax id="ironAjaxLog"
-                   auto
                    url="[[ auditLogApi ]]"
                    method="POST"
                    headers="[[ _headers ]]"
@@ -155,7 +154,6 @@
                     <div class="date">
                         <appsco-date-format date="[[ item.date ]]"
                                             options="[[ _dateFormat ]]"></appsco-date-format>
-                        <!--[[ item.date ]]-->
                     </div>
                 </div>
             </template>
@@ -187,7 +185,8 @@
                  * Get audit log link.
                  */
                 auditLogApi: {
-                    type: String
+                    type: String,
+                    observer: '_onAuditLogApiChanged'
                 },
 
                 /**
@@ -318,6 +317,15 @@
                     'Authorization': 'token ' + authorizationToken,
                     'Content-Type': 'application/x-www-form-urlencoded'
                 }
+            },
+
+            _onAuditLogApiChanged: function(auditLogApi) {
+
+                if (auditLogApi && auditLogApi != '') {
+                    this.$.ironAjaxLog.generateRequest();
+                    this.$.ironAjaxLog.auto = true;
+                }
+
             },
 
             _accountInitials: function(account) {

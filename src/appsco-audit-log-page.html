@@ -1,5 +1,4 @@
 <link rel="import" href="../bower_components/polymer/polymer.html">
-<link rel="import" href="../bower_components/paper-tabs/paper-tabs.html">
 <link rel="import" href="../bower_components/neon-animation/neon-animated-pages.html">
 <link rel="import" href="../bower_components/neon-animation/animations/fade-in-animation.html">
 <link rel="import" href="../bower_components/neon-animation/animations/fade-out-animation.html">
@@ -119,7 +118,8 @@
                     <div class="filter">
                         <paper-input label="Filter log by account"
                                      on-keyup="_onFilterSearch"
-                                     id="searchInput">
+                                     id="searchInput"
+                                     disabled$="[[ !_logLoaded ]]">
                             <div prefix>
                                 <iron-icon icon="icons:search"
                                            class="input-icon search-icon"></iron-icon>
@@ -146,7 +146,8 @@
 
                         <paper-dropdown-menu id="filterEventTypes"
                                              label="Event type"
-                                             horizontal-align="left">
+                                             horizontal-align="left"
+                                             disabled$="[[ !_logLoaded ]]">
                             <paper-listbox id="filterListEventTypes"
                                            class="dropdown-content"
                                            attr-for-selected="value"
@@ -162,6 +163,7 @@
                         <vaadin-date-picker
                                 id="filterDateFrom"
                                 label="Date from"
+                                disabled$="[[ !_logLoaded ]]"
                                 on-value-changed="_onFilterDateFrom"></vaadin-date-picker>
                     </div>
 
@@ -169,6 +171,7 @@
                         <vaadin-date-picker
                                 id="filterDateTo"
                                 label="Date to"
+                                disabled$="[[ !_logLoaded ]]"
                                 on-value-changed="_onFilterDateTo"></vaadin-date-picker>
                     </div>
                 </div>
@@ -178,7 +181,7 @@
                 <appsco-audit-log id="appscoAuditLog"
                                   authorization-token="[[ authorizationToken ]]"
                                   audit-log-api="[[ _auditLogApi ]]"
-                                  on-loaded="_pageLoaded"
+                                  on-loaded="_onLogLoaded"
                                   on-empty-load="_onAuditLogEmptyLoad"></appsco-audit-log>
             </div>
 
@@ -214,6 +217,11 @@
                 _auditLogApi: {
                     type: String,
                     computed: '_computeAuditLogApi(companyApi)'
+                },
+
+                _logLoaded: {
+                    type: Boolean,
+                    value: false
                 },
 
                 _headers: {
@@ -319,6 +327,11 @@
                 this.updateStyles();
             },
 
+            _onLogLoaded: function() {
+                this._pageLoaded();
+                this._logLoaded = true;
+            },
+
             _pageLoaded: function() {
                 this.pageLoaded = true;
                 this.fire('page-loaded');
@@ -333,7 +346,7 @@
             },
 
             _computeAuditLogApi: function(companyApi) {
-                return companyApi + '/log';
+                return companyApi ? companyApi + '/log' : '';
             },
 
             _computeHeaders: function (authorizationToken) {
@@ -648,6 +661,7 @@
             },
 
             reloadLog: function() {
+                this._logLoaded = false;
                 this.$.appscoAuditLog.reloadLog();
             },
 

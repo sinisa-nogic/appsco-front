@@ -4881,65 +4881,8 @@ this.currentTarget=t,this.defaultPrevented=!1,this.eventPhase=Event.AT_TARGET,th
 
     <script>Polymer({is:"appsco-application-assignees",properties:{application:{type:Object,value:function(){return{}}},authorizationToken:{type:String,value:""},size:{type:Number,value:5},loadMore:{type:Boolean,value:!1},preview:{type:Boolean,value:!1,reflectToAttribute:!0},_nextPage:{type:Number,value:1},_moreAssignees:{type:Boolean,value:!0},_computedAction:{type:String},_computedHeaders:{type:Object,computed:"_computeHeaders(authorizationToken)"},_assignees:{type:Array,value:function(){return[]}},_totalAssignees:{type:Number},_loadMore:{type:Boolean,value:!1},_message:{type:String}},observers:["_computeAction(application, _nextPage, size)","_onApplicationChanged(application)"],attached:function(){this.load()},_onApplicationChanged:function(){this.load()},_computeAction:function(e,t,s){this._computedAction=e.meta?e.meta.subscribers+"?page="+t+"&limit="+s+"&extended=1":""},_computeHeaders:function(e){return{Authorization:"token "+e}},load:function(){this.$.progress.hidden=!1,this._assignees=[],this._message="",this._nextPage=1,this.$.getAssigneesCall.generateRequest()},_loadMore:function(){this.$.progress.hidden=!1,this.$.getAssigneesCall.generateRequest()},_handleError:function(e){this._message="We couldn't load assignees at the moment. Please try again in a minute. If error continues contact us.",this._handleEmpty()},_handleResponse:function(e){var t=e.detail.response;if(!t)return!1;var s=t.accounts,i=this._assignees.length,n=t.meta.total;this._totalAssignees=n,s&&s.length>0?(this._nextPage+=1,s.forEach(function(e,t){setTimeout(function(){this.push("_assignees",s[t]),t===s.length-1&&(this._moreAssignees=!0,this._assignees.length===n&&(this._moreAssignees=!1),this._hideProgressBar(),this.fire("assignees-loaded"))}.bind(this),50*(t+1))}.bind(this))):s&&!s.length?(i||(this._message="You haven't shared this application to anyone yet."),this._moreAssignees=!1,this._handleEmpty()):i||(this._message="We couldn't load assignees at the moment.",this._moreAssignees=!1,this._handleEmpty())},_handleEmpty:function(){this._hideProgressBar(),this.fire("assignees-empty")},_hideProgressBar:function(){setTimeout(function(){this.$.progress.hidden=!0}.bind(this),500)}});</script>
 </dom-module>
-<dom-module id="appsco-copy" assetpath="../bower_components/appsco-components/">
-    <template>
-        <style>
-            :host {
-                display: inline-block;
-            }
-            :host paper-icon-button {
-                @apply(--appsco-copy-action);
-            }
-        </style>
-        <paper-icon-button icon="icons:content-copy" id="icon" hidden="[[ !value ]]"></paper-icon-button>
-    </template>
-
-    <script>Polymer({is:"appsco-copy",_iconSet:void 0,properties:{value:{type:String,value:null}},listeners:{tap:"_copy"},_setSuccessIcon:function(){var e=this;clearTimeout(this._iconSet),this._iconSet=setTimeout(function(){e.$.icon.setAttribute("icon","content-copy")},1e3),this.$.icon.setAttribute("icon","icons:done")},_copy:function(){var e=document.createElement("span"),t=document.createTextNode(this.value),o=document.createRange();e.appendChild(t),document.body.appendChild(e),window.getSelection?window.getSelection().empty?window.getSelection().empty():window.getSelection().removeAllRanges&&window.getSelection().removeAllRanges():document.selection&&document.selection.empty(),o.selectNodeContents(e),window.getSelection().addRange(o),document.execCommand("copy"),e.remove(),this.fire("copied"),this._setSuccessIcon()}});</script>
-</dom-module>
-<script>Polymer.IronFormElementBehavior={properties:{name:{type:String},value:{notify:!0,type:String},required:{type:Boolean,value:!1},_parentForm:{type:Object}},attached:function(){this.fire("iron-form-element-register")},detached:function(){this._parentForm&&this._parentForm.fire("iron-form-element-unregister",{target:this})}};</script>
-<dom-module id="iron-a11y-announcer" assetpath="../bower_components/iron-a11y-announcer/">
-  <template>
-    <style>
-      :host {
-        display: inline-block;
-        position: fixed;
-        clip: rect(0px,0px,0px,0px);
-      }
-    </style>
-    <div aria-live$="[[mode]]">[[_text]]</div>
-  </template>
-
-  <script>!function(){"use strict";Polymer.IronA11yAnnouncer=Polymer({is:"iron-a11y-announcer",properties:{mode:{type:String,value:"polite"},_text:{type:String,value:""}},created:function(){Polymer.IronA11yAnnouncer.instance||(Polymer.IronA11yAnnouncer.instance=this),document.body.addEventListener("iron-announce",this._onIronAnnounce.bind(this))},announce:function(n){this._text="",this.async(function(){this._text=n},100)},_onIronAnnounce:function(n){n.detail&&n.detail.text&&this.announce(n.detail.text)}}),Polymer.IronA11yAnnouncer.instance=null,Polymer.IronA11yAnnouncer.requestAvailability=function(){Polymer.IronA11yAnnouncer.instance||(Polymer.IronA11yAnnouncer.instance=document.createElement("iron-a11y-announcer")),document.body.appendChild(Polymer.IronA11yAnnouncer.instance)}}();</script>
-</dom-module>
-<script>Polymer.IronValidatableBehaviorMeta=null,Polymer.IronValidatableBehavior={properties:{validator:{type:String},invalid:{notify:!0,reflectToAttribute:!0,type:Boolean,value:!1},_validatorMeta:{type:Object},validatorType:{type:String,value:"validator"},_validator:{type:Object,computed:"__computeValidator(validator)"}},observers:["_invalidChanged(invalid)"],registered:function(){Polymer.IronValidatableBehaviorMeta=new Polymer.IronMeta({type:"validator"})},_invalidChanged:function(){this.invalid?this.setAttribute("aria-invalid","true"):this.removeAttribute("aria-invalid")},hasValidator:function(){return null!=this._validator},validate:function(a){return this.invalid=!this._getValidity(a),!this.invalid},_getValidity:function(a){return!this.hasValidator()||this._validator.validate(a)},__computeValidator:function(){return Polymer.IronValidatableBehaviorMeta&&Polymer.IronValidatableBehaviorMeta.byKey(this.validator)}};</script>
-<script>Polymer({is:"iron-input",extends:"input",behaviors:[Polymer.IronValidatableBehavior],properties:{bindValue:{observer:"_bindValueChanged",type:String},preventInvalidInput:{type:Boolean},allowedPattern:{type:String,observer:"_allowedPatternChanged"},_previousValidInput:{type:String,value:""},_patternAlreadyChecked:{type:Boolean,value:!1}},listeners:{input:"_onInput",keypress:"_onKeypress"},registered:function(){this._canDispatchEventOnDisabled()||(this._origDispatchEvent=this.dispatchEvent,this.dispatchEvent=this._dispatchEventFirefoxIE)},created:function(){Polymer.IronA11yAnnouncer.requestAvailability()},_canDispatchEventOnDisabled:function(){var e=document.createElement("input"),t=!1;e.disabled=!0,e.addEventListener("feature-check-dispatch-event",function(){t=!0});try{e.dispatchEvent(new Event("feature-check-dispatch-event"))}catch(e){}return t},_dispatchEventFirefoxIE:function(){var e=this.disabled;this.disabled=!1,this._origDispatchEvent.apply(this,arguments),this.disabled=e},get _patternRegExp(){var e;if(this.allowedPattern)e=new RegExp(this.allowedPattern);else switch(this.type){case"number":e=/[0-9.,e-]/}return e},ready:function(){this.bindValue=this.value},_bindValueChanged:function(){this.value!==this.bindValue&&(this.value=this.bindValue||0===this.bindValue||this.bindValue===!1?this.bindValue:""),this.fire("bind-value-changed",{value:this.bindValue})},_allowedPatternChanged:function(){this.preventInvalidInput=!!this.allowedPattern},_onInput:function(){if(this.preventInvalidInput&&!this._patternAlreadyChecked){var e=this._checkPatternValidity();e||(this._announceInvalidCharacter("Invalid string of characters not entered."),this.value=this._previousValidInput)}this.bindValue=this.value,this._previousValidInput=this.value,this._patternAlreadyChecked=!1},_isPrintable:function(e){var t=8==e.keyCode||9==e.keyCode||13==e.keyCode||27==e.keyCode,i=19==e.keyCode||20==e.keyCode||45==e.keyCode||46==e.keyCode||144==e.keyCode||145==e.keyCode||e.keyCode>32&&e.keyCode<41||e.keyCode>111&&e.keyCode<124;return!(t||0==e.charCode&&i)},_onKeypress:function(e){if(this.preventInvalidInput||"number"===this.type){var t=this._patternRegExp;if(t&&!(e.metaKey||e.ctrlKey||e.altKey)){this._patternAlreadyChecked=!0;var i=String.fromCharCode(e.charCode);this._isPrintable(e)&&!t.test(i)&&(e.preventDefault(),this._announceInvalidCharacter("Invalid character "+i+" not entered."))}}},_checkPatternValidity:function(){var e=this._patternRegExp;if(!e)return!0;for(var t=0;t<this.value.length;t++)if(!e.test(this.value[t]))return!1;return!0},validate:function(){var e=this.checkValidity();return e&&(this.required&&""===this.value?e=!1:this.hasValidator()&&(e=Polymer.IronValidatableBehavior.validate.call(this,this.value))),this.invalid=!e,this.fire("iron-input-validate"),e},_announceInvalidCharacter:function(e){this.fire("iron-announce",{text:e})}});</script>
+<script>Polymer({is:"iron-a11y-keys",behaviors:[Polymer.IronA11yKeysBehavior],properties:{target:{type:Object,observer:"_targetChanged"},keys:{type:String,reflectToAttribute:!0,observer:"_keysChanged"}},attached:function(){this.target||(this.target=this.parentNode)},_targetChanged:function(e){this.keyEventTarget=e},_keysChanged:function(){this.removeOwnKeyBindings(),this.addOwnKeyBinding(this.keys,"_fireKeysPressed")},_fireKeysPressed:function(e){this.fire("keys-pressed",e.detail,{})}});</script>
 <script>Polymer.PaperInputHelper={},Polymer.PaperInputHelper.NextLabelID=1,Polymer.PaperInputHelper.NextAddonID=1,Polymer.PaperInputBehaviorImpl={properties:{label:{type:String},value:{notify:!0,type:String},disabled:{type:Boolean,value:!1},invalid:{type:Boolean,value:!1,notify:!0},preventInvalidInput:{type:Boolean},allowedPattern:{type:String},type:{type:String},list:{type:String},pattern:{type:String},required:{type:Boolean,value:!1},errorMessage:{type:String},charCounter:{type:Boolean,value:!1},noLabelFloat:{type:Boolean,value:!1},alwaysFloatLabel:{type:Boolean,value:!1},autoValidate:{type:Boolean,value:!1},validator:{type:String},autocomplete:{type:String,value:"off"},autofocus:{type:Boolean,observer:"_autofocusChanged"},inputmode:{type:String},minlength:{type:Number},maxlength:{type:Number},min:{type:String},max:{type:String},step:{type:String},name:{type:String},placeholder:{type:String,value:""},readonly:{type:Boolean,value:!1},size:{type:Number},autocapitalize:{type:String,value:"none"},autocorrect:{type:String,value:"off"},autosave:{type:String},results:{type:Number},accept:{type:String},multiple:{type:Boolean},_ariaDescribedBy:{type:String,value:""},_ariaLabelledBy:{type:String,value:""}},listeners:{"addon-attached":"_onAddonAttached"},keyBindings:{"shift+tab:keydown":"_onShiftTabDown"},hostAttributes:{tabindex:0},get inputElement(){return this.$.input},get _focusableElement(){return this.inputElement},registered:function(){this._typesThatHaveText=["date","datetime","datetime-local","month","time","week","file"]},attached:function(){this._updateAriaLabelledBy(),this.inputElement&&this._typesThatHaveText.indexOf(this.inputElement.type)!==-1&&(this.alwaysFloatLabel=!0)},_appendStringWithSpace:function(e,t){return e=e?e+" "+t:t},_onAddonAttached:function(e){var t=e.path?e.path[0]:e.target;if(t.id)this._ariaDescribedBy=this._appendStringWithSpace(this._ariaDescribedBy,t.id);else{var a="paper-input-add-on-"+Polymer.PaperInputHelper.NextAddonID++;t.id=a,this._ariaDescribedBy=this._appendStringWithSpace(this._ariaDescribedBy,a)}},validate:function(){return this.inputElement.validate()},_focusBlurHandler:function(e){Polymer.IronControlState._focusBlurHandler.call(this,e),this.focused&&!this._shiftTabPressed&&this._focusableElement.focus()},_onShiftTabDown:function(e){var t=this.getAttribute("tabindex");this._shiftTabPressed=!0,this.setAttribute("tabindex","-1"),this.async(function(){this.setAttribute("tabindex",t),this._shiftTabPressed=!1},1)},_handleAutoValidate:function(){this.autoValidate&&this.validate()},updateValueAndPreserveCaret:function(e){try{var t=this.inputElement.selectionStart;this.value=e,this.inputElement.selectionStart=t,this.inputElement.selectionEnd=t}catch(t){this.value=e}},_computeAlwaysFloatLabel:function(e,t){return t||e},_updateAriaLabelledBy:function(){var e=Polymer.dom(this.root).querySelector("label");if(!e)return void(this._ariaLabelledBy="");var t;e.id?t=e.id:(t="paper-input-label-"+Polymer.PaperInputHelper.NextLabelID++,e.id=t),this._ariaLabelledBy=t},_onChange:function(e){this.shadowRoot&&this.fire(e.type,{sourceEvent:e},{node:this,bubbles:e.bubbles,cancelable:e.cancelable})},_autofocusChanged:function(){if(this.autofocus&&this._focusableElement){var e=document.activeElement,t=e instanceof HTMLElement,a=t&&e!==document.body&&e!==document.documentElement;a||this._focusableElement.focus()}}},Polymer.PaperInputBehavior=[Polymer.IronControlState,Polymer.IronA11yKeysBehavior,Polymer.PaperInputBehaviorImpl];</script>
-<script>Polymer.PaperInputAddonBehavior={hostAttributes:{"add-on":""},attached:function(){this.fire("addon-attached")},update:function(t){}};</script>
-<dom-module id="paper-input-char-counter" assetpath="../bower_components/paper-input/">
-  <template>
-    <style>
-      :host {
-        display: inline-block;
-        float: right;
-
-        @apply(--paper-font-caption);
-        @apply(--paper-input-char-counter);
-      }
-
-      :host([hidden]) {
-        display: none !important;
-      }
-
-      :host-context([dir="rtl"]) {
-        float: left;
-      }
-    </style>
-
-    <span>[[_charCounterStr]]</span>
-  </template>
-</dom-module>
-
-<script>Polymer({is:"paper-input-char-counter",behaviors:[Polymer.PaperInputAddonBehavior],properties:{_charCounterStr:{type:String,value:"0"}},update:function(t){if(t.inputElement){t.value=t.value||"";var e=t.value.toString().length.toString();t.inputElement.hasAttribute("maxlength")&&(e+="/"+t.inputElement.getAttribute("maxlength")),this._charCounterStr=e}}});</script>
 <dom-module id="paper-input-container" assetpath="../bower_components/paper-input/">
   <template>
     <style>
@@ -5183,6 +5126,7 @@ this.currentTarget=t,this.defaultPrevented=!1,this.eventPhase=Event.AT_TARGET,th
 </dom-module>
 
 <script>Polymer({is:"paper-input-container",properties:{noLabelFloat:{type:Boolean,value:!1},alwaysFloatLabel:{type:Boolean,value:!1},attrForValue:{type:String,value:"bind-value"},autoValidate:{type:Boolean,value:!1},invalid:{observer:"_invalidChanged",type:Boolean,value:!1},focused:{readOnly:!0,type:Boolean,value:!1,notify:!0},_addons:{type:Array},_inputHasContent:{type:Boolean,value:!1},_inputSelector:{type:String,value:"input,textarea,.paper-input-input"},_boundOnFocus:{type:Function,value:function(){return this._onFocus.bind(this)}},_boundOnBlur:{type:Function,value:function(){return this._onBlur.bind(this)}},_boundOnInput:{type:Function,value:function(){return this._onInput.bind(this)}},_boundValueChanged:{type:Function,value:function(){return this._onValueChanged.bind(this)}}},listeners:{"addon-attached":"_onAddonAttached","iron-input-validate":"_onIronInputValidate"},get _valueChangedEvent(){return this.attrForValue+"-changed"},get _propertyForValue(){return Polymer.CaseMap.dashToCamelCase(this.attrForValue)},get _inputElement(){return Polymer.dom(this).querySelector(this._inputSelector)},get _inputElementValue(){return this._inputElement[this._propertyForValue]||this._inputElement.value},ready:function(){this._addons||(this._addons=[]),this.addEventListener("focus",this._boundOnFocus,!0),this.addEventListener("blur",this._boundOnBlur,!0)},attached:function(){this.attrForValue?this._inputElement.addEventListener(this._valueChangedEvent,this._boundValueChanged):this.addEventListener("input",this._onInput),""!=this._inputElementValue?this._handleValueAndAutoValidate(this._inputElement):this._handleValue(this._inputElement)},_onAddonAttached:function(t){this._addons||(this._addons=[]);var n=t.target;this._addons.indexOf(n)===-1&&(this._addons.push(n),this.isAttached&&this._handleValue(this._inputElement))},_onFocus:function(){this._setFocused(!0)},_onBlur:function(){this._setFocused(!1),this._handleValueAndAutoValidate(this._inputElement)},_onInput:function(t){this._handleValueAndAutoValidate(t.target)},_onValueChanged:function(t){this._handleValueAndAutoValidate(t.target)},_handleValue:function(t){var n=this._inputElementValue;n||0===n||"number"===t.type&&!t.checkValidity()?this._inputHasContent=!0:this._inputHasContent=!1,this.updateAddons({inputElement:t,value:n,invalid:this.invalid})},_handleValueAndAutoValidate:function(t){if(this.autoValidate){var n;n=t.validate?t.validate(this._inputElementValue):t.checkValidity(),this.invalid=!n}this._handleValue(t)},_onIronInputValidate:function(t){this.invalid=this._inputElement.invalid},_invalidChanged:function(){this._addons&&this.updateAddons({invalid:this.invalid})},updateAddons:function(t){for(var n,e=0;n=this._addons[e];e++)n.update(t)},_computeInputContentClass:function(t,n,e,i,a){var u="input-content";if(t)a&&(u+=" label-is-hidden");else{var o=this.querySelector("label");n||a?(u+=" label-is-floating",this.$.labelAndInputContainer.style.position="static",i?u+=" is-invalid":e&&(u+=" label-is-highlighted")):o&&(this.$.labelAndInputContainer.style.position="relative")}return u},_computeUnderlineClass:function(t,n){var e="underline";return n?e+=" is-invalid":t&&(e+=" is-highlighted"),e},_computeAddOnContentClass:function(t,n){var e="add-on-content";return n?e+=" is-invalid":t&&(e+=" is-highlighted"),e}});</script>
+<script>Polymer.PaperInputAddonBehavior={hostAttributes:{"add-on":""},attached:function(){this.fire("addon-attached")},update:function(t){}};</script>
 <dom-module id="paper-input-error" assetpath="../bower_components/paper-input/">
   <template>
     <style>
@@ -5209,6 +5153,123 @@ this.currentTarget=t,this.defaultPrevented=!1,this.eventPhase=Event.AT_TARGET,th
 </dom-module>
 
 <script>Polymer({is:"paper-input-error",behaviors:[Polymer.PaperInputAddonBehavior],properties:{invalid:{readOnly:!0,reflectToAttribute:!0,type:Boolean}},update:function(e){this._setInvalid(e.invalid)}});</script>
+<dom-module id="iron-a11y-announcer" assetpath="../bower_components/iron-a11y-announcer/">
+  <template>
+    <style>
+      :host {
+        display: inline-block;
+        position: fixed;
+        clip: rect(0px,0px,0px,0px);
+      }
+    </style>
+    <div aria-live$="[[mode]]">[[_text]]</div>
+  </template>
+
+  <script>!function(){"use strict";Polymer.IronA11yAnnouncer=Polymer({is:"iron-a11y-announcer",properties:{mode:{type:String,value:"polite"},_text:{type:String,value:""}},created:function(){Polymer.IronA11yAnnouncer.instance||(Polymer.IronA11yAnnouncer.instance=this),document.body.addEventListener("iron-announce",this._onIronAnnounce.bind(this))},announce:function(n){this._text="",this.async(function(){this._text=n},100)},_onIronAnnounce:function(n){n.detail&&n.detail.text&&this.announce(n.detail.text)}}),Polymer.IronA11yAnnouncer.instance=null,Polymer.IronA11yAnnouncer.requestAvailability=function(){Polymer.IronA11yAnnouncer.instance||(Polymer.IronA11yAnnouncer.instance=document.createElement("iron-a11y-announcer")),document.body.appendChild(Polymer.IronA11yAnnouncer.instance)}}();</script>
+</dom-module>
+<script>Polymer.IronValidatableBehaviorMeta=null,Polymer.IronValidatableBehavior={properties:{validator:{type:String},invalid:{notify:!0,reflectToAttribute:!0,type:Boolean,value:!1},_validatorMeta:{type:Object},validatorType:{type:String,value:"validator"},_validator:{type:Object,computed:"__computeValidator(validator)"}},observers:["_invalidChanged(invalid)"],registered:function(){Polymer.IronValidatableBehaviorMeta=new Polymer.IronMeta({type:"validator"})},_invalidChanged:function(){this.invalid?this.setAttribute("aria-invalid","true"):this.removeAttribute("aria-invalid")},hasValidator:function(){return null!=this._validator},validate:function(a){return this.invalid=!this._getValidity(a),!this.invalid},_getValidity:function(a){return!this.hasValidator()||this._validator.validate(a)},__computeValidator:function(){return Polymer.IronValidatableBehaviorMeta&&Polymer.IronValidatableBehaviorMeta.byKey(this.validator)}};</script>
+<script>Polymer({is:"iron-input",extends:"input",behaviors:[Polymer.IronValidatableBehavior],properties:{bindValue:{observer:"_bindValueChanged",type:String},preventInvalidInput:{type:Boolean},allowedPattern:{type:String,observer:"_allowedPatternChanged"},_previousValidInput:{type:String,value:""},_patternAlreadyChecked:{type:Boolean,value:!1}},listeners:{input:"_onInput",keypress:"_onKeypress"},registered:function(){this._canDispatchEventOnDisabled()||(this._origDispatchEvent=this.dispatchEvent,this.dispatchEvent=this._dispatchEventFirefoxIE)},created:function(){Polymer.IronA11yAnnouncer.requestAvailability()},_canDispatchEventOnDisabled:function(){var e=document.createElement("input"),t=!1;e.disabled=!0,e.addEventListener("feature-check-dispatch-event",function(){t=!0});try{e.dispatchEvent(new Event("feature-check-dispatch-event"))}catch(e){}return t},_dispatchEventFirefoxIE:function(){var e=this.disabled;this.disabled=!1,this._origDispatchEvent.apply(this,arguments),this.disabled=e},get _patternRegExp(){var e;if(this.allowedPattern)e=new RegExp(this.allowedPattern);else switch(this.type){case"number":e=/[0-9.,e-]/}return e},ready:function(){this.bindValue=this.value},_bindValueChanged:function(){this.value!==this.bindValue&&(this.value=this.bindValue||0===this.bindValue||this.bindValue===!1?this.bindValue:""),this.fire("bind-value-changed",{value:this.bindValue})},_allowedPatternChanged:function(){this.preventInvalidInput=!!this.allowedPattern},_onInput:function(){if(this.preventInvalidInput&&!this._patternAlreadyChecked){var e=this._checkPatternValidity();e||(this._announceInvalidCharacter("Invalid string of characters not entered."),this.value=this._previousValidInput)}this.bindValue=this.value,this._previousValidInput=this.value,this._patternAlreadyChecked=!1},_isPrintable:function(e){var t=8==e.keyCode||9==e.keyCode||13==e.keyCode||27==e.keyCode,i=19==e.keyCode||20==e.keyCode||45==e.keyCode||46==e.keyCode||144==e.keyCode||145==e.keyCode||e.keyCode>32&&e.keyCode<41||e.keyCode>111&&e.keyCode<124;return!(t||0==e.charCode&&i)},_onKeypress:function(e){if(this.preventInvalidInput||"number"===this.type){var t=this._patternRegExp;if(t&&!(e.metaKey||e.ctrlKey||e.altKey)){this._patternAlreadyChecked=!0;var i=String.fromCharCode(e.charCode);this._isPrintable(e)&&!t.test(i)&&(e.preventDefault(),this._announceInvalidCharacter("Invalid character "+i+" not entered."))}}},_checkPatternValidity:function(){var e=this._patternRegExp;if(!e)return!0;for(var t=0;t<this.value.length;t++)if(!e.test(this.value[t]))return!1;return!0},validate:function(){var e=this.checkValidity();return e&&(this.required&&""===this.value?e=!1:this.hasValidator()&&(e=Polymer.IronValidatableBehavior.validate.call(this,this.value))),this.invalid=!e,this.fire("iron-input-validate"),e},_announceInvalidCharacter:function(e){this.fire("iron-announce",{text:e})}});</script>
+<script>Polymer.IronFormElementBehavior={properties:{name:{type:String},value:{notify:!0,type:String},required:{type:Boolean,value:!1},_parentForm:{type:Object}},attached:function(){this.fire("iron-form-element-register")},detached:function(){this._parentForm&&this._parentForm.fire("iron-form-element-unregister",{target:this})}};</script>
+<dom-module id="gold-email-input" assetpath="../bower_components/gold-email-input/">
+
+  <template>
+
+    <style>
+    :host {
+      display: block;
+    }
+
+    :host([hidden]) {
+      display: none !important;
+    }
+
+    </style>
+
+    <paper-input-container id="container" disabled$="[[disabled]]" no-label-float="[[noLabelFloat]]" always-float-label="[[_computeAlwaysFloatLabel(alwaysFloatLabel,placeholder)]]" invalid="[[invalid]]">
+
+      <label hidden$="[[!label]]">[[label]]</label>
+
+      <input is="iron-input" id="input" type="email" required$="[[required]]" disabled$="[[disabled]]" aria-labelledby$="[[_ariaLabelledBy]]" aria-describedby$="[[_ariaDescribedBy]]" validator="email-validator" bind-value="{{value}}" autocomplete="email" autocapitalize="none" minlength$="[[minlength]]" maxlength$="[[maxlength]]" name$="[[name]]" invalid="{{invalid}}" autofocus$="[[autofocus]]" inputmode$="[[inputmode]]" placeholder$="[[placeholder]]" readonly$="[[readonly]]" size$="[[size]]">
+
+      <template is="dom-if" if="[[errorMessage]]">
+        <paper-input-error id="error">[[errorMessage]]</paper-input-error>
+      </template>
+
+    </paper-input-container>
+  </template>
+
+  <script>!function(){Polymer({is:"gold-email-input",behaviors:[Polymer.PaperInputBehavior,Polymer.IronFormElementBehavior],properties:{label:{type:String,value:"Email"},regex:{type:String,value:null},value:{type:String,observer:"_onValueChanged"}},observers:["_onFocusedChanged(focused)"],ready:function(){this.value&&this._handleAutoValidate()},_onValueChanged:function(e,i){void 0!=i&&this._handleAutoValidate()},validate:function(){var e;return e=!this.required&&""==this.value||(null===this.regex?this.$.input.validate():new RegExp(this.regex,"i").test(this.value)),e==this.invalid&&(this.invalid=!e,this.$.container.updateAddons({inputElement:this.$.input,value:this.value,invalid:!e})),e},_onFocusedChanged:function(e){e||this._handleAutoValidate()}})}();</script>
+
+</dom-module>
+<dom-module id="appsco-form-error" assetpath="../bower_components/appsco-components/">
+    <template>
+        <style>
+            :host {
+                width: 100%;
+
+                @apply(--appsco-form-error);
+            }
+            :host .error-box {
+                min-height: 38px;
+                padding: 12px;
+                margin: 10px 0;
+                background-color: var(--form-error-background-color, #ffefef);
+                color: var(--form-error-text-color, #ff0000);
+                font-size: 12px;
+                box-sizing: border-box;
+
+                @apply(--form-error-box);
+            }
+        </style>
+
+        <div class="error-box">
+            [[ message ]]
+        </div>
+
+    </template>
+
+    <script>Polymer({is:"appsco-form-error",properties:{_error:{type:Boolean,computed:"_checkIfErrorExists(message)"},message:{type:String,value:"",notify:!0},animationConfig:{value:function(){return{entry:{name:"fade-in-animation",node:this,timing:{duration:300}},exit:{name:"fade-out-animation",node:this,timing:{duration:200}}}}}},behaviors:[Polymer.NeonAnimationRunnerBehavior],listeners:{"message-changed":"_onMessageChanged","neon-animation-finish":"_onNeonAnimationFinish"},_checkIfErrorExists:function(n){return n&&""!=n},_onMessageChanged:function(){this._error?(this.playAnimation("entry"),this.style.display="block"):this.playAnimation("exit")},_onNeonAnimationFinish:function(){this._error||(this.style.display="none")}});</script>
+</dom-module>
+<dom-module id="appsco-copy" assetpath="../bower_components/appsco-components/">
+    <template>
+        <style>
+            :host {
+                display: inline-block;
+            }
+            :host paper-icon-button {
+                @apply(--appsco-copy-action);
+            }
+        </style>
+        <paper-icon-button icon="icons:content-copy" id="icon" hidden="[[ !value ]]"></paper-icon-button>
+    </template>
+
+    <script>Polymer({is:"appsco-copy",_iconSet:void 0,properties:{value:{type:String,value:null}},listeners:{tap:"_copy"},_setSuccessIcon:function(){var e=this;clearTimeout(this._iconSet),this._iconSet=setTimeout(function(){e.$.icon.setAttribute("icon","content-copy")},1e3),this.$.icon.setAttribute("icon","icons:done")},_copy:function(){var e=document.createElement("span"),t=document.createTextNode(this.value),o=document.createRange();e.appendChild(t),document.body.appendChild(e),window.getSelection?window.getSelection().empty?window.getSelection().empty():window.getSelection().removeAllRanges&&window.getSelection().removeAllRanges():document.selection&&document.selection.empty(),o.selectNodeContents(e),window.getSelection().addRange(o),document.execCommand("copy"),e.remove(),this.fire("copied"),this._setSuccessIcon()}});</script>
+</dom-module>
+<dom-module id="paper-input-char-counter" assetpath="../bower_components/paper-input/">
+  <template>
+    <style>
+      :host {
+        display: inline-block;
+        float: right;
+
+        @apply(--paper-font-caption);
+        @apply(--paper-input-char-counter);
+      }
+
+      :host([hidden]) {
+        display: none !important;
+      }
+
+      :host-context([dir="rtl"]) {
+        float: left;
+      }
+    </style>
+
+    <span>[[_charCounterStr]]</span>
+  </template>
+</dom-module>
+
+<script>Polymer({is:"paper-input-char-counter",behaviors:[Polymer.PaperInputAddonBehavior],properties:{_charCounterStr:{type:String,value:"0"}},update:function(t){if(t.inputElement){t.value=t.value||"";var e=t.value.toString().length.toString();t.inputElement.hasAttribute("maxlength")&&(e+="/"+t.inputElement.getAttribute("maxlength")),this._charCounterStr=e}}});</script>
 <dom-module id="paper-input" assetpath="../bower_components/paper-input/">
   <template>
     <style>
@@ -5775,67 +5836,6 @@ this.currentTarget=t,this.defaultPrevented=!1,this.eventPhase=Event.AT_TARGET,th
         </div>
     </template>
     <script>Polymer({is:"appsco-application-details",properties:{application:{type:Object,value:function(){return{}},notify:!0},company:{type:Boolean,value:!1},_applicationClaims:{type:Boolean,computed:"_computeApplicationClaims(application, company)"},animationConfig:{value:function(){return{entry:{name:"fade-in-animation",node:this,timing:{duration:500}},exit:{name:"fade-out-animation",node:this,timing:{duration:100}}}}}},behaviors:[Polymer.NeonAnimationRunnerBehavior],listeners:{"application-changed":"_onApplicationChanged"},attached:function(){this._showApplicationDetails()},_computeApplicationClaims:function(i,n){return i.claims&&!n},_onApplicationChanged:function(){this._showApplicationDetails()},_showApplicationDetails:function(){this.style.display="block",this.playAnimation("entry")}});</script>
-</dom-module>
-<script>Polymer({is:"iron-a11y-keys",behaviors:[Polymer.IronA11yKeysBehavior],properties:{target:{type:Object,observer:"_targetChanged"},keys:{type:String,reflectToAttribute:!0,observer:"_keysChanged"}},attached:function(){this.target||(this.target=this.parentNode)},_targetChanged:function(e){this.keyEventTarget=e},_keysChanged:function(){this.removeOwnKeyBindings(),this.addOwnKeyBinding(this.keys,"_fireKeysPressed")},_fireKeysPressed:function(e){this.fire("keys-pressed",e.detail,{})}});</script>
-<dom-module id="gold-email-input" assetpath="../bower_components/gold-email-input/">
-
-  <template>
-
-    <style>
-    :host {
-      display: block;
-    }
-
-    :host([hidden]) {
-      display: none !important;
-    }
-
-    </style>
-
-    <paper-input-container id="container" disabled$="[[disabled]]" no-label-float="[[noLabelFloat]]" always-float-label="[[_computeAlwaysFloatLabel(alwaysFloatLabel,placeholder)]]" invalid="[[invalid]]">
-
-      <label hidden$="[[!label]]">[[label]]</label>
-
-      <input is="iron-input" id="input" type="email" required$="[[required]]" disabled$="[[disabled]]" aria-labelledby$="[[_ariaLabelledBy]]" aria-describedby$="[[_ariaDescribedBy]]" validator="email-validator" bind-value="{{value}}" autocomplete="email" autocapitalize="none" minlength$="[[minlength]]" maxlength$="[[maxlength]]" name$="[[name]]" invalid="{{invalid}}" autofocus$="[[autofocus]]" inputmode$="[[inputmode]]" placeholder$="[[placeholder]]" readonly$="[[readonly]]" size$="[[size]]">
-
-      <template is="dom-if" if="[[errorMessage]]">
-        <paper-input-error id="error">[[errorMessage]]</paper-input-error>
-      </template>
-
-    </paper-input-container>
-  </template>
-
-  <script>!function(){Polymer({is:"gold-email-input",behaviors:[Polymer.PaperInputBehavior,Polymer.IronFormElementBehavior],properties:{label:{type:String,value:"Email"},regex:{type:String,value:null},value:{type:String,observer:"_onValueChanged"}},observers:["_onFocusedChanged(focused)"],ready:function(){this.value&&this._handleAutoValidate()},_onValueChanged:function(e,i){void 0!=i&&this._handleAutoValidate()},validate:function(){var e;return e=!this.required&&""==this.value||(null===this.regex?this.$.input.validate():new RegExp(this.regex,"i").test(this.value)),e==this.invalid&&(this.invalid=!e,this.$.container.updateAddons({inputElement:this.$.input,value:this.value,invalid:!e})),e},_onFocusedChanged:function(e){e||this._handleAutoValidate()}})}();</script>
-
-</dom-module>
-<dom-module id="appsco-form-error" assetpath="../bower_components/appsco-components/">
-    <template>
-        <style>
-            :host {
-                width: 100%;
-
-                @apply(--appsco-form-error);
-            }
-            :host .error-box {
-                min-height: 38px;
-                padding: 12px;
-                margin: 10px 0;
-                background-color: var(--form-error-background-color, #ffefef);
-                color: var(--form-error-text-color, #ff0000);
-                font-size: 12px;
-                box-sizing: border-box;
-
-                @apply(--form-error-box);
-            }
-        </style>
-
-        <div class="error-box">
-            [[ message ]]
-        </div>
-
-    </template>
-
-    <script>Polymer({is:"appsco-form-error",properties:{_error:{type:Boolean,computed:"_checkIfErrorExists(message)"},message:{type:String,value:"",notify:!0},animationConfig:{value:function(){return{entry:{name:"fade-in-animation",node:this,timing:{duration:300}},exit:{name:"fade-out-animation",node:this,timing:{duration:200}}}}}},behaviors:[Polymer.NeonAnimationRunnerBehavior],listeners:{"message-changed":"_onMessageChanged","neon-animation-finish":"_onNeonAnimationFinish"},_checkIfErrorExists:function(n){return n&&""!=n},_onMessageChanged:function(){this._error?(this.playAnimation("entry"),this.style.display="block"):this.playAnimation("exit")},_onNeonAnimationFinish:function(){this._error||(this.style.display="none")}});</script>
 </dom-module>
 <script>Polymer.IronFitBehavior={properties:{sizingTarget:{type:Object,value:function(){return this}},fitInto:{type:Object,value:window},noOverlap:{type:Boolean},positionTarget:{type:Element},horizontalAlign:{type:String},verticalAlign:{type:String},dynamicAlign:{type:Boolean},horizontalOffset:{type:Number,value:0,notify:!0},verticalOffset:{type:Number,value:0,notify:!0},autoFitOnAttach:{type:Boolean,value:!1},_fitInfo:{type:Object}},get _fitWidth(){var t;return t=this.fitInto===window?this.fitInto.innerWidth:this.fitInto.getBoundingClientRect().width},get _fitHeight(){var t;return t=this.fitInto===window?this.fitInto.innerHeight:this.fitInto.getBoundingClientRect().height},get _fitLeft(){var t;return t=this.fitInto===window?0:this.fitInto.getBoundingClientRect().left},get _fitTop(){var t;return t=this.fitInto===window?0:this.fitInto.getBoundingClientRect().top},get _defaultPositionTarget(){var t=Polymer.dom(this).parentNode;return t&&t.nodeType===Node.DOCUMENT_FRAGMENT_NODE&&(t=t.host),t},get _localeHorizontalAlign(){if(this._isRTL){if("right"===this.horizontalAlign)return"left";if("left"===this.horizontalAlign)return"right"}return this.horizontalAlign},attached:function(){this._isRTL="rtl"==window.getComputedStyle(this).direction,this.positionTarget=this.positionTarget||this._defaultPositionTarget,this.autoFitOnAttach&&("none"===window.getComputedStyle(this).display?setTimeout(function(){this.fit()}.bind(this)):this.fit())},fit:function(){this.position(),this.constrain(),this.center()},_discoverInfo:function(){if(!this._fitInfo){var t=window.getComputedStyle(this),i=window.getComputedStyle(this.sizingTarget);this._fitInfo={inlineStyle:{top:this.style.top||"",left:this.style.left||"",position:this.style.position||""},sizerInlineStyle:{maxWidth:this.sizingTarget.style.maxWidth||"",maxHeight:this.sizingTarget.style.maxHeight||"",boxSizing:this.sizingTarget.style.boxSizing||""},positionedBy:{vertically:"auto"!==t.top?"top":"auto"!==t.bottom?"bottom":null,horizontally:"auto"!==t.left?"left":"auto"!==t.right?"right":null},sizedBy:{height:"none"!==i.maxHeight,width:"none"!==i.maxWidth,minWidth:parseInt(i.minWidth,10)||0,minHeight:parseInt(i.minHeight,10)||0},margin:{top:parseInt(t.marginTop,10)||0,right:parseInt(t.marginRight,10)||0,bottom:parseInt(t.marginBottom,10)||0,left:parseInt(t.marginLeft,10)||0}},this.verticalOffset&&(this._fitInfo.margin.top=this._fitInfo.margin.bottom=this.verticalOffset,this._fitInfo.inlineStyle.marginTop=this.style.marginTop||"",this._fitInfo.inlineStyle.marginBottom=this.style.marginBottom||"",this.style.marginTop=this.style.marginBottom=this.verticalOffset+"px"),this.horizontalOffset&&(this._fitInfo.margin.left=this._fitInfo.margin.right=this.horizontalOffset,this._fitInfo.inlineStyle.marginLeft=this.style.marginLeft||"",this._fitInfo.inlineStyle.marginRight=this.style.marginRight||"",this.style.marginLeft=this.style.marginRight=this.horizontalOffset+"px")}},resetFit:function(){var t=this._fitInfo||{};for(var i in t.sizerInlineStyle)this.sizingTarget.style[i]=t.sizerInlineStyle[i];for(var i in t.inlineStyle)this.style[i]=t.inlineStyle[i];this._fitInfo=null},refit:function(){var t=this.sizingTarget.scrollLeft,i=this.sizingTarget.scrollTop;this.resetFit(),this.fit(),this.sizingTarget.scrollLeft=t,this.sizingTarget.scrollTop=i},position:function(){if(this.horizontalAlign||this.verticalAlign){this._discoverInfo(),this.style.position="fixed",this.sizingTarget.style.boxSizing="border-box",this.style.left="0px",this.style.top="0px";var t=this.getBoundingClientRect(),i=this.__getNormalizedRect(this.positionTarget),e=this.__getNormalizedRect(this.fitInto),n=this._fitInfo.margin,o={width:t.width+n.left+n.right,height:t.height+n.top+n.bottom},h=this.__getPosition(this._localeHorizontalAlign,this.verticalAlign,o,i,e),s=h.left+n.left,l=h.top+n.top,r=Math.min(e.right-n.right,s+t.width),a=Math.min(e.bottom-n.bottom,l+t.height),g=this._fitInfo.sizedBy.minWidth,f=this._fitInfo.sizedBy.minHeight;s<n.left&&(s=n.left,r-s<g&&(s=r-g)),l<n.top&&(l=n.top,a-l<f&&(l=a-f)),this.sizingTarget.style.maxWidth=r-s+"px",this.sizingTarget.style.maxHeight=a-l+"px",this.style.left=s-t.left+"px",this.style.top=l-t.top+"px"}},constrain:function(){if(!this.horizontalAlign&&!this.verticalAlign){this._discoverInfo();var t=this._fitInfo;t.positionedBy.vertically||(this.style.position="fixed",this.style.top="0px"),t.positionedBy.horizontally||(this.style.position="fixed",this.style.left="0px"),this.sizingTarget.style.boxSizing="border-box";var i=this.getBoundingClientRect();t.sizedBy.height||this.__sizeDimension(i,t.positionedBy.vertically,"top","bottom","Height"),t.sizedBy.width||this.__sizeDimension(i,t.positionedBy.horizontally,"left","right","Width")}},_sizeDimension:function(t,i,e,n,o){this.__sizeDimension(t,i,e,n,o)},__sizeDimension:function(t,i,e,n,o){var h=this._fitInfo,s=this.__getNormalizedRect(this.fitInto),l="Width"===o?s.width:s.height,r=i===n,a=r?l-t[n]:t[e],g=h.margin[r?e:n],f="offset"+o,p=this[f]-this.sizingTarget[f];this.sizingTarget.style["max"+o]=l-g-a-p+"px"},center:function(){if(!this.horizontalAlign&&!this.verticalAlign){this._discoverInfo();var t=this._fitInfo.positionedBy;if(!t.vertically||!t.horizontally){this.style.position="fixed",t.vertically||(this.style.top="0px"),t.horizontally||(this.style.left="0px");var i=this.getBoundingClientRect(),e=this.__getNormalizedRect(this.fitInto);if(!t.vertically){var n=e.top-i.top+(e.height-i.height)/2;this.style.top=n+"px"}if(!t.horizontally){var o=e.left-i.left+(e.width-i.width)/2;this.style.left=o+"px"}}}},__getNormalizedRect:function(t){return t===document.documentElement||t===window?{top:0,left:0,width:window.innerWidth,height:window.innerHeight,right:window.innerWidth,bottom:window.innerHeight}:t.getBoundingClientRect()},__getCroppedArea:function(t,i,e){var n=Math.min(0,t.top)+Math.min(0,e.bottom-(t.top+i.height)),o=Math.min(0,t.left)+Math.min(0,e.right-(t.left+i.width));return Math.abs(n)*i.width+Math.abs(o)*i.height},__getPosition:function(t,i,e,n,o){var h=[{verticalAlign:"top",horizontalAlign:"left",top:n.top,left:n.left},{verticalAlign:"top",horizontalAlign:"right",top:n.top,left:n.right-e.width},{verticalAlign:"bottom",horizontalAlign:"left",top:n.bottom-e.height,left:n.left},{verticalAlign:"bottom",horizontalAlign:"right",top:n.bottom-e.height,left:n.right-e.width}];if(this.noOverlap){for(var s=0,l=h.length;s<l;s++){var r={};for(var a in h[s])r[a]=h[s][a];h.push(r)}h[0].top=h[1].top+=n.height,h[2].top=h[3].top-=n.height,h[4].left=h[6].left+=n.width,h[5].left=h[7].left-=n.width}i="auto"===i?null:i,t="auto"===t?null:t;for(var g,s=0;s<h.length;s++){var f=h[s];if(!this.dynamicAlign&&!this.noOverlap&&f.verticalAlign===i&&f.horizontalAlign===t){g=f;break}var p=!(i&&f.verticalAlign!==i||t&&f.horizontalAlign!==t);if(this.dynamicAlign||p){g=g||f,f.croppedArea=this.__getCroppedArea(f,e,o);var d=f.croppedArea-g.croppedArea;if((d<0||0===d&&p)&&(g=f),0===g.croppedArea&&p)break}}return g}};</script>
 <dom-module id="iron-overlay-backdrop" assetpath="../bower_components/iron-overlay-behavior/">

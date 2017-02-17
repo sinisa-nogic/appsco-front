@@ -370,10 +370,18 @@ Custom property | Description | Default
             },
 
             _onCountryListResponse: function(event, ironRequest) {
-                this._countryList = ironRequest.response;
+                var response = ironRequest.response;
+
+                this._countryList = response.sort(function(countryA, countryB) {
+                    countryA = countryA.name.toLowerCase();
+                    countryB = countryB.name.toLowerCase();
+
+                    return countryA < countryB ? -1 : countryA > countryB ? 1 : 0;
+                });
             },
 
             _onTimezoneListResponse: function(event, ironRequest) {
+                var response = [];
 
                 ironRequest.response.forEach(function(zone, i) {
 
@@ -385,12 +393,19 @@ Custom property | Description | Default
                                 text: utc.split('/')[1]
                             };
 
-                            this.push('_timezoneList', item);
+                            response.push(item);
                         }.bind(this));
 
                     }
 
                 }.bind(this));
+
+                this._timezoneList = response.sort(function(zoneA, zoneB) {
+                    zoneA = zoneA.text.toLowerCase();
+                    zoneB = zoneB.text.toLowerCase();
+
+                    return zoneA < zoneB ? -1 : zoneA > zoneB ? 1 : 0;
+                });
 
             },
 

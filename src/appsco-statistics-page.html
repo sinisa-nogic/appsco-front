@@ -84,7 +84,7 @@
         <iron-ajax
                 id="applicationUsageAjax"
                 auto
-                url="[[ companyApi ]]/statistics/application-usage"
+                url="[[ _applicationUsageApi ]]"
                 handle-as="json"
                 headers="[[ _computedHeaders ]]"
                 on-response="_handleApplicationUsageResponse"
@@ -94,7 +94,7 @@
         <iron-ajax
                 id="applicationSecurityAjax"
                 auto
-                url="[[ companyApi ]]/statistics/application-security"
+                url="[[ _applicationSecurityApi ]]"
                 handle-as="json"
                 headers="[[ _computedHeaders ]]"
                 on-response="_handleApplicationSecurityResponse"
@@ -104,7 +104,7 @@
         <iron-ajax
                 id="userSecurityAjax"
                 auto
-                url="[[ companyApi ]]/statistics/user-password-scores"
+                url="[[ _userSecurityApi ]]"
                 handle-as="json"
                 headers="[[ _computedHeaders ]]"
                 on-response="_handleUserPasswordsScoresResponse"
@@ -115,7 +115,7 @@
                 id="loginAttemptsAjax"
                 auto
                 method="POST"
-                url="[[ companyApi ]]/statistics/login-attempts"
+                url="[[ _loginAttemptsApi ]]"
                 handle-as="json"
                 headers="[[ _computedHeaders ]]"
                 on-response="_handleLoginAttemptsResponse"
@@ -125,7 +125,7 @@
         <iron-ajax
                 id="twoFaAjax"
                 auto
-                url="[[ companyApi ]]/statistics/twofa"
+                url="[[ _twoFaApi ]]"
                 handle-as="json"
                 headers="[[ _computedHeaders ]]"
                 on-response="_handleTwoFaResponse"
@@ -135,7 +135,7 @@
         <iron-ajax
                 id="licenceAjax"
                 auto
-                url="[[ companyApi ]]/statistics/licences"
+                url="[[ _licenceApi ]]"
                 handle-as="json"
                 headers="[[ _computedHeaders ]]"
                 on-response="_handleLicencesResponse"
@@ -219,9 +219,9 @@
                             </div>
                         </template>
 
-                        <template is="dom-if" if="[[ !_userSecurityMessage ]]">
-                            <appsco-loader multi-color active="[[ _userSecurityChartLoader ]]"></appsco-loader>
+                        <appsco-loader multi-color active="[[ _userSecurityChartLoader ]]"></appsco-loader>
 
+                        <template is="dom-if" if="[[ !_userSecurityMessage ]]">
                             <h2 class="title-h2">User security</h2>
                             <google-chart id="userSecurityChart"
                                           class="chart-h-380"
@@ -258,7 +258,6 @@
                 </div>
 
                 <div class="two-charts">
-
                     <div class="chart-container">
                         <template is="dom-if" if="[[ _twoFaMessage ]]">
                             <div class="no-data-info">
@@ -274,9 +273,9 @@
                             </div>
                         </template>
 
-                        <template is="dom-if" if="[[ !_twoFaMessage ]]">
-                            <appsco-loader multi-color active="[[ _twoFaChartLoader ]]"></appsco-loader>
+                        <appsco-loader multi-color active="[[ _twoFaChartLoader ]]"></appsco-loader>
 
+                        <template is="dom-if" if="[[ !_twoFaMessage ]]">
                             <h2 class="title-h2">Two-factor authentication</h2>
                             <google-chart id="twoFaChart"
                                           class="chart-h-380 two-fa-chart"
@@ -300,9 +299,9 @@
                             </div>
                         </template>
 
-                        <template is="dom-if" if="[[ !_licenceMessage ]]">
-                            <appsco-loader multi-color active="[[ _licenceChartLoader ]]"></appsco-loader>
+                        <appsco-loader multi-color active="[[ _licenceChartLoader ]]"></appsco-loader>
 
+                        <template is="dom-if" if="[[ !_licenceMessage ]]">
                             <h2 class="title-h2">AppsCo licences</h2>
                             <google-chart id="licenceChart"
                                           class="chart-h-380 two-fa-chart"
@@ -310,7 +309,6 @@
                                           on-google-chart-ready="_onLicenceChartReady"></google-chart>
                         </template>
                     </div>
-                    </template>
                 </div>
 
             </div>
@@ -340,6 +338,11 @@
                     computed: "_computeHeaders(authorizationToken)"
                 },
 
+                _applicationUsageApi: {
+                    type: String,
+                    computed: '_computeApplicationUsageApi(companyApi)'
+                },
+
                 _applicationsUsageChartLoader: {
                     type: Boolean,
                     value: true
@@ -348,6 +351,11 @@
                 _applicationUsageMessage: {
                     type: String,
                     value: ''
+                },
+
+                _applicationSecurityApi: {
+                    type: String,
+                    computed: '_computeApplicationSecurityApi(companyApi)'
                 },
 
                 _applicationSecurityChartLoader: {
@@ -360,6 +368,11 @@
                     value: ''
                 },
 
+                _userSecurityApi: {
+                    type: String,
+                    computed: '_computeUserSecurityApi(companyApi)'
+                },
+
                 _userSecurityChartLoader: {
                     type: Boolean,
                     value: true
@@ -368,6 +381,11 @@
                 _userSecurityMessage: {
                     type: String,
                     value: ''
+                },
+
+                _loginAttemptsApi: {
+                    type: String,
+                    computed: '_computeLoginAttemptsApi(companyApi)'
                 },
 
                 _loginAttemptsChartLoader: {
@@ -380,6 +398,11 @@
                     value: ''
                 },
 
+                _twoFaApi: {
+                    type: String,
+                    computed: '_computeTwoFaApi(companyApi)'
+                },
+
                 _twoFaChartLoader: {
                     type: Boolean,
                     value: true
@@ -388,6 +411,11 @@
                 _twoFaMessage: {
                     type: String,
                     value: ''
+                },
+
+                _licenceApi: {
+                    type: String,
+                    computed: '_computeLicenceApi(companyApi)'
                 },
 
                 _licenceChartLoader: {
@@ -448,8 +476,28 @@
                 }
             },
 
-            _computeSubscriptionApi: function(companyApi) {
-                return companyApi + '/billing/subscription';
+            _computeApplicationUsageApi: function(companyApi) {
+                return companyApi ? companyApi + '/statistics/application-usage' : '';
+            },
+
+            _computeApplicationSecurityApi: function(companyApi) {
+                return companyApi ? companyApi + '/statistics/application-security' : '';
+            },
+
+            _computeUserSecurityApi: function(companyApi) {
+                return companyApi ? companyApi + '/statistics/user-password-scores' : '';
+            },
+
+            _computeLoginAttemptsApi: function(companyApi) {
+                return companyApi ? companyApi + '/statistics/login-attempts' : '';
+            },
+
+            _computeTwoFaApi: function(companyApi) {
+                return companyApi ? companyApi + '/statistics/twofa' : '';
+            },
+
+            _computeLicenceApi: function(companyApi) {
+                return companyApi ? companyApi + '/statistics/licences' : '';
             },
 
             _pageLoaded: function() {

@@ -38,6 +38,7 @@
 <link rel="import" href="../bower_components/appsco-application/appsco-application-share.html">
 <link rel="import" href="../bower_components/appsco-application/appsco-application-remove.html">
 <link rel="import" href="../bower_components/appsco-application/appsco-application-subscriber-revoke.html">
+<link rel="import" href="../bower_components/appsco-application/appsco-application-revoke.html">
 <link rel="import" href="../bower_components/appsco-application/company/appsco-company-application-add.html">
 <link rel="import" href="../bower_components/appsco-application/company/appsco-company-application-share.html">
 <link rel="import" href="../bower_components/appsco-application/company/appsco-company-application-remove.html">
@@ -730,6 +731,12 @@
                 authorization-token="[[ authorizationToken ]]"
                 on-subscription-revoked="_onSubscriptionRevoked"
         ></appsco-application-subscriber-revoke>
+
+        <appsco-application-revoke
+                id="appscoApplicationRevoke"
+                authorization-token="[[ authorizationToken ]]"
+                on-application-instance-removed="_onApplicationInstanceRevoked"
+        ></appsco-application-revoke>
 
         <appsco-vault-remove
                 id="appscoVaultItemRemove"
@@ -1572,8 +1579,8 @@
             },
 
             _onRevokeApplication: function(event) {
-                event.detail.account = this.account;
-                this._onSubscriptionRevoke(event);
+                this.$.appscoApplicationRevoke.applicationInstance = event.detail.application;
+                this.$.appscoApplicationRevoke.open();
             },
 
             _onSelfSubscriptionRevoked: function(event) {
@@ -1601,6 +1608,14 @@
                 }
 
             },
+
+            _onApplicationInstanceRevoked: function(event) {
+                this.$.appscoHomePage.removeApplications([event.detail.applicationInstance]);
+                this.$.appscoHomePage.setDefaultApplication();
+                this._notify('You have successfully revoked access to ' + event.detail.applicationInstance.application.title + '.');
+
+            },
+
             /**
              * Application page END
              */

@@ -1,0 +1,234 @@
+<link rel="import" href="../polymer/polymer.html">
+<link rel="import" href="../iron-flex-layout/iron-flex-layout.html">
+<link rel="import" href="../paper-styles/typography.html">
+<link rel="import" href="../paper-styles/shadow.html">
+<link rel="import" href="../iron-icon/iron-icon.html">
+<link rel="import" href="../iron-icons/iron-icons.html">
+<link rel="import" href="../iron-image/iron-image.html">
+<link rel="import" href="../neon-animation/neon-animation-runner-behavior.html">
+<link rel="import" href="../neon-animation/animations/fade-in-animation.html">
+<link rel="import" href="../neon-animation/animations/fade-out-animation.html">
+<link rel="import" href="../paper-tooltip/paper-tooltip.html">
+<!--
+`appsco-account-card`
+Presents account in form of a card which contains image or initials, account name and close action if needed.
+
+    <appsco-account-card account="{}">
+    </appsco-account-card>
+
+### Styling
+
+`<appsco-account-card>` provides the following custom properties and mixins for styling:
+
+Custom property | Description | Default
+----------------|-------------|----------
+`--appsco-account-card` | Mixin applied to the root element | `{}`
+`--account-card` | Mixin applied to account card | `{}`
+`--account-image` | Mixin applied to account image | `{}`
+`--account-image-contain` | Mixin applied to account iron-image inner #sizedImgDiv | `{}`
+`--account-initials` | Mixin applied to account initials which are displayed if image is not present | `{}`
+`--account-name` | Mixin applied to account name | `{}`
+
+-->
+
+<dom-module id="appsco-account-card">
+    <template>
+        <style>
+            :host {
+                display: none;
+                @apply(--appsco-account-card);
+            }
+            .account-card {
+                @apply(--shadow-elevation-2dp);
+                @apply(--layout-horizontal);
+                @apply(--layout-center);
+                width: 142px;
+                height: 24px;
+                line-height: 24px;
+                padding: 4px;
+                font-size: 13px;
+                cursor: pointer;
+                position: relative;
+                border-radius: 3px;
+                @apply(--account-card);
+            }
+            .account-image {
+                @apply(--layout-flex-none);
+                width: 22px;
+                height: 22px;
+                margin-right: 4px;
+                border-radius: 50%;
+                @apply(--account-image);
+            }
+            :host .account-image::shadow #sizedImgDiv {
+                border-radius: 50%;
+                @apply(--account-image-contain);
+            }
+            .account-initials {
+                position: relative;
+                background-color: var(--body-background-color, #f5f8fa);
+                color: var(--primary-text-color);
+                cursor: default;
+                @apply(--account-initials);
+            }
+            .account-initials .initials {
+                position: absolute;
+                top: 0;
+                right: 0;
+                bottom: 0;
+                left: 0;
+                margin: auto;
+                line-height: 22px;
+                text-align: center;
+                text-transform: uppercase;
+                font-size: 12px;
+            }
+            .account-name {
+                @apply(--layout-flex);
+                @apply(--paper-font-common-nowrap);
+                @apply(--account-name);
+            }
+            .clear-icon {
+                width: 14px;
+                height: 14px;
+                position: absolute;
+                top: 2px;
+                right: 0;
+            }
+            paper-tooltip {
+                --paper-tooltip: {
+                     font-size: 11px;
+                 };
+            }
+        </style>
+        
+        <div class="account-card">
+            
+            <template is="dom-if" if="[[ account.picture_url ]]">
+                <iron-image class="account-image"
+                            sizing="cover"
+                            preload fade
+                            src="[[ account.picture_url ]]"
+                            alt="[[ account.name ]]"></iron-image>
+            </template>
+
+            <template is="dom-if" if="[[ !account.picture_url ]]">
+                <div class="account-image account-initials">
+                    <span class="initials">[[ _initials ]]</span>
+                </div>
+            </template>
+
+            <span class="account-name">[[ account.name ]]</span>
+
+            <paper-tooltip position="right">
+                [[ account.email ]]
+            </paper-tooltip>
+            
+            <template is="dom-if" if="[[ removeAction ]]">
+                <iron-icon icon="icons:clear" class="clear-icon"></iron-icon>
+            </template>
+
+        </div>
+
+    </template>
+
+    <script>
+        Polymer({
+
+            is: 'appsco-account-card',
+
+            properties: {
+
+                /**
+                 * Item that is to be rendered.
+                 */
+                account: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    }
+                },
+
+                removeAction: {
+                    type: Boolean,
+                    value: false
+                },
+
+                _initials: {
+                    type: String,
+                    computed: '_computeInitials(account)'
+                },
+
+                /**
+                 * Animation for loader appearance.
+                 */
+                animationConfig: {
+                    value: function() {
+                        return {
+                            'entry': {
+                                name: 'fade-in-animation',
+                                node: this,
+                                timing: {
+                                    duration: 100
+                                }
+                            },
+                            'exit': {
+                                name: 'fade-out-animation',
+                                node: this,
+                                timing: {
+                                    duration: 200
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+
+            behaviors: [
+                Polymer.NeonAnimationRunnerBehavior
+            ],
+
+            listeners: {
+                'tap': '_onTap',
+                'neon-animation-finish': '_onAnimationFinish'
+            },
+
+            attached: function() {
+                this.style.display = 'flex';
+                this.playAnimation('entry');
+            },
+
+            _computeInitials: function(account) {
+                var initials = '';
+
+                if (account.self && account.first_name.length > 0 && account.last_name.length > 0) {
+                    initials = account.first_name.substring(0, 1) + account.last_name.substring(0, 1);
+                }
+                else if (account.self && account.name) {
+                    initials = account.name.substring(0, 2);
+                }
+
+                return initials;
+            },
+
+            _onTap: function() {
+
+                this.playAnimation('exit', {
+                    exit: true
+                });
+
+            },
+
+            _onAnimationFinish: function(event) {
+
+                if (event.detail.exit) {
+                    this.fire('selected', {
+                        account: this.account
+                    });
+                }
+
+            }
+
+        });
+    </script>
+</dom-module>

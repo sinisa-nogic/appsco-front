@@ -1,6 +1,5 @@
 <link rel="import" href="../polymer/polymer.html">
 <link rel="import" href="../paper-styles/typography.html">
-<link rel="import" href="../paper-styles/shadow.html">
 <link rel="import" href="../paper-button/paper-button.html">
 <link rel="import" href="../iron-icon/iron-icon.html">
 <link rel="import" href="../iron-icons/iron-icons.html">
@@ -9,13 +8,12 @@
 <link rel="import" href="../iron-ajax/iron-request.html">
 <link rel="import" href="../paper-dialog/paper-dialog.html">
 <link rel="import" href="../paper-dialog-scrollable/paper-dialog-scrollable.html">
-<link rel="import" href="../neon-animation/neon-animation-runner-behavior.html">
 <link rel="import" href="../neon-animation/animations/fade-out-animation.html">
-<link rel="import" href="../neon-animation/animations/fade-in-animation.html">
 <link rel="import" href="../neon-animation/animations/scale-up-animation.html">
 
 <link rel="import" href="../appsco-components/appsco-loader.html">
 <link rel="import" href="../appsco-components/appsco-form-error.html">
+<link rel="import" href="appsco-account-card.html">
 
 <!--
 `appsco-application-share`
@@ -51,25 +49,6 @@ Custom property | Description | Default
             :host paper-dialog-scrollable > * {
             @apply(--paper-dialog-scrollable-child);
             }
-            :host .usercard {
-                display: inline-block;
-                margin: 2px 2px 2px 0;
-            }
-            :host span[user] {
-            @apply(--paper-font-body1);
-            }
-            :host span[email] {
-                display: inline-block;
-            @apply(--paper-font-caption);
-            @apply(--paper-font-nowrap);
-                width: 100px;
-            }
-            :host paper-icon-button {
-            --paper-icon-button: {
-                 --iron-icon-width: 14px;
-                 --iron-icon-height: 14px;
-             }
-            }
             paper-input {
             --paper-input-container-label: {
                  left: 4px;
@@ -78,34 +57,21 @@ Custom property | Description | Default
                  padding: 0 4px;
              };
             }
-            :host iron-image {
-                width: 22px;
-                height: 22px;
-                margin-right: 4px;
-                border-radius: 50%;
+            .account-list {
+            @apply(--layout-horizontal);
+            @apply(--layout-wrap);
+                padding: 2px;
+                margin-right: -8px;
             }
-            :host paper-button.user {
-                font-size: 13px;
-                padding: 6px 8px;
-                margin: 0;
-                font-weight: 400;
+            appsco-account-card {
+                margin-right: 6px;
+                margin-bottom: 6px;
             }
-            :host paper-button span[name] {
-            @apply(--paper-font-common-nowrap);
-                width: 108px;
-            }
-            :host .none {
-                display: none;
-            }
-            :host .selected-user paper-button {
-                margin: 0;
-            }
-            :host .selected-user iron-icon {
-                width: 14px;
-                height: 14px;
-                position: absolute;
-                top: 4px;
-                right: 4px;
+            .selected-account {
+            --account-card: {
+                 padding-right: 10px;
+                 width: 136px;
+             };
             }
             :host .buttons paper-button {
             @apply(--paper-dialog-button);
@@ -149,14 +115,10 @@ Custom property | Description | Default
                         <appsco-form-error message="[[ _error ]]"></appsco-form-error>
 
                         <template is="dom-repeat" items="[[ _accounts ]]">
-                            <div class="usercard none selected-user" id="accountItem_{{ index }}">
-                                <paper-button raised class="user" on-tap="_removeFromAccounts">
-                                    <iron-image placeholder="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAABGdBTUEAALGPC/xhBQAAAI5JREFUeAHt1YEJwCAQBEFN/60KYgMRbGMnHXjs5Ofa5x/h7wu//T3dAAqIL4BAPIChAAXEF0AgHoCfIAIIxBdAIB6AK4AAAvEFEIgH4AoggEB8AQTiAbgCCCAQXwCBeACuAAIIxBdAIB6AK4AAAvEFEIgH4AoggEB8AQTiAbgCCCAQXwCBeACuAAIIxBe4yV0EThqVC64AAAAASUVORK5CYII="
-                                                sizing="cover" preload fade src="[[ item.picture_url ]]"></iron-image>
-                                    <span name>[[ item.name ]]</span>
-                                    <iron-icon icon="icons:clear" ></iron-icon>
-                                </paper-button>
-                            </div>
+                            <appsco-account-card class="selected-account"
+                                                 account="[[ item ]]"
+                                                 remove-action
+                                                 on-selected="_removeFromAccounts"></appsco-account-card>
                         </template>
                     </div>
 
@@ -174,15 +136,8 @@ Custom property | Description | Default
                                 multi-color></appsco-loader>
 
                         <template is="dom-repeat" items="[[ _searchList ]]">
-                            <div class="usercard" id="searchItem_{{ index }}">
-                                <paper-button raised on-tap="_share" class="user">
-
-                                    <iron-image placeholder="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAABGdBTUEAALGPC/xhBQAAAI5JREFUeAHt1YEJwCAQBEFN/60KYgMRbGMnHXjs5Ofa5x/h7wu//T3dAAqIL4BAPIChAAXEF0AgHoCfIAIIxBdAIB6AK4AAAvEFEIgH4AoggEB8AQTiAbgCCCAQXwCBeACuAAIIxBdAIB6AK4AAAvEFEIgH4AoggEB8AQTiAbgCCCAQXwCBeACuAAIIxBe4yV0EThqVC64AAAAASUVORK5CYII="
-                                                sizing="cover" preload fade src="[[ item.picture_url ]]"></iron-image>
-
-                                    <span name>[[ item.name ]]</span>
-                                </paper-button>
-                            </div>
+                            <appsco-account-card account="[[ item ]]"
+                                                 on-selected="_share"></appsco-account-card>
                         </template>
 
                         <template is="dom-if" if="[[ _message ]]">
@@ -206,33 +161,8 @@ Custom property | Description | Default
 
             is: 'appsco-application-share',
 
-            behaviors: [
-                Polymer.NeonAnimationRunnerBehavior
-            ],
-            _removeFromAccounts: function(e) {
-                this.animationConfig.exit.node = this.$$("#accountItem_"+e.model.index);
-                this.playAnimation('exit', {
-                    account: e.model,
-                    remove: true,
-                    removeFrom: "_accounts"
-                });
-            },
-            _share: function(e) {
-
-                this._error = '';
-
-                this.animationConfig.exit.node = this.$$("#searchItem_"+e.model.index);
-                this.playAnimation('exit', {
-                    account: e.model,
-                    id: "#searchItem_"+e.model.index,
-                    remove: true,
-                    removeFrom: "_searchList",
-                    entry: true
-                });
-                this.animationConfig.exit.node = this.$$("#searchItem_"+e.model.index);
-                this.push('_accounts', e.model.item);
-            },
             properties: {
+
                 animationConfig: {
                     type: Object,
                     value: function () {
@@ -252,6 +182,7 @@ Custom property | Description | Default
                         }
                     }
                 },
+
                 /**
                  * Number of accounts to load and present
                  */
@@ -259,10 +190,12 @@ Custom property | Description | Default
                     type: Number,
                     value: 8
                 },
+
                 authorizationToken: {
                     type: String,
                     value: ''
                 },
+
                 /**
                  * [Application](https://developers.appsco.com/api/dashboard/id/icons/id) that is to be rendered
                  */
@@ -273,14 +206,17 @@ Custom property | Description | Default
                     },
                     notify: true
                 },
+
                 _computedHeaders: {
                     type: Object,
-                    computed: "_computeHeaders(authorizationToken)"
+                    computed: '_computeHeaders(authorizationToken)'
                 },
+
                 _accounts: {
                     type: Array,
                     value: function () { return []; }
                 },
+
                 _searchList: {
                     type: Array,
                     value: function () { return []; }
@@ -323,10 +259,30 @@ Custom property | Description | Default
                     type: String
                 }
             },
+
+            behaviors: [
+                Polymer.NeonAnimationRunnerBehavior
+            ],
+
             listeners: {
-                'on-request': "_loading",
-                'neon-animation-finish': "_animationFinish"
+                'on-request': '_loading'
             },
+
+            _removeFromAccounts: function(event) {
+                var account = event.detail.account;
+
+                this.splice('_accounts', this._accounts.indexOf(account), 1);
+                this.push('_searchList', account);
+            },
+
+            _share: function(event) {
+                var account = event.detail.account;
+
+                this._error = '';
+                this.push('_accounts', account);
+                this.splice('_searchList', this._searchList.indexOf(account), 1);
+            },
+
             _shareToUser: function(account) {
                 var appRequest = document.createElement('iron-request'),
                         me = this;
@@ -344,6 +300,7 @@ Custom property | Description | Default
 
                 return appRequest;
             },
+
             _shareApplication: function() {
                 var me = this,
                         length = this._accounts.length - 1;
@@ -384,22 +341,12 @@ Custom property | Description | Default
 
             },
 
-            _animationFinish: function(e) {
-                if("remove" in e.detail) {
-                    this.splice(e.detail.removeFrom, e.detail.account.index, 1);
-                    if("entry" in e.detail) {
-                        var domAccountItem = this.$$("#accountItem_" + (this._accounts.length - 1));
-                        domAccountItem.style.display = "inline-block";
-                        this.animationConfig.entry.node = domAccountItem;
-                        this.playAnimation('entry');
-                    }
-                }
-            },
             _computeHeaders: function (authorizationToken) {
                 return {
                     "Authorization": "token " + authorizationToken
                 }
             },
+
             _search: function(e) {
                 var regexpBackspace = /^Backspace$/i,
                         regexpAlphanumeric = /^\w$/,

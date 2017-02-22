@@ -14,7 +14,7 @@
 
 <link rel="import" href="../../appsco-components/appsco-loader.html">
 <link rel="import" href="../../appsco-components/appsco-form-error.html">
-<link rel="import" href="appsco-card-item.html">
+<link rel="import" href="../appsco-account-card.html">
 
 <!--
 `appsco-company-application-share`
@@ -39,7 +39,7 @@ Provides functionality of sharing applications to users.
             @apply(--appsco-paper-dialog);
             }
             :host paper-dialog-scrollable > * {
-                @apply(--paper-dialog-scrollable-child);
+            @apply(--paper-dialog-scrollable-child);
             }
             :host paper-input {
             --paper-input-container-label: {
@@ -49,15 +49,20 @@ Provides functionality of sharing applications to users.
                  padding: 0 4px;
              };
             }
-            :host .account-list {
+            .account-list {
             @apply(--layout-horizontal);
             @apply(--layout-wrap);
-                margin-top: 0;
-                position: relative;
+                padding: 2px;
+                margin-right: -8px;
             }
-            appsco-card-item {
-            --item-image: {
-                 border-radius: 50%;
+            appsco-account-card {
+                margin-right: 6px;
+                margin-bottom: 6px;
+            }
+            .selected-account {
+            --account-card: {
+                 padding-right: 10px;
+                 width: 136px;
              };
             }
             :host .message {
@@ -68,7 +73,7 @@ Provides functionality of sharing applications to users.
             @apply(--info-message);
             }
             :host .buttons paper-button {
-                @apply(--paper-dialog-button);
+            @apply(--paper-dialog-button);
             }
             :host .buttons paper-button[dialog-confirm] {
             @apply(--paper-dialog-confirm-button);
@@ -99,9 +104,10 @@ Provides functionality of sharing applications to users.
                         <appsco-form-error message="[[ _error ]]"></appsco-form-error>
 
                         <template is="dom-repeat" items="[[ _selectedAccounts ]]">
-                            <appsco-card-item item="[[ _mapToItem(item) ]]"
-                                              remove-action
-                                              on-selected="_onItemRemove"></appsco-card-item>
+                            <appsco-account-card class="selected-account"
+                                                 account="[[ item ]]"
+                                                 remove-action
+                                                 on-selected="_onAccountRemove"></appsco-account-card>
                         </template>
                     </div>
 
@@ -116,8 +122,8 @@ Provides functionality of sharing applications to users.
                         <appsco-loader active="[[ _searchLoader ]]" loader-alt="Appsco is searching accounts" multi-color></appsco-loader>
 
                         <template is="dom-repeat" items="[[ _searchList ]]">
-                            <appsco-card-item item="[[ _mapToItem(item) ]]"
-                                              on-selected="_onItemSelect"></appsco-card-item>
+                            <appsco-account-card account="[[ item ]]"
+                                                 on-selected="_onAccountSelect"></appsco-account-card>
                         </template>
 
                         <template is="dom-if" if="[[ _message ]]">
@@ -172,7 +178,7 @@ Provides functionality of sharing applications to users.
                  */
                 size: {
                     type: Number,
-                    value: 12
+                    value: 8
                 },
 
                 /**
@@ -320,25 +326,19 @@ Provides functionality of sharing applications to users.
                 }.bind(this));
             },
 
-            _mapToItem: function(item) {
-                return {
-                    image: item.picture_url,
-                    title: item.name
-                }
-            },
-
             /**
              * Called after account has been selected from search list.
              *
              * @param {Object} event
              * @private
              */
-            _onItemSelect: function(event) {
+            _onAccountSelect: function(event) {
+                this._error = '';
                 this.push('_selectedAccounts', event.model.item);
                 this.splice('_searchList', this._searchList.indexOf(event.model.item), 1);
             },
 
-            _onItemRemove: function(event) {
+            _onAccountRemove: function(event) {
                 this.push('_searchList', event.model.item);
                 this.splice('_selectedAccounts', this._selectedAccounts.indexOf(event.model.item), 1);
             },
@@ -389,6 +389,12 @@ Provides functionality of sharing applications to users.
             },
 
             _onShareApplicationsAction: function() {
+
+                if (0 === this._selectedAccounts.length) {
+                    this._error = 'Please add at least one user to share applications to.';
+                    return false;
+                }
+
                 var applications = this.applications,
                         length = applications.length - 1;
 

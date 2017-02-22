@@ -14,7 +14,7 @@
 
 <link rel="import" href="../../appsco-components/appsco-loader.html">
 <link rel="import" href="../../appsco-components/appsco-form-error.html">
-<link rel="import" href="appsco-card-item.html">
+<link rel="import" href="../appsco-application-card.html">
 
 <!--
 `appsco-company-application-add`
@@ -48,7 +48,7 @@ Custom property | Description | Default
             @apply(--appsco-paper-dialog);
             }
             :host paper-dialog-scrollable > * {
-                @apply(--paper-dialog-scrollable-child);
+            @apply(--paper-dialog-scrollable-child);
             }
             :host paper-input {
             --paper-input-container-label: {
@@ -58,11 +58,21 @@ Custom property | Description | Default
                  padding: 0 4px;
              };
             }
-            :host .application-list {
+            .application-list {
             @apply(--layout-horizontal);
             @apply(--layout-wrap);
-                margin-top: 0;
-                position: relative;
+                padding: 2px;
+                margin-right: -8px;
+            }
+            appsco-application-card {
+                margin-right: 6px;
+                margin-bottom: 6px;
+            }
+            .selected-application {
+            --application-card: {
+                 padding-right: 10px;
+                 width: 136px;
+             };
             }
             :host .message {
                 margin: 0;
@@ -103,9 +113,10 @@ Custom property | Description | Default
                         <appsco-form-error message="[[ _error ]]"></appsco-form-error>
 
                         <template is="dom-repeat" items="[[ _selectedApplications ]]">
-                            <appsco-card-item item="[[ _mapToItem(item) ]]"
-                                              remove-action
-                                              on-selected="_onAddedApplicationSelect"></appsco-card-item>
+                            <appsco-application-card class="selected-application"
+                                                     application="[[ item ]]"
+                                                     remove-action
+                                                     on-selected="_onAddedApplicationSelect"></appsco-application-card>
                         </template>
                     </div>
 
@@ -120,8 +131,8 @@ Custom property | Description | Default
                         <appsco-loader active="[[ _searchLoader ]]" loader-alt="Appsco is searching applications" multi-color></appsco-loader>
 
                         <template is="dom-repeat" items="[[ _searchList ]]">
-                            <appsco-card-item item="[[ _mapToItem(item) ]]"
-                                              on-selected="_onApplicationSelect"></appsco-card-item>
+                            <appsco-application-card application="[[ item ]]"
+                                                     on-selected="_onApplicationSelect"></appsco-application-card>
                         </template>
 
                         <template is="dom-if" if="[[ _message ]]">
@@ -219,6 +230,13 @@ Custom property | Description | Default
                 _addLoader: {
                     type: Boolean,
                     value: false
+                },
+
+                /**
+                 * Error message.
+                 */
+                _error: {
+                    type: String
                 }
 
             },
@@ -268,6 +286,7 @@ Custom property | Description | Default
 
                 this._searchLoader = true;
                 this._message = '';
+                this._error = '';
 
                 if (searchLength === 0) {
                     this._message = '';
@@ -312,13 +331,6 @@ Custom property | Description | Default
                 }.bind(this));
             },
 
-            _mapToItem: function(item) {
-                return {
-                    image: item.icon_url,
-                    title: item.title
-                }
-            },
-
             /**
              * Called after application has been selected from search list.
              *
@@ -326,14 +338,21 @@ Custom property | Description | Default
              * @private
              */
             _onApplicationSelect: function(event) {
-                this.push('_selectedApplications', event.model.item);
+                this._error = '';
+                this.push('_selectedApplications', event.detail.application);
             },
 
             _onAddedApplicationSelect: function(event) {
-                this.splice('_selectedApplications', event.detail.application, 1);
+                this.splice('_selectedApplications', this._selectedApplications.indexOf(event.detail.application), 1);
             },
 
             _onAddApplicationsAction: function() {
+
+                if (0 === this._selectedApplications.length) {
+                    this._error = 'Please select at least one application to add.';
+                    return false;
+                }
+
                 var applications = this._selectedApplications,
                         length = applications.length - 1,
                         appRequest = document.createElement('iron-request'),

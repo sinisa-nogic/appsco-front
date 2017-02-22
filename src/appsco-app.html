@@ -515,7 +515,7 @@
                             route="[[ subroute ]]"
                             company="[[ _company ]]"
                             application="{{ application }}"
-                            applications-api="[[ api.icons ]]"
+                            applications-api="[[ applicationsApi ]]"
                             application-log="[[ application.meta.log ]]"
                             authorization-token="[[ authorizationToken ]]"
                             accounts-api="[[ api.accounts ]]"
@@ -1126,7 +1126,6 @@
             ],
 
             listeners: {
-                'api-changed': '_apiChanged',
                 'page-loaded': '_onPageLoaded',
                 'filter-done': '_onPageLoaded',
                 'upgrade-active': '_fireUpgrade',
@@ -1204,10 +1203,6 @@
             _onCompanyChange: function(company) {
                 this._updateStyle(company);
                 this._setProduct(company);
-            },
-
-            _apiChanged: function() {
-                this.applicationsApi = this.api.icons;
             },
 
             /**
@@ -1303,6 +1298,10 @@
 //                this._showPage404();
             },
 
+            _setGetApplicationsApi: function() {
+                this.applicationsApi = this.api.icons;
+            },
+
             _createDefaultDashboard: function() {
                 var request = document.createElement('iron-request'),
                     options = {
@@ -1320,8 +1319,8 @@
 
                     if (200 == request.status) {
                         this._addAppApi = request.response.dashboard.self;
+                        this._setGetApplicationsApi();
                         this.$.appscoHomePageActions.reloadDashboardFilter();
-                        this.$.appscoHomePage.reloadApplications();
                     }
 
                 }.bind(this));
@@ -1343,6 +1342,7 @@
                         for (var j = 0; j < rolesLength; j++) {
                             if ('owner' === dashboardRoles[j].toLowerCase()) {
                                 this._addAppApi = dashboards[i].self;
+                                this._setGetApplicationsApi();
                                 hasDashboard = true;
                                 break dashboardsLoop;
                             }
@@ -1357,7 +1357,6 @@
                 else {
                     this._createDefaultDashboard();
                 }
-
             },
 
             _setCompanyApi: function(company) {

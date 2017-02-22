@@ -14,6 +14,7 @@
 <link rel="import" href="../bower_components/iron-selector/iron-selector.html">
 <link rel="import" href="../bower_components/iron-flex-layout/iron-flex-layout.html">
 <link rel="import" href="../bower_components/iron-ajax/iron-ajax.html">
+<link rel="import" href="../bower_components/iron-ajax/iron-request.html">
 <link rel="import" href="../bower_components/iron-media-query/iron-media-query.html">
 
 <link rel="import" href="../bower_components/neon-animation/neon-animated-pages.html">
@@ -405,7 +406,7 @@
                                 selected="[[page]]"
                                 attr-for-selected="name">
 
-                            <appsco-home-page-actions
+                            <appsco-home-page-actions id="appscoHomePageActions"
                                     name="home"
                                     authorization-token="[[ authorizationToken ]]"
                                     filter-api="[[ api.dashboards ]]?extended=1"
@@ -514,7 +515,7 @@
                             route="[[ subroute ]]"
                             company="[[ _company ]]"
                             application="{{ application }}"
-                            applications-api="[[ api.icons ]]"
+                            applications-api="[[ applicationsApi ]]"
                             application-log="[[ application.meta.log ]]"
                             authorization-token="[[ authorizationToken ]]"
                             accounts-api="[[ api.accounts ]]"
@@ -699,7 +700,7 @@
                 id="appscoApplicationAdd"
                 authorization-token="[[ authorizationToken ]]"
                 applications-template-api="[[ api.applicationTemplates ]]"
-                dashboard-api="[[ addAppApi ]]"
+                dashboard-api="[[ _addAppApi ]]"
                 link-api="[[ api.link ]]"
                 item-api="[[ api.item ]]"
                 on-application-added="_onApplicationAdded"
@@ -888,7 +889,7 @@
         </template>
 
         <template is="dom-if" if="[[ api.dashboards ]]">
-            <iron-ajax auto
+            <iron-ajax id="getDashboardsLink"
                        url="[[ api.dashboards ]]?extended=1"
                        on-response="_onDashboardsResponse"
                        headers="{{ _computedHeaders }}"></iron-ajax>
@@ -1046,7 +1047,7 @@
                     value: ''
                 },
 
-                addAppApi: {
+                _addAppApi: {
                     type: String,
                     value: ''
                 },
@@ -1125,7 +1126,6 @@
             ],
 
             listeners: {
-                'api-changed': '_apiChanged',
                 'page-loaded': '_onPageLoaded',
                 'filter-done': '_onPageLoaded',
                 'upgrade-active': '_fireUpgrade',
@@ -1203,10 +1203,6 @@
             _onCompanyChange: function(company) {
                 this._updateStyle(company);
                 this._setProduct(company);
-            },
-
-            _apiChanged: function() {
-                this.applicationsApi = this.api.icons;
             },
 
             /**
@@ -1295,10 +1291,39 @@
 
             _onGetAccountResponse: function(event) {
                 this.account = event.detail.response.account;
+                this.$$('#getDashboardsLink').generateRequest();
             },
 
             _onGetAccountError: function() {
 //                this._showPage404();
+            },
+
+            _setGetApplicationsApi: function() {
+                this.applicationsApi = this.api.icons;
+            },
+
+            _createDefaultDashboard: function() {
+                var request = document.createElement('iron-request'),
+                    options = {
+                        url: this.api.dashboards,
+                        method: 'POST',
+                        handleAs: 'json',
+                        headers: {
+                            'Authorization': 'token ' + this.authorizationToken,
+                            'Content-Type': 'application/x-www-form-urlencoded'
+                        },
+                        body: 'dashboard[title]=' + encodeURIComponent(this.account.name)
+                    };
+
+                request.send(options).then(function() {
+
+                    if (200 == request.status) {
+                        this._addAppApi = request.response.dashboard.self;
+                        this._setGetApplicationsApi();
+                        this.$.appscoHomePageActions.reloadDashboardFilter();
+                    }
+
+                }.bind(this));
             },
 
             _onDashboardsResponse: function(event) {
@@ -1306,7 +1331,8 @@
 
                 if (response && response.meta.total > 0) {
                     var dashboards = response.dashboards,
-                        length = dashboards.length;
+                        length = dashboards.length,
+                        hasDashboard = false;
 
                     dashboardsLoop:
                     for (var i = 0; i < length; i++) {
@@ -1315,14 +1341,22 @@
 
                         for (var j = 0; j < rolesLength; j++) {
                             if ('owner' === dashboardRoles[j].toLowerCase()) {
-                                this.addAppApi = dashboards[i].self;
+                                this._addAppApi = dashboards[i].self;
+                                this._setGetApplicationsApi();
+                                hasDashboard = true;
                                 break dashboardsLoop;
                             }
                         }
 
                     }
-                }
 
+                    if (!hasDashboard) {
+                        this._createDefaultDashboard();
+                    }
+                }
+                else {
+                    this._createDefaultDashboard();
+                }
             },
 
             _setCompanyApi: function(company) {

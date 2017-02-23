@@ -99,7 +99,7 @@ Contains info about application assignees (accounts to whom app is shared).
         </template>
 
         <template is="dom-if" if="[[ loadMore ]]">
-            <paper-button on-tap="_loadMore"
+            <paper-button on-tap="_loadMoreAssignees"
                           id="loadMore"
                           class="load-more-button"
                           hidden="[[ !_moreAssignees ]]">Load More</paper-button>
@@ -263,8 +263,9 @@ Contains info about application assignees (accounts to whom app is shared).
                 this.$.getAssigneesCall.generateRequest();
             },
 
-            _loadMore: function() {
+            _loadMoreAssignees: function() {
                 this.$.progress.hidden = false;
+                this._loadMore = true;
 
                 this.$.getAssigneesCall.generateRequest();
             },
@@ -296,6 +297,12 @@ Contains info about application assignees (accounts to whom app is shared).
                 var assignees = response.accounts,
                         currentLength = this._assignees.length,
                         total = response.meta.total;
+
+                if (!this._loadMore) {
+                    this._assignees = [];
+                }
+
+                this._loadMore = false;
 
                 this._totalAssignees = total;
 

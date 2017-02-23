@@ -109,7 +109,7 @@ Custom property | Description | Default
             <iron-ajax
                     auto
                     id="applicationsApiRequest"
-                    url="{{ _currentUrl }}"
+                    url="[[ _currentUrl ]]"
                     on-error="_onError"
                     on-response="_onResponse"
                     headers="{{ _computedHeaders }}"
@@ -133,7 +133,8 @@ Custom property | Description | Default
                         <appsco-application-item id="appscoApplicationItem_[[ index ]]"
                                                  class="application-item"
                                                  application="{{ item }}"
-                                                 company="[[ company ]]"></appsco-application-item>
+                                                 company="[[ company ]]"
+                                                 on-application="_onApplicationAction"></appsco-application-item>
 
                     </template>
                 </div>
@@ -315,7 +316,7 @@ Custom property | Description | Default
                 }
             },
 
-            _loadApplications: function () {
+            _loadApplications: function() {
                 this.$$('#paperProgress').hidden = false;
                 this._loadMore = false;
                 this._currentUrl = this.applicationsApi + '?page=1&extended=1&limit=' + this.size;
@@ -369,6 +370,10 @@ Custom property | Description | Default
 
                     setTimeout( function() {
 
+                        if (this.company) {
+                            el.selected = false;
+                        }
+
                         this.push('_allApplications', el);
                         this.push('_applications', el);
 
@@ -408,6 +413,61 @@ Custom property | Description | Default
                 }
             },
 
+            _onApplicationAction: function(event) {
+                var _applications = JSON.parse(JSON.stringify(this._applications)),
+                        _length = _applications.length,
+                        allApplications = JSON.parse(JSON.stringify(this._allApplications)),
+                        allLength = allApplications.length,
+                        selectedApplication = event.detail.application;
+
+                for (var j = 0; j < _length; j++) {
+                    if (selectedApplication.self === _applications[j].self) {
+                        _applications[j].selected = selectedApplication.selected;
+                        break;
+                    }
+                }
+
+                for (var k = 0; k < allLength; k++) {
+                    if (selectedApplication.self === allApplications[k].self) {
+                        allApplications[k].selected = selectedApplication.selected;
+                        break;
+                    }
+                }
+
+                this.set('_applications', []);
+                this.set('_applications', _applications);
+
+                this.set('_allApplications', []);
+                this.set('_allApplications', allApplications);
+            },
+
+            getFirstSelectedApplication: function() {
+                var _applications = JSON.parse(JSON.stringify(this._applications)),
+                        _length = _applications.length;
+
+                for (var j = 0; j < _length; j++) {
+                    if (_applications[j].selected) {
+                        return _applications[j];
+                    }
+                }
+
+                return false;
+            },
+
+            getSelectedApplications: function() {
+                var allApplications = this._allApplications,
+                        allLength = allApplications.length,
+                        selectedApplications = [];
+
+                for (var i = 0; i < allLength; i++) {
+                    if (allApplications[i].selected) {
+                        selectedApplications.push(allApplications[i]);
+                    }
+                }
+
+                return selectedApplications;
+            },
+
             addApplications: function(applications) {
                 var length = applications.length;
 
@@ -416,7 +476,13 @@ Custom property | Description | Default
                 this._renderedIndex = length - 1;
 
                 for (var i = 0; i < length; i++) {
-                    this.unshift('_applications', applications[i]);
+                    var application = applications[i];
+
+                    if (this.company) {
+                        application.selected = false;
+                    }
+
+                    this.unshift('_applications', application);
                     this.unshift('_allApplications', applications[i]);
                 }
             },
@@ -503,12 +569,16 @@ Custom property | Description | Default
             },
 
             selectAllApplications: function(select) {
-                var applications = this._applications,
-                        length = applications.length;
+                var allApplications = this._allApplications,
+                        allLength = allApplications.length;
 
-                for (var i = 0; i < length; i++) {
-                    var applicationItem = this.$$('#appscoApplicationItem_' + i);
-                    select ? applicationItem.select() : applicationItem.deselect();
+                for (var j = 0; j < allLength; j++) {
+                    var application = allApplications[j];
+
+                    application.selected = select;
+
+                    allApplications[j] = {};
+                    allApplications[j] = application;
                 }
             },
 
@@ -602,7 +672,7 @@ Custom property | Description | Default
 
                 this._loadMore = false;
 
-                if (term.length < 3 && this._applications.length < this._totalApplications) {
+                if (term.length < 3 && this._allApplications.length < this._totalApplications) {
                     this._loadMore = true;
                 }
             },
@@ -651,17 +721,7 @@ Custom property | Description | Default
                 allLength = this._allApplications.length;
 
                 if (!selected) {
-
                     this.set('_applications', JSON.parse(JSON.stringify(this._allApplications)));
-
-                    for (var i = 0; i < allLength; i++) {
-                        var applicationItem = this.$$('#appscoApplicationItem_' + i);
-
-                        if (applicationItem) {
-                            applicationItem.deselect();
-                        }
-                    }
-
                     this.set('_filterOrgunit', {});
                 }
                 else {
@@ -670,12 +730,7 @@ Custom property | Description | Default
                     for (var i = 0; i < allLength; i++) {
                         var application = this._allApplications[i],
                                 orgunits = application.org_units,
-                                orgunitsLength = orgunits.length,
-                                applicationItem = this.$$('#appscoApplicationItem_' + i);
-
-                        if (applicationItem) {
-                            applicationItem.deselect();
-                        }
+                                orgunitsLength = orgunits.length;
 
                         for (var j = 0; j < orgunitsLength; j++) {
 
@@ -722,12 +777,7 @@ Custom property | Description | Default
                     for (var i = 0; i < allLength; i++) {
                         var application = this._allApplications[i],
                                 orgunits = application.org_units,
-                                orgunitsLength = orgunits.length,
-                                applicationItem = this.$$('#appscoApplicationItem_' + i);
-
-                        if (applicationItem) {
-                            applicationItem.deselect();
-                        }
+                                orgunitsLength = orgunits.length;
 
                         for (var j = 0; j < orgunitsLength; j++) {
 
@@ -748,6 +798,18 @@ Custom property | Description | Default
                         this._handleEmptyLoad();
                     }
 
+                }
+            },
+
+            reset: function() {
+                this._message = '';
+                this._applicationsEmpty = false;
+                this.set('_applications', this._allApplications);
+                this._filterTerm = '';
+                this._filterOrgunit = {};
+
+                if (this.company) {
+                    this.selectAllApplications(false);
                 }
             }
         });

@@ -404,7 +404,8 @@
                                 id="animatedActions"
                                 class="actions flex flex-end"
                                 selected="[[page]]"
-                                attr-for-selected="name">
+                                attr-for-selected="name"
+                                on-neon-animation-finish="_onPageActionsAnimationFinish">
 
                             <appsco-home-page-actions id="appscoHomePageActions"
                                     name="home"
@@ -575,7 +576,6 @@
                             id="appscoApplicationsPage"
                             name="applications"
                             application="{{ _companyApplication }}"
-                            selected-applications="{{ _selectedApplications }}"
                             application-log="[[ _companyApplication.meta.log ]]"
                             authorization-token="[[ authorizationToken ]]"
                             computed-headers="[[ _computedHeaders ]]"
@@ -1947,7 +1947,12 @@
             },
 
             _onAddApplicationsToOrgunit: function() {
-                this.$.appscoApplicationOrgunit.toggle();
+                var selectedApplications = this.$.appscoApplicationsPage.getSelectedApplications();
+
+                if (selectedApplications.length > 0) {
+                    this.set('_selectedApplications', selectedApplications);
+                    this.$.appscoApplicationOrgunit.toggle();
+                }
             },
 
             _onApplicationsAddedToOrgunit: function(event) {
@@ -1965,8 +1970,12 @@
             },
 
             _onShareApplications: function() {
-                this.set('_applicationsToShare', this._selectedApplications);
-                this.$.appscoCompanyApplicationsShare.toggle();
+                var selectedApplications = this.$.appscoApplicationsPage.getSelectedApplications();
+
+                if (selectedApplications.length > 0) {
+                    this.set('_applicationsToShare', selectedApplications);
+                    this.$.appscoCompanyApplicationsShare.toggle();
+                }
             },
 
             _onShareCompanyApplication: function(event) {
@@ -2015,7 +2024,12 @@
             },
 
             _onRemoveApplications: function() {
-                this.$.appscoCompanyApplicationsRemove.toggle();
+                var selectedApplications = this.$.appscoApplicationsPage.getSelectedApplications();
+
+                if (selectedApplications.length > 0) {
+                    this.set('_selectedApplications', selectedApplications);
+                    this.$.appscoCompanyApplicationsRemove.toggle();
+                }
             },
 
             _onApplicationsRemoved: function() {
@@ -2378,6 +2392,12 @@
                 switch(fromPage.getAttribute('name')) {
 
                     case 'home':
+                        if (fromPage.$) {
+                            this.applicationsApi = this.api.icons;
+                            fromPage.resetPage();
+                        }
+
+                        break;
                     case 'application':
                     case 'account':
                     case 'applications':
@@ -2433,6 +2453,26 @@
                         break;
                 }
 
+            },
+
+            _onPageActionsAnimationFinish: function(event) {
+                var fromPage = event.detail.fromPage,
+                    toPage = event.detail.toPage;
+
+                switch(fromPage.getAttribute('name')) {
+
+                    case 'home':
+                    case 'applications':
+
+                        if (fromPage.$) {
+                            fromPage.resetPage();
+                        }
+
+                        break;
+
+                    default:
+                        break;
+                }
             },
 
             _notify: function(message) {

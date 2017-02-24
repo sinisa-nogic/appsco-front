@@ -137,13 +137,6 @@
                     </div>
 
                     <div class="filter">
-                        <iron-ajax
-                                auto
-                                url="[[ _timeZoneListUrl ]]"
-                                handle-as="json"
-                                on-response="_onTimezoneListResponse">
-                        </iron-ajax>
-
                         <paper-dropdown-menu id="filterEventTypes"
                                              label="Event type"
                                              horizontal-align="left"
@@ -182,7 +175,7 @@
                                   authorization-token="[[ authorizationToken ]]"
                                   audit-log-api="[[ _auditLogApi ]]"
                                   on-loaded="_onLogLoaded"
-                                  on-empty-load="_onAuditLogEmptyLoad"></appsco-audit-log>
+                                  on-empty-load="_onLogLoaded"></appsco-audit-log>
             </div>
 
         </appsco-content>
@@ -339,7 +332,13 @@
 
             initializePage: function() {},
 
-            resetPage: function() {},
+            resetPage: function() {
+                this.$.searchInput.value = '';
+                this._clearSearch = false;
+                this.$.filterListEventTypes.selected = 0;
+                this.$.filterDateFrom.value = '';
+                this.$.filterDateTo.value = '';
+            },
 
             _computeAuditLogEventTypesApi: function(companyApi) {
                 return companyApi + '/log/events';
@@ -384,12 +383,18 @@
 
                 this._filterFromDate = fromDate ? fromDate + ' 00:00:00' : '';
                 this._setValidToDate(fromDate);
-                this._filterLog();
+
+                if (fromDate) {
+                    this._filterLog();
+                }
             },
 
             _onFilterDateTo: function(event) {
                 this._filterToDate = event.detail.value ? event.detail.value + ' 23:59:59' : '';
-                this._filterLog();
+
+                if (event.detail.value) {
+                    this._filterLog();
+                }
             },
 
             _onFilterEventType: function(event) {
@@ -654,10 +659,6 @@
                     }.bind(this));
 
                 }
-            },
-
-            _onAuditLogEmptyLoad: function() {
-                this._pageLoaded();
             },
 
             reloadLog: function() {

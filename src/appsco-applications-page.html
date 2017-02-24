@@ -153,7 +153,8 @@
         <iron-media-query query="(max-width: 800px)" query-matches="{{ tabletScreen }}"></iron-media-query>
         <iron-media-query query="(max-width: 600px)" query-matches="{{ mobileScreen }}"></iron-media-query>
 
-        <iron-ajax auto
+        <iron-ajax id="getOrgunitsLink"
+                   auto
                    url="[[ companyOrgunitsApi ]]"
                    on-response="_onOrgunitsResponse"
                    headers="{{ computedHeaders }}"></iron-ajax>
@@ -265,14 +266,6 @@
                     type: Object,
                     value: function() {
                         return {};
-                    },
-                    notify: true
-                },
-
-                selectedApplications: {
-                    type: Array,
-                    value: function() {
-                        return [];
                     },
                     notify: true
                 },
@@ -405,16 +398,16 @@
             },
 
             resetPage: function() {
-                this.set('selectedApplications', []);
-                this.$.appscoApplications.selectAllApplications(false);
-                this.fire('hide-bulk-actions');
+                this.$.appscoApplications.reset();
+
+                this.set('_orgUnits', []);
+                this.$.getOrgunitsLink.generateRequest();
                 this.hideInfo();
             },
 
             _onApplicationsEmptyLoad: function() {
                 this.hideInfo();
                 this._pageLoaded();
-                this.fire('hide-bulk-actions');
             },
 
             _showInfo: function() {
@@ -446,7 +439,7 @@
             },
 
             _onOrgunitsResponse: function(event) {
-                this._orgUnits = event.detail.response.orgunits;
+                this.set('_orgUnits', event.detail.response.orgunits);
             },
 
             addOrgunit: function(orgunit) {
@@ -462,12 +455,16 @@
                 this.$.appscoOrgunitTree.removeOrgunit(orgunit);
             },
 
-            _onViewApplicationInfo: function(event) {
-                this.set('application', event.detail.application);
+            _handleApplicationInfo: function(application) {
+                this.set('application', application);
 
                 if (!this._infoShown) {
                     this._showInfo();
                 }
+            },
+
+            _onViewApplicationInfo: function(event) {
+                this._handleApplicationInfo(event.detail.application);
             },
 
             _onApplicationEdit: function(event) {
@@ -480,46 +477,27 @@
             },
 
             _onApplication: function(event) {
-                var application = event.detail.application,
-                    length = this.selectedApplications.length,
-                    index = -1;
+                var application = event.detail.application;
 
-                for (var i = 0; i < length; i++) {
-                    if (this.selectedApplications[i].self === application.self) {
-                        index = i;
-                        break;
-                    }
-                }
-
-                if (index > -1) {
-                    this.splice('selectedApplications', index, 1);
-
-                    if (index != 0) {
-                        var app = this.selectedApplications[this.selectedApplications.length - 1];
-
-                        if (this.application.self !== app.self) {
-                            this.set('application', app);
-                        }
-                    }
-                }
-                else {
+                if (application.selected) {
                     this._onViewApplicationInfo(event);
-                    this.push('selectedApplications', application);
-                }
-
-                var applications = JSON.parse(JSON.stringify(this.selectedApplications));
-
-                this.set('selectedApplications', []);
-                this.set('selectedApplications', applications);
-
-                if (this.selectedApplications.length > 0) {
                     this.fire('show-bulk-actions');
                 }
                 else {
-                    this.fire('hide-bulk-actions');
-                    this.setDefaultApplication();
-                }
+                    var selectedApplication = this.$.appscoApplications.getFirstSelectedApplication();
 
+                    if (!selectedApplication) {
+                        this.hideInfo();
+                        this.fire('hide-bulk-actions');
+
+                        setTimeout(function() {
+                            this.setDefaultApplication();
+                        }.bind(this), 500);
+                    }
+                    else if (application.self === this.application.self && this.application.selected) {
+                        this._handleApplicationInfo(selectedApplication);
+                    }
+                }
             },
 
             _onShareApplication: function() {
@@ -553,21 +531,11 @@
                 this.$.appscoApplications.removeApplications(application);
             },
 
+            getSelectedApplications: function() {
+                return this.$.appscoApplications.getSelectedApplications();
+            },
+
             _onApplicationRemoved: function() {
-                this.setDefaultApplication();
-            },
-
-            selectAllApplications: function() {
-                var allApplications = JSON.parse(JSON.stringify(this.$.appscoApplications.getAllApplications()));
-
-                this.set('selectedApplications', allApplications);
-                this.$.appscoApplications.selectAllApplications(true);
-                this.setDefaultApplication();
-            },
-
-            deselectAllApplications: function() {
-                this.set('selectedApplications', []);
-                this.$.appscoApplications.selectAllApplications(false);
                 this.setDefaultApplication();
             },
 

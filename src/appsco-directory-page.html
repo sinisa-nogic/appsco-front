@@ -127,8 +127,24 @@
                 @apply(--paper-font-subhead);
                 font-size: 18px;
             }
+            :host([screen992]) {
+                --account-basic-info: {
+                     width: 140px;
+                 };
+                --account-basic-info-values: {
+                     width: 140px;
+                 };
+
+                --account-auth-type-info: {
+                     width: 140px;
+                 };
+                --account-auth-type-info-values: {
+                     width: 140px;
+                 };
+            }
         </style>
 
+        <iron-media-query query="(max-width: 992px)" query-matches="{{ screen992 }}"></iron-media-query>
         <iron-media-query query="(max-width: 800px)" query-matches="{{ tabletScreen }}"></iron-media-query>
         <iron-media-query query="(max-width: 600px)" query-matches="{{ mobileScreen }}"></iron-media-query>
 
@@ -330,6 +346,12 @@
                     reflectToAttribute: true
                 },
 
+                screen992: {
+                    type: Boolean,
+                    value: false,
+                    reflectToAttribute: true
+                },
+
                 /**
                  * Animation config.
                  */
@@ -365,20 +387,20 @@
             ],
 
             observers: [
-                '_updateScreen(mobileScreen, tabletScreen)'
+                '_updateScreen(mobileScreen, tabletScreen, screen992)'
             ],
 
             attached: function() {
 
                 this.pageLoaded = false;
 
-                if (this.mobileScreen || this.tabletScreen) {
+                if (this.mobileScreen || this.tabletScreen || this.screen992) {
                     this.updateStyles();
                 }
 
             },
 
-            _updateScreen: function(mobile, tablet) {
+            _updateScreen: function(mobile, tablet, screen992) {
                 this.updateStyles();
             },
 
@@ -502,6 +524,7 @@
                 }
                 else {
                     this.fire('hide-bulk-actions');
+                    this.hideInfo();
                     this.setDefaultAccount();
                 }
             },
@@ -542,10 +565,14 @@
             },
 
             _onOrgunitSelected: function(event) {
+                this.set('selectedAccounts', []);
+                this.$.appscoAccounts.selectAllAccounts(false);
                 this.$.appscoAccounts.filterByOrgunit(event.detail);
             },
 
             filterAccountsByTerm: function(term) {
+                this.set('selectedAccounts', []);
+                this.$.appscoAccounts.selectAllAccounts(false);
                 this.$.appscoAccounts.filterByTerm(term);
             },
 

@@ -322,8 +322,8 @@
             _onAuditLogApiChanged: function(auditLogApi) {
 
                 if (auditLogApi && auditLogApi != '') {
-                    this.$.ironAjaxLog.generateRequest();
-                    this.$.ironAjaxLog.auto = true;
+                    this.loadLog();
+//                    this.$.ironAjaxLog.auto = true;
                 }
 
             },
@@ -739,11 +739,15 @@
             _onLogResponse: function(event) {
                 var response = event.detail.response;
 
+                this.set('_logList', []);
+                this.set('_wholeLogList', []);
+                this.set('_message', '');
+
                 if (response) {
 
                     if (response.length > 0) {
 
-                        this.set('_message', '');
+//                        this.set('_message', '');
 
                         response.forEach(function(log, i) {
                             var record = this._formatLogItem(response[i]);
@@ -782,11 +786,13 @@
 
             },
 
-            reloadLog: function() {
-                this.set('_logList', []);
-                this.set('_wholeLogList', []);
-                this.set('_message', '');
+            loadLog: function() {
                 this.$.ironAjaxLog.generateRequest();
+            },
+
+            reloadLog: function() {
+                this.$.ironAjaxLog.body = '';
+                this.loadLog();
             },
 
             filter: function(filterEventType, filterFromDate, filterToDate) {
@@ -809,10 +815,8 @@
                     body += encodeURIComponent('to') + '=' + encodeURIComponent(filterToDate);
                 }
 
-                this.set('_logList', []);
-                this.set('_wholeLogList', []);
-                this.set('_message', '');
                 this.$.ironAjaxLog.body = body;
+                this.loadLog();
             },
 
             filterLogByTerm: function(term) {
@@ -824,6 +828,8 @@
                 this._message = '';
 
                 if (length === 0) {
+                    this._hideProgressBar();
+                    this._message = 'There are no logs to search.';
                     this.fire('filter-done');
                     return false;
                 }

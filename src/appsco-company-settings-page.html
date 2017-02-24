@@ -4,7 +4,7 @@
 <link rel="import" href="../bower_components/iron-media-query/iron-media-query.html">
 <link rel="import" href="../bower_components/iron-icons/communication-icons.html">
 <link rel="import" href="../bower_components/iron-icon/iron-icon.html">
-<link rel="import" href="../bower_components/iron-ajax/iron-request.html">
+<link rel="import" href="../bower_components/iron-form/iron-form.html">
 <link rel="import" href="../bower_components/iron-a11y-keys/iron-a11y-keys.html">
 <link rel="import" href="../bower_components/gold-email-input/gold-email-input.html">
 
@@ -127,26 +127,44 @@
                             It is used in branding and can be displayed in login screen along with company logo.
                             Beside this usage company name will also be shown in filtering on personal home screen under "All applications" section.
                         </p>
-                        <paper-input
-                                id="companyName"
-                                label="Company name"
-                                value="[[ account.company.name ]]"
-                                name="company_settings[name]"
-                                required
-                                error-message="Please type in company name."
-                        ></paper-input>
-                        <p class="info">
-                            Company contact email will be displayed in user profile section and used for contact purposes.
-                        </p>
-                        <gold-email-input id="contactEmail"
-                                          label="Contact email"
-                                          value="[[ account.company.contact_email ]]"
-                                          name="company_settings[contactEmail]"
-                                          auto-validate
-                                          error-message="Please type in correct email."
-                        ></gold-email-input>
 
-                        <paper-button on-tap="_updateCompanySettings">Save</paper-button>
+                        <form is="iron-form"
+                              id="companySettingsForm"
+                              method="POST"
+                              action="[[ account.company.meta.settings ]]"
+                              headers="[[ _computedHeaders ]]"
+                              on-iron-form-presubmit="_onFormPresubmit"
+                              on-iron-form-error="_onFormError"
+                              on-iron-form-response="_onFormResponse"
+                              on-keyup="_onKeyUp">
+
+                            <appsco-form-error message="[[ _error ]]"></appsco-form-error>
+
+                            <paper-input
+                                    id="companyName"
+                                    label="Company name"
+                                    value="[[ account.company.name ]]"
+                                    name="company_settings[name]"
+                                    required
+                                    auto-validate
+                                    error-message="Please type in company name."
+                            ></paper-input>
+
+                            <p class="info">
+                                Company contact email will be displayed in user profile section and used for contact purposes.
+                            </p>
+
+                            <gold-email-input id="contactEmail"
+                                              label="Contact email"
+                                              value="[[ account.company.contact_email ]]"
+                                              name="company_settings[contactEmail]"
+                                              required
+                                              auto-validate
+                                              error-message="Please type in correct email."
+                            ></gold-email-input>
+                        </form>
+
+                        <paper-button on-tap="_submitForm">Save</paper-button>
                     </div>
                 </div>
 
@@ -189,12 +207,16 @@
                  */
                 _computedHeaders: {
                     type: Object,
-                    computed: "_computeHeaders(authorizationToken)"
+                    computed: '_computeHeaders(authorizationToken)'
                 },
 
                 _loader: {
                     type: Boolean,
                     value: false
+                },
+
+                _error: {
+                    type: String
                 },
 
                 /**
@@ -243,6 +265,13 @@
 
             },
 
+            _computeHeaders: function (authorizationToken) {
+                return {
+                    'Authorization': 'token ' + authorizationToken,
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                }
+            },
+
             _showLoader: function() {
                 this._loader = true;
             },
@@ -252,43 +281,36 @@
             },
 
             _onEnter: function() {
-                this._updateCompanySettings();
+                this._submitForm();
             },
 
-            _updateCompanySettings: function() {
-                var body = '',
-                body = encodeURIComponent(this.$.companyName.name) + "=" + encodeURIComponent(this.$.companyName.value);
-                body += '&';
-                body += encodeURIComponent(this.$.contactEmail.name) + "=" + encodeURIComponent(this.$.contactEmail.value);
+            _submitForm: function() {
+                this.$.companySettingsForm.submit();
+            },
 
-                if (this.$.contactEmail.invalid) {
-                    return false;
-                }
-
+            _onFormPresubmit: function() {
                 this._showLoader();
+                this.$.companySettingsForm.request.method = 'put';
+            },
 
-                var options = {
-                    url: this.account.company.meta.settings,
-                    method: 'PUT',
-                    body: body,
-                    handleAs: 'json',
-                    headers: {
-                        'Authorization': 'token ' + this.authorizationToken,
-                        'Content-Type': 'application/x-www-form-urlencoded'
-                    }
-                };
+            _onFormError: function(event) {
+                this._error = event.detail.error.message;
+                this._hideLoader();
+            },
 
-                var request = document.createElement('iron-request');
-                request.send(options).then(function() {
-                    if (request.succeeded) {
-                        this.set('account.company', request.response);
-                        this.fire('company-settings-changed', {
-                            account: this.account
-                        });
-                    }
+            _onFormResponse: function(event) {
+                this.set('account.company', event.detail.response);
+                this.fire('company-settings-changed', {
+                    account: this.account
+                });
 
-                    this._hideLoader();
-                }.bind(this));
+                this.$.contactEmail.invalid = false;
+
+                this._hideLoader();
+            },
+
+            _onKeyUp: function() {
+                this._error = '';
             },
 
             _companyLogoChanged: function(e) {
@@ -306,19 +328,6 @@
                 }
                 else if(!this.$.appscoContent.resourceActive) {
                     this.$.appscoContent.showSection('resource');
-                }
-            },
-
-            /**
-             * Computes authorization headers.
-             *
-             * @param {Object} authorizationToken
-             * @returns {{ Authorization: string }}
-             * @private
-             */
-            _computeHeaders: function (authorizationToken) {
-                return {
-                    'Authorization': 'token ' + authorizationToken
                 }
             },
 

@@ -311,7 +311,8 @@
 
                 companyApi: {
                     type: String,
-                    value: ''
+                    value: '',
+                    observer: '_onCompanyApiChanged'
                 },
 
                 /**
@@ -453,6 +454,10 @@
 
             },
 
+            _onCompanyApiChanged: function() {
+                this._getAccount();
+            },
+
             _updateScreen: function(medium, tablet, mobile) {
                 this.updateStyles();
 
@@ -516,9 +521,10 @@
             },
 
             _getAccount: function() {
-                var accountApi = this.companyApi + '/directory/roles' + this.route.path;
 
-                if (!this.role.self) {
+                if (!this.role.self && this.companyApi && this._computedHeaders) {
+                    var accountApi = this.companyApi + '/directory/roles' + this.route.path;
+
                     this.$.ironAjaxGetAccount.url = accountApi;
                     this.$.ironAjaxGetAccount.generateRequest();
                 }

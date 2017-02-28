@@ -252,7 +252,7 @@
                 id="ironAjaxGetApplication"
                 on-error="_onApplicationError"
                 on-response="_onApplicationResponse"
-                headers="{{ _computedHeaders }}">
+                headers="[[ _computedHeaders ]]">
         </iron-ajax>
 
     </template>
@@ -327,7 +327,8 @@
                  */
                 companyApi: {
                     type: String,
-                    value: ''
+                    value: '',
+                    observer: '_onCompanyApiChanged'
                 },
 
                 /**
@@ -418,6 +419,10 @@
                 this._getApplication();
             },
 
+            _onCompanyApiChanged: function() {
+                this._getApplication();
+            },
+
             _updateScreen: function(medium, tablet, mobile) {
                 this.updateStyles();
 
@@ -476,9 +481,10 @@
             },
 
             _getApplication: function() {
-                var applicationApi = this.companyApi + '/applications' + this.route.path;
 
-                if (!this.application.self) {
+                if (!this.application.self && this.companyApi && this._computedHeaders) {
+                    var applicationApi = this.companyApi + '/applications' + this.route.path;
+
                     this.$.ironAjaxGetApplication.url = applicationApi;
                     this.$.ironAjaxGetApplication.generateRequest();
                 }

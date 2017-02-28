@@ -233,7 +233,7 @@
                 url="[[ applicationsApi ]]"
                 on-error="_onApplicationError"
                 on-response="_onApplicationResponse"
-                headers="{{ _computedHeaders }}">
+                headers="[[ _computedHeaders ]]">
         </iron-ajax>
 
     </template>
@@ -288,7 +288,7 @@
                  */
                 _computedHeaders: {
                     type: Object,
-                    computed: "_computeHeaders(authorizationToken)"
+                    computed: '_computeHeaders(authorizationToken)'
                 },
 
                 /**
@@ -304,7 +304,8 @@
                  */
                 applicationsApi: {
                     type: String,
-                    notify: true
+                    notify: true,
+                    observer: '_onApplicationsApiChanged'
                 },
 
                 /**
@@ -395,6 +396,10 @@
                 this._getApplication();
             },
 
+            _onApplicationsApiChanged: function() {
+                this._getApplication();
+            },
+
             _updateScreen: function(medium, tablet, mobile) {
                 this.updateStyles();
 
@@ -425,10 +430,9 @@
             },
 
             _getApplication: function() {
-                var applicationApi = this.applicationsApi + this.route.path;
 
-                if (!this.application.self) {
-                    this.$.ironAjaxGetApplication.url = applicationApi;
+                if (!this.application.self && this.applicationsApi && this._computedHeaders) {
+                    this.$.ironAjaxGetApplication.url = this.applicationsApi + this.route.path;
                     this.$.ironAjaxGetApplication.generateRequest();
                 }
 

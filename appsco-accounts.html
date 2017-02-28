@@ -131,10 +131,10 @@ Custom property | Description | Default
                               on-dom-change="_onItemsDomChange">
 
                         <appsco-account-item id="appscoAccountItem_[[ index ]]"
-                                             class="accountitem"
                                              account="{{ item.account }}"
                                              company-role="{{ item }}"
-                                             company="[[ company ]]"></appsco-account-item>
+                                             company="[[ company ]]"
+                                             on-account="_onAccountAction"></appsco-account-item>
 
                     </template>
                 </div>
@@ -367,6 +367,8 @@ Custom property | Description | Default
 
                     setTimeout( function() {
 
+                        el.selected = false;
+
                         me.push('_accounts', el);
                         me.push('_allAccounts', el);
 
@@ -402,8 +404,63 @@ Custom property | Description | Default
 
             _computeHeaders: function (authorizationToken) {
                 return {
-                    "Authorization": "token " + authorizationToken
+                    'Authorization': 'token ' + authorizationToken
                 }
+            },
+
+            _onAccountAction: function(event) {
+                var _accounts = JSON.parse(JSON.stringify(this._accounts)),
+                        _length = _accounts.length,
+                        allAccounts = JSON.parse(JSON.stringify(this._allAccounts)),
+                        allLength = allAccounts.length,
+                        selectedAccount = event.detail.role;
+
+                for (var j = 0; j < _length; j++) {
+                    if (selectedAccount.self === _accounts[j].self) {
+                        _accounts[j].selected = selectedAccount.selected;
+                        break;
+                    }
+                }
+
+                for (var k = 0; k < allLength; k++) {
+                    if (selectedAccount.self === allAccounts[k].self) {
+                        allAccounts[k].selected = selectedAccount.selected;
+                        break;
+                    }
+                }
+
+                this.set('_accounts', []);
+                this.set('_accounts', _accounts);
+
+                this.set('_allAccounts', []);
+                this.set('_allAccounts', allAccounts);
+            },
+
+            getFirstSelectedAccount: function() {
+                var _accounts = JSON.parse(JSON.stringify(this._accounts)),
+                        _length = _accounts.length;
+
+                for (var i = 0; i < _length; i++) {
+                    if (_accounts[i].selected) {
+                        return _accounts[i];
+                    }
+                }
+
+                return false;
+            },
+
+            getSelectedAccounts: function() {
+                var allAccounts = this._allAccounts,
+                        allLength = allAccounts.length,
+                        selectedAccounts = [];
+
+                for (var i = 0; i < allLength; i++) {
+                    if (allAccounts[i].selected) {
+                        selectedAccounts.push(allAccounts[i]);
+                    }
+                }
+
+                return selectedAccounts;
             },
 
             addAccounts: function(accounts) {
@@ -414,6 +471,7 @@ Custom property | Description | Default
                 this._renderedIndex = length - 1;
 
                 for (var i = 0; i < length; i++) {
+                    accounts[i].selected = false;
                     this.unshift('_accounts', accounts[i]);
                     this.unshift('_allAccounts', accounts[i]);
                 }
@@ -492,16 +550,20 @@ Custom property | Description | Default
             },
 
             getFirstAccount: function() {
-                return this._accounts[0];
+                return (this._accounts.length > 0) ? this._accounts[0] : {};
             },
 
             selectAllAccounts: function(select) {
-                var accounts = this._accounts,
-                        length = accounts.length;
+                var allAccounts = this._allAccounts,
+                        allLength = allAccounts.length;
 
-                for (var i = 0; i < length; i++) {
-                    var accountItem = this.$$('#appscoAccountItem_' + i);
-                    select ? accountItem.select() : accountItem.deselect();
+                for (var i = 0; i < allLength; i++) {
+                    var account = allAccounts[i];
+
+                    account.selected = select;
+
+                    allAccounts[i] = {};
+                    allAccounts[i] = account;
                 }
             },
 
@@ -618,16 +680,6 @@ Custom property | Description | Default
 
                 if (!selected) {
                     this.set('_accounts', this._allAccounts);
-//                    this.set('_accounts', JSON.parse(JSON.stringify(this._allAccounts)));
-
-                    for (var i = 0; i < allLength; i++) {
-                        var item = this.$$('#appscoAccountItem_' + i);
-
-                        if (item) {
-                            item.deselect();
-                        }
-                    }
-
                     this.set('_filterOrgunit', {});
                 }
                 else {
@@ -636,12 +688,7 @@ Custom property | Description | Default
                     for (var i = 0; i < allLength; i++) {
                         var account = this._allAccounts[i],
                                 orgunits = account.account.org_units,
-                                orgunitsLength = orgunits.length,
-                                item = this.$$('#appscoAccountItem_' + i);
-
-                        if (item) {
-                            item.deselect();
-                        }
+                                orgunitsLength = orgunits.length;
 
                         for (var j = 0; j < orgunitsLength; j++) {
 
@@ -688,12 +735,7 @@ Custom property | Description | Default
                     for (var i = 0; i < allLength; i++) {
                         var account = this._allAccounts[i],
                                 orgunits = account.account.org_units,
-                                orgunitsLength = orgunits.length,
-                                accountItem = this.$$('#appscoAccountItem_' + i);
-
-                        if (accountItem) {
-                            accountItem.deselect();
-                        }
+                                orgunitsLength = orgunits.length;
 
                         for (var j = 0; j < orgunitsLength; j++) {
 

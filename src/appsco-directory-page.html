@@ -229,12 +229,6 @@
                             on-tap="_onAccountInfoEdit">
                         Edit
                     </paper-button>
-
-                    <!--<paper-button-->
-                            <!--class="share-button flex"-->
-                            <!--on-tap="_onShareApplication">-->
-                        <!--Change Password-->
-                    <!--</paper-button>-->
                 </div>
 
             </div>
@@ -453,12 +447,16 @@
                 this.$.appscoContent.toggleSection('resource');
             },
 
-            _onViewInfo: function(event) {
-                this.set('role', event.detail.role);
+            _handleAccountInfo: function(role) {
+                this.set('role', role);
 
                 if (!this._infoShown) {
                     this._showInfo();
                 }
+            },
+
+            _onViewInfo: function(event) {
+                this._handleAccountInfo(event.detail.role);
             },
 
             setDefaultAccount: function() {
@@ -475,45 +473,26 @@
             },
 
             _onAccount: function(event) {
-                var role = event.detail.role,
-                    length = this.selectedAccounts.length,
-                    index = -1;
+                var role = event.detail.role;
 
-                for (var i = 0; i < length; i++) {
-                    if (this.selectedAccounts[i].self === role.self) {
-                        index = i;
-                        break;
-                    }
-                }
-
-                if (index > -1) {
-                    this.splice('selectedAccounts', index, 1);
-
-                    if (index != 0) {
-                        var role = this.selectedAccounts[this.selectedAccounts.length - 1];
-
-                        if (this.role.self !== role.self) {
-                            this.set('role', role);
-                        }
-                    }
-                }
-                else {
+                if (role.selected) {
                     this._onViewInfo(event);
-                    this.push('selectedAccounts', role);
-                }
-
-                var roles = JSON.parse(JSON.stringify(this.selectedAccounts));
-
-                this.set('selectedAccounts', []);
-                this.set('selectedAccounts', roles);
-
-                if (this.selectedAccounts.length > 0) {
                     this.fire('show-bulk-actions');
                 }
                 else {
-                    this.fire('hide-bulk-actions');
-                    this.hideInfo();
-                    this.setDefaultAccount();
+                    var selectedAccount = this.$.appscoAccounts.getFirstSelectedAccount();
+
+                    if (!selectedAccount) {
+                        this.hideInfo();
+                        this.fire('hide-bulk-actions');
+
+                        setTimeout(function() {
+                            this.setDefaultAccount();
+                        }.bind(this), 500);
+                    }
+                    else if (role.self === this.role.self && this.role.selected) {
+                        this._handleAccountInfo(selectedAccount);
+                    }
                 }
             },
 
@@ -552,15 +531,15 @@
                 this.$.appscoAccounts.modifyAccounts(accounts);
             },
 
+            getSelectedAccounts: function() {
+                return this.$.appscoAccounts.getSelectedAccounts();
+            },
+
             _onOrgunitSelected: function(event) {
-                this.set('selectedAccounts', []);
-                this.$.appscoAccounts.selectAllAccounts(false);
                 this.$.appscoAccounts.filterByOrgunit(event.detail);
             },
 
             filterAccountsByTerm: function(term) {
-                this.set('selectedAccounts', []);
-                this.$.appscoAccounts.selectAllAccounts(false);
                 this.$.appscoAccounts.filterByTerm(term);
             },
 

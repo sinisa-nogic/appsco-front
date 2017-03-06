@@ -1085,6 +1085,11 @@
                     value: true
                 },
 
+                _selectedApplicationsGroup: {
+                    type: Number,
+                    value: 0
+                },
+
                 _toastMessage: {
                     type: String,
                     value: ''
@@ -1422,10 +1427,10 @@
              */
             _onLoadedApplications: function() {
 
-                if (this.page === 'home') {
+                if (this.page === 'home' && this.$.appscoHomePage.$) {
                     this.$.appscoHomePage.setDefaultApplication();
                 }
-                else if (this.page === 'applications') {
+                else if (this.page === 'applications' && this.$.appscoApplicationsPage.$) {
                     this.$.appscoApplicationsPage.setDefaultApplication();
                 }
 
@@ -1495,14 +1500,17 @@
             _onGroupSelected: function(event) {
                 var id = parseInt(event.detail.id);
 
-                this._showProgressBar();
+                if (id !== this._selectedApplicationsGroup) {
+                    this._selectedApplicationsGroup = id;
+                    this._showProgressBar();
 
-                switch(id) {
-                    case 0:
-                        this.applicationsApi = this.api.icons +"?extended=1";
-                        break;
-                    default:
-                        this.applicationsApi = this.api.dashboards + "/" + id + "/icons";
+                    switch (id) {
+                        case 0:
+                            this.applicationsApi = this.api.icons + "?extended=1";
+                            break;
+                        default:
+                            this.applicationsApi = this.api.dashboards + "/" + id + "/icons";
+                    }
                 }
 
             },
@@ -1959,9 +1967,10 @@
             },
 
             _onApplicationsAddedToOrgunit: function(event) {
-                var applications = event.detail.applications;
+                var applications = event.detail.applications,
+                    orgunit = event.detail.orgunit;
 
-                this._notify('Selected applications were successfully added to ' + event.detail.orgunit.name + '.');
+                this._notify('Selected applications were successfully added to ' + orgunit.name + '.');
 
                 if (this.$.appscoApplicationsPage.$) {
                     this.$.appscoApplicationsPage.modifyApplications(applications);
@@ -1970,6 +1979,8 @@
                 if (applications.length === 1) {
                     this._companyApplication = applications[0];
                 }
+
+                this._reloadApplicationsForCurrentAccount(orgunit);
             },
 
             _onShareApplications: function() {
@@ -2078,14 +2089,16 @@
             },
 
             _onApplicationRemovedFromOrgunit: function(event) {
-                var application = event.detail.application;
+                var application = event.detail.application,
+                    orgunit = event.detail.orgunit;
 
                 if (this.$.appscoApplicationsPage.$) {
                     this.$.appscoApplicationsPage.modifyApplications([application]);
                 }
 
                 this._companyApplication = application;
-                this._notify(application.title + ' has been removed from ' + event.detail.orgunit.name + ' organization unit.');
+                this._notify(application.title + ' has been removed from ' + orgunit.name + ' organization unit.');
+                this._reloadApplicationsForCurrentAccount(orgunit);
             },
             /**
              * Applications page END
@@ -2123,7 +2136,8 @@
             },
 
             _onAccountsAddedToOrgunit: function(event) {
-                var accounts = event.detail.accounts;
+                var accounts = event.detail.accounts,
+                    length = accounts.length;
 
                 this._notify('Selected accounts were successfully added to ' + event.detail.orgunit.name + '.');
 
@@ -2133,6 +2147,13 @@
 
                 if (accounts.length === 1) {
                     this._role = accounts[0];
+                }
+
+                for (var i = 0; i < length; i++) {
+                    if (accounts[i].account.email === this.account.email && this.$.appscoHomePage.$) {
+                        this.$.appscoHomePage.reloadApplications();
+                        break;
+                    }
                 }
             },
 
@@ -2189,12 +2210,16 @@
             _onAccountRemovedFromOrgunit: function(event) {
                 var role = event.detail.account;
 
+                if (role.account.email === this.account.email && this.$.appscoHomePage.$) {
+                    this.$.appscoHomePage.reloadApplications();
+                }
+
                 if (this.$.appscoDirectoryPage.$) {
                     this.$.appscoDirectoryPage.modifyAccounts([role]);
                 }
 
                 this._role = role;
-                this._notify(role.name + ' has been removed from ' + event.detail.orgunit.name + ' organization unit.');
+                this._notify(role.account.name + ' has been removed from ' + event.detail.orgunit.name + ' organization unit.');
             },
 
             _onAccountRoleChanged: function(event) {
@@ -2504,6 +2529,18 @@
 
             _onError: function() {
                 this._showPage404();
+            },
+
+            _reloadApplicationsForCurrentAccount: function(orgunit) {
+                var accountOrgunits = this.account.org_units,
+                    length = accountOrgunits.length;
+
+                for (var i = 0; i < length; i++) {
+                    if (accountOrgunits[i].alias === orgunit.alias && this.$.appscoHomePage.$) {
+                        this.$.appscoHomePage.reloadApplications();
+                        break;
+                    }
+                }
             }
             /**
              * Global END

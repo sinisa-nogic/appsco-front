@@ -8,11 +8,11 @@
 <link rel="import" href="../bower_components/iron-icons/iron-icons.html">
 <link rel="import" href="../bower_components/iron-icon/iron-icon.html">
 <link rel="import" href="../bower_components/paper-icon-button/paper-icon-button.html">
-<link rel="import" href="../bower_components/paper-dropdown-menu/paper-dropdown-menu.html">
 <link rel="import" href="../bower_components/paper-listbox/paper-listbox.html">
 <link rel="import" href="../bower_components/paper-item/paper-item.html">
 <link rel="import" href="../bower_components/vaadin-date-picker/vaadin-date-picker.html">
 <link rel="import" href="../bower_components/paper-input/paper-input.html">
+<link rel="import" href="../bower_components/paper-styles/shadow.html">
 
 <link rel="import" href="../bower_components/appsco-page/appsco-content.html">
 <link rel="import" href="auditlog/appsco-audit-log.html">
@@ -75,15 +75,43 @@
             }
             :host div[content] {
                 height: 100%;
-                overflow: auto;
             }
             :host div[content] > * {
                 padding: 0 10px 10px 10px;
-                height: 100%;
+                height: calc(100% - 10px);
             }
             :host div[resource] > *, :host div[info] > * {
                 padding: 10px;
                 box-sizing: border-box;
+            }
+            :host div[resource] {
+                height: 100%;
+                overflow: auto;
+            }
+            .filter {
+                position: relative;
+            }
+            paper-listbox {
+                @apply(--shadow-elevation-2dp);
+                min-height: 100px;
+                max-height: calc(100vh - 2*64px - 20px - 45px - 2*54px);
+                overflow-y: auto;
+                position: absolute;
+                top: 55px;
+                left: 0;
+                z-index: 10;
+                opacity: 1;
+                visibility: visible;
+                transform: scale(1, 1);
+                transform-origin: top center;
+                transition: all 0.2s linear;
+            }
+            paper-listbox[hidden] {
+                opacity: 0;
+                visibility: hidden;
+                transform: scale(1, 0.6);
+                transform-origin: top center;
+                transition: all 0.1s linear;
             }
             :host([tabletScreen900]) {
                 --resource-width: 250px;
@@ -118,8 +146,7 @@
                     <div class="filter">
                         <paper-input label="Filter log by account"
                                      on-keyup="_onFilterSearch"
-                                     id="searchInput"
-                                     disabled$="[[ !_logLoaded ]]">
+                                     id="searchInput">
                             <div prefix>
                                 <iron-icon icon="icons:search"
                                            class="input-icon search-icon"></iron-icon>
@@ -136,27 +163,40 @@
                         </paper-input>
                     </div>
 
-                    <div class="filter">
-                        <paper-dropdown-menu id="filterEventTypes"
-                                             label="Event type"
-                                             horizontal-align="left"
-                                             disabled$="[[ !_logLoaded ]]">
-                            <paper-listbox id="filterListEventTypes"
-                                           class="dropdown-content"
-                                           attr-for-selected="value"
-                                           on-iron-activate="_onFilterEventType">
-                                <template is="dom-repeat" items="[[ _eventTypeList ]]">
-                                    <paper-item value="[[ item.value ]]" >[[ item.text ]]</paper-item>
-                                </template>
-                            </paper-listbox>
-                        </paper-dropdown-menu>
+                    <div id="filterEventType" class="filter">
+                        <paper-input id="searchEventTypeInput"
+                                     label="Event type"
+                                     on-focus="_onFilterEventTypeFocus"
+                                     on-keyup="_onFilterEventTypeKeyup">
+                            <div prefix>
+                                <iron-icon icon="icons:search"
+                                           class="input-icon search-icon"></iron-icon>
+                            </div>
+
+                            <template is="dom-if" if="[[ _clearEventTypeSearch ]]">
+                                <paper-icon-button icon="clear"
+                                                   id="clearEventTypeSearch"
+                                                   class="input-icon"
+                                                   suffix
+                                                   on-tap="_onClearEventTypeSearch"></paper-icon-button>
+                            </template>
+                        </paper-input>
+
+                        <paper-listbox id="filterListEventTypes"
+                                       class="dropdown-content"
+                                       attr-for-selected="value"
+                                       on-iron-activate="_onFilterEventType" hidden>
+                            <template is="dom-repeat" items="{{ _eventTypeListDisplay }}">
+                                <paper-item value="[[ item.value ]]"
+                                            id="eventType_[[ index ]]">[[ item.text ]]</paper-item>
+                            </template>
+                        </paper-listbox>
                     </div>
 
                     <div class="filter">
                         <vaadin-date-picker
                                 id="filterDateFrom"
                                 label="Date from"
-                                disabled$="[[ !_logLoaded ]]"
                                 on-value-changed="_onFilterDateFrom"></vaadin-date-picker>
                     </div>
 
@@ -164,7 +204,6 @@
                         <vaadin-date-picker
                                 id="filterDateTo"
                                 label="Date to"
-                                disabled$="[[ !_logLoaded ]]"
                                 on-value-changed="_onFilterDateTo"></vaadin-date-picker>
                     </div>
                 </div>
@@ -212,11 +251,6 @@
                     computed: '_computeAuditLogApi(companyApi)'
                 },
 
-                _logLoaded: {
-                    type: Boolean,
-                    value: false
-                },
-
                 _headers: {
                     type: Object,
                     computed: '_computeHeaders(authorizationToken)'
@@ -229,6 +263,13 @@
                             value: '',
                             text: 'All event types'
                         }];
+                    }
+                },
+
+                _eventTypeListDisplay: {
+                    type: Array,
+                    value: function() {
+                        return []
                     }
                 },
 
@@ -245,6 +286,11 @@
                 },
 
                 _clearSearch: {
+                    type: Boolean,
+                    value: false
+                },
+
+                _clearEventTypeSearch: {
                     type: Boolean,
                     value: false
                 },
@@ -306,7 +352,6 @@
             ],
 
             attached: function() {
-
                 this.pageLoaded = false;
 
                 if (this.mobileScreen || this.tabletScreen || this.tabletScreen900) {
@@ -314,6 +359,8 @@
                 }
 
                 this._setValidFromDate();
+
+                Polymer.Gestures.add(document, 'tap', this._handleDocumentClick.bind(this));
             },
 
             _updateScreen: function(mobile, tablet, tablet900) {
@@ -322,7 +369,6 @@
 
             _onLogLoaded: function() {
                 this._pageLoaded();
-                this._logLoaded = true;
             },
 
             _pageLoaded: function() {
@@ -335,9 +381,36 @@
             resetPage: function() {
                 this.$.searchInput.value = '';
                 this._clearSearch = false;
+                this.$.searchEventTypeInput.value = '';
+                this._clearEventTypeSearch = false;
+                this._hideEventTypeList();
                 this.$.filterListEventTypes.selected = 0;
                 this.$.filterDateFrom.value = '';
                 this.$.filterDateTo.value = '';
+            },
+
+            _isInPath: function(path, element) {
+                path = path || [];
+
+                for (var i = 0; i < path.length; i++) {
+
+                    if (path[i] == element) {
+                        return true;
+
+                        break;
+                    }
+                }
+
+                return false;
+            },
+
+            _handleDocumentClick: function(event) {
+                var path = Polymer.dom(event).path;
+
+                if (!this._isInPath(path, this.$.filterEventType)) {
+                    this._hideEventTypeList();
+                }
+
             },
 
             _computeAuditLogEventTypesApi: function(companyApi) {
@@ -399,10 +472,12 @@
 
             _onFilterEventType: function(event) {
                 this._filterEventType = event.detail.selected;
+                this.$.searchEventTypeInput.value = event.detail.item.firstChild.nodeValue;
                 this._filterLog();
+                this._hideEventTypeList();
             },
 
-            _onFilterSearch: function () {
+            _onFilterSearch: function() {
                 var term = this.$.searchInput.value;
 
                 this.set('_clearSearch', (term.length > 0));
@@ -658,16 +733,89 @@
                         this.push('_eventTypeList', this._formatEventType(item));
                     }.bind(this));
 
+                    this.set('_eventTypeListDisplay', this._eventTypeList);
+
                 }
             },
 
+            _filterEventTypeListByTerm: function(term) {
+                var termLength = term.length,
+                    eventTypes = this._eventTypeList,
+                    length = eventTypes.length;
+
+                this.set('_eventTypeListDisplay', []);
+                this.set('_clearEventTypeSearch', (termLength > 0));
+
+                if (3 > termLength) {
+                    term = '';
+                }
+
+                for (var i = 0; i < length; i++) {
+                    var eventType = eventTypes[i];
+
+                    if (eventType && eventType.text.toLowerCase().indexOf(term.toLowerCase()) >= 0) {
+                        this.push('_eventTypeListDisplay', eventType);
+                    }
+
+                }
+
+                if (0 === this._eventTypeListDisplay.length && 3 < termLength) {
+                    this.push('_eventTypeListDisplay', {
+                        value: 'no_result',
+                        text: 'There is no log record of asked event type.'
+                    });
+                }
+            },
+
+            _showEventTypeList: function() {
+                this.$.filterListEventTypes.hidden = false;
+            },
+
+            _hideEventTypeList: function() {
+                this.$.filterListEventTypes.hidden = true;
+            },
+
+            _onFilterEventTypeFocus: function() {
+                this._showEventTypeList();
+            },
+
+            _onFilterEventTypeKeyup: function(event) {
+                var keyCode = event.keyCode,
+                    term = event.target.value ? event.target.value : '';
+
+                if (40 === keyCode) {
+                    event.target.blur();
+                    this._selectFirstEventType();
+                    return false;
+                }
+
+                this._filterEventTypeListByTerm(term);
+
+            },
+
+            _onClearEventTypeSearch: function(event) {
+                var input = event.target.parentNode;
+
+                input.value = '';
+                this._clearEventTypeSearch = false;
+                this._filterEventTypeListByTerm('');
+            },
+
+            _selectFirstEventType: function() {
+                var eventTypeFilter = this.$.filterListEventTypes;
+
+                if (!eventTypeFilter.selectedItem) {
+                    eventTypeFilter.selected = this._eventTypeListDisplay[0].value;
+                }
+
+                eventTypeFilter.selectedItem.focus();
+            },
+
             reloadLog: function() {
-                this._logLoaded = false;
                 this.$.appscoAuditLog.reloadLog();
             },
 
             _filterLog: function() {
-                this._logLoaded = false;
                 this.$.appscoAuditLog.filter(this._filterEventType, this._filterFromDate, this._filterToDate);
             },
 

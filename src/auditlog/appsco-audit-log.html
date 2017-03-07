@@ -294,6 +294,13 @@
                             minute: '2-digit'
                         }
                     }
+                },
+
+                _itemPushList: {
+                    type: Array,
+                    value: function() {
+                        return [];
+                    }
                 }
             },
 
@@ -747,12 +754,10 @@
 
                     if (response.length > 0) {
 
-//                        this.set('_message', '');
-
                         response.forEach(function(log, i) {
                             var record = this._formatLogItem(response[i]);
 
-                            setTimeout(function() {
+                            var pushItem = setTimeout(function() {
 
                                 this.push('_logList', record);
                                 this.push('_wholeLogList', record);
@@ -760,9 +765,12 @@
                                 if (i === (response.length - 1)) {
                                     this.fire('loaded');
                                     this._hideProgressBar();
+                                    this._itemPushList = [];
                                 }
 
                             }.bind(this), (i + 1) * 50);
+
+                            this._itemPushList.push(pushItem);
 
                         }.bind(this));
                     }
@@ -787,6 +795,14 @@
             },
 
             loadLog: function() {
+                var itemPushList = this._itemPushList;
+
+                if (itemPushList.length > 0) {
+                    for (var i in itemPushList) {
+                        clearTimeout(itemPushList[i]);
+                    }
+                }
+
                 this.$.ironAjaxLog.generateRequest();
             },
 

@@ -64,6 +64,8 @@
 <link rel="import" href="directory/appsco-directory-add-account.html">
 <link rel="import" href="directory/appsco-directory-import-accounts.html">
 
+<link rel="import" href="provisioning/appsco-start-integration.html">
+
 <link rel="import" href="upgrade/appsco-upgrade-action.html">
 <link rel="import" href="billing/appsco-subscription-cancel.html">
 <link rel="import" href="billing/appsco-credit-card.html">
@@ -660,7 +662,17 @@
                             name="provisioning"
                             company-api="[[ companyApi ]]"
                             authorization-token="[[ authorizationToken ]]"
+                            on-start-authorization="_onStartAuthorization"
+                            on-integration-setup="_onIntegrationSetup"
                     ></appsco-provisioning-page>
+
+                    <appsco-provisioning-settings-page
+                            id="appscoProvisioningSettingsPage"
+                            name="provisioning-settings"
+                            company-api="[[ companyApi ]]"
+                            authorization-token="[[ authorizationToken ]]"
+                            integration="[[ _selectedIntegration ]]"
+                    ></appsco-provisioning-settings-page>
 
                     <appsco-audit-log-page
                             id="appscoAuditLogPage"
@@ -901,6 +913,13 @@
                 on-invoice-sent="_onInvoiceSent">
         </appsco-billing-send-invoice>
 
+        <appsco-start-integration
+                id="appscoStartIntegration"
+                account="[[ account ]]"
+                authorization-token="[[ authorizationToken ]]"
+                company-api="[[ companyApi ]]">
+        </appsco-start-integration>
+
         <template is="dom-if" if="[[ api.me ]]">
             <iron-ajax auto
                        url="[[ api.me ]]"
@@ -1058,6 +1077,14 @@
                     value: function() {
                         return [];
                     }
+                },
+
+                /**
+                 * Selected integration for provisioning settings
+                 */
+                _selectedIntegration: {
+                    type: Object,
+                    value: function() { return {}; }
                 },
 
                 /**
@@ -1261,6 +1288,9 @@
 
                     case 'company-settings':
                         return 'Company Settings';
+
+                    case 'provisioning-settings':
+                        return 'Provisioning -> Setup';
 
                     case 'audit-log':
                         return 'Audit Log';
@@ -2293,6 +2323,23 @@
              */
 
             /**
+             * Provisioning page Start
+             */
+
+            _onStartAuthorization: function(event) {
+                this.$.appscoStartIntegration.setIntegration(event.detail.integration);
+                this.$.appscoStartIntegration.toggle();
+            },
+
+            _onIntegrationSetup: function(event) {
+                this._selectedIntegration = event.detail.integration;
+                this.set('routeData.page', 'provisioning-settings');
+            },
+            /**
+             * Provisioning page end
+             */
+
+            /**
              * Billing page START
              */
             _onResourceActionBillingPage: function() {
@@ -2413,6 +2460,7 @@
                         page === 'manage-account' ||
                         page === 'statistics' ||
                         page === 'provisioning' ||
+                        page === 'provisioning-settings' ||
                         page === 'billing' ||
                         page === 'company-settings' ||
                         page === 'audit-log');

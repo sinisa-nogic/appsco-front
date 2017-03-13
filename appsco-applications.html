@@ -284,6 +284,13 @@ Custom property | Description | Default
                             }
                         }
                     }
+                },
+
+                _iconsPushList: {
+                    type: Array,
+                    value: function() {
+                        return [];
+                    }
                 }
             },
 
@@ -317,6 +324,14 @@ Custom property | Description | Default
             },
 
             _loadApplications: function() {
+                var iconsPushList = this._iconsPushList;
+
+                if (iconsPushList.length > 0) {
+                    for (var c in iconsPushList) {
+                        clearTimeout(iconsPushList[c]);
+                    }
+                }
+
                 this.$$('#paperProgress').hidden = false;
                 this._loadMore = false;
                 this._currentUrl = this.applicationsApi + '?page=1&extended=1&limit=' + this.size;
@@ -368,7 +383,7 @@ Custom property | Description | Default
 
                 icons.forEach(function(el, index) {
 
-                    setTimeout( function() {
+                    var iconPushItem = setTimeout( function() {
 
                         if (this.company) {
                             el.selected = false;
@@ -400,9 +415,13 @@ Custom property | Description | Default
                             if (this._filterOrgunit.selected) {
                                 this._filterApplicationsByOrgunit();
                             }
+
+                            this._iconsPushList = [];
                         }
 
-                    }.bind(this), (index + 1) * 50 );
+                    }.bind(this), (index + 1) * 30 );
+
+                    this._iconsPushList.push(iconPushItem);
 
                 }.bind(this));
             },

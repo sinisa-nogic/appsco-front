@@ -50,6 +50,7 @@
 
 <link rel="import" href="../bower_components/appsco-account/appsco-account-authorized-app-revoke.html">
 
+<link rel="import" href="application/appsco-application-settings-dialog.html">
 <link rel="import" href="application/appsco-home-page-actions.html">
 <link rel="import" href="application/appsco-application-page-actions.html">
 <link rel="import" href="account/appsco-account-page-actions.html">
@@ -506,6 +507,7 @@
                             applications-api="[[ applicationsApi ]]"
                             on-loaded="_onLoadedApplications"
                             on-edit-application="_onEditApplication"
+                            on-info-edit-application-credentials="_onEditApplicationCredentials"
                             on-info-edit-application="_onInfoEditApplication"
                             on-share-application="_onShareApplication"
                             on-revoke-application="_onRevokeApplication"></appsco-home-page>
@@ -717,6 +719,14 @@
                 accounts-api="[[ api.accounts ]]"
                 on-application-shared="_onApplicationShared"
                 ></appsco-application-share>
+
+        <appsco-application-settings-dialog
+                id="appscoApplicationSettingsDialog"
+                account="[[ account ]]"
+                authorization-token="[[ authorizationToken ]]"
+                application="[[ application ]]"
+                on-application-settings-saved="_onApplicationCredentialsChange"
+        ></appsco-application-settings-dialog>
 
         <appsco-application-remove
                 id="appscoApplicationRemove"
@@ -1536,6 +1546,10 @@
             _onInfoEditApplication: function() {
                 this._onEditApplication();
             },
+
+            _onEditApplicationCredentials: function() {
+                this.$.appscoApplicationSettingsDialog.toggle();
+            },
             /**
              * Home page END
              */
@@ -1561,6 +1575,16 @@
                 this.set('application', application);
 
                 this._notifyAboutApplicationLogChange(applicationLogApi);
+                this._notify(message);
+            },
+
+            _onApplicationCredentialsChange: function(event) {
+                var application = event.detail.application,
+                        message = 'You successfully changed ' + this.application.title + ' credentials.';
+
+                this.set('application', {});
+                this.set('application', application);
+                this.$.appscoApplicationSettingsDialog.toggle();
                 this._notify(message);
             },
 

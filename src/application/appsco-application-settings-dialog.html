@@ -1,0 +1,150 @@
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../bower_components/iron-flex-layout/iron-flex-layout.html">
+<link rel="import" href="../../bower_components/paper-button/paper-button.html">
+<link rel="import" href="../../bower_components/iron-ajax/iron-request.html">
+<link rel="import" href="../../bower_components/paper-dialog/paper-dialog.html">
+<link rel="import" href="../../bower_components/paper-dialog-scrollable/paper-dialog-scrollable.html">
+<link rel="import" href="../../bower_components/neon-animation/animations/scale-up-animation.html">
+<link rel="import" href="../../bower_components/neon-animation/animations/fade-out-animation.html">
+
+<link rel="import" href="../../bower_components/appsco-components/appsco-loader.html">
+<link rel="import" href="../../bower_components/appsco-application/appsco-application-settings.html">
+
+<dom-module id="appsco-application-settings-dialog">
+    <template>
+        <style>
+            :host {
+                display: block;
+                position: relative;
+            }
+            :host paper-dialog {
+                width: 670px;
+                top: 10vh;
+                @apply(--appsco-paper-dialog);
+            }
+            :host paper-dialog-scrollable > * {
+                @apply(--paper-dialog-scrollable-child);
+            }
+            :host appsco-loader {
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+            :host .buttons paper-button {
+                @apply(--paper-dialog-button);
+            }
+            :host .buttons paper-button[dialog-dismiss] {
+                @apply(--paper-dialog-dismiss-button);
+            }
+        </style>
+
+        <paper-dialog id="dialog"
+                      with-backdrop
+                      entry-animation="scale-up-animation"
+                      exit-animation="fade-out-animation"
+                      on-iron-overlay-closed="_onDialogClosed">
+
+            <appsco-loader active="[[ _loader ]]"
+                           loader-alt="Appsco is processing request"
+                           multi-color></appsco-loader>
+
+            <paper-dialog-scrollable>
+                <div class="dialog-container">
+                    <div>
+                        <appsco-application-settings
+                                application="[[ application ]]"
+                                authorization-token="[[ authorizationToken ]]"
+                                application-settings="[[ _applicationSettings ]]"
+                        ></appsco-application-settings>
+                    </div>
+                </div>
+            </paper-dialog-scrollable>
+
+        </paper-dialog>
+
+    </template>
+    <script>
+        Polymer({
+
+            is: 'appsco-application-settings-dialog',
+
+            properties: {
+
+                account: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    }
+                },
+
+                _applicationSettings: {
+                    type: Boolean,
+                    value: false
+                },
+
+                application: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    }
+                },
+
+                /**
+                 * Authorization token.
+                 */
+                authorizationToken: {
+                    type: String
+                },
+
+                /**
+                 * Computed headers.
+                 * It contains authorization token.
+                 */
+                _headers: {
+                    type: Object,
+                    computed: '_computeHeaders(authorizationToken)'
+                },
+
+                _loader: {
+                    type: Boolean,
+                    value: false
+                }
+
+            },
+
+            /**
+             * Computes authorization headers.
+             *
+             * @param {Object} authorizationToken
+             * @returns {{ Authorization: string }}
+             * @private
+             */
+            _computeHeaders: function (authorizationToken) {
+                return {
+                    'Authorization': 'token ' + authorizationToken,
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                }
+            },
+
+            _computeSendInvoiceApi: function(companyApi, invoice) {
+                return companyApi + '/billing/invoice/' + invoice.id + '/send';
+            },
+
+            /**
+             * Toggles add applications dialog.
+             */
+            toggle: function() {
+                this._loader = false;
+                this.$.dialog.toggle();
+            },
+
+            /**
+             * Called after dialog has been closed.
+             *
+             * @private
+             */
+            _onDialogClosed: function() {
+                this._loader = false;
+            }
+        });
+    </script>
+</dom-module>

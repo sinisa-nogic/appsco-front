@@ -44,23 +44,30 @@ Custom property | Description | Default
 
         <appsco-loader active="[[ _loader ]]" loader-alt="Appsco is saving application" multi-color></appsco-loader>
 
-        <paper-input
-                id="title"
-                label="Title"
-                value="[[ application.title ]]"
-                name="configure_application[title]"
-                required
-                ></paper-input>
-        <paper-input
-                id="url"
-                label="Url"
-                value="[[ application.url ]]"
-                pattern="https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)"
-                error-message="Invalid Url"
-                required
-                auto-validate
-                name="configure_application[url]"
-                ></paper-input>
+        <template is="dom-if" if="[[ applicationSettings ]]" >
+            <paper-input
+                    id="title"
+                    label="Title"
+                    value="[[ application.title ]]"
+                    name="configure_application[title]"
+                    required
+            ></paper-input>
+            <paper-input
+                    id="url"
+                    label="Url"
+                    value="[[ application.url ]]"
+                    pattern="https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)"
+                    error-message="Invalid Url"
+                    required
+                    auto-validate
+                    name="configure_application[url]"
+            ></paper-input>
+        </template>
+
+        <template is="dom-if" if="[[ !applicationSettings ]]" >
+            <h2>[[ application.title ]]</h2>
+            <span>[[ application.url ]]</span>
+        </template>
 
         <template is="dom-if" if="[[ _applicationClaims ]]">
             <paper-input
@@ -106,7 +113,13 @@ Custom property | Description | Default
                  */
                 application: {
                     type: Object,
-                    value: {},
+                    value: function() { return {}; },
+                    notify: true
+                },
+
+                applicationSettings: {
+                    type: Boolean,
+                    value: true,
                     notify: true
                 },
 
@@ -186,14 +199,17 @@ Custom property | Description | Default
 
             _submitApplicationConfigure: function () {
                 var me = this;
+                if(!this.applicationSettings) {
+                    return new Promise(function(resolve, reject){ resolve(me.application)});
+                }
                 return new Promise(function (resolve, reject) {
                     var body = "";
-                    if (me.application.title != me.$.title.value) {
-                        body = encodeURIComponent(me.$.title.name) + "=" + encodeURIComponent(me.$.title.value);
+                    if (me.application.title != me.$$('#title').value) {
+                        body = encodeURIComponent(me.$$('#title').name) + "=" + encodeURIComponent(me.$$('#title').value);
                     }
-                    if (me.application.url != me.$.url.value) {
+                    if (me.application.url != me.$$('#url').value) {
                         body += body == "" ? '' : '&';
-                        body += encodeURIComponent(me.$.url.name) + "=" + encodeURIComponent(me.$.url.value);
+                        body += encodeURIComponent(me.$$('#url').name) + "=" + encodeURIComponent(me.$$('#url').value);
                     }
 
                     if ('' != body) {
@@ -286,7 +302,7 @@ Custom property | Description | Default
             },
 
             setUp: function() {
-                this.$.title.focus();
+//                this.$.title.focus();
             },
 
             /**

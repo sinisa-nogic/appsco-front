@@ -40,6 +40,9 @@
             paper-progress {
                 width: 100%;
             }
+            paper-progress[hidden] {
+                display: none !important;
+            }
             .active-integrations-info {
                 padding-top: 30px;
             }
@@ -51,9 +54,6 @@
             }
             available-integration-item {
                 margin-bottom: 5px;
-            }
-            available-integration-item:hover {
-                background-color: #ffffff;
             }
             :host .title {
                 margin-top: 0;
@@ -126,6 +126,9 @@
             :host .pt-40{
                 padding-top:40px;
             }
+            .image {
+                max-width: 100%;
+            }
         </style>
 
         <iron-ajax
@@ -193,7 +196,7 @@
 
                         <div class="flex-vertical flex-center pt-40">
                             <div class="flex-horizontal">
-                                <img src="/images/provisioning-graph.png">
+                                <img src="../images/provisioning/provisioning-info.png" class="image">
                             </div>
                         </div>
                     </div>
@@ -208,26 +211,6 @@
                 </template>
             </div>
 
-            <div info class="flex-vertical">
-                <div class="info-header">
-                    Info Header
-                </div>
-
-                <div class="info-content-container">
-                    <div class="info-content">
-                        Info Content
-
-                    </div>
-                </div>
-
-                <div class="info-actions flex-horizontal">
-                    <paper-button
-                            class="send-invoice-button flex"
-                            on-tap="_onSendInvoice">
-                        Send invoice
-                    </paper-button>
-                </div>
-            </div>
         </appsco-content>
     </template>
 
@@ -236,29 +219,6 @@
             is: 'appsco-provisioning-page',
 
             properties: {
-
-                _remoteAccounts: {
-                    type: Array,
-                    value: function() {
-                        return [
-                            {
-                                id: "1232345345",
-                                fist_name: "Test",
-                                last_name: "Testovic",
-                                display_name: "Test Testovic",
-                                email: "test@testovic.com"
-                            },
-                            {
-                                id: "1232345345234234",
-                                fist_name: "Sima",
-                                last_name: "Simic",
-                                display_name: "Sima Simic",
-                                email: "sima@simic.com"
-                            }
-                        ];
-                    },
-                    notify: true
-                },
 
                 companyApi: {
                     type: String
@@ -419,25 +379,32 @@
             },
 
             _handleActiveIntegrationsResponse: function(event) {
+                var response = event.detail.response;
 
-                if (event.detail.response) {
-                    var integrations = event.detail.response.active_integrations;
+                if (response) {
 
-                    this._hasActiveIntegrations = integrations.length != 0;
-                    this._noActiveIntegrations = !this._hasActiveIntegrations;
+                    if (response.active_integrations.length > 0) {
+                        var integrations = event.detail.response.active_integrations;
 
-                    integrations.forEach(function(integration, index) {
-                        setTimeout(function() {
-                            this.push('_activeIntegrations', integration);
-                        }.bind(this), (index + 1) * 30);
+                        this._hasActiveIntegrations = integrations.length != 0;
+                        this._noActiveIntegrations = !this._hasActiveIntegrations;
 
-                        if (index == integrations.length - 1) {
-                            this._hideProgressBar('activeIntegrationsLoader');
-                        }
-                    }.bind(this));
-                }
-                else {
-                    this._hideProgressBar('activeIntegrationsLoader');
+                        integrations.forEach(function(integration, index) {
+                            setTimeout(function() {
+                                this.push('_activeIntegrations', integration);
+                            }.bind(this), (index + 1) * 30);
+
+                            if (index == integrations.length - 1) {
+                                this._hideProgressBar('activeIntegrationsLoader');
+                            }
+                        }.bind(this));
+                    }
+                    else {
+                        this._hasActiveIntegrations = false;
+                        this._noActiveIntegrations = !this._hasActiveIntegrations;
+                        this._hideProgressBar('activeIntegrationsLoader');
+                    }
+
                 }
             },
 

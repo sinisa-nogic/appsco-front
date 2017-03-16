@@ -1,258 +1,147 @@
 <link rel="import" href="../bower_components/polymer/polymer.html">
-<link rel="import" href="../bower_components/paper-icon-button/paper-icon-button.html">
-<link rel="import" href="../bower_components/paper-checkbox/paper-checkbox.html">
 <link rel="import" href="../bower_components/iron-icons/iron-icons.html">
-<link rel="import" href="../bower_components/paper-material/paper-material.html">
 <link rel="import" href="../bower_components/iron-media-query/iron-media-query.html">
-<link rel="import" href="../bower_components/iron-ajax/iron-ajax.html">
 <link rel="import" href="../bower_components/iron-icon/iron-icon.html">
-<link rel="import" href="../bower_components/iron-image/iron-image.html">
+<link rel="import" href="../bower_components/neon-animation/neon-animated-pages.html">
+<link rel="import" href="../bower_components/neon-animation/animations/fade-in-animation.html">
+<link rel="import" href="../bower_components/neon-animation/animations/fade-out-animation.html">
+<link rel="import" href="../bower_components/iron-selector/iron-selector.html">
+<link rel="import" href="../bower_components/iron-ajax/iron-ajax.html">
+<link rel="import" href="../bower_components/iron-ajax/iron-request.html">
 
 <link rel="import" href="../bower_components/appsco-page/appsco-content.html">
-<link rel="import" href="../bower_components/appsco-components/appsco-loader.html">
 
-<link rel="import" href="../bower_components/paper-card/paper-card.html">
-
-
-<link rel="import" href="../bower_components/paper-styles/shadow.html">
 <link rel="import" href="shared-styles.html">
-<link rel="import" href="provisioning/appsco-sync-users.html">
+<link rel="import" href="provisioning/appsco-integration-page.html">
+<link rel="import" href="provisioning/appsco-synced-accounts-page.html">
 
 <dom-module id="appsco-provisioning-settings-page">
     <template>
         <style include="webkit-scrollbar-style">
             :host {
                 display: block;
-                color: #000;
+                color: var(--primary-text-color);
                 font-size: 14px;
 
                 --appsco-content-sections: {
                     padding: 0;
                 };
 
-                --info-width: 300px;
-
                 --resource-width: 300px;
 
-                --paper-card: {
-                    min-height: 150px;
-                    box-sizing: border-box;
-                };
-                --paper-card-content: {
-                    min-height: 70px;
-                    box-sizing: border-box;
-                };
-                --paper-card-actions: {
-                    padding: 0;
-                    border-color: var(--divider-color);
-                };
-                --paper-card-header-text: {
-                    padding: 8px 16px;
-                    font-size: 18px;
-                    color: var(--primary-text-color);
-                    border-bottom: 1px solid var(--divider-color);
-                };
-            }
-            :host h2 {
-                font-weight: 400;
-            }
-            :host .icon-16 {
-                width: 16px;
-                height: 16px;
-            }
-            :host div[resource] > * {
-                padding: 10px;
-            }
-            :host div[resource] p {
-                margin-bottom: 0;
-                margin-top: 6px;
-                font-size: 14px;
-            }
-            :host .resource-header {
-                border-bottom: 1px solid var(--divider-color);
-                margin-bottom:20px;
-                font-size:18px;
+                --items-progress-bar: {
+                     display: none;
+                 };
             }
             :host .resource-item {
+                padding: 10px;
                 border-bottom: 1px solid var(--divider-color);
-                font-size:16px;
+                font-size: 14px;
+                cursor: pointer;
+            }
+            :host .resource-item:hover, :host .resource-item.iron-selected {
+                background-color: #ffffff;
+            }
+            :host .resource-item-icon {
+                margin-right: 5px;
+            }
+            :host .resource-item[disabled] {
+                opacity: 0.5;
+                cursor: default;
+            }
+            :host .resource-item[disabled]:hover {
+                background-color: transparent;
             }
             :host div[content] {
-                padding: 10px;
-                color: var(--primary-text-color);
-            }
-            :host div[info] {
                 height: 100%;
-            }
-            :host div[info] > * {
-                padding: 10px;
+                color: var(--primary-text-color);
                 box-sizing: border-box;
             }
-            :host .flex-horizontal {
-                @apply(--layout-horizontal);
-                @apply(--layout-center);
+            :host .content-pages, :host .content-pages neon-animated-pages {
+                height: 100%;
+            }
+            :host neon-animated-pages > * {
+                padding: 10px;
+                overflow: auto;
+                box-sizing: border-box;
             }
             :host .flex-vertical {
                 @apply(--layout-vertical);
             }
-            :host .flex-center {
-                @apply(--layout-center);
-            }
-            :host .flex {
-                @apply(--layout-flex);
-            }
-            :host .small {
-                font-size:12px;
-                margin-right: 10px;
-            }
-            :host .header {
-                font-size: 18px;
-                padding: 5px;
-            }
-            :host .info-header {
-                background-color: var(--app-primary-color);
-                padding: 10px 0 5px 10px;
-            }
-            :host .info-content-container {
-                height: calc(100% - 64px - 38px - 40px);
-                position: relative;
-            }
-            :host .info-content {
-                padding: 10px;
-                overflow: auto;
-                position: absolute;
-                top: 0;
-                right: 0;
-                bottom: 0;
-                left: 0;
-            }
-            :host .border-bottom {
-                border-bottom: 1px solid #dbdbdb;
-            }
-            :host div[info] .close-info-icon {
-                position: absolute;
-                top: 5px;
-                right: 0;
-                padding: 0;
-                color: #ffffff;
-            }
-            :host div[info] .info-actions {
-                padding: 0;
-                position: absolute;
-                bottom: 0;
-                left: 0;
-                right: 0;
-            }
-            .message {
-                @apply(--info-message);
-            }
-            :host([medium-screen]) .subscription-plan {
-                min-width: inherit;
-                @apply(--layout-flex);
+            :host paper-button {
+                @apply(--primary-button);
+                display: inline-block;
             }
             :host([tablet-screen]) {
-                --info-width: 100%;
                 --resource-width: 240px;
-            }
-            :host([tablet-screen]) .plan-upcoming-invoice {
-                @apply(--layout-vertical);
-            }
-            :host([tablet-screen]) .subscription-plan {
-                margin-right: 0;
-                margin-bottom: 10px;
-            }
-            :host([tablet-screen]) .plan-upcoming-invoice paper-card{
-                @apply(--layout-flex-none);
-                width: 100%;
             }
             :host([mobile-screen]) {
                 --resource-width: 180px;
             }
-
-            :host .integration-item iron-image{
-                display:block;
-            }
-            :host .integration-item:hover {
-                @apply(--shadow-elevation-2dp);
-                background-color: white;
-                cursor: pointer;
-            }
-            :host .hide {
-                opacity: 0;
-                margin-right: 16px;
-            }
-            :host .integration-item:hover .hide {
-                opacity: 1;
-                margin-right: 16px;
-            }
-            :host .padding-5 {
-                padding:5px;
-            }
-            :host .user-matching-card {
-                margin:10px 0;
-                background-color: white;
-            }
-            :host .user-matching-card iron-image{
-                border-radius: 50%;
-            }
-            :host .user-matching-card:hover {
-                @apply(--shadow-elevation-4dp);
-            }
-            :host .pt-40{
-                padding-top:40px;
-            }
-            :host .pl-20 {
-                padding-left: 20px;
-            }
         </style>
-
-        <iron-ajax
-                auto
-                id="remoteUsersCall"
-                url="[[ integration.self ]]/mappings"
-                handle-as="json"
-                method="PATCH"
-                headers="[[ _computedHeaders ]]"
-                on-response="_handleAvailableIntegrationsResponse"
-        ></iron-ajax>
 
         <iron-media-query query="(max-width: 1200px)" query-matches="{{ mediumScreen }}"></iron-media-query>
         <iron-media-query query="(max-width: 800px)" query-matches="{{ tabletScreen }}"></iron-media-query>
         <iron-media-query query="(max-width: 600px)" query-matches="{{ mobileScreen }}"></iron-media-query>
 
+        <iron-ajax id="remoteAccountsCall"
+                   url="[[ _integrationAccountsApi ]]"
+                   method="PATCH"
+                   headers="[[ _computedHeaders ]]"
+                   handle-as="json"
+                   on-error="_onError"
+                   on-response="_onResponse"></iron-ajax>
+
         <appsco-content id="appscoContent" resource-active>
 
             <div class="flex-vertical" resource>
 
-                <div class="resource-item">
-                    <iron-icon icon="social:group-add"></iron-icon>
-                    Integration Accounts
-                </div>
+                <iron-selector selected="{{ _activePage }}" attr-for-selected="name">
+                    <div class="resource-item" name="appsco-integration-page">
+                        <iron-icon icon="social:group-add" class="resource-item-icon"></iron-icon>
+                        Integration Accounts
+                    </div>
 
-                <div class="resource-item">
-                    <iron-icon icon="social:people"></iron-icon> Synced Accounts with AppsCo
-                </div>
+                    <div class="resource-item" name="appsco-synced-accounts-page">
+                        <iron-icon icon="social:people" class="resource-item-icon"></iron-icon> Synced Accounts with AppsCo
+                    </div>
 
-                <div class="resource-item">
-                    <iron-icon icon="icons:settings"></iron-icon> Settings
-                </div>
+                    <div class="resource-item" name="settings" disabled>
+                        <iron-icon icon="icons:settings" class="resource-item-icon"></iron-icon> Settings
+                    </div>
+                </iron-selector>
 
             </div>
 
             <div content>
 
-                <paper-button>Import Selected Accounts</paper-button>
-                <appsco-sync-users
-                id="appscoAccounts"
-                size="100"
-                load-more
-                company
-                authorization-token="[[ authorizationToken ]]"
-                accounts-api="[[ companyApi ]]/directory/roles"
-                on-edit="_onAccountEdit"
-                on-account="_onAccount"
-                on-loaded="_onAccountsLoaded"
-                on-empty-load="_pageLoaded"></appsco-sync-users>
+                <div class="content-pages">
+                    <neon-animated-pages class="flex"
+                                         selected="{{ _activePage }}"
+                                         attr-for-selected="name"
+                                         on-neon-animation-finish="_onPageAnimationFinish">
+
+                        <appsco-integration-page id="appscoIntegrationPage"
+                                                 name="appsco-integration-page"
+                                                 authorization-token="[[ authorizationToken ]]"
+                                                 items-api="[[ _integrationAccountsApi ]]"
+                                                 company-roles-api="[[ companyRolesApi ]]"
+                                                 on-loaded="_onPageLoaded"
+                                                 on-sync="_onSyncAccount"
+                                                 on-local-account-synced="_onAccountSynced"
+                                                 on-new-account-synced="_onAccountSynced"
+                                                 on-accounts-sync-new-account-synced="_onAccountSynced"></appsco-integration-page>
+
+                        <appsco-synced-accounts-page id="appscoSyncedAccountsPage"
+                                                     name="appsco-synced-accounts-page"
+                                                     authorization-token="[[ authorizationToken ]]"
+                                                     items-api="[[ _integrationAccountsApi ]]"
+                                                     company-roles-api="[[ companyRolesApi ]]"
+                                                     on-loaded="_onPageLoaded"
+                                                     on-remove-synced-account="_onRemoveSyncedAccount"></appsco-synced-accounts-page>
+
+                    </neon-animated-pages>
+                </div>
 
             </div>
 
@@ -267,49 +156,52 @@
 
             properties: {
 
-                _remoteAccounts: {
-                    type: Array,
-                    value: function() {
-                        return [
-                            {
-                                id: "1232345345",
-                                fist_name: "Test",
-                                last_name: "Testovic",
-                                display_name: "Test Testovic",
-                                email: "test@testovic.com"
-                            },
-                            {
-                                id: "1232345345234234",
-                                fist_name: "Sima",
-                                last_name: "Simic",
-                                display_name: "Sima Simic",
-                                email: "sima@simic.com"
-                            }
-                        ];
-                    },
-                    notify: true
-                },
-
-                companyApi: {
-                    type: String
-                },
-
                 integration: {
                     type: Object,
-                    value: function() { return {}; }
+                    value: function() {
+                        return {};
+                    },
+                    observer: '_onIntegrationChanged'
                 },
 
                 authorizationToken: {
                     type: String
                 },
 
-                /**
-                 * Computed headers.
-                 * It contains authorization token.
-                 */
+                companyRolesApi: {
+                    type: String,
+                    value: ''
+                },
+
+                _activePage: {
+                    type: String,
+                    value: 'appsco-integration-page'
+                },
+
                 _computedHeaders: {
                     type: Object,
-                    computed: "_computeHeaders(authorizationToken)"
+                    computed: '_computeHeaders(authorizationToken)'
+                },
+
+                _integrationAccountsApi: {
+                    type: Object,
+                    computed: '_computeIntegrationAccountsApi(integration)'
+                },
+
+                _items: {
+                    type: Array,
+                    value: function () {
+                        return [];
+                    },
+                    notify: true
+                },
+
+                _syncedItems: {
+                    type: Array,
+                    value: function () {
+                        return [];
+                    },
+                    notify: true
                 },
 
                 /**
@@ -334,20 +226,45 @@
                     reflectToAttribute: true
                 },
 
+                animationConfig: {
+                    value: function() {
+                        return {
+                            'entry': {
+                                name: 'fade-in-animation',
+                                node: this,
+                                timing: {
+                                    duration: 300
+                                }
+                            },
+                            'exit': {
+                                name: 'fade-out-animation',
+                                node: this,
+                                timing: {
+                                    duration: 200
+                                }
+                            }
+                        }
+                    }
+                },
+
                 pageLoaded: {
                     type: Boolean,
                     value: false
-                },
-
-                _mappedUsers: {
-                    type: Array,
-                    value: function() { return []; }
                 }
             },
+
+            behaviors: [
+                Polymer.NeonAnimatableBehavior
+            ],
 
             observers: [
                 '_updateScreen(mediumScreen, tabletScreen, mobileScreen)'
             ],
+
+            listeners: {
+                'loaded': '_onIntegrationAccountsLoaded',
+                'empty-load': '_onIntegrationAccountsLoaded'
+            },
 
             attached: function() {
 
@@ -357,8 +274,7 @@
                     this.updateStyles();
                 }
 
-                this._pageLoaded();
-                console.log(this.integration);
+                this._checkIntegration();
             },
 
             _updateScreen: function(medium, tablet, mobile) {
@@ -372,22 +288,38 @@
                 }
             },
 
-            /**
-             * Computes authorization headers.
-             *
-             * @param {Object} authorizationToken
-             * @returns {{ Authorization: string }}
-             * @private
-             */
-            _computeHeaders: function (authorizationToken) {
+            _computeHeaders: function(authorizationToken) {
                 return {
-                    'Authorization': 'token ' + authorizationToken
+                    'Authorization': 'token ' + authorizationToken,
+                    'Content-Type': 'application/x-www-form-urlencoded'
                 }
             },
 
-            _pageLoaded: function() {
+            _computeIntegrationAccountsApi: function (integration) {
+                return integration.self ? integration.self + '/mappings' : '';
+            },
+
+            _onPageLoaded: function() {
                 this.pageLoaded = true;
                 this.fire('page-loaded');
+            },
+
+            _checkIntegration: function() {
+                if (!this.integration.self) {
+                    this.fire('back');
+                }
+            },
+
+            _onIntegrationChanged: function(integration) {
+                if (integration.self) {
+                    this._getIntegrationAccounts();
+                }
+            },
+
+            _getIntegrationAccounts: function() {
+                setTimeout(function() {
+                    this.loadAccounts();
+                }.bind(this), 100);
             },
 
             toggleResource: function() {
@@ -403,39 +335,203 @@
                 this.$.appscoContent.hideSection('info');
                 this._infoShown = false;
             },
-//
-//            setIntegration: function(integration) {
-//                this.set('integration', integration);
-//                this.$.remoteUsersCall.generateRequest();
-//                console.log(this.$.remoteUsersCall, this.integration);
-//            },
 
-            _handleAvailableIntegrationsResponse: function(response) {
-                var request = document.createElement('iron-request'),
-                        options = {
-                            url: this.integration.self + '/mappings',
-                            method: 'GET',
-                            handleAs: 'json',
-                            headers: {
-                                'Authorization': 'token ' + this.authorizationToken
-                            }
-                        };
+            _showProgressBar: function() {
+                this._pageLoaded = false;
+            },
 
-                this._loader = true;
+            loadAccounts: function() {
+                this._showProgressBar();
+                this.set('_items', []);
+                this.set('_syncedItems', []);
+                this._load();
+            },
 
-                request.send(options).then(function(request) {
-                    this.$.appscoAccounts.emptyAccounts();
-                    this.set('_remoteAccounts', []);
-                    var mappings = request.response.mappings;
-                    this.set('_mappedUsers', request.response.mappings);
-                    for(var i=0; i < mappings.length; i++) {
-                        if(mappings[i].local == null) {
-                            this.$.appscoAccounts.addAccount({account: mappings[i].remote});
-                            this.push('_remoteAccounts', {account: mappings[i].remote})
-                        }
+            _load: function() {
+                this.$.remoteAccountsCall.generateRequest();
+            },
+
+            _loadIntegratedAccounts: function() {
+                this.$.remoteAccountsCall.method = 'GET';
+                this._load();
+            },
+
+            _setRemoteAccountsCallMethod: function() {
+                this.$.remoteAccountsCall.method = 'PATCH';
+            },
+
+            _onError: function() {
+                this._handleEmptyLoad();
+            },
+
+            _handleEmptyLoad: function() {
+
+                /**
+                 * Fired when there are no items.
+                 *
+                 * @event empty-load
+                 */
+                this.fire('empty-load');
+            },
+
+            _onResponse: function(event) {
+                var response = event.detail.response;
+
+                if (response && response.mappings) {
+                    var mappingAccounts = response.mappings,
+                        length = mappingAccounts.length,
+                        meta = response.meta,
+                        mappingCount = mappingAccounts.length - 1;
+
+                    if (0 === meta.total) {
+                        this.set('_items', []);
+                        this.set('_syncedItems', []);
+                        this._handleEmptyLoad();
+                        return false;
                     }
+
+                    mappingAccounts.forEach(function(mapping, index) {
+
+                        setTimeout(function() {
+                            var mappingItem = {};
+
+                            this._getLocalAccount(mapping.remote).then(function(localAccount) {
+                                mappingItem.meta = mapping.meta;
+                                mappingItem.self = mapping.self;
+                                mappingItem.localAccount = localAccount;
+                                mappingItem.remoteAccount = mapping.remote;
+
+                                if (mapping.local) {
+                                    this.push('_syncedItems', mappingItem);
+                                    this.$.appscoSyncedAccountsPage.addSyncedItem(mappingItem);
+                                }
+                                else {
+                                    mappingItem.sync = true;
+                                    mappingItem.syncing = false;
+
+                                    this.push('_items', mappingItem);
+                                    this.$.appscoIntegrationPage.addIntegrationItem(mappingItem);
+                                }
+
+                                if (index == mappingCount) {
+                                    this.fire('loaded', {
+                                        items: mappingAccounts
+                                    });
+                                }
+
+                            }.bind(this));
+
+                        }.bind(this), (index + 1) * 30);
+                    }.bind(this));
+
+                    this._setRemoteAccountsCallMethod();
+                }
+                else if (response && response.success) {
+                    this._loadIntegratedAccounts();
+                }
+            },
+
+            _getLocalAccount: function(remoteAccount) {
+
+                return new Promise(function(resolve, reject) {
+                    var request = document.createElement('iron-request'),
+                            options = {
+                                url: this.companyRolesApi + '?extended=1&term=' + remoteAccount.email,
+                                method: 'GET',
+                                handleAs: 'json',
+                                headers: this._computedHeaders
+                            };
+
+                    request.send(options).then(function() {
+                        var roles = request.response.company_roles,
+                            length = roles.length,
+                            localAccount = null;
+
+                        for (var i = 0; i < length; i++) {
+                            var role = roles[i];
+
+                            if (remoteAccount.email === role.account.email) {
+                                localAccount = role;
+                                break;
+                            }
+                        }
+
+                        resolve(localAccount);
+                    });
                 }.bind(this));
+
+            },
+
+            _onIntegrationAccountsLoaded: function() {
+                this._onPageLoaded();
+                this.$.appscoIntegrationPage.itemsLoaded(this._items);
+                this.$.appscoSyncedAccountsPage.itemsLoaded(this._syncedItems);
+            },
+
+            _onSyncAccount: function(event) {
+                var item = event.detail.item;
+
+                this.$.appscoIntegrationPage.syncAccount(item);
+            },
+
+            syncAccounts: function() {
+                this.$.appscoIntegrationPage.syncAccounts();
+            },
+
+            _removeIntegrationItem: function(item) {
+                var items = this._items,
+                    length = items.length,
+                    index;
+
+                for (var i = 0; i < length; i++) {
+                    var element = items[i];
+
+                    if (item.self === element.self) {
+                        index = i;
+                        break;
+                    }
+                }
+
+                this.splice('_items', index, 1);
+            },
+
+            _onAccountSynced: function(event) {
+                var item = event.detail.item;
+
+                this.$.appscoSyncedAccountsPage.addSyncedItem(item);
+            },
+
+            _onRemoveSyncedAccount: function(event) {
+                var item = event.detail.item;
+
+                this.$.appscoSyncedAccountsPage.removeAccount(item);
+            },
+
+            _onPageAnimationFinish: function(event) {
+                var toPage = event.detail.toPage;
+
+                switch(toPage.getAttribute('name')) {
+                    case 'appsco-integration-page':
+
+                        if (toPage.$) {
+                            toPage.showBulkActions();
+                        }
+
+                        break;
+
+                    case 'appsco-synced-accounts-page':
+
+                        if (toPage.$) {
+                            toPage.hideBulkActions();
+                        }
+
+                        break;
+
+                    default:
+                        break;
+                }
             }
+
         });
     </script>
 </dom-module>

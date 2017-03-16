@@ -25,6 +25,9 @@
                 left: 0;
                 right: 0;
             }
+            :host([syncing]) appsco-integration-items {
+                opacity: 0.5;
+            }
         </style>
 
         <paper-progress id="paperProgress"
@@ -82,6 +85,12 @@
                     value: function () {
                         return [];
                     }
+                },
+
+                syncing: {
+                    type: Boolean,
+                    value: false,
+                    reflectToAttribute: true
                 },
 
                 _syncedItems: {
@@ -262,6 +271,7 @@
 
                 if (length > 0) {
                     this._showProgressBar();
+                    this.syncing = true;
                     this._bulkSync = true;
 
                     for (var i = 0; i < length; i++) {
@@ -280,6 +290,7 @@
             _onAccountsSyncFinished: function() {
                 this._bulkSync = false;
                 this._hideProgressBar();
+                this.syncing = false;
                 this.fire('accounts-sync-finished', {
                     items: this._syncedItems
                 });

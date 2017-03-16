@@ -82,6 +82,9 @@
 
 <link rel="import" href="auditlog/appsco-audit-log-page-actions.html">
 
+<link rel="import" href="provisioning/appsco-provisioning-settings-page-actions.html">
+<link rel="import" href="provisioning/appsco-start-integration.html">
+
 <link rel="import" href="shared-styles.html">
 <link rel="import" href="webkit-scrollbar-style.html">
 
@@ -338,9 +341,9 @@
                             <iron-icon icon="icons:supervisor-account"></iron-icon> <span class="menu-text">Directory</span>
                             <!--icons:folder-shared-->
                         </a>
-                        <div name="vault" href="/vault" disabled>
+                        <a name="provisioning" href="/provisioning" >
                             <iron-icon icon="icons:compare-arrows"></iron-icon> <span class="menu-text">Provisioning</span>
-                        </div>
+                        </a>
                         <a name="auditlog" href="/audit-log">
                             <iron-icon icon="icons:reorder"></iron-icon> <span class="menu-text">Audit</span>
                         </a>
@@ -365,16 +368,16 @@
                         <div name="directory" disabled>
                             <iron-icon icon="icons:supervisor-account"></iron-icon> <span class="menu-text">Directory</span>
                         </div>
-                        <div name="vault" disabled>
+                        <div name="provisioning" disabled>
                             <iron-icon icon="icons:compare-arrows"></iron-icon> <span class="menu-text">Provisioning</span>
                         </div>
-                        <div name="vault" disabled>
+                        <div name="auditlog" disabled>
                             <iron-icon icon="icons:reorder"></iron-icon> <span class="menu-text">Audit</span>
                         </div>
-                        <div name="vault" disabled>
+                        <div name="statistics" disabled>
                             <iron-icon icon="icons:donut-large"></iron-icon> <span class="menu-text">Statistics</span>
                         </div>
-                        <div name="vault" disabled>
+                        <div name="billing" disabled>
                             <iron-icon icon="icons:payment"></iron-icon> <span class="menu-text">Billing</span>
                         </div>
                         <div name="settings" disabled>
@@ -484,6 +487,13 @@
                             <appsco-billing-page-actions
                                     name="billing"
                                     on-resource-section="_onResourceActionBillingPage"></appsco-billing-page-actions>
+
+                            <appsco-provisioning-settings-page-actions
+                                    id="appscoProvisioningSettingsPageActions"
+                                    name="provisioning-settings"
+                                    on-back="_showCompanyProvisioningPage"
+                                    on-resource-section="_onResourceActionProvisioningSettingsPage"
+                                    on-sync-accounts="_onSyncAccounts"></appsco-provisioning-settings-page-actions>
                         </neon-animated-pages>
 
                     </app-toolbar>
@@ -655,6 +665,30 @@
                             on-revoke-assignee="_onRevokeAssigneeAccess"
                     ></appsco-manage-account-page>
 
+                    <appsco-provisioning-page
+                            id="appscoProvisioningPage"
+                            name="provisioning"
+                            company-api="[[ companyApi ]]"
+                            authorization-token="[[ authorizationToken ]]"
+                            on-available-integration="_onStartAuthorization"
+                            on-active-integration="_onIntegrationSetup"
+                    ></appsco-provisioning-page>
+
+                    <appsco-provisioning-settings-page
+                            id="appscoProvisioningSettingsPage"
+                            name="provisioning-settings"
+                            authorization-token="[[ authorizationToken ]]"
+                            integration="[[ _selectedIntegration ]]"
+                            company-roles-api="[[ companyDirectoryRolesApi ]]"
+                            on-back="_showCompanyProvisioningPage"
+                            on-local-account-synced="_onLocalAccountSynced"
+                            on-new-account-synced="_onNewAccountSynced"
+                            on-accounts-sync-finished="_onAccountsSyncFinished"
+                            on-synced-account-removed="_onSyncedAccountRemoved"
+                            on-show-bulk-actions="_onShowBulkActionsProvisioningPage"
+                            on-hide-bulk-actions="_onHideBulkActionsProvisioningPage"
+                    ></appsco-provisioning-settings-page>
+
                     <appsco-audit-log-page
                             id="appscoAuditLogPage"
                             name="audit-log"
@@ -667,6 +701,7 @@
                             company-api="[[ companyApi ]]"
                             authorization-token="[[ authorizationToken ]]"
                     ></appsco-statistics-page>
+
                     <appsco-billing-page
                             id="appscoBillingPage"
                             name="billing"
@@ -893,6 +928,13 @@
                 on-invoice-sent="_onInvoiceSent">
         </appsco-billing-send-invoice>
 
+        <appsco-start-integration
+                id="appscoStartIntegration"
+                account="[[ account ]]"
+                authorization-token="[[ authorizationToken ]]"
+                company-api="[[ companyApi ]]">
+        </appsco-start-integration>
+
         <template is="dom-if" if="[[ api.me ]]">
             <iron-ajax auto
                        url="[[ api.me ]]"
@@ -1050,6 +1092,14 @@
                     value: function() {
                         return [];
                     }
+                },
+
+                /**
+                 * Selected integration for provisioning settings
+                 */
+                _selectedIntegration: {
+                    type: Object,
+                    value: function() { return {}; }
                 },
 
                 /**
@@ -1254,6 +1304,9 @@
                     case 'company-settings':
                         return 'Company Settings';
 
+                    case 'provisioning-settings':
+                        return 'Provisioning > Setup';
+
                     case 'audit-log':
                         return 'Audit Log';
 
@@ -1277,6 +1330,10 @@
 
             _showCompanyDirectoryPage: function() {
                 this.set('routeData.page', 'directory');
+            },
+
+            _showCompanyProvisioningPage: function() {
+                this.set('routeData.page', 'provisioning');
             },
 
             _showLogoutPage: function() {
@@ -2148,10 +2205,12 @@
 
             _onAccountAdded: function(e) {
                 this.$.appscoDirectoryPage.addAccounts([e.detail.account]);
+                this._reloadProvisioningIntegrationAccounts();
             },
             
             _onAccountsAdded: function(e) {
                 this.$.appscoDirectoryPage.addAccounts(e.detail.accounts);
+                this._reloadProvisioningIntegrationAccounts();
                 this._notify('Accounts were successfully imported.');
             },
 
@@ -2199,6 +2258,7 @@
                 this.$.appscoDirectoryPage.removeAccounts(event.detail.accounts);
                 this._onHideDirectoryBulkActions();
                 this.set('_selectedAccounts', []);
+                this._reloadProvisioningIntegrationAccounts();
                 this._notify('Selected accounts were successfully removed from company.');
             },
 
@@ -2207,6 +2267,11 @@
                 this._notify('An error occurred. Selected accounts were not removed from company. Please try again.');
             },
 
+            _reloadCompanyAccounts: function() {
+                if (this.$.appscoDirectoryPage.$) {
+                    this.$.appscoDirectoryPage.reloadAccounts();
+                }
+            },
             /**
              * Directory page END
              */
@@ -2335,6 +2400,63 @@
              */
 
             /**
+             * Provisioning page START
+             */
+            _onStartAuthorization: function(event) {
+                this.$.appscoStartIntegration.setIntegration(event.detail.integration);
+                this.$.appscoStartIntegration.toggle();
+            },
+
+            _onIntegrationSetup: function(event) {
+                this._selectedIntegration = event.detail.integration;
+                this.set('routeData.page', 'provisioning-settings');
+            },
+
+            _onResourceActionProvisioningSettingsPage: function() {
+                this.$.appscoProvisioningSettingsPage.toggleResource();
+            },
+
+            _onLocalAccountSynced: function(event) {
+                this._reloadCompanyAccounts();
+                this._notify('Remote account ' + event.detail.item.remoteAccount.display_name + ' was successfully synced with ' + event.detail.item.localAccount.account.display_name + ' AppsCo account.');
+            },
+
+            _onNewAccountSynced: function(event) {
+                this._reloadCompanyAccounts();
+                this._notify('Remote account ' + event.detail.item.remoteAccount.display_name + ' was successfully imported.');
+            },
+
+            _onAccountsSyncFinished: function(event) {
+                this._reloadCompanyAccounts();
+                this._notify('Selected accounts were successfully synced.');
+            },
+
+            _onSyncAccounts: function() {
+                this.$.appscoProvisioningSettingsPage.syncAccounts();
+            },
+
+            _reloadProvisioningIntegrationAccounts: function() {
+                if (this.$.appscoProvisioningSettingsPage.$) {
+                    this.$.appscoProvisioningSettingsPage.loadAccounts();
+                }
+            },
+
+            _onSyncedAccountRemoved: function(event) {
+                this._notify('Synced account ' + event.detail.item.remoteAccount.display_name + ' was successfully removed.');
+            },
+
+            _onShowBulkActionsProvisioningPage: function() {
+                this.$.appscoProvisioningSettingsPageActions.showBulkActions();
+            },
+
+            _onHideBulkActionsProvisioningPage: function() {
+                this.$.appscoProvisioningSettingsPageActions.hideBulkActions();
+            },
+            /**
+             * Provisioning page END
+             */
+
+            /**
              * Global START
              */
             _setProgressBar: function(page) {
@@ -2376,6 +2498,14 @@
                         this.$.appscoAuditLogPage.pageLoaded ? this._hideProgressBar() : this._showProgressBar();
                         break;
 
+                    case 'provisioning':
+                        this.$.appscoProvisioningPage.pageLoaded ? this._hideProgressBar() : this._showProgressBar();
+                        break;
+
+                    case 'provisioning-settings':
+                        this.$.appscoProvisioningSettingsPage.pageLoaded ? this._hideProgressBar() : this._showProgressBar();
+                        break;
+
                     default:
                         this._hideProgressBar();
                 }
@@ -2404,6 +2534,8 @@
                         page === 'directory' ||
                         page === 'manage-account' ||
                         page === 'statistics' ||
+                        page === 'provisioning' ||
+                        page === 'provisioning-settings' ||
                         page === 'billing' ||
                         page === 'company-settings' ||
                         page === 'audit-log');

@@ -45,6 +45,7 @@
                                   authorization-token="[[ authorizationToken ]]"
                                   items-api="[[ itemsApi ]]"
                                   company-roles-api="[[ companyRolesApi ]]"
+                                  on-allow-sync="_onAllowSync"
                                   on-synced-item-removed="_onSyncedItemRemoved"></appsco-integration-items>
 
     </template>
@@ -200,6 +201,18 @@
             addIntegrationItem: function(item) {
                 this.push('_items', item);
                 this.$.appscoIntegrationItems.addIntegrationItem(item);
+            },
+
+            _onAllowSync: function(event) {
+                var item = event.detail.item;
+
+                this._items.forEach(function(mapping, index) {
+
+                    if (item.self === mapping.self) {
+                        this._items[index].sync = true;
+                    }
+
+                }.bind(this));
             },
 
             _removeIntegrationItem: function(item) {

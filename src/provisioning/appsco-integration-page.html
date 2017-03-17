@@ -100,6 +100,13 @@
                     }
                 },
 
+                _syncItems: {
+                    type: Array,
+                    value: function () {
+                        return [];
+                    }
+                },
+
                 _pageInfo: {
                     type: String,
                     value: ''
@@ -134,6 +141,10 @@
                 Polymer.NeonAnimatableBehavior
             ],
 
+            observers: [
+                '_onSyncItemsChanged(_syncItems.splices)'
+            ],
+
             _computeHeaders: function(authorizationToken) {
                 return {
                     'Authorization': 'token ' + authorizationToken,
@@ -165,6 +176,11 @@
                 this.$.appscoIntegrationItems.integrationItemsLoaded(items);
             },
 
+            emptyAccounts: function() {
+                this._setPageInfo('');
+                this.$.appscoIntegrationItems.emptyIntegrationItems();
+            },
+
             addIntegrationItem: function(item) {
                 this.push('_items', item);
                 this.$.appscoIntegrationItems.addIntegrationItem(item);
@@ -183,8 +199,28 @@
                 this.$.appscoIntegrationItems.removeIntegrationItem(item);
             },
 
-            _abortSyncForItem: function(item) {
+            _abortSyncForItem: function(item, message) {
+                this._setPageInfo(message);
                 this.$.appscoIntegrationItems.abortSyncForItem(item);
+
+                if (-1 === message.toLowerCase().indexOf('maximum number')) {
+
+                    this._items.forEach(function(syncItem, index) {
+
+                        if (item.self === syncItem.self) {
+                            this._items[index].sync = false;
+
+                            if (this._bulkSync) {
+                                this.syncAccounts();
+                            }
+
+                            return false;
+                        }
+
+                    }, this);
+                } else {
+                    this._stopAccountsSync();
+                }
             },
 
             _onSyncSuccess: function(mapping) {
@@ -255,19 +291,25 @@
                     }
 
                 }.bind(this), function() {
-                    this._setPageInfo(request.response.message);
-                    this._abortSyncForItem(mapping);
+                    this._abortSyncForItem(mapping, request.response.message);
 
                 }.bind(this));
             },
 
             syncAccount: function(item) {
+                this.push('_syncItems', item);
+            },
+
+            _syncAccount: function(item) {
                 item.localAccount ? this._syncWithLocalAccount(item) : this._syncWithNewAccount(item);
             },
 
             syncAccounts: function() {
                 var items = this._items,
-                    length = items.length;
+                    length = items.length,
+                    count = 0;
+
+                this.set('_syncItems', []);
 
                 if (length > 0) {
                     this._showProgressBar();
@@ -278,19 +320,31 @@
                         var item = items[i];
 
                         if (item.sync) {
-                            this.syncAccount(item);
+                            this._syncAccount(item);
+                            count++;
                             break;
                         }
-
                     }
+
+                    if (0 === count) {
+                        this._hideProgressBar();
+                        this.syncing = false;
+                        this._bulkSync = false;
+                    }
+
                 }
 
             },
 
-            _onAccountsSyncFinished: function() {
+            _stopAccountsSync: function() {
                 this._bulkSync = false;
                 this._hideProgressBar();
                 this.syncing = false;
+            },
+
+            _onAccountsSyncFinished: function() {
+                this._stopAccountsSync();
+
                 this.fire('accounts-sync-finished', {
                     items: this._syncedItems
                 });
@@ -303,12 +357,29 @@
 
                 if (this._bulkSync) {
                     if (nextItem) {
-                        this.syncAccount(nextItem);
+                        this._syncAccount(nextItem);
                     }
                     else {
                         this._onAccountsSyncFinished();
                     }
                 }
+            },
+
+            _onSyncItemsChanged: function(record) {
+
+                if (record && !this._bulkSync) {
+                    record.indexSplices.forEach(function(r) {
+
+                        for (var i = 0; i < r.addedCount; i++) {
+                            var index = r.index + i,
+                                item = r.object[index];
+
+                                this._syncAccount(item);
+                        }
+
+                    }, this);
+                }
+
             }
         });
     </script>

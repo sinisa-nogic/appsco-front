@@ -8,6 +8,7 @@
 <link rel="import" href="../neon-animation/animations/scale-up-animation.html">
 
 <link rel="import" href="../appsco-components/appsco-loader.html">
+<link rel="import" href="../appsco-components/appsco-form-error.html">
 
 <!--
 `appsco-orgunit-remove`
@@ -52,19 +53,25 @@ Custom property | Description | Default
                 with-backdrop
                 id="removeDialog"
                 entry-animation="scale-up-animation"
-                exit-animation="fade-out-animation">
+                exit-animation="fade-out-animation"
+                on-iron-overlay-closed="_onDialogClosed">
 
             <div class="remove-container">
 
                 <appsco-loader active="[[ _loader ]]" loader-alt="Appsco is removing organization unit" multi-color></appsco-loader>
 
                 <h2>Remove organization unit [[ orgUnit.name ]]</h2>
+
+                <template is="dom-if" if="[[ _error ]]">
+                    <appsco-form-error message="[[ _error ]]"></appsco-form-error>
+                </template>
+
                 <p>Your applications and users that are assigned to [[ orgUnit.name ]] will not be removed.</p>
             </div>
 
             <div class="buttons">
                 <paper-button dialog-dismiss>Cancel</paper-button>
-                <paper-button dialog-confirm autofocus on-tap="_remove">Remove</paper-button>
+                <paper-button autofocus on-tap="_remove">Remove</paper-button>
             </div>
         </paper-dialog>
 
@@ -100,6 +107,11 @@ Custom property | Description | Default
                 _loader: {
                     type: Boolean,
                     value: false
+                },
+
+                _error: {
+                    type: String,
+                    value: ''
                 }
             },
 
@@ -108,6 +120,14 @@ Custom property | Description | Default
              */
             open: function () {
                 this.$.removeDialog.open();
+            },
+
+            /**
+             * Open dialog
+             */
+            _onDialogClosed: function () {
+                this._error = '';
+                this._loader = false;
             },
 
             /**
@@ -129,8 +149,6 @@ Custom property | Description | Default
                     }
                 }).then(function() {
 
-                    this._loader = false;
-
                     /**
                      * Fired when organization unit is removed
                      *
@@ -143,6 +161,9 @@ Custom property | Description | Default
                     });
 
                     this.$.removeDialog.close();
+                }.bind(this), function() {
+                    this._loader = false;
+                    this._error = 'It is not allowed to remove organization unit which have applications or accounts assigned to it.';
                 }.bind(this));
             }
         });

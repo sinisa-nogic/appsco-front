@@ -1,0 +1,182 @@
+<link rel="import" href="../polymer/polymer.html">
+<link rel="import" href="../iron-icon/iron-icon.html">
+<link rel="import" href="../iron-icons/iron-icons.html">
+<link rel="import" href="../iron-flex-layout/iron-flex-layout.html">
+<link rel="import" href="../neon-animation/neon-animation-runner-behavior.html">
+<link rel="import" href="../neon-animation/animations/scale-up-animation.html">
+<link rel="import" href="../neon-animation/animations/scale-down-animation.html">
+
+<link rel="import" href="appsco-orgunit-item.html">
+
+
+<!--
+`appsco-orgunit-tree-node`
+Representation of organization unit item
+
+    <appsco-orgunit-tree-node>
+    </appsco-orgunit-tree-node>
+
+### Styling
+
+`<appsco-orgunit-tree-node>` provides the following custom properties and mixins for styling:
+
+Custom property | Description | Default
+----------------|-------------|----------
+`--appsco-orgunit-tree-node` | Mixin for the root element | `{}`
+
+@demo demo/appsco-orgunit-tree.html
+-->
+
+<dom-module id="appsco-orgunit-tree-node">
+    <template>
+        <style>
+            :host {
+                display: block;
+            @apply(--appsco-orgunit-tree-node);
+            }
+            :host .flex {
+                @apply(--layout-flex);
+            }
+            :host .layout-horizontal {
+                @apply(--layout-horizontal);
+            }
+            :host .node {
+                margin: 5px 0;
+            }
+            :host .node-icon {
+                width: 24px;
+            }
+            :host .children {
+                display: none;
+            }
+            :host appsco-orgunit-item {
+                margin-left: -4px;
+            }
+            :host iron-icon {
+                transition: transform 0.2s linear;
+                cursor: pointer;
+            }
+            :host([expanded]) iron-icon {
+                transform: rotate(180deg);
+                transition: transform 0.3s linear;
+            }
+        </style>
+
+        <div class="layout-horizontal node">
+            <div class="node-icon">
+                <template is="dom-if" if="[[ _hasChildren(node) ]]">
+                    <iron-icon icon="icons:expand-more" on-tap="_onToggleNode"></iron-icon>
+                </template>
+            </div>
+            <div class="flex">
+                <appsco-orgunit-item org-unit="[[ node ]]" add modify remove$="[[ _removeAction ]]"></appsco-orgunit-item>
+
+                <div id="nodeChildren" class="children">
+                    <template is="dom-if" if="[[ _hasChildren(node) ]]">
+                        <template is="dom-repeat" items="[[ node.children ]]" as="child">
+                            <appsco-orgunit-tree-node node="[[ child ]]"></appsco-orgunit-tree-node>
+                        </template>
+                    </template>
+                </div>
+            </div>
+        </div>
+
+    </template>
+
+    <script>
+        Polymer({
+
+            is: 'appsco-orgunit-tree-node',
+
+            properties: {
+
+                node: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    }
+                },
+
+                expanded: {
+                    type: Boolean,
+                    value: false,
+                    reflectToAttribute: true
+                },
+
+                /**
+                 * Indicates if Remove Org Unit action should be available or not.
+                 */
+                _removeAction: {
+                    type: Boolean,
+                    computed: '_computeRemoveAction(node)'
+                },
+
+                /**
+                 * Animation for loader appearance.
+                 */
+                animationConfig: {
+                    value: function() {
+                        return {
+                            'entry': {
+                                name: 'scale-up-animation',
+                                node: this.$.nodeChildren,
+                                axis: 'y',
+                                transformOrigin: '0 0',
+                                timing: {
+                                    duration: 300
+                                }
+                            },
+                            'exit': {
+                                name: 'scale-down-animation',
+                                node: this.$.nodeChildren,
+                                axis: 'y',
+                                transformOrigin: '0 0',
+                                timing: {
+                                    duration: 200
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+
+            behaviors: [
+                Polymer.NeonAnimationRunnerBehavior
+            ],
+
+            listeners: {
+                'neon-animation-finish': '_onAnimationFinish'
+            },
+
+            _computeRemoveAction: function(node) {
+                return !this._hasChildren(node);
+            },
+
+            _hasChildren: function(node) {
+                return node && node.children && node.children.length > 0;
+            },
+
+            _onToggleNode: function() {
+                this.expanded = !this.expanded;
+
+                if (this.expanded) {
+                    this.animationConfig.exit.node.style.display = 'block';
+                    this.playAnimation('entry');
+                }
+                else {
+                    this.playAnimation('exit', {
+                        node: this.animationConfig.exit.node
+                    });
+                }
+            },
+
+            _onAnimationFinish: function(event) {
+                var node = event.detail.node;
+
+                if (node && !this.expanded) {
+                    node.style.display = 'none';
+                }
+            }
+        });
+    </script>
+</dom-module>

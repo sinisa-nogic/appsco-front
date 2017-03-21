@@ -24,7 +24,7 @@ Custom property | Description | Default
 ----------------|-------------|----------
 `--appsco-orgunit-tree-node` | Mixin for the root element | `{}`
 
-@demo demo/appsco-orgunit-tree.html
+@demo demo/appsco-orgunit-tree-node.html
 -->
 
 <dom-module id="appsco-orgunit-tree-node">
@@ -35,10 +35,10 @@ Custom property | Description | Default
             @apply(--appsco-orgunit-tree-node);
             }
             :host .flex {
-                @apply(--layout-flex);
+            @apply(--layout-flex);
             }
             :host .layout-horizontal {
-                @apply(--layout-horizontal);
+            @apply(--layout-horizontal);
             }
             :host .node {
                 margin: 5px 0;
@@ -52,11 +52,11 @@ Custom property | Description | Default
             :host appsco-orgunit-item {
                 margin-left: -4px;
             }
-            :host iron-icon {
+            :host .toggle-icon {
                 transition: transform 0.2s linear;
                 cursor: pointer;
             }
-            :host([expanded]) iron-icon {
+            :host .toggle-icon-expanded {
                 transform: rotate(180deg);
                 transition: transform 0.3s linear;
             }
@@ -65,7 +65,10 @@ Custom property | Description | Default
         <div class="layout-horizontal node">
             <div class="node-icon">
                 <template is="dom-if" if="[[ _hasChildren(node) ]]">
-                    <iron-icon icon="icons:expand-more" on-tap="_onToggleNode"></iron-icon>
+                    <iron-icon icon="icons:expand-more"
+                               id="expandIcon"
+                               class="toggle-icon"
+                               on-tap="_onToggleNode"></iron-icon>
                 </template>
             </div>
             <div class="flex">
@@ -99,8 +102,7 @@ Custom property | Description | Default
 
                 expanded: {
                     type: Boolean,
-                    value: false,
-                    reflectToAttribute: true
+                    value: false
                 },
 
                 /**
@@ -157,13 +159,19 @@ Custom property | Description | Default
             },
 
             _onToggleNode: function() {
+                var expandIcon = this.$$('#expandIcon');
+
                 this.expanded = !this.expanded;
 
                 if (this.expanded) {
+                    expandIcon.className = expandIcon.className + ' toggle-icon-expanded';
+
                     this.animationConfig.exit.node.style.display = 'block';
                     this.playAnimation('entry');
                 }
                 else {
+                    expandIcon.className = expandIcon.className.replace(' toggle-icon-expanded', '');
+
                     this.playAnimation('exit', {
                         node: this.animationConfig.exit.node
                     });

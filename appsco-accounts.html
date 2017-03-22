@@ -82,6 +82,12 @@ Custom property | Description | Default
                 padding-top: 4px;
                 position: relative;
             }
+            :host .load-more-box paper-progress {
+                width: 100%;
+                position: absolute;
+                top: 4px;
+                left: 0;
+            }
             :host .accounts-progress-bar {
                 min-width: 100px;
                 width: 100%;
@@ -109,10 +115,10 @@ Custom property | Description | Default
             <iron-ajax
                     auto
                     id="accountsApiRequest"
-                    url="{{ _currentUrl }}"
+                    url="{{ _accountsApiUrl }}"
                     on-error="_onError"
                     on-response="_onResponse"
-                    headers="{{ _computedHeaders }}"
+                    headers="[[ _computedHeaders ]]"
                     debounce-duration="300"
                     ></iron-ajax>
 
@@ -177,8 +183,7 @@ Custom property | Description | Default
                  */
                 accountsApi: {
                     type: String,
-                    value: '',
-                    notify: true
+                    value: ''
                 },
                 /**
                  * Number of account items to load and present
@@ -202,7 +207,7 @@ Custom property | Description | Default
 
                 _computedHeaders: {
                     type: Object,
-                    computed: "_computeHeaders(authorizationToken)"
+                    computed: '_computeHeaders(authorizationToken)'
                 },
                 _accounts: {
                     type: Array,
@@ -219,6 +224,13 @@ Custom property | Description | Default
                     }
                 },
 
+                _searchedAccounts: {
+                    type: Array,
+                    value: function () {
+                        return [];
+                    }
+                },
+
                 _accountsEmpty: {
                     type: Boolean,
                     value: false
@@ -229,10 +241,16 @@ Custom property | Description | Default
                     value: ''
                 },
 
-                _currentUrl: {
+                _accountsApiUrl: {
                     type: String,
-                    notify: true
+                    computed: '_computeAccountsApiUrl(accountsApi, size)'
                 },
+
+                _searchAccountsApiUrl: {
+                    type: String,
+                    computed: '_computeSearchAccountsApiUrl(accountsApi, _filterTerm)'
+                },
+
                 _next: {
                     type: String
                 },
@@ -296,7 +314,6 @@ Custom property | Description | Default
             },
 
             ready: function () {
-                this._currentUrl = this.accountsApi + "?page=1&extended=1&limit=" + this.size;
 
                 if (this.company) {
 
@@ -313,17 +330,25 @@ Custom property | Description | Default
                 }
             },
 
+            _computeAccountsApiUrl: function(accountsApi, size) {
+                return (accountsApi && size) ? (accountsApi + '?page=1&extended=1&limit=' + size) : '';
+            },
+
+            _computeSearchAccountsApiUrl: function(accountsApi, term) {
+                return accountsApi + '?extended=1&limit=100&term=' + term;
+            },
+
             _loadAccounts: function () {
-                this.$$('#paperProgress').hidden = false;
+                this._showProgressBar();
                 this._loadMore = false;
-                this._currentUrl = this.accountsApi + "?page=1&extended=1&limit=" + this.size;
                 this.set('_accounts', []);
                 this.set('_allAccounts', []);
+                this.set('_searchedAccounts', []);
             },
 
             _loadMoreAccounts: function () {
-                this.$$('#loadMoreProgress').hidden = false;
-                this._currentUrl = this._next;
+                this._showLoadMoreProgressBar();
+                this.$.accountsApiRequest.url = this._next;
             },
 
             _onError: function() {
@@ -342,11 +367,11 @@ Custom property | Description | Default
                 this.fire('empty-load');
 
                 this._hideProgressBar();
+                this._hideLoadMoreProgressBar();
             },
 
-            _onResponse: function(e) {
-                var me = this,
-                        response = e.detail.response,
+            _onResponse: function(event) {
+                var response = event.detail.response,
                         companyRoles = response.company_roles.reverse(),
                         meta = response.meta,
                         accountsCount = companyRoles.length - 1;
@@ -366,21 +391,21 @@ Custom property | Description | Default
                 companyRoles.forEach(function (el, index) {
 
                     setTimeout( function() {
-
                         el.selected = false;
 
-                        me.push('_accounts', el);
-                        me.push('_allAccounts', el);
+                        this.push('_accounts', el);
+                        this.push('_allAccounts', el);
 
                         if (index == accountsCount) {
 
-                            me._loadMore = me.loadMore;
+                            this._loadMore = this.loadMore;
 
-                            if (me._accounts.length === meta.total) {
-                                me._loadMore = false;
+                            if (this._accounts.length === meta.total) {
+                                this._loadMore = false;
                             }
 
-                            me._hideProgressBar();
+                            this._hideProgressBar();
+                            this._hideLoadMoreProgressBar();
 
                             /**
                              * Fired when accounts are loaded
@@ -388,24 +413,35 @@ Custom property | Description | Default
                              * @event loaded
                              * @param {Object} account[] [account](https://developers.appsco.com/api/dashboard/id/icons/id)
                              */
-                            me.fire('loaded', {
-                                accounts: e.detail.response.company_roles
+                            this.fire('loaded', {
+                                accounts: companyRoles
                             });
-
-                            if (me._filterOrgunit.selected) {
-                                me._filterByOrgunit();
-                            }
                         }
 
-                    }.bind(this), (index + 1) * 30 );
+                    }.bind(this), (index + 1) * 50 );
 
-                });
+                }.bind(this));
             },
 
             _computeHeaders: function (authorizationToken) {
                 return {
                     'Authorization': 'token ' + authorizationToken
                 }
+            },
+
+            _setLoadMoreAction: function() {
+
+                if (this._allAccounts.length < this._totalAccounts) {
+                    this._loadMore = true;
+                }
+                else {
+                    this._loadMore = false;
+                }
+
+            },
+
+            _hideLoadMoreAction: function() {
+                this._loadMore = false;
             },
 
             _onAccountAction: function(event) {
@@ -489,6 +525,7 @@ Custom property | Description | Default
 
                     for (var j = 0; j < _length; j++) {
                         if (account.account.self === _accounts[j].account.self) {
+                            account.selected = _accounts[j].selected;
                             _accounts[j] = account;
                             break;
                         }
@@ -496,6 +533,7 @@ Custom property | Description | Default
 
                     for (var k = 0; k < allLength; k++) {
                         if (account.account.self === allAccounts[k].account.self) {
+                            account.selected = allAccounts[k].selected;
                             allAccounts[k] = account;
                             break;
                         }
@@ -511,7 +549,7 @@ Custom property | Description | Default
             },
 
             reloadAccounts: function() {
-                this.set('_currentUrl', '');
+                this.set('_accountsApiUrl', '');
                 this._loadAccounts();
             },
 
@@ -610,95 +648,210 @@ Custom property | Description | Default
                 this.set('_allAccounts', allAccounts);
             },
 
+            _setSearchAccountsResult: function() {
+                this._accountsEmpty = (0 === this._searchedAccounts.length);
+
+                if (this._accountsEmpty) {
+                    this._message = 'There are no accounts with asked term.';
+                }
+                else {
+                    this.set('_accounts', this._searchedAccounts);
+                    this._hideLoadMoreAction();
+                    this._message = '';
+                }
+            },
+
             filterByTerm: function(term) {
                 this._filterTerm = term;
-
-                this._filterOrgunit.orgUnit ? this._filterByTermAndOrgunit() : this._filterByTerm();
+                this._filterByTerm();
             },
 
             filterByOrgunit: function(orgunitData) {
                 this._filterOrgunit = orgunitData;
+                this._filterByOrgunit();
+            },
 
-                this._filterTerm.trim().length > 0 ? this._filterByTermAndOrgunit() : this._filterByOrgunit();
+            _getAccountsByTerm: function() {
+
+                return new Promise(function(resolve, reject) {
+                    var request = document.createElement('iron-request'),
+                            options = {
+                                url: this._searchAccountsApiUrl,
+                                method: 'GET',
+                                handleAs: 'json',
+                                headers: this._computedHeaders
+                            };
+
+                    request.send(options).then(function() {
+
+                        if (request.response) {
+                            resolve(request.response.company_roles);
+                        }
+
+                    }, function() {
+                        reject(request.response.message);
+                    });
+                }.bind(this));
             },
 
             _filterByTerm: function() {
                 var term = this._filterTerm,
-                        length = this._allAccounts.length;
+                        length = this._allAccounts.length,
+                        filterOrgunit = this._filterOrgunit;
 
-                this.$$('#paperProgress').hidden = false;
+                if (term.length < 3) {
+                    this.set('_searchedAccounts', []);
 
-                if (length < this._accounts.length) {
-                    this._allAccounts = JSON.parse(JSON.stringify(this._accounts));
-                    length = this._allAccounts.length;
-                }
+                    if (filterOrgunit.selected) {
+                        this._filterByOrgunit();
+                    }
+                    else {
+                        this._accountsEmpty = false;
+                        this._message = '';
+                        this.set('_accounts', JSON.parse(JSON.stringify(this._allAccounts)));
+                        this._setLoadMoreAction();
+                    }
 
-                if (length === 0) {
                     this.fire('filter-done');
                     return false;
                 }
 
-                this.set('_accounts', []);
+                this._showProgressBar();
+                this._hideLoadMoreAction();
 
-                this._allAccounts.forEach(function(elem, index) {
+                this._getAccountsByTerm().then(function(accounts) {
+                    var accountsLength = accounts.length;
 
-                    if (elem.account.name.toLowerCase().indexOf(term.toLowerCase()) >= 0 || elem.account.email.toLowerCase().indexOf(term.toLowerCase()) >= 0) {
-                        var oldElem = JSON.parse(JSON.stringify(elem));
+                    this.set('_searchedAccounts', accounts);
+                    this._setSearchAccountsResult();
 
-                        this.push('_accounts', oldElem);
+                    if (this._accountsEmpty) {
+                        this.set('_searchedAccounts', []);
+                        this.fire('filter-done');
+                        return false;
                     }
 
-                    if (index === length - 1) {
-                        this._accountsEmpty = (this._accounts.length === 0);
-                        this._message = this._accountsEmpty ? 'There are no accounts with asked term.' : '';
-                        this._hideProgressBar();
+                    if (filterOrgunit.selected) {
+                        this._filterByOrgunit();
+                    }
+                    else {
+                        this.set('_accounts', []);
 
-                        this.fire('filter-done');
+                        accounts.forEach(function(elem, index) {
+
+                            for (var i = 0; i < length; i++) {
+                                var account = this._allAccounts[i];
+
+                                if (elem.account.self === account.account.self) {
+                                    this.push('_accounts', account);
+                                    break;
+                                }
+                                else {
+
+                                    if (i === accountsLength - 1) {
+                                        this.push('_accounts', elem);
+                                    }
+                                }
+                            }
+
+                            if (index === length - 1) {
+                                this._hideProgressBar();
+                                this.fire('filter-done');
+                            }
+
+                        }.bind(this));
                     }
 
                 }.bind(this));
-
-                this._loadMore = false;
-
-                if (term.length < 3 && this._accounts.length < this._totalAccounts) {
-                    this._loadMore = true;
-                }
             },
 
             _filterByOrgunit: function() {
                 var filterOrgunit = this._filterOrgunit,
                         orgunit = filterOrgunit.orgUnit,
                         selected = filterOrgunit.selected,
-                        allLength = 0;
+                        filterTerm = this._filterTerm,
+                        allLength = this._allAccounts.length;
 
+                this._showProgressBar();
                 this._accountsEmpty = false;
                 this._message = '';
 
-                if (this._allAccounts.length < this._accounts.length) {
-                    this._allAccounts = JSON.parse(JSON.stringify(this._accounts));
-                }
-
-                allLength = this._allAccounts.length;
-
                 if (!selected) {
-                    this.set('_accounts', this._allAccounts);
+                    this._setLoadMoreAction();
+                    !filterTerm.length ? this.set('_accounts', JSON.parse(JSON.stringify(this._allAccounts))) : this._setSearchAccountsResult();
                     this.set('_filterOrgunit', {});
                 }
                 else {
+                    this._hideLoadMoreAction();
                     this.set('_accounts', []);
 
-                    for (var i = 0; i < allLength; i++) {
-                        var account = this._allAccounts[i],
-                                orgunits = account.account.org_units,
-                                orgunitsLength = orgunits.length;
+                    if (this._searchedAccounts.length > 0) {
+                        var searchedAccounts = this._searchedAccounts,
+                                searchedAccountsLength = searchedAccounts.length,
+                                responseAccounts = [],
+                                responseAccountsLength;
 
-                        for (var j = 0; j < orgunitsLength; j++) {
+                        for (var i = 0; i < searchedAccountsLength; i++) {
+                            var account = searchedAccounts[i],
+                                    orgunits = account.account.org_units,
+                                    orgunitsLength = orgunits.length;
 
-                            if (orgunits[j].alias === orgunit.alias) {
-                                this.push('_accounts', account);
-                                break;
+                            for (var j = 0; j < allLength; j++) {
+                                var acc = this._allAccounts[j];
+
+                                if (account.account.self === acc.account.self) {
+                                    responseAccounts.push(acc);
+                                    break;
+                                }
+                                else {
+
+                                    if (j === allLength - 1) {
+                                        responseAccounts.push(account);
+                                    }
+                                }
+                            }
+                        }
+
+                        responseAccountsLength = responseAccounts.length;
+
+                        for (var k = 0; k < responseAccountsLength; k++) {
+                            var account = responseAccounts[k],
+                                    orgunits = account.account.org_units,
+                                    orgunitsLength = orgunits.length;
+
+                            for (var j = 0; j < orgunitsLength; j++) {
+
+                                if (orgunits[j].alias === orgunit.alias) {
+                                    this.push('_accounts', account);
+                                    break;
+                                }
+
                             }
 
+                            if (k === responseAccountsLength -1) {
+                                this._hideProgressBar();
+                            }
+                        }
+                    }
+                    else {
+
+                        for (var i = 0; i < allLength; i++) {
+                            var account = this._allAccounts[i],
+                                    orgunits = account.account.org_units,
+                                    orgunitsLength = orgunits.length;
+
+                            for (var j = 0; j < orgunitsLength; j++) {
+
+                                if (orgunits[j].alias === orgunit.alias) {
+                                    this.push('_accounts', account);
+                                    break;
+                                }
+
+                            }
+
+                            if (i === allLength -1) {
+                                this._hideProgressBar();
+                            }
                         }
                     }
 
@@ -727,7 +880,6 @@ Custom property | Description | Default
                 allLength = this._allAccounts.length;
 
                 if (!selected) {
-                    this.set('_accounts', this._allAccounts);
                     this.set('_filterOrgunit', {});
                     this._filterByTerm();
                 }
@@ -762,10 +914,25 @@ Custom property | Description | Default
                 }
             },
 
+            _showProgressBar: function() {
+                this.$$('#paperProgress').hidden = false;
+            },
+
+            _showLoadMoreProgressBar: function() {
+                this.$$('#loadMoreProgress').hidden = false;
+            },
+
             _hideProgressBar: function() {
 
                 setTimeout(function() {
                     this.$$('#paperProgress').hidden = true;
+                }.bind(this), 300);
+
+            },
+
+            _hideLoadMoreProgressBar: function() {
+
+                setTimeout(function() {
                     this.$$('#loadMoreProgress').hidden = true;
                 }.bind(this), 300);
 

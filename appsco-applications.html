@@ -365,7 +365,7 @@ Custom property | Description | Default
             _onResponse: function(e) {
                 var me = this,
                         response = e.detail.response,
-                        icons = response.icons ? response.icons : response.applications,
+                        icons = response.icons ? response.icons.reverse() : response.applications.reverse(),
                         meta = response.meta,
                         iconsCount = icons.length - 1;
 
@@ -525,6 +525,7 @@ Custom property | Description | Default
 
                     for (var k = 0; k < allLength; k++) {
                         if (application.self === allApplications[k].self) {
+                            application.selected = allApplications[k].selected;
                             allApplications[k] = application;
                             break;
                         }
@@ -544,27 +545,28 @@ Custom property | Description | Default
                 this._loadApplications();
             },
 
-            removeApplications: function(applications) {
-                var length = applications.length;
+            removeApplications: function() {
+                var applications = this._applications,
+                        length = this._applications.length,
+                        allApplications = this._allApplications,
+                        allLength = allApplications.length;
 
                 for (var i = 0; i < length; i++) {
 
-                    for (var j = 0; j < this._applications.length; j++) {
-
-                        if (applications[i].self === this._applications[j].self) {
-                            this.splice('_applications', j, 1);
-                            break;
-                        }
-
+                    if (applications[i].selected) {
+                        this.splice('_applications', i, 1);
+                        i--;
+                        length--;
                     }
 
-                    for (var j = 0; j < this._allApplications.length; j++) {
+                }
 
-                        if (applications[i].self === this._allApplications[j].self) {
-                            this.splice('_allApplications', j, 1);
-                            break;
-                        }
+                for (var j = 0; j < allLength; j++) {
 
+                    if (allApplications[j].selected) {
+                        this.splice('_allApplications', j, 1);
+                        j--;
+                        allLength--;
                     }
 
                 }

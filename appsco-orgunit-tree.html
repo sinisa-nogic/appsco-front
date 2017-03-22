@@ -71,6 +71,10 @@ Custom property | Description | Default
                 'orgUnitsChanged(orgUnits.*)'
             ],
 
+            listeners: {
+                'selected': '_onNodeSelected'
+            },
+
             orgUnitsChanged: function() {
                 var treeNodes = this.unflatten(this.orgUnits);
 
@@ -97,6 +101,11 @@ Custom property | Description | Default
 
                     if (mappedArr.hasOwnProperty(id)) {
                         mappedElem = mappedArr[id];
+
+                        if (!mappedElem.selected) {
+                            mappedElem.selected = false;
+                        }
+
                         // If the element is not at the root level, add it to its parent array of children.
                         if (mappedElem.parent) {
                             mappedArr[mappedElem['parent']]['children'].push(mappedElem);
@@ -114,6 +123,7 @@ Custom property | Description | Default
             addOrgunit: function(orgunit) {
                 var orgunits = JSON.parse(JSON.stringify(this.orgUnits));
 
+                orgunit.selected = false;
                 orgunits.push(orgunit);
 
                 this.set('orgUnits', []);
@@ -151,6 +161,27 @@ Custom property | Description | Default
                 this.set('orgUnits', []);
                 this.set('orgUnits', orgunits);
 
+            },
+
+            _onNodeSelected: function(event) {
+                var orgunit = event.detail.orgUnit,
+                        selected = event.detail.selected,
+                        orgunits = JSON.parse(JSON.stringify(this.orgUnits)),
+                        length = orgunits.length;
+
+                for (var i = 0; i < length; i++) {
+                    var currentOrgunit = orgunits[i];
+
+                    if (currentOrgunit.self === orgunit.self) {
+                        orgunits[i].selected = selected;
+                    }
+                    else {
+                        orgunits[i].selected = false;
+                    }
+                }
+
+                this.set('orgUnits', []);
+                this.set('orgUnits', orgunits);
             }
         });
     </script>

@@ -1,5 +1,7 @@
 <link rel="import" href="../../polymer/polymer.html">
+<link rel="import" href="../../iron-flex-layout/iron-flex-layout.html">
 <link rel="import" href="../../iron-ajax/iron-ajax.html">
+<link rel="import" href="../../iron-ajax/iron-request.html">
 <link rel="import" href="../../paper-progress/paper-progress.html">
 <link rel="import" href="../../paper-styles/typography.html">
 <link rel="import" href="../../paper-button/paper-button.html">
@@ -21,13 +23,13 @@ Contains info about application assignees (accounts to whom app is shared).
     <template>
         <style>
             :host {
-                display: block;
+            @apply(--layout-vertical);
+            @apply(--layout-center);
                 position: relative;
                 color: var(--primary-text-color);
             }
             :host paper-progress {
                 width: 100%;
-                --paper-progress-active-color: #7baaf7;
             }
             :host .progress {
                 height: 6px;
@@ -39,7 +41,21 @@ Contains info about application assignees (accounts to whom app is shared).
             @apply(--paper-font-caption);
                 opacity: 0.6;
             }
-            :host paper-button {
+            :host .assignees {
+                width: 100%;
+            }
+            :host .load-more-box {
+                margin-top: 10px;
+                padding-top: 4px;
+                position: relative;
+            }
+            :host .load-more-box paper-progress {
+                width: 100%;
+                position: absolute;
+                top: 4px;
+                left: 0;
+            }
+            :host .load-more-button {
                 display: block;
                 width: 120px;
                 margin: 20px auto 0;
@@ -47,6 +63,7 @@ Contains info about application assignees (accounts to whom app is shared).
             @apply(--load-more-button);
             }
             :host .message {
+                width: 100%;
                 color: var(--secondary-text-color);
                 font-style: italic;
             @apply(--paper-font-body2);
@@ -56,6 +73,10 @@ Contains info about application assignees (accounts to whom app is shared).
                 width: 100%;
                 margin: 0 0 10px 0;
             @apply(--appsco-application-assignee);
+            }
+            :host([preview]) {
+            @apply(--layout-flex-none);
+                display: block;
             }
             :host([preview]) appsco-application-assignee {
                 width: auto;
@@ -84,7 +105,7 @@ Contains info about application assignees (accounts to whom app is shared).
                 </div>
             </template>
 
-            <template is="dom-repeat" items="{{ _assignees }}">
+            <template is="dom-repeat" items="[[ _assignees ]]">
                 <appsco-application-assignee
                         application="[[ application ]]"
                         assignee="[[ item ]]"
@@ -99,10 +120,12 @@ Contains info about application assignees (accounts to whom app is shared).
         </template>
 
         <template is="dom-if" if="[[ loadMore ]]">
-            <paper-button on-tap="_loadMoreAssignees"
-                          id="loadMore"
-                          class="load-more-button"
-                          hidden="[[ !_moreAssignees ]]">Load More</paper-button>
+            <div class="load-more-box" hidden$="[[ !_loadMore ]]">
+                <paper-progress id="loadMoreProgress" indeterminate></paper-progress>
+                <paper-button on-tap="_loadMoreAssignees"
+                              id="loadMore"
+                              class="load-more-button">Load More</paper-button>
+            </div>
         </template>
 
         <template is="dom-if" if="{{ _message }}">
@@ -127,7 +150,8 @@ Contains info about application assignees (accounts to whom app is shared).
                     type: Object,
                     value: function() {
                         return {};
-                    }
+                    },
+                    observer: '_onApplicationChanged'
                 },
 
                 authorizationToken: {
@@ -168,11 +192,6 @@ Contains info about application assignees (accounts to whom app is shared).
                     value: 1
                 },
 
-                _moreAssignees: {
-                    type: Boolean,
-                    value: true
-                },
-
                 /**
                  * Computed action.
                  */
@@ -188,10 +207,22 @@ Contains info about application assignees (accounts to whom app is shared).
                     computed: "_computeHeaders(authorizationToken)"
                 },
 
+                _searchAssigneesApi: {
+                    type: String,
+                    computed: '_computeSearchAssigneesApi(application)'
+                },
+
                 /**
                  * [Accounts](https://developers.appsco.com/api/accounts/id) that is to be rendered.
                  */
                 _assignees: {
+                    type: Array,
+                    value: function () {
+                        return [];
+                    }
+                },
+
+                _allAssignees: {
                     type: Array,
                     value: function () {
                         return [];
@@ -215,17 +246,17 @@ Contains info about application assignees (accounts to whom app is shared).
                 }
             },
 
-            observers: [
-                '_computeAction(application, _nextPage, size)',
-                '_onApplicationChanged(application)'
-            ],
-
             attached: function() {
+                this._computedAction = this.application.meta ? this.application.meta.subscribers + '?page=1' + '&limit=' + this.size + '&extended=1' : '';
                 this.load();
             },
 
-            _onApplicationChanged: function() {
-                this.load();
+            _onApplicationChanged: function(application, applicationOld) {
+
+                if (application && applicationOld && application.self != applicationOld.self) {
+                    this._computedAction = application.meta ? application.meta.subscribers + '?page=1' + '&limit=' + this.size + '&extended=1' : '';
+                    this.load();
+                }
             },
 
             /**
@@ -234,8 +265,8 @@ Contains info about application assignees (accounts to whom app is shared).
              * @param {Object} application
              * @private
              */
-            _computeAction: function (application, nextPage, size) {
-                this._computedAction = application.meta ? application.meta.subscribers + '?page=' + nextPage + '&limit=' + size + '&extended=1' : '';
+            _computeAction: function() {
+                this._computedAction = this.application.meta ? this.application.meta.subscribers + '?page=' + this._nextPage + '&limit=' + this.size + '&extended=1' : '';
             },
 
             /**
@@ -251,12 +282,39 @@ Contains info about application assignees (accounts to whom app is shared).
                 }
             },
 
+            _computeSearchAssigneesApi: function(application) {
+                return application.meta ? application.meta.subscribers + '?page=1&limit=100&extended=1' : '';
+            },
+
+            _showLoadMoreAction: function() {
+                this._loadMore = true;
+            },
+
+            _hideLoadMoreAction: function() {
+                this._loadMore = false;
+            },
+
+            _showLoadMoreProgressBar: function() {
+                this.$$('#loadMoreProgress').hidden = false;
+            },
+
+            _hideLoadMoreProgressBar: function() {
+
+                setTimeout(function() {
+                    if (this.$$('#loadMoreProgress')) {
+                        this.$$('#loadMoreProgress').hidden = true;
+                    }
+                }.bind(this), 300);
+
+            },
+
             /**
              * Triggers ajax request in order to get notifications.
              */
             load: function() {
                 this.$.progress.hidden = false;
-                this._assignees = [];
+                this.set('_assignees', []);
+                this.set('_allAssignees', []);
                 this._message = '';
                 this._nextPage = 1;
 
@@ -264,9 +322,8 @@ Contains info about application assignees (accounts to whom app is shared).
             },
 
             _loadMoreAssignees: function() {
-                this.$.progress.hidden = false;
-                this._loadMore = true;
-
+                this._showLoadMoreProgressBar();
+                this._computeAction();
                 this.$.getAssigneesCall.generateRequest();
             },
 
@@ -291,6 +348,8 @@ Contains info about application assignees (accounts to whom app is shared).
                 var response = event.detail.response;
 
                 if (!response) {
+                    this._hideProgressBar();
+                    this._hideLoadMoreProgressBar();
                     return false;
                 }
 
@@ -299,10 +358,11 @@ Contains info about application assignees (accounts to whom app is shared).
                         total = response.meta.total;
 
                 if (!this._loadMore) {
-                    this._assignees = [];
+                    this.set('_assignees', []);
+                    this.set('_allAssignees', []);
                 }
 
-                this._loadMore = false;
+                this._hideLoadMoreAction();
 
                 this._totalAssignees = total;
 
@@ -315,16 +375,12 @@ Contains info about application assignees (accounts to whom app is shared).
                         setTimeout( function() {
 
                             this.push('_assignees', assignees[index]);
+                            this.push('_allAssignees', assignees[index]);
 
                             if (index === (assignees.length - 1)) {
-
-                                this._moreAssignees = true;
-
-                                if (this._assignees.length === total) {
-                                    this._moreAssignees = false;
-                                }
-
                                 this._hideProgressBar();
+                                this._hideLoadMoreProgressBar();
+                                this._setLoadMoreAction();
                                 this.fire('assignees-loaded');
                             }
 
@@ -339,18 +395,92 @@ Contains info about application assignees (accounts to whom app is shared).
                         this._message = 'You haven\'t shared this application to anyone yet.';
                     }
 
-                    this._moreAssignees = false;
+                    this._hideLoadMoreAction();
                     this._handleEmpty();
                 }
                 else if (!currentLength) {
                     this._message = 'We couldn\'t load assignees at the moment.';
-                    this._moreAssignees = false;
+                    this._hideLoadMoreAction();
                     this._handleEmpty();
                 }
             },
 
+            _setLoadMoreAction: function() {
+                this._allAssignees.length < this._totalAssignees ? this._showLoadMoreAction() : this._hideLoadMoreAction();
+            },
+
+            _searchAssignees: function(term) {
+
+                return new Promise(function(resolve, reject) {
+                    var request = document.createElement('iron-request'),
+                            options = {
+                                url: this._searchAssigneesApi + '&term=' + term,
+                                method: 'GET',
+                                handleAs: 'json',
+                                headers: this._computedHeaders
+                            };
+
+                    request.send(options).then(function() {
+
+                        if (request.response) {
+                            resolve(request.response.accounts);
+                        }
+
+                    }, function() {
+
+                        if (request.response) {
+                            reject(request.response.message);
+                        }
+                        else {
+                            reject('There was an error in searching assignees with given term. Please contact AppsCo support.');
+                        }
+                    });
+                }.bind(this));
+            },
+
+            search: function(term) {
+
+                if (term.length < 3) {
+                    this._message = '';
+                    this.set('_assignees', JSON.parse(JSON.stringify(this._allAssignees)));
+                    this.fire('filter-done');
+                    this._setLoadMoreAction();
+                    return false;
+                }
+
+                this._searchAssignees(term).then(function(assignees) {
+                    this._hideLoadMoreAction();
+                    this.set('_assignees', []);
+
+                    if (assignees.length > 0) {
+                        this._message = '';
+
+                        assignees.forEach(function(assignee, index) {
+                            this.push('_assignees', assignee);
+
+                            if (index === (assignees.length - 1)) {
+
+                                this._hideProgressBar();
+                                this.fire('assignees-loaded');
+                            }
+
+                        }.bind(this));
+
+                    }
+                    else {
+                        this._message = 'There are no assignees with asked term.';
+                    }
+
+                }.bind(this), function(message) {
+                    this.set('_assignees', []);
+                    this._hideLoadMoreAction();
+                    this._message = message;
+                }.bind(this));
+            },
+
             _handleEmpty: function() {
                 this._hideProgressBar();
+                this._hideLoadMoreProgressBar();
                 this.fire('assignees-empty');
             },
 

@@ -84,6 +84,11 @@ Custom property | Description | Default
                  background: #eeeeee;
              };
             }
+            .input-container-profile-public {
+                margin-top: 10px;
+                margin-bottom: 10px;
+            }
+
         </style>
 
         <appsco-loader active="[[ _loader ]]" loader-alt="Appsco is saving application" multi-color></appsco-loader>
@@ -199,10 +204,22 @@ Custom property | Description | Default
                 </paper-dropdown-menu>
             </div>
 
-            <div class="input-container">
+            <div class="input-container input-container-profile-public">
                 <paper-toggle-button id="publicAccountSwitch"
                                      name="profile[public]"
-                                     active$="[[ _public ]]">Public profile (This option will make your profile searchable)</paper-toggle-button>
+                                     active$="[[ _public ]]">Public profile</paper-toggle-button>
+
+                <template is="dom-if" if="[[ _public ]]">
+                    <p class="info">
+                        It is allowed for other AppsCo users to search for your profile and share applications with you.
+                    </p>
+                </template>
+
+                <template is="dom-if" if="[[ !_public ]]">
+                    <p class="info">
+                        Activate Public Profile option if you want to allow other AppsCo users to search for your profile and share applications with you.
+                    </p>
+                </template>
             </div>
 
             <!--<div class="input-container input-access">-->
@@ -377,7 +394,7 @@ Custom property | Description | Default
             },
 
             _computedPublicState: function(account) {
-                return account.profile_options.public;
+                return account.profile_options && account.profile_options.public;
             },
 
             _onAccountChange: function(account) {
@@ -478,7 +495,8 @@ Custom property | Description | Default
                 this.$.accountSettingsForm.request.body['profile[timezone]'] = this.$.dropdownTimezone.selectedItem ? this.$.dropdownTimezone.selectedItem.value : '';
                 this.$.accountSettingsForm.request.body['profile[country]'] = this.$.dropdownCountry.selectedItem ? this.$.dropdownCountry.selectedItem.value : '';
                 this.$.accountSettingsForm.request.body['profile[gender]'] = this.$.dropdownGender.selectedItem ? this.$.dropdownGender.selectedItem.value : '';
-                if(this.$.publicAccountSwitch.checked) {
+
+                if (this.$.publicAccountSwitch.checked) {
                     this.$.accountSettingsForm.request.body['profile[public]'] = true;
                 }
             },

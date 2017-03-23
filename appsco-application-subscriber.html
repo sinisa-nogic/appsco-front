@@ -4,6 +4,9 @@
 <link rel="import" href="../neon-animation/animations/fade-in-animation.html">
 <link rel="import" href="../neon-animation/animations/fade-out-animation.html">
 <link rel="import" href="../paper-tooltip/paper-tooltip.html">
+<link rel="import" href="../paper-styles/typography.html">
+<link rel="import" href="../paper-styles/shadow.html">
+<link rel="import" href="../iron-image/iron-image.html">
 
 <!--
 `appsco-application-subscriber`
@@ -37,12 +40,15 @@ Example:
                 border-radius: 50%;
             @apply(--appsco-application-subscriber-image);
             }
-            :host .subscriber-image::shadow #sizedImgDiv {
+            :host .subscriber-image::shadow #sizedImgDiv, :host .subscriber-image::shadow #placeholder {
                 border-radius: 50%;
             @apply(--appsco-application-subscriber-image-contain);
             }
-            :host paper-tooltip {
-                font-size: 11px;
+            paper-tooltip {
+            --paper-tooltip: {
+                 font-size: 11px;
+                 line-height: 12px;
+             };
             }
             :host .account-initials {
                 position: relative;
@@ -66,6 +72,7 @@ Example:
             :host .subscriber {
             @apply(--layout-horizontal);
             @apply(--layout-center);
+            @apply(--shadow-elevation-2dp);
                 width: 100%;
                 height: 70px;
                 padding: 0 10px;
@@ -73,8 +80,12 @@ Example:
                 border-radius: 3px;
                 overflow: hidden;
                 position: relative;
+                background-color: var(--background-color, #fafafa);
                 cursor: pointer;
             @apply(--appsco-application-subscriber);
+            }
+            :host .subscriber:hover {
+            @apply(--shadow-elevation-4dp);
             }
             :host .subscriber .subscriber-image {
                 width: 52px;
@@ -114,6 +125,28 @@ Example:
                 font-size: 16px;
                 font-weight: 400;
                 overflow: hidden;
+            }
+            :host .actions {
+            @apply(--layout-horizontal);
+            @apply(--layout-center);
+                position: absolute;
+                right: 4px;
+                bottom: 4px;
+                display: none;
+            }
+            :host .actions[revoke] {
+            @apply(--layout-horizontal);
+            @apply(--layout-center);
+            }
+            :host .action-button {
+            @apply(--paper-font-common-base);
+            @apply(--paper-font-common-nowrap);
+                padding: 4px;
+                font-size: 12px;
+                font-weight: 400;
+                letter-spacing: 0.018em;
+                line-height: 18px;
+                text-transform: uppercase;
             }
         </style>
 
@@ -156,6 +189,11 @@ Example:
                     <span class="info-label subscriber-name">[[ subscriber.name ]]</span>
                     <span class="info-value">[[ subscriber.email ]]</span>
                 </div>
+
+                <div class="actions" revoke$="[[ !_owner ]]">
+                    <paper-button class="action-button"
+                                  on-tap="_onRevokeAccessAction">Revoke</paper-button>
+                </div>
             </div>
         </template>
 
@@ -168,13 +206,30 @@ Example:
 
             properties: {
 
+                application: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    }
+                },
+
                 /**
                  * Item to display.
                  *
                  * @type {Object}
                  */
                 subscriber: {
-                    type: Object
+                    type: Object,
+                    value: function() {
+                        return {};
+                    }
+                },
+
+                account: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    }
                 },
 
                 /**
@@ -188,6 +243,11 @@ Example:
                 _initials: {
                     type: String,
                     computed: '_computeInitials(subscriber)'
+                },
+
+                _owner: {
+                    type: Boolean,
+                    computed: '_computeOwner(subscriber, account)'
                 },
 
                 /**
@@ -235,6 +295,17 @@ Example:
                 }
 
                 return initials;
+            },
+
+            _computeOwner: function(subscriber, account) {
+                return account && subscriber.email == account.email;
+            },
+
+            _onRevokeAccessAction: function() {
+                this.fire('subscription-revoke', {
+                    application: this.application,
+                    account: this.subscriber
+                });
             }
         });
     </script>

@@ -324,6 +324,11 @@ Custom property | Description | Default
                     value: false
                 },
 
+                _searchDebounce: {
+                    type: Number,
+                    value: 0
+                },
+
                 /**
                  * Animation config for bulk actions.
                  */
@@ -414,27 +419,36 @@ Custom property | Description | Default
                     name: e.detail.item.getAttribute('name')
                 })
             },
-            _search: function () {
 
-                this.set('_clear', (this.$.search.value.length > 0));
 
-                if (this.$.search.value.length < 3) {
-                    this.fire('search', {
-                        term: ''
-                    });
-                    return;
+            _search: function() {
+
+                if (this._searchDebounce > 0) {
+                    clearTimeout(this._searchDebounce);
                 }
 
-                /**
-                 * Fired when user searches. Below 3 chars is empty
-                 *
-                 * @event search
-                 * @param {Object} filter {term: search_term}
-                 */
-                this.fire('search', {
-                    term: this.$.search.value
-                });
+                this._searchDebounce = setTimeout(function() {
+                    this.set('_clear', (this.$.search.value.length > 0));
+
+                    if (this.$.search.value.length < 3) {
+                        this.fire('search', {
+                            term: ''
+                        });
+                        return;
+                    }
+
+                    /**
+                     * Fired when user searches. Below 3 chars is empty
+                     *
+                     * @event search
+                     * @param {Object} filter {term: search_term}
+                     */
+                    this.fire('search', {
+                        term: this.$.search.value
+                    });
+                }.bind(this), 300);
             },
+
             _clearSearch: function () {
                 this.$.search.value = '';
                 this._search();

@@ -4,6 +4,9 @@
 <link rel="import" href="../../bower_components/neon-animation/animations/fade-in-animation.html">
 <link rel="import" href="../../bower_components/neon-animation/animations/fade-out-animation.html">
 <link rel="import" href="../../bower_components/paper-icon-button/paper-icon-button.html">
+<link rel="import" href="../../bower_components/paper-input/paper-input.html">
+<link rel="import" href="../../bower_components/iron-icon/iron-icon.html">
+<link rel="import" href="../../bower_components/iron-icons/iron-icons.html">
 <link rel="import" href="../../bower_components/iron-media-query/iron-media-query.html">
 
 <dom-module id="appsco-manage-application-page-actions">
@@ -13,12 +16,73 @@
                 @apply(--layout-horizontal);
                 @apply(--layout-center);
                 @apply(--layout-end-justified);
+
+                --application-action-icon-color: var(--app-primary-color);
+
+                --paper-input-container-color: var(--secondary-text-color);
+                --paper-input-container-input-color: var(--primary-text-color);
+                --paper-input-container-focus-color: var(--primary-text-color);
+                --paper-input-container: {
+                     padding: 0;
+                 };
+                --paper-input-container-input: {
+                     font-size: 14px;
+                 };
+                --paper-input-container-label: {
+                     font-size: 14px;
+                     bottom: 0;
+                     top: initial;
+                 };
+                --paper-input-container-label-focus: {
+                     left: 30px;
+                 };
+                --paper-input-prefix: {
+                     height: 20px;
+                     margin-right: 4px;
+                     color: var(--secondary-text-color);
+                 };
+                --paper-icon-button: {
+                     width: 24px;
+                     height: 24px;
+                     padding: 0;
+                     color: var(--primary-text-color);
+                 };
+                --iron-icon-fill-color: var(--application-action-icon-color);
+            }
+            :host > * {
+                height: 100%;
+            }
+            :host .search-icon {
+                width: 18px;
+                height: 18px;
+                margin: 0;
+            }
+            :host .clear-icon {
+                width: 20px;
+                height: 20px;
             }
             :host paper-icon-button::shadow paper-ripple {
                 width: 150%;
                 height: 150%;
                 top: -25%;
                 left: -25%;
+            }
+            .search-assignees-action {
+                @apply(--layout-horizontal);
+                @apply(--layout-center);
+                @apply(--layout-end-justified);
+            }
+            .search-assignees-input {
+                @apply(--layout-flex-none);
+                max-width: 184px;
+            }
+            .global-page-actions {
+                padding-left: 10px;
+                margin-left: 16px;
+                border-left: 1px solid var(--app-primary-color);
+                @apply(--layout-horizontal);
+                @apply(--layout-center);
+                @apply(--layout-end-justified);
             }
             :host .back-action {
                 margin-right: 10px;
@@ -33,17 +97,42 @@
 
         <iron-media-query query="(max-width: 800px)" query-matches="{{ tabletScreen }}"></iron-media-query>
 
-        <paper-icon-button
-                class="back-action"
-                icon="arrow-back"
-                title="Back"
-                on-tap="_backToApplications"></paper-icon-button>
+        <template is="dom-if" if="[[ _searchAssigneesActive ]]">
+            <div class="search-assignees-action">
+                <paper-input id="searchAssignees"
+                             class="search-assignees-input"
+                             label="Search assignees"
+                             on-keyup="_searchAssignees"
+                             no-label-float>
+                    <div prefix>
+                        <iron-icon icon="search" class="search-icon"></iron-icon>
+                    </div>
 
-        <paper-icon-button
-                class="info-action"
-                icon="info-outline"
-                title="Application Resource"
-                on-tap="_onResourceAction"></paper-icon-button>
+                    <template is="dom-if" if="[[ _clearSearch ]]">
+                        <paper-icon-button id="clear"
+                                           class="search-icon clear-icon"
+                                           suffix
+                                           icon="clear"
+                                           on-tap="_clearAssigneesSearch"></paper-icon-button>
+                    </template>
+
+                </paper-input>
+            </div>
+        </template>
+
+        <div class="global-page-actions">
+            <paper-icon-button
+                    class="back-action"
+                    icon="arrow-back"
+                    title="Back"
+                    on-tap="_backToApplications"></paper-icon-button>
+
+            <paper-icon-button
+                    class="info-action"
+                    icon="info-outline"
+                    title="Application Resource"
+                    on-tap="_onResourceAction"></paper-icon-button>
+        </div>
     </template>
 
     <script>
@@ -53,10 +142,25 @@
 
             properties: {
 
+                _searchAssigneesActive: {
+                    type: Boolean,
+                    value: false
+                },
+
+                _clearSearch: {
+                    type: Boolean,
+                    value: false
+                },
+
                 tabletScreen: {
                     type: Boolean,
                     value: false,
                     reflectToAttribute: true
+                },
+
+                _searchDebounce: {
+                    type: Number,
+                    value: 0
                 },
 
                 /**
@@ -89,12 +193,64 @@
                 Polymer.NeonAnimatableBehavior
             ],
 
+            attached: function() {
+                this.customStyle['--app-primary-color'] = '#5AC099';
+                this.updateStyles();
+            },
+
+            enableAssigneesSearchAction: function() {
+                this._searchAssigneesActive = true;
+            },
+
+            disableAssigneesSearchAction: function() {
+                this._searchAssigneesActive = false;
+            },
+
             _backToApplications: function() {
                 this.fire('back');
             },
 
             _onResourceAction: function() {
                 this.fire('resource-section');
+            },
+
+            _searchAssignees: function() {
+
+                if (this._searchDebounce > 0) {
+                    clearTimeout(this._searchDebounce);
+                }
+
+                this._searchDebounce = setTimeout(function() {
+                    var term = this.$$('#searchAssignees').value;
+
+                    this.set('_clearSearch', (term.length > 0));
+
+                    if (term.length < 3) {
+                        this.fire('search-assignees', {
+                            term: ''
+                        });
+
+                        return false;
+                    }
+
+                    this.fire('search-assignees', {
+                        term: term
+                    });
+                }.bind(this), 300);
+            },
+
+            _resetAssigneesSearch: function() {
+                this.$$('#searchAssignees').value = '';
+                this._clearSearch = false;
+            },
+
+            _clearAssigneesSearch: function() {
+                this._resetAssigneesSearch();
+                this._searchAssignees();
+            },
+
+            resetApplicationAssigneesPageActions: function() {
+                this._resetAssigneesSearch();
             }
         });
     </script>

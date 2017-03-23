@@ -421,9 +421,11 @@
                                     on-page-global-info="_onInfoAction"></appsco-home-page-actions>
 
                             <appsco-application-page-actions
+                                    id="appscoApplicationPageActions"
                                     name="application"
                                     on-back="_showHomePage"
-                                    on-resource-section="_onResourceActionApplicationPage"></appsco-application-page-actions>
+                                    on-resource-section="_onResourceActionApplicationPage"
+                                    on-search-subscribers="_onSearchSubscribers"></appsco-application-page-actions>
 
                             <appsco-account-page-actions
                                     id="appscoAccountPageActions"
@@ -458,9 +460,11 @@
                                     on-deselect-all="_onDeselectAllApplications"></appsco-applications-page-actions>
 
                             <appsco-manage-application-page-actions
+                                    id="appscoManageApplicationPageActions"
                                     name="manage-application"
                                     on-back="_showCompanyApplicationsPage"
-                                    on-resource-section="_onResourceActionManageApplicationPage"></appsco-manage-application-page-actions>
+                                    on-resource-section="_onResourceActionManageApplicationPage"
+                                    on-search-assignees="_onSearchAssignees"></appsco-manage-application-page-actions>
 
                             <appsco-directory-page-actions
                                     id="appscoDirectoryPageActions"
@@ -539,6 +543,8 @@
                             on-application-settings-saved="_onApplicationSettingsSaved"
                             on-application-settings-no-changes="_onApplicationSettingsNoChanges"
                             on-autologin-changed="_onAutologinChanged"
+                            on-enable-subscribers-search-action="_onEnableSubscribersSearchAction"
+                            on-disable-subscribers-search-action="_onDisableSubscribersSearchAction"
                             on-error="_onError"></appsco-application-page>
 
                     <appsco-account-page
@@ -623,6 +629,8 @@
                             on-application-settings-no-changes="_onApplicationSettingsNoChanges"
                             on-add-to-orgunit="_onAddApplicationToOrgunit"
                             on-remove-from-orgunit="_onRemoveApplicationFromOrgunit"
+                            on-enable-assignees-search-action="_onEnableAssigneesSearchAction"
+                            on-disable-assignees-search-action="_onDisableAssigneesSearchAction"
                             on-error="_onError"></appsco-manage-application-page>
 
                     <appsco-directory-page
@@ -1636,6 +1644,18 @@
                 this.$.appscoApplicationPage.toggleResource();
             },
 
+            _onEnableSubscribersSearchAction: function() {
+                this.$.appscoApplicationPageActions.enableSubscribersSearchAction();
+            },
+
+            _onDisableSubscribersSearchAction: function() {
+                this.$.appscoApplicationPageActions.disableSubscribersSearchAction();
+            },
+
+            _onSearchSubscribers: function(event) {
+                this.$.appscoApplicationPage.searchSubscribers(event.detail.term);
+            },
+
             _onShareApplication: function() {
                 this.$.appscoApplicationShare.toggle();
             },
@@ -1933,6 +1953,10 @@
                 this.$.appscoManageApplicationPage.toggleResource();
             },
 
+            _onSearchAssignees: function(event) {
+                this.$.appscoManageApplicationPage.searchAssignees(event.detail.term);
+            },
+
             _onEditCompanyApplication: function() {
                 this.set('route.path', 'manage-application/' + this._companyApplication.alias);
             },
@@ -2104,7 +2128,16 @@
                 this.set('_companyApplication', {});
                 this.set('_companyApplication', application);
 
+                this.resetApplicationAssigneesPage();
+
                 this._notify('Selected applications were successfully shared.');
+            },
+
+            resetApplicationAssigneesPage: function() {
+
+                if (this.$.appscoManageApplicationPageActions.$) {
+                    this.$.appscoManageApplicationPageActions.resetApplicationAssigneesPageActions();
+                }
             },
 
             _onChangeAssigneeClaims: function(event) {
@@ -2134,6 +2167,8 @@
                 this._notify('Access for ' + event.detail.assignee.display_name + ' on ' + application.title + ' revoked.');
                 this.set('_companyApplication', {});
                 this.set('_companyApplication', application);
+
+                this.resetApplicationAssigneesPage();
 
                 if (this.$.appscoManageAccountPage.$) {
                     this.$.appscoManageAccountPage.reloadApplications();
@@ -2198,6 +2233,14 @@
                 this._companyApplication = application;
                 this._notify(application.title + ' has been removed from ' + orgunit.name + ' organization unit.');
                 this._reloadApplicationsForCurrentAccount(orgunit);
+            },
+
+            _onEnableAssigneesSearchAction: function() {
+                this.$.appscoManageApplicationPageActions.enableAssigneesSearchAction();
+            },
+
+            _onDisableAssigneesSearchAction: function() {
+                this.$.appscoManageApplicationPageActions.disableAssigneesSearchAction();
             },
             /**
              * Applications page END

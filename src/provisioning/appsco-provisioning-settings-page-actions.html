@@ -55,26 +55,28 @@
 
         <iron-media-query query="(max-width: 800px)" query-matches="{{ tabletScreen }}"></iron-media-query>
 
-        <template is="dom-if" if="[[ _bulkActions ]]">
-            <div class="provisioning-settings-actions">
-                <paper-button class="sync-accounts-action"
-                              on-tap="_onSyncAccountsAction">Sync accounts</paper-button>
+        <template is="dom-if" if="[[ _actions ]]">
+            <template is="dom-if" if="[[ _bulkActions ]]">
+                <div class="provisioning-settings-actions">
+                    <paper-button class="sync-accounts-action"
+                                  on-tap="_onSyncAccountsAction">Sync all</paper-button>
+                </div>
+            </template>
+
+            <div class="global-page-actions">
+                <paper-icon-button
+                        class="back-action"
+                        icon="arrow-back"
+                        title="Back"
+                        on-tap="_backTo"></paper-icon-button>
+
+                <paper-icon-button
+                        class="resource-action"
+                        icon="info-outline"
+                        title="Manage Menu"
+                        on-tap="_onResourceAction"></paper-icon-button>
             </div>
         </template>
-
-        <div class="global-page-actions">
-            <paper-icon-button
-                    class="back-action"
-                    icon="arrow-back"
-                    title="Back"
-                    on-tap="_backTo"></paper-icon-button>
-
-            <paper-icon-button
-                    class="resource-action"
-                    icon="info-outline"
-                    title="Manage Menu"
-                    on-tap="_onResourceAction"></paper-icon-button>
-        </div>
     </template>
 
     <script>
@@ -88,6 +90,11 @@
                     type: Boolean,
                     value: false,
                     reflectToAttribute: true
+                },
+
+                _actions: {
+                    type: Boolean,
+                    value: true
                 },
 
                 _bulkActions: {
@@ -105,7 +112,6 @@
                                 name: 'fade-in-animation',
                                 node: this,
                                 timing: {
-                                    delay: 300,
                                     duration: 300
                                 }
                             },
@@ -125,6 +131,10 @@
                 Polymer.NeonAnimatableBehavior
             ],
 
+            listeners: {
+                'neon-animation-finished': '_onAnimationFinished'
+            },
+
             _onSyncAccountsAction: function() {
                 this.fire('sync-accounts');
             },
@@ -143,6 +153,14 @@
 
             hideBulkActions: function() {
                 this._bulkActions = false;
+            },
+
+            initializePage: function() {
+                this._actions = true;
+            },
+
+            resetPage: function() {
+                this._actions = false;
             }
         });
     </script>

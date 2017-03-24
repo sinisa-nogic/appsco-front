@@ -277,6 +277,31 @@
                 this._checkIntegration();
             },
 
+            initializePage: function() {
+
+                this.fire('initialize-page');
+
+                switch (this._activePage) {
+                    case 'appsco-integration-page':
+                        this.$.appscoIntegrationPage.initializePage();
+
+                        break;
+
+                    case 'appsco-synced-accounts-page':
+                        this.$.appscoIntegrationPage.resetPage();
+
+                        break;
+
+                    default:
+                        break;
+                }
+            },
+
+            resetPage: function() {
+                this.fire('reset-page');
+                this.$.appscoIntegrationPage.resetPage();
+            },
+
             _updateScreen: function(medium, tablet, mobile) {
                 this.updateStyles();
 
@@ -514,21 +539,27 @@
             },
 
             _onPageAnimationFinish: function(event) {
-                var toPage = event.detail.toPage;
+                var fromPage = event.detail.fromPage,
+                    toPage = event.detail.toPage;
 
-                switch(toPage.getAttribute('name')) {
+                switch (fromPage.getAttribute('name')) {
                     case 'appsco-integration-page':
 
-                        if (toPage.$) {
-                            toPage.showBulkActions();
+                        if (fromPage.$) {
+                            fromPage.resetPage();
                         }
 
                         break;
 
-                    case 'appsco-synced-accounts-page':
+                    default:
+                        break;
+                }
+
+                switch (toPage.getAttribute('name')) {
+                    case 'appsco-integration-page':
 
                         if (toPage.$) {
-                            toPage.hideBulkActions();
+                            toPage.initializePage();
                         }
 
                         break;

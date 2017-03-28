@@ -1,0 +1,267 @@
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../bower_components/iron-form/iron-form.html">
+<link rel="import" href="../../bower_components/paper-input/paper-input.html">
+<link rel="import" href="../../bower_components/gold-email-input/gold-email-input.html">
+<link rel="import" href="../../bower_components/paper-button/paper-button.html">
+<link rel="import" href="../../bower_components/iron-flex-layout/iron-flex-layout.html">
+<link rel="import" href="../../bower_components/iron-a11y-keys/iron-a11y-keys.html">
+
+<link rel="import" href="../../bower_components/appsco-components/appsco-loader.html">
+<link rel="import" href="../../bower_components/appsco-components/appsco-form-error.html">
+
+<!--
+`appsco-company-settings`
+Update company settings component.
+
+    <appsco-company-settings company={}
+                             authorization-token=""
+                             settings-api="">
+    </appsco-company-settings>
+
+### Styling
+
+`<appsco-company-settings>` provides the following custom properties and mixins for styling:
+
+Custom property | Description | Default
+----------------|-------------|----------
+`--appsco-company-settings` | Mixin for the root element | `{}`
+
+-->
+
+<dom-module id="appsco-company-settings">
+    <template>
+        <style>
+            :host {
+                display: block;
+                position: relative;
+                @apply(--appsco-company-settings);
+            }
+            :host .info {
+                margin-bottom: 0;
+            }
+            :host .info-between {
+                margin-top: 20px;
+            }
+            :host .submit-button {
+                margin: 20px 0 0 0;
+            }
+        </style>
+
+        <appsco-loader active="[[ _loader ]]" loader-alt="Appsco is processing request" multi-color></appsco-loader>
+
+        <appsco-form-error message="[[ _error ]]"></appsco-form-error>
+
+        <p class="info">
+            Company name is used to distinguish company applications from users personal applications.
+            It is used in branding and can be displayed in login screen along with company logo.
+            Beside this usage company name will also be shown in filtering on personal home screen under "All applications" section.
+        </p>
+
+        <form is="iron-form"
+              id="form"
+              method="POST"
+              action="[[ settingsApi ]]"
+              headers="[[ _computedHeaders ]]"
+              on-iron-form-presubmit="_onFormPresubmit"
+              on-iron-form-error="_onFormError"
+              on-iron-form-response="_onFormResponse"
+              on-keyup="_onKeyUp">
+
+            <paper-input
+                    id="companyName"
+                    label="Company name"
+                    value="[[ company.name ]]"
+                    name="company_settings[name]"
+                    required
+                    auto-validate
+                    error-message="Please type in company name."
+            ></paper-input>
+
+            <p class="info info-between">
+                Company contact email will be displayed in user profile section and used for contact purposes.
+            </p>
+
+            <gold-email-input id="contactEmail"
+                              label="Contact email"
+                              value="[[ company.contact_email ]]"
+                              name="company_settings[contactEmail]"
+                              required
+                              auto-validate
+                              error-message="Please type in correct email."
+            ></gold-email-input>
+
+            <gold-email-input id="billingEmail"
+                              label="Billing email"
+                              value="[[ company.billing_email ]]"
+                              name="company_settings[billingEmail]"
+                              required
+                              auto-validate
+                              error-message="Please type in correct email."
+            ></gold-email-input>
+        </form>
+
+        <paper-button id="submit"
+                      class="submit-button"
+                      on-tap="_submitForm">Save</paper-button>
+
+        <iron-a11y-keys target="[[ _target ]]"
+                        keys="enter"
+                        on-keys-pressed="_onEnter">
+        </iron-a11y-keys>
+
+    </template>
+    <script>
+        Polymer({
+
+            is: 'appsco-company-settings',
+
+            properties: {
+                /**
+                 * Account to update.
+                 */
+                company: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    },
+                    observer: '_onCompanyChanged'
+                },
+
+                /**
+                 * Authorization token.
+                 */
+                authorizationToken: {
+                    type: String,
+                    value: ''
+                },
+
+                /**
+                 * Settings api link.
+                 */
+                settingsApi: {
+                    type: String
+                },
+
+                /**
+                 * Computed headers.
+                 * It contains authorization token.
+                 */
+                _computedHeaders: {
+                    type: Object,
+                    computed: '_computeHeaders(authorizationToken)'
+                },
+
+                _loader: {
+                    type: Boolean,
+                    value: false
+                },
+
+                /**
+                 * Error message for settings form.
+                 */
+                _error: {
+                    type: String
+                },
+
+                /**
+                 * Target for iron-a11y-keys component.
+                 * Submit form on enter.
+                 */
+                _target: {
+                    type: Object,
+                    value: function() {
+                        return this.$.accountSettingsForm
+                    }
+                }
+            },
+
+            /**
+             * Computes authorization headers.
+             *
+             * @param {Object} authorizationToken
+             * @returns {{Authorization: string}}
+             * @private
+             */
+            _computeHeaders: function (authorizationToken) {
+                return {
+                    'Authorization': 'token ' + authorizationToken,
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                }
+            },
+
+            _onCompanyChanged: function() {
+                this.$.contactEmail.invalid = false;
+                this.$.billingEmail.invalid = false;
+            },
+
+            _showLoader: function() {
+                this._loader = true;
+            },
+
+            _hideLoader: function() {
+                this._loader = false;
+            },
+
+            /**
+             * Submits form on ENTER key using iron-a11y-keys component.
+             *
+             * @private
+             */
+            _onEnter: function() {
+                this._submitForm();
+            },
+
+            _submitForm: function() {
+                this.$.form.submit();
+            },
+
+            _onFormPresubmit: function() {
+                this._showLoader();
+                this.$.form.request.method = 'PUT';
+            },
+
+            _onFormError: function(event) {
+                this._error = event.detail.error.message;
+                this._hideLoader();
+            },
+
+            _onFormResponse: function(event) {
+                this.set('company', event.detail.response);
+
+                this.fire('company-settings-changed', {
+                    company: this.company
+                });
+
+                this.$.contactEmail.invalid = false;
+                this.$.billingEmail.invalid = false;
+
+                this._hideLoader();
+            },
+
+            _onKeyUp: function() {
+                this._error = '';
+            },
+
+            /**
+             * Sets up component.
+             */
+            setup: function() {
+                this.$.companyName.focus();
+            },
+
+            /**
+             * Resets component.
+             */
+            reset: function() {
+                var company = JSON.parse(JSON.stringify(this.company));
+
+                this.company = {};
+                this.company = company;
+
+                this._error = '';
+                this.$.contactEmail.invalid = false;
+                this.$.billingEmail.invalid = false;
+            }
+        });
+    </script>
+</dom-module>

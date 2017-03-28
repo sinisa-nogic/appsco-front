@@ -1,0 +1,302 @@
+<link rel="import" href="../bower_components/polymer/polymer.html">
+<link rel="import" href="../bower_components/neon-animation/neon-animated-pages.html">
+<link rel="import" href="../bower_components/neon-animation/animations/fade-in-animation.html">
+<link rel="import" href="../bower_components/neon-animation/animations/fade-out-animation.html">
+<link rel="import" href="../bower_components/iron-media-query/iron-media-query.html">
+<link rel="import" href="../bower_components/iron-icons/communication-icons.html">
+<link rel="import" href="../bower_components/iron-icon/iron-icon.html">
+
+<link rel="import" href="../bower_components/appsco-page/appsco-content.html">
+<link rel="import" href="company/appsco-company-components-page.html">
+<link rel="import" href="company/appsco-company-image-settings.html">
+<link rel="import" href="company/appsco-company-settings-page.html">
+
+
+<dom-module id="appsco-company-page">
+    <template>
+        <style include="webkit-scrollbar-style">
+            :host {
+                display: block;
+                color: var(--primary-text-color);
+
+                --appsco-content-sections: {
+                    padding: 0;
+                };
+
+                --resource-width: 300px;
+            }
+            :host div[resource] {
+                padding: 10px;
+                height: calc(100% - 32px - 20px - 10px);
+                overflow: auto;
+            }
+            :host div[content] {
+                height: 100%;
+            }
+            :host .content-components, :host .content-components neon-animated-pages {
+                height: 100%;
+            }
+            appsco-company-components-page {
+                padding: 10px;
+            }
+            .resource-header {
+                padding: 20px 10px 30px;
+                border-bottom: 1px solid var(--divider-color);
+                position: relative;
+            }
+            .company-info {
+                margin-top: 10px;
+                font-size: 14px;
+            }
+            .info-icon {
+                margin-right: 4px;
+            }
+            :host .flex-horizontal {
+                @apply(--layout-horizontal);
+                @apply(--layout-center);
+            }
+            :host .flex-vertical {
+                @apply(--layout-vertical);
+                @apply(--layout-center);
+            }
+            :host .flex {
+                @apply(--layout-flex);
+            }
+            :host([medium-screen]) {
+                --resource-width: 240px;
+            }
+            :host([mobile-screen]) {
+                --resource-width: 180px;
+            }
+            hr {
+                height: 1px;
+                margin: 4px 0;
+                border: none;
+                background-color: var(--divider-color);
+            }
+        </style>
+
+        <iron-media-query query="(max-width: 1200px)" query-matches="{{ mediumScreen }}"></iron-media-query>
+        <iron-media-query query="(max-width: 800px)" query-matches="{{ tabletScreen }}"></iron-media-query>
+        <iron-media-query query="(max-width: 600px)" query-matches="{{ mobileScreen }}"></iron-media-query>
+
+        <appsco-content id="appscoContent" resource-active>
+
+            <div resource>
+
+                <div class="resource-header flex-vertical">
+                    <appsco-company-image-settings
+                        id="appscoCompanyImageSettings"
+                        company="[[ account.company ]]"
+                        authorization-token="[[ authorizationToken ]]"
+                        image-settings-api="[[ imageSettingsApi ]]"
+                    ></appsco-company-image-settings>
+                </div>
+
+                <div class="company-info">
+                    <h3>[[ account.company.name ]]</h3>
+                    <div class="company-contact-email">
+                        <iron-icon icon="communication:email"
+                                   class="info-icon"></iron-icon>
+                        [[ account.company.contact_email ]]
+                    </div>
+                </div>
+            </div>
+
+            <div content>
+
+                <div class="content-components">
+                    <neon-animated-pages class="flex"
+                                         selected="[[ _selected ]]"
+                                         attr-for-selected="name"
+                                         on-neon-animation-finish="_onPageAnimationFinish">
+
+                        <appsco-company-components-page
+                                id="appscoCompanyComponentsPage"
+                                name="appsco-company-components-page"
+                                company="[[ account.company ]]"
+                                authorization-token="[[ authorizationToken ]]"
+                                image-settings-api="[[ imageSettingsApi ]]"
+                                settings-api="[[ settingsApi ]]"
+                                on-manage-company-settings="_onManageCompanySettings"
+                                on-page-loaded="_onPageLoaded">
+                        </appsco-company-components-page>
+
+                        <appsco-company-settings-page
+                                name="appsco-company-settings-page"
+                                company="[[ account.company ]]"
+                                authorization-token="[[ authorizationToken ]]"
+                                settings-api="[[ settingsApi ]]"
+                                on-company-settings-changed="_onSettingsChanged"
+                                on-back="_onResourceBack">
+                        </appsco-company-settings-page>
+
+                    </neon-animated-pages>
+                </div>
+
+            </div>
+        </appsco-content>
+
+    </template>
+
+    <script>
+        Polymer({
+            is: 'appsco-company-page',
+
+            properties: {
+
+                account: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    },
+                    notify: true
+                },
+
+                authorizationToken: {
+                    type: String
+                },
+
+                /**
+                 * Update company settings link.
+                 */
+                settingsApi: {
+                    type: String,
+                    computed: '_computeSettingsApi(account)'
+                },
+
+                /**
+                 * Update company logo link.
+                 */
+                imageSettingsApi: {
+                    type: String,
+                    computed: '_computeImageSettingsApi(account)'
+                },
+
+                /**
+                 * Selected page.
+                 * It has value of component's 'name' attribute.
+                 */
+                _selected: {
+                    type: String,
+                    value: 'appsco-company-components-page',
+                    notify: true
+                },
+
+                /**
+                 * Indicates if it is medium screen size.
+                 * It uses iron-media-query.
+                 */
+                mediumScreen: {
+                    type: Boolean,
+                    value: false,
+                    reflectToAttribute: true
+                },
+
+                tabletScreen: {
+                    type: Boolean,
+                    value: false,
+                    reflectToAttribute: true
+                },
+
+                mobileScreen: {
+                    type: Boolean,
+                    value: false,
+                    reflectToAttribute: true
+                },
+
+                pageLoaded: {
+                    type: Boolean,
+                    value: false
+                }
+            },
+
+            behaviors: [
+                Polymer.NeonAnimatableBehavior
+            ],
+
+            observers: [
+                '_updateScreen(mediumScreen, tabletScreen, mobileScreen)'
+            ],
+
+            attached: function() {
+
+                this.pageLoaded = false;
+
+                if (this.mobileScreen || this.tabletScreen || this.mediumScreen) {
+                    this.updateStyles();
+                }
+
+            },
+
+            _computeSettingsApi: function(account) {
+                return account.company && account.company.meta.settings;
+            },
+
+            _computeImageSettingsApi: function(account) {
+                return account.company && account.company.meta.logo;
+            },
+
+            _updateScreen: function(medium, tablet, mobile) {
+                this.updateStyles();
+
+                if (mobile) {
+                    this.$.appscoContent.hideSection('resource');
+                }
+                else if(!this.$.appscoContent.resourceActive) {
+                    this.$.appscoContent.showSection('resource');
+                }
+            },
+
+            _onPageLoaded: function() {
+                this.pageLoaded = true;
+                this.fire('page-loaded');
+            },
+
+            _showCompanyComponentsPage: function() {
+                this._selected = 'appsco-company-components-page';
+            },
+
+            _showCompanySettingsPage: function() {
+                this._selected = 'appsco-company-settings-page';
+            },
+
+            _onResourceBack: function() {
+                this._showCompanyComponentsPage();
+            },
+
+            _onManageCompanySettings: function() {
+                this._showCompanySettingsPage();
+            },
+
+            _onSettingsChanged: function() {
+                this._showCompanyComponentsPage();
+            },
+
+            _onPageAnimationFinish: function(event) {
+                var fromPage = event.detail.fromPage,
+                    toPage = event.detail.toPage;
+
+                switch(fromPage.getAttribute('name')) {
+                    case 'appsco-company-settings-page':
+                        fromPage.resetPage();
+                        break;
+
+                    default:
+                        break;
+                }
+
+                switch(toPage.getAttribute('name')) {
+                    case 'appsco-company-settings-page':
+                        toPage.setupPage();
+                        break;
+
+                    default:
+                        break;
+                }
+
+            }
+
+        });
+    </script>
+</dom-module>

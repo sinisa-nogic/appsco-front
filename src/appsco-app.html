@@ -351,7 +351,7 @@
                         <a name="billing" href="/billing">
                             <iron-icon icon="icons:payment"></iron-icon> <span class="menu-text">Billing</span>
                         </a>
-                        <a name="settings" href="/company-settings">
+                        <a name="settings" href="/company">
                             <iron-icon icon="icons:settings"></iron-icon> <span class="menu-text">Settings</span>
                         </a>
                     </template>
@@ -731,15 +731,15 @@
                             on-manage-credit-card="_onManageCreditCard"
                             on-send-invoice="_onSendInvoice"></appsco-billing-page>
 
-                    <appsco-company-settings-page
+                    <appsco-company-page
                             id="appscoCompanySettingsPage"
-                            name="company-settings"
+                            name="company"
                             account="{{ account }}"
                             authorization-token="[[ authorizationToken ]]"
                             computed-headers="[[ _computedHeaders ]]"
                             on-company-settings-changed="_onCompanySettingsChanged"
                             on-company-logo-changed="_onCompanyLogoChanged"
-                    ></appsco-company-settings-page>
+                    ></appsco-company-page>
 
                     <appsco-logout-page name="logout"
                                         logout-api="[[ api.logout ]]"></appsco-logout-page>
@@ -1321,7 +1321,7 @@
                     case 'manage-account':
                         return 'Manage Account';
 
-                    case 'company-settings':
+                    case 'company':
                         return 'Company Settings';
 
                     case 'provisioning-settings':
@@ -2631,7 +2631,7 @@
                         page === 'provisioning-integration-authorization-success' ||
                         page === 'provisioning-integration-authorization-failed' ||
                         page === 'billing' ||
-                        page === 'company-settings' ||
+                        page === 'company' ||
                         page === 'audit-log');
             },
 
@@ -2653,15 +2653,21 @@
                 return "AppsCo";
             },
 
-            _onCompanySettingsChanged: function(e) {
+            _setAccountCompany: function(company) {
+                var account = JSON.parse(JSON.stringify(this.account));
+
+                account.company = company;
                 this.account = {};
-                this.account = e.detail.account;
+                this.account = account;
+            },
+
+            _onCompanySettingsChanged: function(event) {
+                this._setAccountCompany(event.detail.company);
                 this._notify('Company settings were successfully saved.');
             },
 
             _onCompanyLogoChanged: function(event) {
-                this.account = {};
-                this.account = event.detail.account;
+                this._setAccountCompany(event.detail.company);
                 this._notify('Company logo was successfully saved.');
             },
 
@@ -2669,7 +2675,7 @@
                 this.account = {};
                 this.account = e.detail.account;
 
-                this.set('routeData.page', 'company-settings');
+                this.set('routeData.page', 'company');
                 this._notify('Upgrade to AppsCo business succeeded.');
 
                 setTimeout(function() {

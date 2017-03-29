@@ -1,0 +1,169 @@
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../bower_components/iron-flex-layout/iron-flex-layout.html">
+<link rel="import" href="../../bower_components/paper-styles/typography.html">
+<link rel="import" href="../../bower_components/neon-animation/neon-animation-runner-behavior.html">
+<link rel="import" href="../../bower_components/neon-animation/animations/fade-in-animation.html">
+<link rel="import" href="../../bower_components/neon-animation/animations/fade-out-animation.html">
+
+<!--
+`appsco-company-brand-details`
+Component holds details about appsco company.
+
+Example:
+    <body>
+        <appsco-company-brand-details company={}>
+        </appsco-company-brand-details>
+
+### Styling
+
+`<appsco-company-brand-details>` provides the following custom properties and mixins for styling:
+
+Custom property | Description | Default
+----------------|-------------|----------
+`--appsco-company-brand-details` | Mixin for the root element. | `{}`
+`--company-brand-details-container` | Mixin for the inner element that holds label and value. | `{}`
+`--company-brand-details-label` | Mixin applied to detail label. | `{}`
+`--company-brand-details-value` | Mixin applied to detail value. | `{}`
+`--company-logo` | Mixin applied to logo image. | `{}`
+
+-->
+
+<dom-module id="appsco-company-brand-details">
+    <template>
+        <style>
+            :host {
+                display: none;
+            }
+            :host > div {
+                margin: 6px 0;
+                @apply(--company-details-container);
+            }
+            :host div[label] {
+                color: var(--secondary-text-color);
+                @apply(--paper-font-body1);
+                @apply(--company-details-label);
+            }
+            :host div[content] {
+                color: var(--primary-text-color);
+                @apply(--layout-horizontal);
+                @apply(--layout-center);
+                @apply(--paper-font-subhead);
+                @apply(--company-details-value);
+                padding: 1px 0;
+            }
+            :host .flex {
+                @apply(--layout-flex);
+                @apply(--paper-font-common-nowrap);
+            }
+            :host .brand-color {
+                width: 70px;
+                height: 15px;
+                background-color: var(--app-primary-color);
+            }
+            :host .brand-text-color {
+                width: 70px;
+                height: 15px;
+                background-color: var(--primary-text-color);
+            }
+            :host .company-logo {
+                width: 70px;
+                @apply(--company-logo);
+            }
+        </style>
+
+        <!--<div hidden$="[[ !company.name ]]">-->
+        <div>
+            <div label>Brand color</div>
+            <div content>
+                <div id="brandColor"
+                     class="brand-color"></div>
+            </div>
+        </div>
+
+        <!--<div hidden$="[[ !company.name ]]">-->
+        <div>
+            <div label>Brand text color</div>
+            <div content>
+                <div id="brandTextColor"
+                     class="brand-text-color"></div>
+            </div>
+        </div>
+
+        <div>
+            <div label>Logo</div>
+            <div content>
+                <img src="[[ company.image ]]"
+                     alt="[[ company.name ]]"
+                     class="company-logo">
+            </div>
+        </div>
+
+    </template>
+
+    <script>
+        Polymer({
+
+            is: 'appsco-company-brand-details',
+
+            properties: {
+
+                /**
+                 * Company which details should to be rendered.
+                 */
+                company: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    },
+                    observer: '_onCompanyChanged'
+                },
+
+                /**
+                 * Animation config.
+                 */
+                animationConfig: {
+                    value: function() {
+                        return {
+                            'entry': {
+                                name: 'fade-in-animation',
+                                node: this,
+                                timing: {
+                                    duration: 500
+                                }
+                            },
+                            'exit': {
+                                name: 'fade-out-animation',
+                                node: this,
+                                timing: {
+                                    duration: 100
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+
+            behaviors: [
+                Polymer.NeonAnimationRunnerBehavior
+            ],
+
+            _onCompanyChanged: function(company) {
+
+                if (company.primary_color) {
+                    this.$$('#brandColor').style.backgroundColor = company.primary_color;
+                }
+
+                if (company.secondary_color) {
+                    this.$$('#brandTextColor').style.backgroundColor = company.secondary_color;
+                }
+
+                this._showDetails();
+            },
+
+            _showDetails: function() {
+                this.style.display = 'block';
+                this.playAnimation('entry');
+            }
+        });
+    </script>
+</dom-module>

@@ -157,6 +157,13 @@
                    on-response="_onOrgunitsResponse"
                    headers="{{ computedHeaders }}"></iron-ajax>
 
+        <iron-ajax auto
+                   url="[[ subscriptionApi ]]"
+                   handle-as="json"
+                   headers="[[ computedHeaders ]]"
+                   on-response="_onSubscriptionResponse"
+        ></iron-ajax>
+
         <appsco-content id="appscoContent" resource-active>
 
             <div class="flex-vertical" resource>
@@ -280,6 +287,18 @@
                 authorizationToken: {
                     type: String,
                     value: ''
+                },
+
+                subscriptionApi: {
+                    type: String,
+                    value: ''
+                },
+
+                _subscription: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    }
                 },
 
                 /**
@@ -513,6 +532,47 @@
                 this._orgUnits = event.detail.response.orgunits
             },
 
+            setSubscription: function(subscription) {
+                this._subscription = subscription;
+            },
+
+            _onSubscriptionResponse: function(event) {
+                var status = event.detail.status,
+                    response = event.detail.response;
+
+                if (200 === status && response) {
+                    this._subscription = response;
+                    this._evaluateSubscriptionLicences();
+                }
+            },
+
+            _evaluateSubscriptionLicences: function() {
+                var subscription = this._subscription,
+                    licencesTotal = subscription.quantity,
+                    accountsTotal = this.$.appscoAccounts.getTotalCount();
+
+                if (licencesTotal === accountsTotal) {
+                    this._showSubscriptionLimitReachedInfo(subscription);
+                }
+                else {
+                    this._hideSubscriptionLimitReachedInfo();
+                }
+            },
+
+            _showSubscriptionLimitReachedInfo: function(subscription) {
+                this.fire('show-subscription-limit-reached-info', {
+                    subscription: subscription
+                });
+            },
+
+            _hideSubscriptionLimitReachedInfo: function() {
+                this.fire('hide-subscription-limit-reached-info');
+            },
+
+            evaluateSubscriptionLicences: function() {
+                this._evaluateSubscriptionLicences();
+            },
+
             addOrgunit: function(orgunit) {
                 this.$.appscoOrgunitTree.addOrgunit(orgunit);
             },
@@ -528,6 +588,7 @@
 
             addAccounts: function(accounts) {
                 this.$.appscoAccounts.addAccounts(accounts);
+                this._evaluateSubscriptionLicences();
             },
 
             modifyAccounts: function(accounts) {
@@ -549,6 +610,7 @@
             removeAccounts: function(accounts) {
                 this.$.appscoAccounts.removeAccounts(accounts);
                 this.setDefaultAccount();
+                this._evaluateSubscriptionLicences();
             }
         });
     </script>

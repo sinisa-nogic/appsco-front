@@ -13,10 +13,6 @@
     <template>
         <style>
             :host {
-                @apply(--layout-horizontal);
-                @apply(--layout-center);
-                @apply(--layout-end-justified);
-
                 --add-application-button: {
                     @apply(--primary-button);
                 };
@@ -85,9 +81,20 @@
                 --application-actions-tooltip: {
                     top: 34px !important;
                 };
+
+                --info-icon-color: var(--paper-orange-300);
             }
-            :host > * {
+            :host .page-actions {
+                @apply(--layout-horizontal);
+                @apply(--layout-center);
+                @apply(--layout-end-justified);
                 height: 100%;
+            }
+            :host .page-actions * {
+                height: 100%;
+            }
+            :host .page-actions[hidden] {
+                display: none;
             }
             :host appsco-directory-actions {
                 @apply(--layout-flex);
@@ -147,17 +154,19 @@
         <iron-media-query query="(max-width: 800px)" query-matches="{{ tabletScreen }}"></iron-media-query>
         <iron-media-query query="(max-width: 600px)" query-matches="{{ mobileScreen }}"></iron-media-query>
 
-        <appsco-directory-actions id="appscoDirectoryActions"
-                                    authorization-token="[[ authorizationToken ]]"
-                                    filter-api="[[ filterApi ]]"
-                                    business
-                                    on-search-icon="_onSearchIcon"
-                                    on-close-search="_closeSearch"></appsco-directory-actions>
+        <div class="page-actions" hidden$="[[ !_displayActions ]]">
+            <appsco-directory-actions id="appscoDirectoryActions"
+                                        authorization-token="[[ authorizationToken ]]"
+                                        filter-api="[[ filterApi ]]"
+                                        business
+                                        on-search-icon="_onSearchIcon"
+                                        on-close-search="_closeSearch"></appsco-directory-actions>
 
-        <appsco-page-global
-                id="appscoPageGlobal"
-                info
-                filters></appsco-page-global>
+            <appsco-page-global
+                    id="appscoPageGlobal"
+                    info
+                    filters></appsco-page-global>
+        </div>
     </template>
 
     <script>
@@ -191,6 +200,11 @@
                 },
 
                 _searchActive: {
+                    type: Boolean,
+                    value: false
+                },
+
+                _displayActions: {
                     type: Boolean,
                     value: false
                 },
@@ -244,7 +258,7 @@
             _showSearch: function() {
                 this.customStyle['--input-search-max-width'] = '100%';
                 this.customStyle['--paper-input-search-container-tablet'] = 'width: 100%;';
-                this.$.appscoDirectoryActions.focusSearch();
+                this.$$('#appscoDirectoryActions').focusSearch();
 
                 this.updateStyles();
             },
@@ -269,15 +283,34 @@
             },
 
             showBulkActions: function() {
-                this.$.appscoDirectoryActions.showBulkActions();
+                this.$$('#appscoDirectoryActions').showBulkActions();
             },
 
             hideBulkActions: function() {
-                this.$.appscoDirectoryActions.hideBulkActions();
+                this.$$('#appscoDirectoryActions').hideBulkActions();
+            },
+
+            showSubscriptionLimitReachedInfo: function(subscription) {
+                this.$$('#appscoDirectoryActions').showSubscriptionLimitReachedInfo(subscription);
+                this._showActions();
+            },
+
+            hideSubscriptionLimitReachedInfo: function() {
+                this.$$('#appscoDirectoryActions').hideSubscriptionLimitReachedInfo();
+                this._showActions();
+            },
+
+            _showActions: function() {
+                this._displayActions = true;
+            },
+
+            setupPage: function() {
+                this._showActions();
             },
 
             resetPage: function() {
-                this.$.appscoDirectoryActions.reset();
+                this.$$('#appscoDirectoryActions').reset();
+//                this._displayActions = false;
             }
         });
     </script>

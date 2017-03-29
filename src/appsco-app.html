@@ -30,6 +30,7 @@
 <link rel="import" href="../bower_components/paper-toast/paper-toast.html">
 <link rel="import" href="../bower_components/paper-progress/paper-progress.html">
 <link rel="import" href="../bower_components/paper-styles/typography.html">
+<link rel="import" href="../bower_components/paper-styles/color.html">
 
 <link rel="import" href="../bower_components/appsco-header/appsco-header.html">
 <link rel="import" href="../bower_components/appsco-header/appsco-account-chat.html">
@@ -100,6 +101,7 @@
                 --app-secondary-color: #273441;
                 --app-secondary-color-1: #1183A4;
                 --app-danger-color: #db4437;
+                --app-warning-color: var(--paper-orange-300);
                 --body-background-color: #f5f8fa;
                 --app-primary-color-dark: #414042;
                 --success-color: #5AC099;
@@ -492,6 +494,7 @@
                                     on-search="_onSearchAccounts"
                                     on-page-global-info="_onInfoAction"
                                     on-page-global-filters="_onFiltersAction"
+                                    on-upgrade="_fireUpgrade"
                                     on-remove="_onRemoveAccounts"
                                     on-orgunits="_onAddAccountsToOrgunit"
                             ></appsco-directory-page-actions>
@@ -668,6 +671,9 @@
                             computed-headers="[[ _computedHeaders ]]"
                             company-directory-roles-api="[[ companyDirectoryRolesApi ]]"
                             company-orgunits-api="[[ companyOrgunitsApi ]]"
+                            subscription-api="[[ _subscriptionApi ]]"
+                            on-show-subscription-limit-reached-info="_onShowSubscriptionLimitReachedInfo"
+                            on-hide-subscription-limit-reached-info="_onHideSubscriptionLimitReachedInfo"
                             on-edit-account="_onEditAccount"
                             on-info-edit-account="_onEditAccount"
                             on-show-bulk-actions="_onShowBulkActions"
@@ -1192,6 +1198,11 @@
                     value: ''
                 },
 
+                _subscriptionApi: {
+                    type: String,
+                    computed: '_computeSubscriptionApi(companyApi)'
+                },
+
                 _globalActions: {
                     type: Boolean,
                     value: true
@@ -1445,6 +1456,10 @@
                 }
             },
 
+            _computeSubscriptionApi: function(companyApi) {
+                return companyApi ? companyApi + '/billing/subscription' : '';
+            },
+
             _onGetAccountResponse: function(event) {
                 this.account = event.detail.response.account;
                 this.$$('#getDashboardsLink').generateRequest();
@@ -1459,8 +1474,9 @@
                             }
                         }
                     }
+
                     this.currentCompany = currentCompany;
-                    this._setCompanyApi(currentCompany.self);
+                    this._setCompanyApi(currentCompany.company.self);
                     this._setProduct(this._companyPage);
                 }
 
@@ -1532,6 +1548,7 @@
             },
 
             _setCompanyApi: function(company) {
+
                 this.companyApi = company;
                 this.companyApplicationsApi = company + '/applications';
                 this.companyDirectoryRolesApi = company + '/directory/roles';
@@ -2324,6 +2341,13 @@
             /**
              * Directory page START
              */
+            _evaluateSubscriptionLicences: function() {
+
+                if (this.$.appscoDirectoryPage.$) {
+                    this.$.appscoDirectoryPage.evaluateSubscriptionLicences();
+                }
+            },
+
             _onSearchAccounts: function(event) {
                 var term = event.detail.term;
 
@@ -2339,8 +2363,8 @@
                 this.$.appscoDirectoryImportAccounts.toggle();
             },
 
-            _onAccountAdded: function(e) {
-                this.$.appscoDirectoryPage.addAccounts([e.detail.account]);
+            _onAccountAdded: function(event) {
+                this.$.appscoDirectoryPage.addAccounts([event.detail.account]);
                 this._reloadProvisioningIntegrationAccounts();
             },
             
@@ -2415,6 +2439,13 @@
             /**
              * Manage Account page START
              */
+            _onShowSubscriptionLimitReachedInfo: function(event) {
+                this.$.appscoDirectoryPageActions.showSubscriptionLimitReachedInfo(event.detail.subscription);
+            },
+
+            _onHideSubscriptionLimitReachedInfo: function() {
+                this.$.appscoDirectoryPageActions.hideSubscriptionLimitReachedInfo();
+            },
             _onEditAccount: function(event) {
                 var role = event.detail.role,
                     routePath = 'manage-account/' + role.alias;
@@ -2497,12 +2528,20 @@
             },
 
             _setSubscription: function(subscription) {
-                this.$.appscoBillingPage.setSubscription(subscription);
+
+                if (this.$.appscoBillingPage.$) {
+                    this.$.appscoBillingPage.setSubscription(subscription);
+                }
+
+                if (this.$.appscoDirectoryPage.$) {
+                    this.$.appscoDirectoryPage.setSubscription(subscription);
+                }
             },
 
             _onSubscriptionChanged: function(event) {
                 this._setSubscription(event.detail.subscription);
                 this._reloadProvisioningIntegrationAccounts();
+                this._evaluateSubscriptionLicences();
                 this._notify('Subscription has been successfully changed.');
             },
 

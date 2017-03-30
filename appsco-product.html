@@ -82,7 +82,12 @@ Custom property | Description | Default
                                on-iron-activate="_onItemActivate">
 
                     <template is="dom-repeat" items="[[ _products ]]">
-                        <paper-item value="[[ item.value ]]" label="[[ item.label ]]">
+                        <paper-item
+                                value="[[ item.value ]]"
+                                name="[[ item.name ]]"
+                                label="[[ item.label ]]"
+                                company="[[ item.company ]]"
+                        >
                             [[ item.label ]]
                             <paper-ripple></paper-ripple>
                         </paper-item>
@@ -122,8 +127,8 @@ Custom property | Description | Default
 
                 /** Indicates if user has access to Appsco Business product. */
                 business: {
-                    type: Boolean,
-                    value: false,
+                    type: Array,
+                    value: function() { return []; },
                     notify: true,
                     observer: '_onBusinessChanged'
                 },
@@ -134,7 +139,9 @@ Custom property | Description | Default
                     value: function() {
                         return [{
                             label: 'Personal',
-                            value: 'appsco-product'
+                            value: 'appsco-product',
+                            name: 'appsco-product',
+                            company: null
                         }];
                     }
                 },
@@ -205,7 +212,9 @@ Custom property | Description | Default
 
                     this.push('_products', {
                         label: 'Partner',
-                        value: 'appsco-partner-product'
+                        value: 'appsco-partner-product',
+                        name: 'appsco-partner-product',
+                        company: null
                     });
 
                     this._multiProducts = true;
@@ -216,11 +225,15 @@ Custom property | Description | Default
 
             _onBusinessChanged: function(business) {
 
-                if (this._products && business) {
-                    this.push('_products', {
-                        label: 'Business',
-                        value: 'appsco-business-product'
-                    });
+                if (this._products && business && business.length > 0) {
+                    for(var i=0; i < business.length; i++) {
+                        this.push('_products', {
+                            label: business[i].company.name,
+                            value: 'appsco-business-product'+business[i].company.alias,
+                            name: 'appsco-business-product',
+                            company: business[i]
+                        });
+                    }
 
                     this._multiProducts = true;
                     this.setProduct(this._productToSelect);
@@ -253,7 +266,8 @@ Custom property | Description | Default
                 this._selectedProduct = item;
 
                 this.fire('appsco-product-changed', {
-                    product: item.value
+                    product: item.name,
+                    company: item.company
                 });
 
                 this._pressed = false;

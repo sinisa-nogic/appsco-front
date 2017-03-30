@@ -55,6 +55,7 @@
 <link rel="import" href="application/appsco-application-page-actions.html">
 <link rel="import" href="account/appsco-account-page-actions.html">
 <link rel="import" href="upgrade/appsco-upgrade-page-actions.html">
+<link rel="import" href="company/appsco-company-home-page-actions.html">
 <link rel="import" href="applications/appsco-applications-page-actions.html">
 <link rel="import" href="applications/appsco-manage-application-page-actions.html">
 <link rel="import" href="billing/appsco-billing-page-actions.html">
@@ -303,7 +304,7 @@
                 notifications-api="[[ api.notifications ]]"
                 logout-api="[[ api.logout ]]"
                 notifications-size="5"
-                product-business="[[ account.company_admin ]]"
+                product-business="[[ account.companies ]]"
                 product-partner="[[ account.partner ]]"
                 domain="{{ domain }}"
                 on-vault-action="_onVaultAction"
@@ -318,42 +319,55 @@
              <!--Drawer content -->
             <app-drawer id="appDrawer">
                 <iron-selector selected="[[page]]" attr-for-selected="name" class="drawer-list" role="navigation">
-                    <div head>
-                        <span class="menu-text">Personal</span>
-                    </div>
-                    <a name="home" href="/home">
-                        <iron-icon icon="icons:home"></iron-icon> <span class="menu-text">Home</span>
-                    </a>
-                    <a name="account" href="/account">
-                        <iron-icon icon="icons:perm-identity"></iron-icon> <span class="menu-text">Account</span>
-                    </a>
+                    <template is="dom-if" if="[[ !_companyPage ]]">
+                        <a name="home" href="/home">
+                            <iron-icon icon="icons:home"></iron-icon> <span class="menu-text">Home</span>
+                        </a>
+                        <a name="vault" href="/vault">
+                            <iron-icon icon="icons:work"></iron-icon> <span class="menu-text">Vault</span>
+                        </a>
+                        <template is="dom-if" if="[[ !_companyUser ]]">
+                            <div purchase name="upgrade" href="/upgrade">
+                                <div>
+                                    Manage your business applications, employees and get meaningful insights.
+                                </div>
+                                <a href="/upgrade" name="upgrade">
+                                    <paper-button>Try Appsco Business</paper-button>
+                                </a>
+                            </div>
+                        </template>
+                    </template>
 
-                    <template is="dom-if" if="[[ _companyAdmin ]]">
-                        <div head class="business">
-                            <span class="menu-text">Business</span>
-                        </div>
-                        <a name="applications" href="/applications">
-                            <iron-icon icon="icons:apps"></iron-icon> <span class="menu-text">Applications</span>
-                        </a>
-                        <a name="directory" href="/directory">
-                            <iron-icon icon="icons:supervisor-account"></iron-icon> <span class="menu-text">Directory</span>
-                            <!--icons:folder-shared-->
-                        </a>
-                        <a name="provisioning" href="/provisioning" >
-                            <iron-icon icon="icons:compare-arrows"></iron-icon> <span class="menu-text">Provisioning</span>
-                        </a>
-                        <a name="auditlog" href="/audit-log">
-                            <iron-icon icon="icons:reorder"></iron-icon> <span class="menu-text">Audit</span>
-                        </a>
-                        <a name="statistics" href="/statistics" >
-                            <iron-icon icon="icons:donut-large"></iron-icon> <span class="menu-text">Statistics</span>
-                        </a>
-                        <a name="billing" href="/billing">
-                            <iron-icon icon="icons:payment"></iron-icon> <span class="menu-text">Billing</span>
-                        </a>
-                        <a name="settings" href="/company">
-                            <iron-icon icon="icons:settings"></iron-icon> <span class="menu-text">Settings</span>
-                        </a>
+                    <template is="dom-if" if="[[ _companyPage ]]">
+                        <template is="dom-if" if="[[ _companyUser ]]">
+                            <a name="company-home" href="/company-home">
+                                <iron-icon icon="icons:home"></iron-icon> <span class="menu-text">Dashboard</span>
+                            </a>
+                            <template is="dom-if" if="[[ _companyAdmin ]]">
+                                <a name="applications" href="/applications">
+                                    <iron-icon icon="icons:apps"></iron-icon> <span class="menu-text">Applications</span>
+                                </a>
+                                <a name="directory" href="/directory">
+                                    <iron-icon icon="icons:supervisor-account"></iron-icon> <span class="menu-text">Directory</span>
+                                    <!--icons:folder-shared-->
+                                </a>
+                                <a name="provisioning" href="/provisioning" >
+                                    <iron-icon icon="icons:compare-arrows"></iron-icon> <span class="menu-text">Provisioning</span>
+                                </a>
+                                <a name="auditlog" href="/audit-log">
+                                    <iron-icon icon="icons:reorder"></iron-icon> <span class="menu-text">Audit</span>
+                                </a>
+                                <a name="statistics" href="/statistics" >
+                                    <iron-icon icon="icons:donut-large"></iron-icon> <span class="menu-text">Statistics</span>
+                                </a>
+                                <a name="billing" href="/billing">
+                                    <iron-icon icon="icons:payment"></iron-icon> <span class="menu-text">Billing</span>
+                                </a>
+                                <a name="settings" href="/company">
+                                    <iron-icon icon="icons:settings"></iron-icon> <span class="menu-text">Settings</span>
+                                </a>
+                            </template>
+                        </template>
                     </template>
 
                     <template is="dom-if" if="[[ !_companyUser ]]">
@@ -443,6 +457,11 @@
                                     authorization-token="[[ authorizationToken ]]"
                                     on-toggle-pricing="_onUpgradeTogglePricing"></appsco-upgrade-page-actions>
 
+                            <appsco-company-home-page-actions id="appscoCompanyHomePageActions"
+                                                      name="company-home"
+                                                      on-page-global-info="_onInfoAction"
+                            ></appsco-company-home-page-actions>
+
                             <appsco-applications-page-actions id="appscoApplicationsPageActions"
                                     name="applications"
                                     authorization-token="[[ authorizationToken ]]"
@@ -510,6 +529,7 @@
                         fallback-selection="404"
                         role="main"
                         on-neon-animation-finish="_onPageAnimationFinish">
+
                     <appsco-home-page
                             id="appscoHomePage"
                             name="home"
@@ -528,7 +548,7 @@
                             id="appscoApplicationPage"
                             name="application"
                             route="[[ subroute ]]"
-                            company="[[ _company ]]"
+                            company="[[ _companyPage ]]"
                             application="{{ application }}"
                             applications-api="[[ applicationsApi ]]"
                             application-log="[[ application.meta.log ]]"
@@ -587,6 +607,14 @@
                             company-upgrade-api="[[ api.upgradeToBusiness ]]"
                             on-upgraded="_upgradedToBusiness"
                     ></appsco-upgrade-page>
+
+                    <appsco-company-home-page
+                            id="appscoCompanyHomePage"
+                            name="company-home"
+                            authorization-token="[[ authorizationToken ]]"
+                            applications-api="[[ companyIconsApi ]]"
+                            on-info-edit-application-credentials="_onEditApplicationCredentials"
+                    ></appsco-company-home-page>
 
                     <appsco-applications-page
                             id="appscoApplicationsPage"
@@ -734,7 +762,7 @@
                     <appsco-company-page
                             id="appscoCompanySettingsPage"
                             name="company"
-                            account="{{ account }}"
+                            company="{{ currentCompany.company }}"
                             authorization-token="[[ authorizationToken ]]"
                             computed-headers="[[ _computedHeaders ]]"
                             on-company-settings-changed="_onCompanySettingsChanged"
@@ -969,15 +997,6 @@
                        on-response="_onDashboardsResponse"
                        headers="{{ _computedHeaders }}"></iron-ajax>
         </template>
-
-        <template is="dom-if" if="[[ _company ]]">
-            <template is="dom-if" if="[[ api.companies ]]">
-                <iron-ajax auto
-                           url="[[ api.companies ]]"
-                           on-response="_onCompaniesResponse"
-                           headers="{{ _computedHeaders }}"></iron-ajax>
-            </template>
-        </template>
     </template>
 
     <script>
@@ -986,7 +1005,7 @@
 
             properties: {
 
-                _company: {
+                _companyPage: {
                     type: Boolean,
                     computed: '_computeCompany(page)',
                     observer: '_onCompanyChange'
@@ -1061,6 +1080,14 @@
                     value: function() {
                         return {};
                     }
+                },
+
+                currentCompany: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    },
+                    observer: '_onCurrentCompanyChanged'
                 },
 
                 /**
@@ -1155,6 +1182,11 @@
                     value: ''
                 },
 
+                companyIconsApi: {
+                    type: String,
+                    value: ''
+                },
+
                 companyApi: {
                     type: String,
                     value: ''
@@ -1194,17 +1226,17 @@
 
                 _companyAdmin: {
                     type: Boolean,
-                    computed: "_computeCompanyAdmin(account)"
+                    computed: "_computeCompanyAdmin(account, currentCompany)"
                 },
 
                 _brandLogo: {
                     type: String,
-                    computed: "_computeBrandLogo(account)"
+                    computed: '_computeBrandLogo(currentCompany, _companyPage)'
                 },
 
                 _brandTitle: {
                     type: String,
-                    computed: "_computeBrandTitle(account)"
+                    computed: '_computeBrandTitle(currentCompany, _companyPage)'
                 }
             },
 
@@ -1256,12 +1288,25 @@
                 }
             },
 
-            _computeCompanyUser: function(account) {
-                return account.company ? true : false;
+            _onCurrentCompanyChanged: function(newValue, oldValue) {
+                if(newValue.company) {
+                    document.cookie = "company=" + newValue.company.alias;
+                }
             },
 
-            _computeCompanyAdmin: function(account) {
-                return account.company ? account.company_admin : false;
+            _computeCompanyUser: function(account) {
+                return account && account.companies && account.companies.length != 0;
+            },
+
+            _computeCompanyAdmin: function(account, currentCompany) {
+                if (account.companies && currentCompany.company) {
+                    for (var i = 0; i < account.companies.length; i++) {
+                        if (account.companies[i].company.alias == currentCompany.company.alias) {
+                            return account.companies[i].company_admin;
+                        }
+                    }
+                }
+                return false;
             },
 
             _updateStyle: function(company) {
@@ -1284,8 +1329,7 @@
 
             _setProduct: function(company) {
                 var appscoHeader = this.$.appscoHeader;
-
-                company ? appscoHeader.setProduct('appsco-business-product') : appscoHeader.setProduct('appsco-product');
+                this.currentCompany.company && company ? appscoHeader.setProduct('appsco-business-product'+this.currentCompany.company.alias) : appscoHeader.setProduct('appsco-product');
             },
 
             _onCompanyChange: function(company) {
@@ -1321,6 +1365,9 @@
                     case 'manage-account':
                         return 'Manage Account';
 
+                    case 'company-home':
+                        return 'Dashboard';
+
                     case 'company':
                         return 'Company Settings';
 
@@ -1352,6 +1399,10 @@
 
             _showAccountPage: function() {
                 this.set('routeData.page', 'account');
+            },
+
+            _showCompanyHomePage: function() {
+                this.set('routeData.page', 'company-home');
             },
 
             _showCompanyApplicationsPage: function() {
@@ -1397,6 +1448,22 @@
             _onGetAccountResponse: function(event) {
                 this.account = event.detail.response.account;
                 this.$$('#getDashboardsLink').generateRequest();
+
+                if (this.account.companies.length > 0) {
+                    var currentCompany = this.account.companies[0];
+                    if (document.cookie) {
+                        var alias = document.cookie.split('=')[1];
+                        for (var i = 0; i < this.account.companies.length; i++) {
+                            if (this.account.companies[i].company.alias == alias) {
+                                currentCompany = this.account.companies[i];
+                            }
+                        }
+                    }
+                    this.currentCompany = currentCompany;
+                    this._setCompanyApi(currentCompany.self);
+                    this._setProduct(this._companyPage);
+                }
+
             },
 
             _onGetAccountError: function() {
@@ -1470,15 +1537,9 @@
                 this.companyDirectoryRolesApi = company + '/directory/roles';
                 this.companyDirectoryImportAccounts = company + '/directory/roles/import';
                 this.companyOrgunitsApi = company + '/org-units?extended=1';
+                this.companyIconsApi = this.currentCompany.icons;
             },
 
-            _onCompaniesResponse: function(event) {
-                var response = event.detail.response;
-
-                if (response && response.meta.total > 0) {
-                    this._setCompanyApi(response.companies[0]);
-                }
-            },
             /**
              * Ajax END
              */
@@ -1497,8 +1558,10 @@
                     this._showHomePage();
                 }
 
-                if ('appsco-business-product' === panel && 'applications' !== this._page) {
-                    this._showCompanyApplicationsPage();
+                if ('appsco-business-product' === panel) {
+                    this.currentCompany = event.detail.company;
+                    this._setCompanyApi(event.detail.company.company.self);
+                    this._showCompanyHomePage();
                 }
 
             },
@@ -1541,6 +1604,9 @@
                 switch (this.page) {
                     case 'home':
                         return this.$.appscoHomePage;
+                        break;
+                    case 'company-home':
+                        return this.$.appscoCompanyHomePage;
                         break;
                     case 'applications':
                         return this.$.appscoApplicationsPage;
@@ -2483,11 +2549,6 @@
                 this.set('routeData.page', 'provisioning-settings');
             },
 
-//            _onBackFromProvisioningSettingsPage: function() {
-//                this.$.appscoProvisioningSettingsPageActions.resetPage();
-//                this._showCompanyProvisioningPage();
-//            },
-
             _onResourceActionProvisioningSettingsPage: function() {
                 this.$.appscoProvisioningSettingsPage.toggleResource();
             },
@@ -2566,6 +2627,10 @@
                         this.$.appscoApplicationsPage.pageLoaded ? this._hideProgressBar() : this._showProgressBar();
                         break;
 
+                    case 'company-home':
+                        this.$.appscoCompanyHomePage.pageLoaded ? this._hideProgressBar() : this._showProgressBar();
+                        break;
+
                     case 'manage-application':
                         this.$.appscoManageApplicationPage.pageLoaded ? this._hideProgressBar() : this._showProgressBar();
                         break;
@@ -2621,7 +2686,9 @@
             },
 
             _computeCompany: function(page) {
-                return (page === 'applications' ||
+                return (
+                        page === 'company-home' ||
+                        page === 'applications' ||
                         page === 'manage-application' ||
                         page === 'directory' ||
                         page === 'manage-account' ||
@@ -2639,26 +2706,27 @@
                 return company ? 'appsco-business-product' : 'appsco-product';
             },
 
-            _computeBrandLogo: function(account) {
-                if(account.company && "image" in account.company && account.company.image) {
-                    return account.company.image;
+            _computeBrandLogo: function(company, companyPage) {
+                if (companyPage && company.company && company.company.image) {
+                    return company.company.image;
                 }
+
                 return "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACYAAAAgCAYAAAB+ZAqzAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAVZJREFUeNrsmOENgjAQhcE4AG5QN2AERnCEjsAIdQJG6AiO0BEcATdwhLONxJR6V1u8Ij98ycXkrL3HR+8gVlWCAEDa0EjuaqP1csLGkPJ7FtlNR3hKIzknNeV0uC5YqzhNSc/AiORgKiyCnCbWSm5ar02DHEzFhyB3J9aCf/tL02qckSCvbHSAy60Va9BSSGFn1gAt1zjNlmj5Mr+gdYE0aXZahFmFdOgnSW5aEikivHmWo1NJWnoBLf8ItFujNWumErSwDs3V+xjJoNURtBTwSC6lZQrRmtXhoNXa6IFPIwctE3lYf3crv6TVER26Ki29RVpiNVoJkz+FlmGnlTD5Y7ROia82q9Iat0ALG5xyml3laUXMqkSKZWgRpiha4k+LMPYzWvuYsbquDxhFxn8fzmTt3DNnP9xVNgymbvbCj9SXu8zNeiZTUVocZ27pe/3HA/8QYABzJAP50CmRFwAAAABJRU5ErkJggg==";
             },
 
-            _computeBrandTitle: function(account) {
-                if(account.company && "name" in account.company) {
-                    return account.company.name;
+            _computeBrandTitle: function(company, companyPage) {
+                if (companyPage && company.company && company.company.name) {
+                    return company.company.name;
                 }
+
                 return "AppsCo";
             },
 
             _setAccountCompany: function(company) {
-                var account = JSON.parse(JSON.stringify(this.account));
+                var newCompany = JSON.parse(JSON.stringify(this.currentCompany));
 
-                account.company = company;
-                this.account = {};
-                this.account = account;
+                newCompany.company = company;
+                this.currentCompany = newCompany;
             },
 
             _onCompanySettingsChanged: function(event) {

@@ -611,16 +611,9 @@
                     <appsco-company-home-page
                             id="appscoCompanyHomePage"
                             name="company-home"
-                            application="{{ application }}"
-                            application-log="[[ application.meta.log ]]"
                             authorization-token="[[ authorizationToken ]]"
                             applications-api="[[ companyIconsApi ]]"
-                            on-loaded="_onLoadedApplications"
-                            on-edit-application="_onEditApplication"
                             on-info-edit-application-credentials="_onEditApplicationCredentials"
-                            on-info-edit-application="_onInfoEditApplication"
-                            on-share-application="_onShareApplication"
-                            on-revoke-application="_onRevokeApplication"
                     ></appsco-company-home-page>
 
                     <appsco-applications-page
@@ -769,7 +762,7 @@
                     <appsco-company-page
                             id="appscoCompanySettingsPage"
                             name="company"
-                            account="{{ account }}"
+                            company="{{ currentCompany.company }}"
                             authorization-token="[[ authorizationToken ]]"
                             computed-headers="[[ _computedHeaders ]]"
                             on-company-settings-changed="_onCompanySettingsChanged"
@@ -1004,15 +997,6 @@
                        on-response="_onDashboardsResponse"
                        headers="{{ _computedHeaders }}"></iron-ajax>
         </template>
-
-        <template is="dom-if" if="[[ _companyPage ]]">
-            <template is="dom-if" if="[[ api.companies ]]">
-                <iron-ajax auto
-                           url="[[ api.companies ]]?extended=1"
-                           on-response="_onCompaniesResponse"
-                           headers="{{ _computedHeaders }}"></iron-ajax>
-            </template>
-        </template>
     </template>
 
     <script>
@@ -1102,7 +1086,8 @@
                     type: Object,
                     value: function() {
                         return {};
-                    }
+                    },
+                    observer: '_onCurrentCompanyChanged'
                 },
 
                 /**
@@ -1197,6 +1182,11 @@
                     value: ''
                 },
 
+                companyIconsApi: {
+                    type: String,
+                    value: ''
+                },
+
                 companyApi: {
                     type: String,
                     value: ''
@@ -1241,12 +1231,12 @@
 
                 _brandLogo: {
                     type: String,
-                    computed: "_computeBrandLogo(account)"
+                    computed: '_computeBrandLogo(currentCompany, _companyPage)'
                 },
 
                 _brandTitle: {
                     type: String,
-                    computed: "_computeBrandTitle(account)"
+                    computed: '_computeBrandTitle(currentCompany, _companyPage)'
                 }
             },
 
@@ -1298,14 +1288,20 @@
                 }
             },
 
+            _onCurrentCompanyChanged: function(newValue, oldValue) {
+                if(newValue.company) {
+                    document.cookie = "company=" + newValue.company.alias;
+                }
+            },
+
             _computeCompanyUser: function(account) {
                 return account && account.companies && account.companies.length != 0;
             },
 
             _computeCompanyAdmin: function(account, currentCompany) {
-                if (account.companies) {
+                if (account.companies && currentCompany.company) {
                     for (var i = 0; i < account.companies.length; i++) {
-                        if (account.companies[i].company.alias == currentCompany.alias) {
+                        if (account.companies[i].company.alias == currentCompany.company.alias) {
                             return account.companies[i].company_admin;
                         }
                     }
@@ -1333,7 +1329,7 @@
 
             _setProduct: function(company) {
                 var appscoHeader = this.$.appscoHeader;
-                company ? appscoHeader.setProduct('appsco-business-product'+this.currentCompany.alias) : appscoHeader.setProduct('appsco-product');
+                this.currentCompany.company && company ? appscoHeader.setProduct('appsco-business-product'+this.currentCompany.company.alias) : appscoHeader.setProduct('appsco-product');
             },
 
             _onCompanyChange: function(company) {
@@ -1452,6 +1448,22 @@
             _onGetAccountResponse: function(event) {
                 this.account = event.detail.response.account;
                 this.$$('#getDashboardsLink').generateRequest();
+
+                if (this.account.companies.length > 0) {
+                    var currentCompany = this.account.companies[0];
+                    if (document.cookie) {
+                        var alias = document.cookie.split('=')[1];
+                        for (var i = 0; i < this.account.companies.length; i++) {
+                            if (this.account.companies[i].company.alias == alias) {
+                                currentCompany = this.account.companies[i];
+                            }
+                        }
+                    }
+                    this.currentCompany = currentCompany;
+                    this._setCompanyApi(currentCompany.self);
+                    this._setProduct(this._companyPage);
+                }
+
             },
 
             _onGetAccountError: function() {
@@ -1525,17 +1537,9 @@
                 this.companyDirectoryRolesApi = company + '/directory/roles';
                 this.companyDirectoryImportAccounts = company + '/directory/roles/import';
                 this.companyOrgunitsApi = company + '/org-units?extended=1';
+                this.companyIconsApi = this.currentCompany.icons;
             },
 
-            _onCompaniesResponse: function(event) {
-                var response = event.detail.response;
-
-                if (response && response.meta.total > 0) {
-                    this._setCompanyApi(response.companies[0].self);
-                    this.currentCompany = response.companies[0];
-                    this._setProduct(true);
-                }
-            },
             /**
              * Ajax END
              */
@@ -1550,15 +1554,13 @@
             _onAppscoProductChangeAction: function(event) {
                 var panel = event.detail.product;
 
-                this.currentCompany = {};
-
                 if ('appsco-product' === panel && 'home' !== this.page) {
                     this._showHomePage();
                 }
 
                 if ('appsco-business-product' === panel) {
                     this.currentCompany = event.detail.company;
-                    this._setCompanyApi(event.detail.company.self);
+                    this._setCompanyApi(event.detail.company.company.self);
                     this._showCompanyHomePage();
                 }
 
@@ -2704,26 +2706,27 @@
                 return company ? 'appsco-business-product' : 'appsco-product';
             },
 
-            _computeBrandLogo: function(account) {
-                if(account.company && "image" in account.company && account.company.image) {
-                    return account.company.image;
+            _computeBrandLogo: function(company, companyPage) {
+                if (companyPage && company.company && company.company.image) {
+                    return company.company.image;
                 }
+
                 return "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACYAAAAgCAYAAAB+ZAqzAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAVZJREFUeNrsmOENgjAQhcE4AG5QN2AERnCEjsAIdQJG6AiO0BEcATdwhLONxJR6V1u8Ij98ycXkrL3HR+8gVlWCAEDa0EjuaqP1csLGkPJ7FtlNR3hKIzknNeV0uC5YqzhNSc/AiORgKiyCnCbWSm5ar02DHEzFhyB3J9aCf/tL02qckSCvbHSAy60Va9BSSGFn1gAt1zjNlmj5Mr+gdYE0aXZahFmFdOgnSW5aEikivHmWo1NJWnoBLf8ItFujNWumErSwDs3V+xjJoNURtBTwSC6lZQrRmtXhoNXa6IFPIwctE3lYf3crv6TVER26Ki29RVpiNVoJkz+FlmGnlTD5Y7ROia82q9Iat0ALG5xyml3laUXMqkSKZWgRpiha4k+LMPYzWvuYsbquDxhFxn8fzmTt3DNnP9xVNgymbvbCj9SXu8zNeiZTUVocZ27pe/3HA/8QYABzJAP50CmRFwAAAABJRU5ErkJggg==";
             },
 
-            _computeBrandTitle: function(account) {
-                if(account.company && "name" in account.company) {
-                    return account.company.name;
+            _computeBrandTitle: function(company, companyPage) {
+                if (companyPage && company.company && company.company.name) {
+                    return company.company.name;
                 }
+
                 return "AppsCo";
             },
 
             _setAccountCompany: function(company) {
-                var account = JSON.parse(JSON.stringify(this.account));
+                var newCompany = JSON.parse(JSON.stringify(this.currentCompany));
 
-                account.company = company;
-                this.account = {};
-                this.account = account;
+                newCompany.company = company;
+                this.currentCompany = newCompany;
             },
 
             _onCompanySettingsChanged: function(event) {

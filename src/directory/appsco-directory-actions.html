@@ -14,8 +14,9 @@
 <link rel="import" href="../../bower_components/neon-animation/animations/cascaded-animation.html">
 <link rel="import" href="../../bower_components/neon-animation/animations/fade-in-animation.html">
 <link rel="import" href="../../bower_components/neon-animation/animations/fade-out-animation.html">
-
 <link rel="import" href="../../bower_components/paper-dropdown-menu/paper-dropdown-menu.html">
+
+<link rel="import" href="appsco-subscription-info-dropdown.html">
 
 <dom-module id="appsco-directory-actions">
     <template>
@@ -125,6 +126,9 @@
                 text-align: center;
                 @apply(--application-actions-tooltip);
             }
+            .info-icon {
+                --iron-icon-fill-color: var(--info-icon-color, --paper-orange-300);
+            }
         </style>
 
         <div class="action action-search flex-none">
@@ -164,31 +168,46 @@
                            position="bottom">Remove</paper-tooltip>
         </div>
 
-        <div class="action flex-none">
-            <paper-button
-                    class="add-application-button"
-                    on-tap="_onAddAccountAction">Add account</paper-button>
-            <paper-icon-button id="addAccountAction"
-                               icon="icons:add-circle"
-                               class="add-application-icon-button"
-                               alt="Add application"
-                               on-tap="_onAddAccountAction"></paper-icon-button>
-            <paper-tooltip for="addAccountAction"
-                           position="bottom">Add account</paper-tooltip>
-        </div>
+        <template is="dom-if" if="[[ _info ]]">
+            <div class="action flex-none">
+                <paper-icon-button id="infoAction"
+                                   class="info-icon"
+                                   icon="icons:info"
+                                   alt="Show info"
+                                   on-tap="_onToggleInfo"></paper-icon-button>
+            </div>
 
-        <div class="action flex-none">
-            <paper-button
-                    class="add-application-button"
-                    on-tap="_onImportAccountsAction">Import accounts</paper-button>
-            <paper-icon-button id="importAccountsAction"
-                               icon="icons:add-circle"
-                               class="add-application-icon-button"
-                               alt="Add application"
-                               on-tap="_onImportAccountsAction"></paper-icon-button>
-            <paper-tooltip for="importAccountsAction"
-                           position="bottom">Import accounts</paper-tooltip>
-        </div>
+            <appsco-subscription-info-dropdown id="appscoSubscriptionInfoDropdown"
+                                               subscription="[[ _subscription ]]"></appsco-subscription-info-dropdown>
+        </template>
+
+        <template is="dom-if" if="[[ !_info ]]">
+            <div class="action flex-none">
+                <paper-button
+                        class="add-application-button"
+                        on-tap="_onAddAccountAction">Add account</paper-button>
+                <paper-icon-button id="addAccountAction"
+                                   icon="icons:add-circle"
+                                   class="add-application-icon-button"
+                                   alt="Add application"
+                                   on-tap="_onAddAccountAction"></paper-icon-button>
+                <paper-tooltip for="addAccountAction"
+                               position="bottom">Add account</paper-tooltip>
+            </div>
+
+            <div class="action flex-none">
+                <paper-button
+                        class="add-application-button"
+                        on-tap="_onImportAccountsAction">Import accounts</paper-button>
+                <paper-icon-button id="importAccountsAction"
+                                   icon="icons:add-circle"
+                                   class="add-application-icon-button"
+                                   alt="Add application"
+                                   on-tap="_onImportAccountsAction"></paper-icon-button>
+                <paper-tooltip for="importAccountsAction"
+                               position="bottom">Import accounts</paper-tooltip>
+            </div>
+        </template>
 
     </template>
 
@@ -232,6 +251,18 @@
                 _searchDebounce: {
                     type: Number,
                     value: 0
+                },
+
+                _info: {
+                    type: Boolean,
+                    value: false
+                },
+
+                _subscription: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    }
                 },
 
                 /**
@@ -473,6 +504,19 @@
              */
             hideBulkActions: function() {
                 this.bulkActions = false;
+            },
+
+            showSubscriptionLimitReachedInfo: function(subscription) {
+                this._subscription = subscription
+                this._info = true;
+            },
+
+            hideSubscriptionLimitReachedInfo: function() {
+                this._info = false;
+            },
+
+            _onToggleInfo: function() {
+                this.$$('#appscoSubscriptionInfoDropdown').toggle(event.target);
             },
 
             _onNeonAnimationFinish: function() {

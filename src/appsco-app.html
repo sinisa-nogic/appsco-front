@@ -510,7 +510,8 @@
                             on-info-edit-application-credentials="_onEditApplicationCredentials"
                             on-info-edit-application="_onInfoEditApplication"
                             on-share-application="_onShareApplication"
-                            on-revoke-application="_onRevokeApplication"></appsco-home-page>
+                            on-revoke-application="_onRevokeApplication"
+                            on-applications-removed="_onApplicationsRemovedFromHomePage"></appsco-home-page>
 
                     <appsco-application-page
                             id="appscoApplicationPage"
@@ -1749,8 +1750,11 @@
                     applications = [application],
                     message = application.title + ' was successfully removed.';
 
-                this.$.appscoHomePage.removeApplications(applications);
-                this._showHomePage();
+                if (this.$.appscoHomePage.$) {
+                    this.$.appscoHomePage.removeApplications(applications);
+                } else {
+                    this._showHomePage();
+                }
 
                 this._notify(message);
             },
@@ -1850,6 +1854,10 @@
                 this.$.appscoHomePage.setDefaultApplication();
                 this._notify('You have successfully revoked access to ' + event.detail.applicationInstance.application.title + '.');
 
+            },
+
+            _onApplicationsRemovedFromHomePage: function() {
+                this._showHomePage();
             },
 
             /**
@@ -2232,24 +2240,33 @@
                 }
             },
 
-            _onRemoveApplications: function() {
-                var selectedApplications = this.$.appscoApplicationsPage.getSelectedApplications();
+            _removeApplications: function(applications) {
 
-                if (selectedApplications.length > 0) {
-                    this.set('_selectedApplications', selectedApplications);
+                if (applications.length > 0) {
+                    this.set('_selectedApplications', applications);
                     this.$.appscoCompanyApplicationsRemove.toggle();
                 }
             },
 
-            _onApplicationsRemoved: function() {
-                this.$.appscoApplicationsPage.removeApplications();
-                this.set('selectedApplications', []);
+            _onRemoveApplications: function() {
+                var selectedApplications = this.$.appscoApplicationsPage.getSelectedApplications();
+
+                this._removeApplications(selectedApplications);
+            },
+
+            _onApplicationsRemoved: function(event) {
+                this.set('_selectedApplications', []);
+
+                if (this.$.appscoApplicationsPage.$) {
+                    this.$.appscoApplicationsPage.removeApplications(event.detail.applications);
+                }
+
                 this._showCompanyApplicationsPage();
                 this._notify('Selected applications were successfully removed from company.');
             },
 
             _onApplicationsRemoveFailed: function() {
-                this.set('selectedApplications', []);
+                this.set('_selectedApplications', []);
                 this._notify('An error occurred. Selected applications were not removed from company. Please try again.');
             },
 
@@ -2264,8 +2281,8 @@
             },
 
             _onRemoveCompanyApplication: function(event) {
-                this.set('_selectedApplications', [event.detail.application]);
-                this._onRemoveApplications();
+//                this.set('_selectedApplications', [event.detail.application]);
+                this._removeApplications([event.detail.application]);
             },
 
             _onAddApplicationToOrgunit: function(event) {

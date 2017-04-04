@@ -571,31 +571,38 @@ Custom property | Description | Default
                 this._loadApplications();
             },
 
-            removeApplications: function() {
-                var applications = this._applications,
-                    length = this._applications.length,
-                    allApplications = this._allApplications,
-                    allLength = allApplications.length;
+            removeApplications: function(applications) {
+                var _applications = JSON.parse(JSON.stringify(this._applications)),
+                        _length = _applications.length,
+                        allApplications = JSON.parse(JSON.stringify(this._allApplications)),
+                        allLength = allApplications.length,
+                        lengthModify = applications.length;
 
-                for (var i = 0; i < length; i++) {
+                for (var i = 0; i < lengthModify; i++) {
+                    var application = applications[i];
 
-                    if (applications[i].selected) {
-                        this.splice('_applications', i, 1);
-                        i--;
-                        length--;
+                    for (var j = 0; j < _length; j++) {
+                        if (application.self === _applications[j].self) {
+                            _applications.splice(j, 1);
+                            break;
+                        }
+                    }
+
+                    for (var k = 0; k < allLength; k++) {
+                        if (application.self === allApplications[k].self) {
+                            allApplications.splice(k, 1);
+                            break;
+                        }
                     }
 
                 }
 
-                for (var j = 0; j < allLength; j++) {
 
-                    if (allApplications[j].selected) {
-                        this.splice('_allApplications', j, 1);
-                        j--;
-                        allLength--;
-                    }
+                this.set('_applications', []);
+                this.set('_applications', _applications);
 
-                }
+                this.set('_allApplications', []);
+                this.set('_allApplications', allApplications);
 
                 this.fire('applications-removed', {
                     applications: applications

@@ -9,8 +9,6 @@
 <link rel="import" href="../neon-animation/animations/scale-up-animation.html">
 <link rel="import" href="../neon-animation/animations/fade-out-animation.html">
 
-<link rel="import" href="appsco-dropdown.html">
-
 <!--
 `appsco-product`
 This component displays AppsCo product. If there is only one product it is displayed as text.
@@ -32,6 +30,7 @@ Custom property | Description | Default
 `--border-color` | Border for products. | Based on border-color from theme.
 `--appsco-product` | Mixin applied to root appsco-product element. | `{}`
 `--appsco-product-dropdown` | Mixin applied to inner appsco-dropdown element. | `{}`
+`--appsco-product-search-input` | Mixin applied to search input field. | `{}`
 
 @demo demo/appsco-product.html
 -->
@@ -67,6 +66,8 @@ Custom property | Description | Default
                 --paper-input-prefix: {
                     color: var(--secondary-text-color);
                 };
+
+                @apply(--appsco-product-search-input);
             }
             .input-icon {
                 width: 18px;
@@ -76,6 +77,7 @@ Custom property | Description | Default
                 width: 20px;
                 height: 20px;
                 padding: 0;
+                margin: 0;
                 --iron-icon-fill-color: var(--appsco-product-text-color);
             }
             .product-list-action {
@@ -86,18 +88,6 @@ Custom property | Description | Default
                 position: relative;
                 z-index: 5;
                 display: none;
-                /*opacity: 0;*/
-                /*visibility: hidden;*/
-                /*transform: scale(1, 0.6);*/
-                /*transform-origin: top center;*/
-                /*transition: opacity 0.1s linear, visibility 0.1s linear, transform 0.3s 0.1s linear;*/
-            }
-            .filter[active] {
-                /*opacity: 1;*/
-                /*visibility: visible;*/
-                /*transform: scale(1, 1);*/
-                /*transform-origin: top center;*/
-                /*transition: all 0.2s linear;*/
             }
             .dropdown-content {
                 @apply(--shadow-elevation-2dp);
@@ -108,6 +98,7 @@ Custom property | Description | Default
                 width: 100%;
                 z-index: 5;
                 overflow-y: auto;
+                @apply(--appsco-product-dropdown);
             }
             .paper-item {
                 padding: 0 8px;
@@ -115,14 +106,6 @@ Custom property | Description | Default
                 line-height: 18px;
                 font-size: 14px;
                 cursor: pointer;
-            }
-            :host appsco-dropdown {
-                min-width: 160px;
-                width: auto;
-                top: 25px;
-                right: -9px;
-
-                @apply(--appsco-product-dropdown);
             }
             .product-active {
                 font-size: 18px;
@@ -151,7 +134,7 @@ Custom property | Description | Default
                                            id="clearSearch"
                                            class="input-icon"
                                            suffix
-                                           on-tap="_onClearPanelSearch"></paper-icon-button>
+                                           on-tap="_clearFilterPanel"></paper-icon-button>
                     </template>
                 </paper-input>
             </div>
@@ -273,7 +256,7 @@ Custom property | Description | Default
                                 transformOrigin: '0 0',
                                 node: this.$$('#filterPanel'),
                                 timing: {
-                                    delay: 200,
+                                    delay: 50,
                                     duration: 200
                                 }
                             },
@@ -330,7 +313,7 @@ Custom property | Description | Default
                 if (!this._isInPath(path, this.$$('#activeProduct')) &&
                     !this._isInPath(path, this.$$('#searchPanel')) &&
                     !this._isInPath(path, this.$$('#filterPanel'))) {
-                    this._hidePanelList();
+                    this._clearFilterPanel();
                 }
 
             },
@@ -399,9 +382,7 @@ Custom property | Description | Default
                     productList = this.$$('#productList');
 
                 productList.select(event.detail.selected);
-
                 item = productList.selectedItem;
-
                 this._selectedProduct = item;
 
                 this.fire('appsco-product-changed', {
@@ -409,7 +390,7 @@ Custom property | Description | Default
                     company: item.company
                 });
 
-                this._hidePanelList();
+                this._clearFilterPanel();
 
             },
 
@@ -438,14 +419,16 @@ Custom property | Description | Default
 
             },
 
-            _onClearPanelSearch: function(event) {
-                var input = event.target.parentNode;
+            _clearFilterPanel: function() {
+                var input = this.$$('#searchPanelInput');
 
                 this._hidePanelList();
 
-                input.value = '';
-                this._clearPanelSearch = false;
-                this._filterPanelListByTerm('');
+                setTimeout(function() {
+                    input.value = '';
+                    this._clearPanelSearch = false;
+                    this._filterPanelListByTerm('');
+                }.bind(this), 100);
             },
 
             _selectFirstPanel: function() {

@@ -96,7 +96,10 @@
             :host {
                 display: block;
 
-                --app-primary-color: #279FBC;
+                --brand-color: #279FBC;
+                --brand-text-color: #ffffff;
+
+                --app-primary-color: var(--brand-color);
                 --app-primary-color-1: #39C2D7;
                 --app-secondary-color: #273441;
                 --app-secondary-color-1: #1183A4;
@@ -109,13 +112,18 @@
                 --primary-text-color: #414042;
                 --secondary-text-color: #969696;
 
+                --header-background-color: var(--app-primary-color);
+                --header-text-color: var(--brand-text-color);
+                --header-icon-color: var(--header-text-color);
+                --header-divider-color: var(--header-text-color);
+
+                --appsco-product-text-color: var(--header-text-color);
+
                 --primary-button-background-color: var(--app-primary-color);
 
                 --border-radius-base: 3px;
 
                 --paper-progress-active-color: var(--success-color);
-
-                --appsco-product-text-color: #ffffff;
             }
 
             /* Top header style START */
@@ -123,10 +131,7 @@
                 height: 64px;
                 padding: 16px 10px;
                 box-sizing: border-box;
-                color: #ffffff;
-                background-color: var(--app-primary-color);
-
-                --appsco-account-action-color: #ffffff;
+                background-color: var(--header-background-color);
 
                 --appsco-brand: {
                      display: block;
@@ -235,12 +240,15 @@
                 vertical-align: middle;
                 padding-left: 8px;
             }
-            :host paper-progress {
+            paper-progress {
                 width: 100%;
                 position: absolute;
                 top: 64px;
                 left: 0;
                 z-index: 10;
+            }
+            paper-progress::shadow #primaryProgress {
+                background-color: var(--paper-progress-active-color);
             }
             :host([tablet-screen]) {
                 --appsco-paper-dialog: {
@@ -311,6 +319,7 @@
                 product-business="[[ account.companies ]]"
                 product-partner="[[ account.partner ]]"
                 domain="{{ domain }}"
+                on-brand-action="_onBrandAction"
                 on-vault-action="_onVaultAction"
                 on-appsco-product-changed="_onAppscoProductChangeAction"
                 on-account-chat="_onAccountChat"
@@ -740,6 +749,7 @@
                             authorization-token="[[ authorizationToken ]]"
                             computed-headers="[[ _computedHeaders ]]"
                             on-company-settings-changed="_onCompanySettingsChanged"
+                            on-company-brand-settings-changed="_onCompanyBrandSettingsChanged"
                             on-company-logo-changed="_onCompanyLogoChanged"
                     ></appsco-company-page>
 
@@ -981,8 +991,7 @@
 
                 _companyPage: {
                     type: Boolean,
-                    computed: '_computeCompany(page)',
-                    observer: '_onCompanyChange'
+                    computed: '_computeCompany(page)'
                 },
 
                 page: {
@@ -1061,6 +1070,7 @@
                     value: function() {
                         return {};
                     },
+                    notify: true,
                     observer: '_onCurrentCompanyChanged'
                 },
 
@@ -1221,7 +1231,8 @@
 
             observers: [
                 '_updateScreen(mobileScreen, tabletScreen)',
-                '_routePageChanged(routeData.page)'
+                '_routePageChanged(routeData.page)',
+                '_changeTheme(_companyPage, currentCompany)'
             ],
 
             listeners: {
@@ -1242,7 +1253,7 @@
                 'orgunit-modified': '_reloadAccountLog',
                 'orgunit-removed': '_reloadAccountLog',
                 'company-settings-changed': '_reloadAccountLog',
-                'company-logo-changed': '_reloadAccountLog',
+                'company-logo-changed': '_reloadAccountLog'
             },
 
             attached: function() {
@@ -1267,9 +1278,16 @@
                 }
             },
 
-            _onCurrentCompanyChanged: function(newValue, oldValue) {
-                if(newValue.company) {
-                    document.cookie = "company=" + newValue.company.alias;
+            _onCurrentCompanyChanged: function(company) {
+
+                if (company && company.company) {
+                    document.cookie = 'company=' + company.company.alias;
+
+                    this._setCompanyApi(company.company.self);
+                    this._setProduct(true);
+                }
+                else {
+                    this._setProduct(false);
                 }
             },
 
@@ -1288,32 +1306,10 @@
                 return false;
             },
 
-            _updateStyle: function(company) {
-
-                if (company) {
-                    this.customStyle['--app-primary-color'] = '#5AC099';
-
-                    // Without click new value of CSS variable doesn't apply to children components.
-                    setTimeout(function() {
-                        document.body.click();
-                    }, 10);
-                }
-                else {
-                    this.customStyle['--app-primary-color'] = '#279FBC';
-                }
-
-                this.updateStyles();
-
-            },
-
             _setProduct: function(company) {
                 var appscoHeader = this.$.appscoHeader;
-                this.currentCompany.company && company ? appscoHeader.setProduct('appsco-business-product'+this.currentCompany.company.alias) : appscoHeader.setProduct('appsco-product');
-            },
 
-            _onCompanyChange: function(company) {
-                this._updateStyle(company);
-                this._setProduct(company);
+                company ? appscoHeader.setProduct('appsco-business-product' + this.currentCompany.company.alias) : appscoHeader.setProduct('appsco-product');
             },
 
             /**
@@ -1429,23 +1425,27 @@
             },
 
             _onGetAccountResponse: function(event) {
-                this.account = event.detail.response.account;
+                var account = event.detail.response.account;
+
+                this.account = account;
                 this.$$('#getDashboardsLink').generateRequest();
 
-                if (this.account.companies.length > 0) {
-                    var currentCompany = this.account.companies[0];
+                if (account.companies.length > 0) {
+                    var companies = account.companies,
+                        length = companies.length,
+                        currentCompany = companies[0];
+
                     if (document.cookie) {
                         var alias = document.cookie.split('=')[1];
-                        for (var i = 0; i < this.account.companies.length; i++) {
-                            if (this.account.companies[i].company.alias == alias) {
-                                currentCompany = this.account.companies[i];
+
+                        for (var i = 0; i < length; i++) {
+                            if (companies[i].company.alias == alias) {
+                                currentCompany = companies[i];
                             }
                         }
                     }
 
                     this.currentCompany = currentCompany;
-                    this._setCompanyApi(currentCompany.company.self);
-                    this._setProduct(this._companyPage);
                 }
 
             },
@@ -1532,6 +1532,10 @@
             /**
              * Appsco header actions START
              */
+            _onBrandAction: function() {
+                this._companyPage ? this._showCompanyHomePage() : this._showHomePage();
+            },
+
             _onVaultAction: function() {
                 this._showVaultPage();
             },
@@ -1545,7 +1549,6 @@
 
                 if ('appsco-business-product' === panel) {
                     this.currentCompany = event.detail.company;
-                    this._setCompanyApi(event.detail.company.company.self);
                     this._showCompanyHomePage();
                 }
 
@@ -2632,6 +2635,41 @@
              */
 
             /**
+             * Company page START
+             */
+            _onCompanySettingsChanged: function(event) {
+                this._setAccountCompany(event.detail.company);
+                this._notify('Company settings were successfully saved.');
+            },
+
+            _onCompanyBrandSettingsChanged: function(event) {
+                this._setAccountCompany(event.detail.company);
+                this._notify('Company brand settings were successfully saved.');
+            },
+
+            _onCompanyLogoChanged: function(event) {
+                this._setAccountCompany(event.detail.company);
+                this._notify('Company logo was successfully saved.');
+            },
+
+            _upgradedToBusiness: function(e) {
+                this.account = {};
+                this.account = e.detail.account;
+
+                this.currentCompany = this.account.companies[0];
+
+                this.set('routeData.page', 'company');
+                this._notify('Upgrade to AppsCo business succeeded.');
+
+                setTimeout(function() {
+                    this._notify('Please setup your company settings.');
+                }.bind(this), 2000);
+            },
+            /**
+             * Company page END
+             */
+
+            /**
              * Global START
              */
             _setProgressBar: function(page) {
@@ -2745,45 +2783,30 @@
             },
 
             _computeBrandTitle: function(company, companyPage) {
-                if (companyPage && company.company && company.company.name) {
-                    return company.company.name;
+                if (!companyPage) {
+                    return 'AppsCo';
                 }
 
-                return "AppsCo";
+                return '';
             },
 
             _setAccountCompany: function(company) {
-                var newCompany = JSON.parse(JSON.stringify(this.currentCompany));
+                var newCompany = JSON.parse(JSON.stringify(this.currentCompany)),
+                    companies = JSON.parse(JSON.stringify(this.account.companies)),
+                    length = companies.length;
 
                 newCompany.company = company;
                 this.currentCompany = newCompany;
-            },
 
-            _onCompanySettingsChanged: function(event) {
-                this._setAccountCompany(event.detail.company);
-                this._notify('Company settings were successfully saved.');
-            },
+                for (var i = 0; i < length; i++) {
+                    if (company.alias === companies[i].company.alias) {
+                        companies[i].company = company;
+                        break;
+                    }
+                }
 
-            _onCompanyLogoChanged: function(event) {
-                this._setAccountCompany(event.detail.company);
-                this._notify('Company logo was successfully saved.');
-            },
-
-            _upgradedToBusiness: function(e) {
-                this.account = {};
-                this.account = e.detail.account;
-
-                var currentCompany = this.account.companies[0];
-                this.currentCompany = currentCompany;
-                this._setCompanyApi(currentCompany.self);
-                this._setProduct(this._companyPage);
-
-                this.set('routeData.page', 'company');
-                this._notify('Upgrade to AppsCo business succeeded.');
-
-                setTimeout(function() {
-                    this._notify('Please setup your company settings.');
-                }.bind(this), 2000);
+                this.set('account.companies', []);
+                this.set('account.companies', companies);
             },
 
             _onPageAnimationFinish: function(event) {
@@ -2808,6 +2831,7 @@
                     case 'manage-account':
                     case 'audit-log':
                     case 'provisioning-settings':
+                    case 'company':
 
                         if (fromPage.$) {
                             fromPage.resetPage();
@@ -2913,6 +2937,33 @@
                         break;
                     }
                 }
+            },
+
+            _changeTheme: function(companyPage, currentCompany) {
+                var company = currentCompany.company ? currentCompany.company : {};
+
+                if (companyPage) {
+
+                    if (company.primary_color) {
+                        this.customStyle['--app-primary-color'] = company.primary_color;
+                    }
+                    else {
+                        this.customStyle['--app-primary-color'] = 'var(--brand-color)';
+                    }
+
+                    if (company.secondary_color) {
+                        this.customStyle['--header-text-color'] = company.secondary_color;
+                    }
+                    else {
+                        this.customStyle['--header-text-color'] = 'var(--brand-text-color)';
+                    }
+                }
+                else {
+                    this.customStyle['--app-primary-color'] = 'var(--brand-color)';
+                    this.customStyle['--header-text-color'] = 'var(--brand-text-color)';
+                }
+
+                this.updateStyles();
             }
             /**
              * Global END

@@ -8,8 +8,8 @@
 
 <link rel="import" href="../bower_components/appsco-page/appsco-content.html">
 <link rel="import" href="company/appsco-company-components-page.html">
-<link rel="import" href="company/appsco-company-image-settings.html">
 <link rel="import" href="company/appsco-company-settings-page.html">
+<link rel="import" href="company/appsco-company-brand-settings-page.html">
 
 
 <dom-module id="appsco-company-page">
@@ -26,9 +26,11 @@
                 --resource-width: 300px;
             }
             :host div[resource] {
-                padding: 10px;
                 height: calc(100% - 32px - 20px - 10px);
                 overflow: auto;
+            }
+            :host div[resource] > * {
+                padding: 10px;
             }
             :host div[content] {
                 height: 100%;
@@ -39,10 +41,10 @@
             appsco-company-components-page {
                 padding: 10px;
             }
-            .resource-header {
-                padding: 20px 10px 30px;
+            :host .resource-header {
                 border-bottom: 1px solid var(--divider-color);
-                position: relative;
+                margin-bottom:20px;
+                font-size: 18px;
             }
             .company-info {
                 margin-top: 10px;
@@ -57,7 +59,6 @@
             }
             :host .flex-vertical {
                 @apply(--layout-vertical);
-                @apply(--layout-center);
             }
             :host .flex {
                 @apply(--layout-flex);
@@ -82,19 +83,13 @@
 
         <appsco-content id="appscoContent" resource-active>
 
-            <div resource>
+            <div class="flex-vertical" resource>
 
-                <div class="resource-header flex-vertical">
-                    <appsco-company-image-settings
-                        id="appscoCompanyImageSettings"
-                        company="[[ company ]]"
-                        authorization-token="[[ authorizationToken ]]"
-                        image-settings-api="[[ imageSettingsApi ]]"
-                    ></appsco-company-image-settings>
+                <div class="resource-header">
+                    [[ company.name ]]
                 </div>
 
                 <div class="company-info">
-                    <h3>[[ company.name ]]</h3>
                     <div class="company-contact-email">
                         <iron-icon icon="communication:email"
                                    class="info-icon"></iron-icon>
@@ -119,6 +114,7 @@
                                 image-settings-api="[[ imageSettingsApi ]]"
                                 settings-api="[[ settingsApi ]]"
                                 on-manage-company-settings="_onManageCompanySettings"
+                                on-manage-company-brand-settings="_onManageCompanyBrandSettings"
                                 on-page-loaded="_onPageLoaded">
                         </appsco-company-components-page>
 
@@ -130,6 +126,16 @@
                                 on-company-settings-changed="_onSettingsChanged"
                                 on-back="_onResourceBack">
                         </appsco-company-settings-page>
+
+                        <appsco-company-brand-settings-page
+                                name="appsco-company-brand-settings-page"
+                                company="[[ company ]]"
+                                authorization-token="[[ authorizationToken ]]"
+                                settings-api="[[ brandSettingsApi ]]"
+                                image-settings-api="[[ imageSettingsApi ]]"
+                                on-company-brand-settings-changed="_onCompanyBrandSettingsChanged"
+                                on-back="_onResourceBack">
+                        </appsco-company-brand-settings-page>
 
                     </neon-animated-pages>
                 </div>
@@ -163,6 +169,14 @@
                 settingsApi: {
                     type: String,
                     computed: '_computeSettingsApi(company)'
+                },
+
+                /**
+                 * Update company settings link.
+                 */
+                brandSettingsApi: {
+                    type: String,
+                    computed: '_computeBrandSettingsApi(company)'
                 },
 
                 /**
@@ -229,8 +243,16 @@
 
             },
 
+            resetPage: function() {
+                this._showCompanyComponentsPage();
+            },
+
             _computeSettingsApi: function(company) {
                 return company.meta && company.meta.settings;
+            },
+
+            _computeBrandSettingsApi: function(company) {
+                return company.self && company.self + '/branding';
             },
 
             _computeImageSettingsApi: function(company) {
@@ -261,6 +283,10 @@
                 this._selected = 'appsco-company-settings-page';
             },
 
+            _showCompanyBrandSettingsPage: function() {
+                this._selected = 'appsco-company-brand-settings-page';
+            },
+
             _onResourceBack: function() {
                 this._showCompanyComponentsPage();
             },
@@ -270,6 +296,14 @@
             },
 
             _onSettingsChanged: function() {
+                this._showCompanyComponentsPage();
+            },
+
+            _onManageCompanyBrandSettings: function() {
+                this._showCompanyBrandSettingsPage();
+            },
+
+            _onCompanyBrandSettingsChanged: function() {
                 this._showCompanyComponentsPage();
             },
 

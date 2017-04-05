@@ -1,46 +1,74 @@
 <link rel="import" href="../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../bower_components/iron-flex-layout/iron-flex-layout.html">
 <link rel="import" href="../../bower_components/iron-form/iron-form.html">
 <link rel="import" href="../../bower_components/paper-input/paper-input.html">
-<link rel="import" href="../../bower_components/gold-email-input/gold-email-input.html">
+<link rel="import" href="../../bower_components/paper-swatch-picker/paper-swatch-picker.html">
 <link rel="import" href="../../bower_components/paper-button/paper-button.html">
-<link rel="import" href="../../bower_components/iron-flex-layout/iron-flex-layout.html">
 <link rel="import" href="../../bower_components/iron-a11y-keys/iron-a11y-keys.html">
+<link rel="import" href="../../bower_components/paper-styles/typography.html">
 
 <link rel="import" href="../../bower_components/appsco-components/appsco-loader.html">
 <link rel="import" href="../../bower_components/appsco-components/appsco-form-error.html">
+<link rel="import" href="appsco-company-image-settings.html">
 
 <!--
-`appsco-company-settings`
+`appsco-company-brand-settings`
 Update company settings component.
 
-    <appsco-company-settings company={}
+    <appsco-company-brand-settings company={}
                              authorization-token=""
                              settings-api="">
-    </appsco-company-settings>
+    </appsco-company-brand-settings>
 
 ### Styling
 
-`<appsco-company-settings>` provides the following custom properties and mixins for styling:
+`<appsco-company-brand-settings>` provides the following custom properties and mixins for styling:
 
 Custom property | Description | Default
 ----------------|-------------|----------
-`--appsco-company-settings` | Mixin for the root element | `{}`
+`--appsco-company-brand-settings` | Mixin for the root element | `{}`
 
 -->
 
-<dom-module id="appsco-company-settings">
+<dom-module id="appsco-company-brand-settings">
     <template>
         <style>
             :host {
                 display: block;
                 position: relative;
-                @apply(--appsco-company-settings);
+                @apply(--appsco-company-brand-settings);
+
+                --paper-input-container-label: {
+                    font-size: 14px;
+                };
             }
-            :host .info {
-                margin-bottom: 0;
+            :host .form-input-container {
+                @apply(--layout-horizontal);
+                @apply(--layout-center);
+                margin-bottom: 20px;
             }
-            :host .info-between {
+            :host .form-input-picker {
+                min-width: 130px;
+            }
+            :host .form-input-text {
+                @apply(--layout-flex);
+            }
+            :host .logo-upload {
                 margin-top: 20px;
+            }
+            :host .label {
+                @apply(--paper-font-subhead);
+                display: block;
+                color: var(--secondary-text-color);
+                font-size: 14px;
+            }
+            :host .or-label {
+                margin-left: 40px;
+                margin-right: 40px;
+                color: var(--primary-text-color);
+            }
+            :host appsco-company-image-settings {
+                margin-top: 5px;
             }
             :host .submit-button {
                 margin: 20px 0 0 0;
@@ -50,12 +78,6 @@ Custom property | Description | Default
         <appsco-loader active="[[ _loader ]]" loader-alt="Appsco is processing request" multi-color></appsco-loader>
 
         <appsco-form-error message="[[ _error ]]"></appsco-form-error>
-
-        <p class="info">
-            Company name is used to distinguish company applications from users personal applications.
-            It is used in branding and can be displayed in login screen along with company logo.
-            Beside this usage company name will also be shown in filtering on personal home screen under "All applications" section.
-        </p>
 
         <form is="iron-form"
               id="form"
@@ -67,38 +89,60 @@ Custom property | Description | Default
               on-iron-form-response="_onFormResponse"
               on-keyup="_onKeyUp">
 
-            <paper-input
-                    id="companyName"
-                    label="Company name"
-                    value="[[ company.name ]]"
-                    name="company_settings[name]"
-                    required
-                    auto-validate
-                    error-message="Please type in company name."
-            ></paper-input>
+            <div class="form-input-container">
+                <div class="form-input form-input-picker">
+                    <label for="brandColorPicker" class="label">Pick a brand color</label>
+                    <paper-swatch-picker id="brandColorPicker"
+                                         color="{{ _brandColor }}"></paper-swatch-picker>
+                </div>
 
-            <p class="info info-between">
-                Company contact email will be displayed in user profile section and used for contact purposes.
-            </p>
+                <label for="brandColorInput" class="label or-label">or</label>
 
-            <gold-email-input id="contactEmail"
-                              label="Contact email"
-                              value="[[ company.contact_email ]]"
-                              name="company_settings[contactEmail]"
-                              required
-                              auto-validate
-                              error-message="Please type in correct email."
-            ></gold-email-input>
+                <div class="form-input form-input-text">
+                    <label for="brandColorPicker" class="label">Enter hex code</label>
+                    <paper-input id="brandColorInput"
+                                 label="Brand color"
+                                 name="company_branding[primaryColor]"
+                                 value="{{ _brandColor }}"
+                                 no-label-float
+                                 pattern="^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$"
+                                 auto-validate
+                                 error-message="Please enter valid hex code."></paper-input>
+                </div>
+            </div>
 
-            <gold-email-input id="billingEmail"
-                              label="Billing email"
-                              value="[[ company.billing_email ]]"
-                              name="company_settings[billingEmail]"
-                              required
-                              auto-validate
-                              error-message="Please type in correct email."
-            ></gold-email-input>
+            <div class="form-input-container">
+                <div class="form-input form-input-picker">
+                    <label for="brandTextColorPicker" class="label">Pick a text color</label>
+                    <paper-swatch-picker id="brandTextColorPicker"
+                                         color="{{ _brandTextColor }}"></paper-swatch-picker>
+                </div>
+
+                <label class="label or-label">or</label>
+
+                <div class="form-input form-input-text">
+                    <label for="brandTextColorPicker" class="label">Enter hex code</label>
+                    <paper-input id="brandTextColorPicker"
+                                 label="Text color"
+                                 name="company_branding[secondaryColor]"
+                                 value="{{ _brandTextColor }}"
+                                 no-label-float
+                                 pattern="^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$"
+                                 auto-validate
+                                 error-message="Please enter valid hex code."></paper-input>
+                </div>
+            </div>
+
         </form>
+
+        <div class="logo-upload">
+            <label for="appscoCompanyImageSettings" class="label">Company logo</label>
+            <appsco-company-image-settings
+                    id="appscoCompanyImageSettings"
+                    company="[[ company ]]"
+                    authorization-token="[[ authorizationToken ]]"
+                    image-settings-api="[[ imageSettingsApi ]]"></appsco-company-image-settings>
+        </div>
 
         <paper-button id="submit"
                       class="submit-button"
@@ -113,7 +157,7 @@ Custom property | Description | Default
     <script>
         Polymer({
 
-            is: 'appsco-company-settings',
+            is: 'appsco-company-brand-settings',
 
             properties: {
                 /**
@@ -139,7 +183,23 @@ Custom property | Description | Default
                  * Settings api link.
                  */
                 settingsApi: {
-                    type: String
+                    type: String,
+                    value: ''
+                },
+
+                imageSettingsApi: {
+                    type: String,
+                    value: ''
+                },
+
+                _brandColor: {
+                    type: String,
+                    value: ''
+                },
+
+                _brandTextColor: {
+                    type: String,
+                    value: ''
                 },
 
                 /**
@@ -189,9 +249,9 @@ Custom property | Description | Default
                 }
             },
 
-            _onCompanyChanged: function() {
-                this.$.contactEmail.invalid = false;
-                this.$.billingEmail.invalid = false;
+            _onCompanyChanged: function(company) {
+                this._brandColor = company.primary_color ? company.primary_color : '';
+                this._brandTextColor = company.secondary_color ? company.secondary_color : '';
             },
 
             _showLoader: function() {
@@ -217,7 +277,7 @@ Custom property | Description | Default
 
             _onFormPresubmit: function() {
                 this._showLoader();
-                this.$.form.request.method = 'PUT';
+                this.$.form.request.method = 'PATCH';
             },
 
             _onFormError: function(event) {
@@ -228,12 +288,9 @@ Custom property | Description | Default
             _onFormResponse: function(event) {
                 this.set('company', event.detail.response);
 
-                this.fire('company-settings-changed', {
+                this.fire('company-brand-settings-changed', {
                     company: this.company
                 });
-
-                this.$.contactEmail.invalid = false;
-                this.$.billingEmail.invalid = false;
 
                 this._hideLoader();
             },

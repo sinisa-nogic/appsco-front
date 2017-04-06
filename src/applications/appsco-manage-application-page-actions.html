@@ -41,16 +41,34 @@
                      margin-right: 4px;
                      color: var(--secondary-text-color);
                  };
-                --paper-icon-button: {
-                     width: 24px;
-                     height: 24px;
-                     padding: 0;
-                     color: var(--primary-text-color);
-                 };
-                --iron-icon-fill-color: var(--application-action-icon-color);
             }
             :host > * {
                 height: 100%;
+            }
+            div[prefix] iron-icon {
+                width: 18px;
+                height: 18px;
+                @apply(--input-search-prefix);
+
+                --iron-icon-fill-color: var(--paper-input-prefix-icon-fill-color);
+            }
+            paper-input[focused] div[prefix] {
+                @apply(--paper-input-focused-prefix);
+            }
+            paper-input[focused] div[prefix] iron-icon {
+                fill: var(--paper-input-focused-prefix-icon-fill-color);
+            }
+            paper-icon-button[suffix] {
+                width: 20px;
+                height: 20px;
+                padding: 0;
+                color: var(--paper-input-suffix-icon-fill-color);
+                --paper-icon-button-ink-color: var(--paper-input-suffix-icon-fill-color);
+            }
+            paper-input[focused] paper-icon-button[suffix] {
+                color: var(--paper-input-focused-suffix-icon-fill-color);
+                --paper-icon-button-ink-color: var(--paper-input-focused-suffix-icon-fill-color);
+                @apply(--paper-input-focused-sufix);
             }
             :host .search-icon {
                 width: 18px;
@@ -71,23 +89,23 @@
                 @apply(--layout-horizontal);
                 @apply(--layout-center);
                 @apply(--layout-end-justified);
+                border-right: 1px solid var(--divider-color);
+                padding-right: 16px;
+                margin-right: 10px;
+
+                --iron-icon-fill-color: var(--application-action-icon-color);
             }
             .search-assignees-input {
                 @apply(--layout-flex-none);
                 max-width: 184px;
             }
             .global-page-actions {
-                padding-left: 10px;
-                margin-left: 16px;
-                border-left: 1px solid var(--app-primary-color);
                 @apply(--layout-horizontal);
                 @apply(--layout-center);
                 @apply(--layout-end-justified);
             }
-            :host .back-action {
-                margin-right: 10px;
-            }
             :host .info-action {
+                margin-left: 10px;
                 display: none;
             }
             :host([tablet-screen]) .info-action {
@@ -193,11 +211,6 @@
                 Polymer.NeonAnimatableBehavior
             ],
 
-            attached: function() {
-                this.customStyle['--app-primary-color'] = '#5AC099';
-                this.updateStyles();
-            },
-
             enableAssigneesSearchAction: function() {
                 this._searchAssigneesActive = true;
             },
@@ -240,8 +253,11 @@
             },
 
             _resetAssigneesSearch: function() {
-                this.$$('#searchAssignees').value = '';
-                this._clearSearch = false;
+
+                if (this._searchAssigneesActive) {
+                    this.$$('#searchAssignees').value = '';
+                    this._clearSearch = false;
+                }
             },
 
             _clearAssigneesSearch: function() {

@@ -791,7 +791,7 @@
                 account="[[ account ]]"
                 authorization-token="[[ authorizationToken ]]"
                 application="[[ application ]]"
-                on-application-settings-saved="_onApplicationCredentialsChange"
+                on-application-settings-saved="_onApplicationCredentialsChanged"
         ></appsco-application-settings-dialog>
 
         <appsco-application-remove
@@ -990,7 +990,7 @@
 
                 _companyPage: {
                     type: Boolean,
-                    computed: '_computeCompany(page)',
+                    computed: '_computeCompany(page)'
                 },
 
                 page: {
@@ -1254,13 +1254,23 @@
                 'company-settings-changed': '_reloadAccountLog',
                 'company-logo-changed': '_reloadAccountLog',
                 'info-edit-application-credentials': '_onEditApplicationCredentials',
-                'application-settings-saved': '_reloadApplications',
                 'autologin-changed': '_reloadApplications',
                 'applications-shared': '_reloadApplications',
                 'applications-removed': '_reloadApplications',
                 'access-revoked': '_reloadApplications',
                 'added-to-orgunit': '_reloadApplications',
-                'account-removed-from-orgunit': '_reloadApplications'
+                'account-removed-from-orgunit': '_reloadApplications',
+                'settings-saved': '_onAccountUpdated',
+                'password-changed': '_onAccountUpdated',
+                'twofa-enabled': '_onAccountUpdated',
+                'twofa-disabled': '_onAccountUpdated',
+                'account-role-changed': '_onAccountUpdated',
+                'application-revoked': '_onAccountUpdated',
+                'added-to-orgunit': '_onAccountUpdated',
+                'account-removed-from-orgunit': '_onAccountUpdated',
+                'claims-changed': '_onAccountUpdated',
+                'access-revoked': '_onAccountUpdated',
+                'application-settings-saved': '_onApplicationUpdated'
             },
 
             attached: function() {
@@ -1569,6 +1579,7 @@
             },
 
             _onAccountSettingsAction: function() {
+                this._setProduct(false);
                 this._showAccountPage();
             },
 
@@ -1711,6 +1722,51 @@
             /**
              * Application page START
              */
+            _onApplicationUpdated: function(event) {
+                var application = event.detail.application;
+
+                switch (this.page) {
+                    case 'home':
+                    case 'application':
+                        this.set('application', {});
+                        this.set('application', application);
+
+                        if (this.$.appscoHomePage.$) {
+                            this.$.appscoHomePage.setApplication(application);
+                        }
+
+                        break;
+
+                    case 'company-home':
+                        this.set('_companyApplication', {});
+                        this.set('_companyApplication', application);
+
+                        if (this.$.appscoCompanyHomePage.$) {
+                            this.$.appscoCompanyHomePage.setApplication(application);
+                        }
+
+                        if (this.$.appscoApplicationsPage.$) {
+                            this.$.appscoApplicationsPage.reloadApplications();
+                        }
+
+                        break;
+
+                    case 'manage-application':
+                        this.set('_companyApplication', {});
+                        this.set('_companyApplication', application);
+
+                        if (this.$.appscoCompanyHomePage.$) {
+                            this.$.appscoCompanyHomePage.reloadApplications();
+                        }
+
+                        if (this.$.appscoApplicationsPage.$) {
+                            this.$.appscoApplicationsPage.reloadApplications();
+                        }
+
+                        break;
+                }
+            },
+
             _onResourceActionApplicationPage: function() {
                 this.$.appscoApplicationPage.toggleResource();
             },
@@ -1744,14 +1800,10 @@
                 this._notify(message);
             },
 
-            _onApplicationCredentialsChange: function(event) {
+            _onApplicationCredentialsChanged: function(event) {
                 var application = event.detail.application,
-                    message = 'You successfully changed ' + this.application.title + ' credentials.';
+                    message = 'You successfully changed ' + application.title + ' credentials.';
 
-                this.set('application', {});
-                this.set('application', application);
-
-                this.$.appscoHomePage.setApplication(application);
                 this._notify(message);
             },
 
@@ -1778,7 +1830,6 @@
                     applicationLogApi = application.meta.log,
                     message = application.title + ' was successfully changed.';
 
-                this._reloadApplications();
                 this._notifyAboutApplicationLogChange(applicationLogApi);
                 this._notify(message);
             },
@@ -1905,11 +1956,6 @@
 
                 switch (this.page) {
                     case 'manage-account':
-
-                        if (this.$.appscoDirectoryPage.$) {
-                            this.$.appscoDirectoryPage.reloadAccounts();
-                        }
-
                         this._notify('Account settings for ' + event.detail.account.name + ' were successfully changed.');
 
                         break;
@@ -2517,6 +2563,26 @@
 
                 this._notify(message);
             },
+
+            _reloadCompanyAccounts: function() {
+                if (this.$.appscoDirectoryPage.$) {
+                    this.$.appscoDirectoryPage.reloadAccounts();
+                }
+            },
+
+            _onAccountUpdated: function() {
+
+                switch (this.page) {
+                    case 'manage-account':
+                        this._reloadCompanyAccounts();
+                        break;
+
+                    case 'account':
+
+
+                        break;
+                }
+            },
             /**
              * Manage Account page END
              */
@@ -2846,6 +2912,7 @@
 
                     case 'application':
                     case 'account':
+                    case 'company-home':
                     case 'applications':
                     case 'manage-application':
                     case 'directory':

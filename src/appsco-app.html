@@ -592,6 +592,7 @@
                             name="company-home"
                             authorization-token="[[ authorizationToken ]]"
                             applications-api="[[ companyIconsApi ]]"
+                            on-loaded="_onLoadedApplications"
                     ></appsco-company-home-page>
 
                     <appsco-applications-page
@@ -1252,7 +1253,14 @@
                 'orgunit-removed': '_reloadAccountLog',
                 'company-settings-changed': '_reloadAccountLog',
                 'company-logo-changed': '_reloadAccountLog',
-                'info-edit-application-credentials': '_onEditApplicationCredentials'
+                'info-edit-application-credentials': '_onEditApplicationCredentials',
+                'application-settings-saved': '_reloadApplications',
+                'autologin-changed': '_reloadApplications',
+                'applications-shared': '_reloadApplications',
+                'applications-removed': '_reloadApplications',
+                'access-revoked': '_reloadApplications',
+                'added-to-orgunit': '_reloadApplications',
+                'account-removed-from-orgunit': '_reloadApplications'
             },
 
             attached: function() {
@@ -1579,13 +1587,11 @@
             /**
              * Home page START
              */
-            _onLoadedApplications: function() {
+            _onLoadedApplications: function(event) {
+                var page = event.target;
 
-                if (this.page === 'home' && this.$.appscoHomePage.$) {
-                    this.$.appscoHomePage.setDefaultApplication();
-                }
-                else if (this.page === 'applications' && this.$.appscoApplicationsPage.$) {
-                    this.$.appscoApplicationsPage.setDefaultApplication();
+                if (page.$ && ('home' === this.page || 'company-home' === this.page || 'applications' === this.page)) {
+                    page.initializePage();
                 }
 
             },
@@ -1796,10 +1802,22 @@
 
                         break;
 
+                    case 'applications':
+
+                        if (this.$.appscoCompanyHomePage.$) {
+                            this.$.appscoCompanyHomePage.reloadApplications();
+                        }
+
+                        break;
+
                     case 'manage-application':
 
                         if (this.$.appscoApplicationsPage.$) {
                             this.$.appscoApplicationsPage.reloadApplications();
+                        }
+
+                        if (this.$.appscoCompanyHomePage.$) {
+                            this.$.appscoCompanyHomePage.reloadApplications();
                         }
 
                         break;
@@ -2848,6 +2866,7 @@
 
                 switch (toPage.getAttribute('name')) {
                     case 'home':
+                    case 'company-home':
                     case 'applications':
                     case 'provisioning-settings':
 

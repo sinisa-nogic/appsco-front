@@ -38,34 +38,34 @@ Custom property | Description | Default
             :host {
                 display: inline-block;
                 position: relative;
-            @apply(--appsco-accounts);
-            @apply(--layout-vertical);
-            @apply(--layout-center);
+                @apply(--appsco-accounts);
+                @apply(--layout-vertical);
+                @apply(--layout-center);
 
                 --paper-progress-container-color: var(--body-background-color);
                 --paper-progress-height: 2px;
             }
 
             :host div[accounts] {
-            @apply(--layout-horizontal);
-            @apply(--layout-wrap);
-            @apply(--layout-start);
+                @apply(--layout-horizontal);
+                @apply(--layout-wrap);
+                @apply(--layout-start);
                 margin-right: -10px;
-            @apply(--accounts-container);
+                @apply(--accounts-container);
             }
             :host([company]) div[accounts] {
-            @apply(--layout-vertical);
-            @apply(--layout-start);
+                @apply(--layout-vertical);
+                @apply(--layout-start);
                 margin-right: 0;
             }
             :host appsco-account-item {
                 margin: 0 10px 10px 0;
-            @apply(--appsco-accounts-item);
+                @apply(--appsco-accounts-item);
             }
             :host([company]) appsco-account-item {
                 width: 100%;
                 margin: 0 0 10px 0;
-            @apply(--appsco-accounts-item);
+                @apply(--appsco-accounts-item);
             }
 
             :host .accounts-container {
@@ -94,33 +94,32 @@ Custom property | Description | Default
                 position: absolute;
                 top: 0;
                 left: 0;
-            @apply(--accounts-progress-bar);
+                @apply(--accounts-progress-bar);
             }
             :host paper-button {
                 display: block;
                 width: 120px;
                 margin: 20px auto 0;
                 text-align: center;
-            @apply(--load-more-button);
+                @apply(--load-more-button);
             }
             :host .message {
                 color: var(--secondary-text-color);
                 font-style: italic;
-            @apply(--paper-font-body2);
-            @apply(--info-message);
+                @apply(--paper-font-body2);
+                @apply(--info-message);
             }
         </style>
 
         <div class="accounts-container">
             <iron-ajax
-                    auto
                     id="accountsApiRequest"
-                    url="{{ _accountsApiUrl }}"
+                    url="[[ _accountsApiUrl ]]"
                     on-error="_onError"
                     on-response="_onResponse"
                     headers="[[ _computedHeaders ]]"
                     debounce-duration="300"
-                    ></iron-ajax>
+            ></iron-ajax>
 
             <paper-progress id="paperProgress"
                             class="accounts-progress-bar"
@@ -243,7 +242,8 @@ Custom property | Description | Default
 
                 _accountsApiUrl: {
                     type: String,
-                    computed: '_computeAccountsApiUrl(accountsApi, size)'
+                    computed: '_computeAccountsApiUrl(accountsApi, size)',
+                    observer: '_onAccountsApiUrlChanged'
                 },
 
                 _searchAccountsApiUrl: {
@@ -309,9 +309,9 @@ Custom property | Description | Default
                 Polymer.NeonAnimationRunnerBehavior
             ],
 
-            listeners: {
-                'accounts-api-changed': "_loadAccounts"
-            },
+//            listeners: {
+//                'accounts-api-changed': '_onAccountsApiChanged'
+//            },
 
             ready: function () {
 
@@ -338,17 +338,26 @@ Custom property | Description | Default
                 return accountsApi + '?extended=1&limit=100&term=' + term;
             },
 
+            _onAccountsApiUrlChanged: function(url) {
+
+                if (url && url.length > 0) {
+                    this._loadAccounts();
+                }
+            },
+
             _loadAccounts: function () {
                 this._showProgressBar();
                 this._loadMore = false;
                 this.set('_accounts', []);
                 this.set('_allAccounts', []);
                 this.set('_searchedAccounts', []);
+                this.$.accountsApiRequest.generateRequest();
             },
 
             _loadMoreAccounts: function () {
                 this._showLoadMoreProgressBar();
                 this.$.accountsApiRequest.url = this._next;
+                this.$.accountsApiRequest.generateRequest();
             },
 
             _onError: function() {
@@ -372,9 +381,9 @@ Custom property | Description | Default
 
             _onResponse: function(event) {
                 var response = event.detail.response,
-                        companyRoles = response.company_roles.reverse(),
-                        meta = response.meta,
-                        accountsCount = companyRoles.length - 1;
+                    companyRoles = response.company_roles.reverse(),
+                    meta = response.meta,
+                    accountsCount = companyRoles.length - 1;
 
                 this._totalAccounts = meta.total;
                 this._next = meta.next + "&limit=" + this.size;
@@ -446,10 +455,10 @@ Custom property | Description | Default
 
             _onAccountAction: function(event) {
                 var _accounts = JSON.parse(JSON.stringify(this._accounts)),
-                        _length = _accounts.length,
-                        allAccounts = JSON.parse(JSON.stringify(this._allAccounts)),
-                        allLength = allAccounts.length,
-                        selectedAccount = event.detail.role;
+                    _length = _accounts.length,
+                    allAccounts = JSON.parse(JSON.stringify(this._allAccounts)),
+                    allLength = allAccounts.length,
+                    selectedAccount = event.detail.role;
 
                 for (var j = 0; j < _length; j++) {
                     if (selectedAccount.self === _accounts[j].self) {
@@ -474,7 +483,7 @@ Custom property | Description | Default
 
             getFirstSelectedAccount: function() {
                 var _accounts = JSON.parse(JSON.stringify(this._accounts)),
-                        _length = _accounts.length;
+                    _length = _accounts.length;
 
                 for (var i = 0; i < _length; i++) {
                     if (_accounts[i].selected) {
@@ -487,8 +496,8 @@ Custom property | Description | Default
 
             getSelectedAccounts: function() {
                 var allAccounts = this._allAccounts,
-                        allLength = allAccounts.length,
-                        selectedAccounts = [];
+                    allLength = allAccounts.length,
+                    selectedAccounts = [];
 
                 for (var i = 0; i < allLength; i++) {
                     if (allAccounts[i].selected) {
@@ -517,10 +526,10 @@ Custom property | Description | Default
 
             modifyAccounts: function(accounts) {
                 var _accounts = JSON.parse(JSON.stringify(this._accounts)),
-                        _length = _accounts.length,
-                        allAccounts = JSON.parse(JSON.stringify(this._allAccounts)),
-                        allLength = allAccounts.length,
-                        lengthModify = accounts.length;
+                    _length = _accounts.length,
+                    allAccounts = JSON.parse(JSON.stringify(this._allAccounts)),
+                    allLength = allAccounts.length,
+                    lengthModify = accounts.length;
 
                 for (var i = 0; i < lengthModify; i++) {
                     var account = accounts[i];
@@ -551,16 +560,15 @@ Custom property | Description | Default
             },
 
             reloadAccounts: function() {
-                this.set('_accountsApiUrl', '');
                 this._loadAccounts();
             },
 
             removeAccounts: function(accounts) {
                 var length = accounts.length,
-                        _accounts = this._accounts,
-                        _length = _accounts.length,
-                        allAccounts = this._allAccounts,
-                        allLength = allAccounts.length;
+                    _accounts = this._accounts,
+                    _length = _accounts.length,
+                    allAccounts = this._allAccounts,
+                    allLength = allAccounts.length;
 
                 for (var i = 0; i < length; i++) {
                     var account = accounts[i];
@@ -601,7 +609,7 @@ Custom property | Description | Default
 
             selectAllAccounts: function(select) {
                 var allAccounts = this._allAccounts,
-                        allLength = allAccounts.length;
+                    allLength = allAccounts.length;
 
                 for (var i = 0; i < allLength; i++) {
                     var account = allAccounts[i];
@@ -617,14 +625,14 @@ Custom property | Description | Default
 
             setOrgunit: function(orgunit) {
                 var _accounts = JSON.parse(JSON.stringify(this._accounts)),
-                        _length = _accounts.length,
-                        allAccounts = JSON.parse(JSON.stringify(this._allAccounts)),
-                        allLength = allAccounts.length;
+                    _length = _accounts.length,
+                    allAccounts = JSON.parse(JSON.stringify(this._allAccounts)),
+                    allLength = allAccounts.length;
 
                 for (var i = 0; i < _length; i++) {
                     var account = _accounts[i],
-                            orgunits = account.account.org_units,
-                            length = orgunits.length;
+                        orgunits = account.account.org_units,
+                        length = orgunits.length;
 
                     for (var j = 0; j < length; j++) {
                         if (orgunit.alias === orgunits[j].alias) {
@@ -637,8 +645,8 @@ Custom property | Description | Default
 
                 for (var j = 0; j < allLength; j++) {
                     var account = allAccounts[j],
-                            orgunits = account.account.org_units,
-                            length = orgunits.length;
+                        orgunits = account.account.org_units,
+                        length = orgunits.length;
 
                     for (var k = 0; k < length; k++) {
                         if (orgunit.alias === orgunits[k].alias) {
@@ -683,17 +691,17 @@ Custom property | Description | Default
 
                 return new Promise(function(resolve, reject) {
                     var request = document.createElement('iron-request'),
-                            options = {
-                                url: this._searchAccountsApiUrl,
-                                method: 'GET',
-                                handleAs: 'json',
-                                headers: this._computedHeaders
-                            };
+                        options = {
+                            url: this._searchAccountsApiUrl,
+                            method: 'GET',
+                            handleAs: 'json',
+                            headers: this._computedHeaders
+                        };
 
                     request.send(options).then(function() {
 
                         if (request.response) {
-                            resolve(request.response.company_roles);
+                            resolve(request.response.company_roles.reverse());
                         }
 
                     }, function() {
@@ -704,8 +712,8 @@ Custom property | Description | Default
 
             _filterByTerm: function() {
                 var term = this._filterTerm,
-                        length = this._allAccounts.length,
-                        filterOrgunit = this._filterOrgunit;
+                    length = this._allAccounts.length,
+                    filterOrgunit = this._filterOrgunit;
 
                 if (term.length < 3) {
                     this.set('_searchedAccounts', []);
@@ -775,10 +783,10 @@ Custom property | Description | Default
 
             _filterByOrgunit: function() {
                 var filterOrgunit = this._filterOrgunit,
-                        orgunit = filterOrgunit.orgUnit,
-                        selected = filterOrgunit.selected,
-                        filterTerm = this._filterTerm,
-                        allLength = this._allAccounts.length;
+                    orgunit = filterOrgunit.orgUnit,
+                    selected = filterOrgunit.selected,
+                    filterTerm = this._filterTerm,
+                    allLength = this._allAccounts.length;
 
                 this._showProgressBar();
                 this._accountsEmpty = false;
@@ -795,14 +803,14 @@ Custom property | Description | Default
 
                     if (this._searchedAccounts.length > 0) {
                         var searchedAccounts = this._searchedAccounts,
-                                searchedAccountsLength = searchedAccounts.length,
-                                responseAccounts = [],
-                                responseAccountsLength;
+                            searchedAccountsLength = searchedAccounts.length,
+                            responseAccounts = [],
+                            responseAccountsLength;
 
                         for (var i = 0; i < searchedAccountsLength; i++) {
                             var account = searchedAccounts[i],
-                                    orgunits = account.account.org_units,
-                                    orgunitsLength = orgunits.length;
+                                orgunits = account.account.org_units,
+                                orgunitsLength = orgunits.length;
 
                             for (var j = 0; j < allLength; j++) {
                                 var acc = this._allAccounts[j];
@@ -824,8 +832,8 @@ Custom property | Description | Default
 
                         for (var k = 0; k < responseAccountsLength; k++) {
                             var account = responseAccounts[k],
-                                    orgunits = account.account.org_units,
-                                    orgunitsLength = orgunits.length;
+                                orgunits = account.account.org_units,
+                                orgunitsLength = orgunits.length;
 
                             for (var j = 0; j < orgunitsLength; j++) {
 
@@ -845,8 +853,8 @@ Custom property | Description | Default
 
                         for (var i = 0; i < allLength; i++) {
                             var account = this._allAccounts[i],
-                                    orgunits = account.account.org_units,
-                                    orgunitsLength = orgunits.length;
+                                orgunits = account.account.org_units,
+                                orgunitsLength = orgunits.length;
 
                             for (var j = 0; j < orgunitsLength; j++) {
 
@@ -873,10 +881,10 @@ Custom property | Description | Default
 
             _filterByTermAndOrgunit: function() {
                 var filterOrgunit = this._filterOrgunit,
-                        orgunit = filterOrgunit.orgUnit,
-                        selected = filterOrgunit.selected,
-                        term = this._filterTerm,
-                        allLength = 0;
+                    orgunit = filterOrgunit.orgUnit,
+                    selected = filterOrgunit.selected,
+                    term = this._filterTerm,
+                    allLength = 0;
 
                 this._accountsEmpty = false;
                 this._message = '';
@@ -896,13 +904,13 @@ Custom property | Description | Default
 
                     for (var i = 0; i < allLength; i++) {
                         var account = this._allAccounts[i],
-                                orgunits = account.account.org_units,
-                                orgunitsLength = orgunits.length;
+                            orgunits = account.account.org_units,
+                            orgunitsLength = orgunits.length;
 
                         for (var j = 0; j < orgunitsLength; j++) {
 
                             if (orgunits[j].alias === orgunit.alias &&
-                                    (account.account.name.toLowerCase().indexOf(term.toLowerCase()) >= 0 || account.account.email.toLowerCase().indexOf(term.toLowerCase()) >= 0)) {
+                                (account.account.name.toLowerCase().indexOf(term.toLowerCase()) >= 0 || account.account.email.toLowerCase().indexOf(term.toLowerCase()) >= 0)) {
                                 this.push('_accounts', account);
                                 break;
                             }

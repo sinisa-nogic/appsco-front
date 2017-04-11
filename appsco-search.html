@@ -1,0 +1,254 @@
+<link rel="import" href="../polymer/polymer.html">
+<link rel="import" href="../iron-flex-layout/iron-flex-layout.html">
+<link rel="import" href="../paper-input/paper-input.html">
+<link rel="import" href="../paper-icon-button/paper-icon-button.html">
+<link rel="import" href="../iron-icon/iron-icon.html">
+<link rel="import" href="../iron-icons/iron-icons.html">
+
+<!--
+`appsco-search`
+
+Implements search field used within AppsCo pages.
+
+    <appsco-search label=""
+                   float-label
+                   filter>
+    </appsco-search>
+
+### Styling
+
+`<appsco-search>` provides the following custom properties and mixins for styling:
+
+Custom property | Description | Default
+----------------|-------------|----------
+`--appsco-search` | Mixin for the root element | `{}`
+`--paper-input-search` | Mixin for the inner paper-input element | `{}`
+`--paper-input-prefix` | Mixin for the prefix element in paper-input | `{}`
+`--paper-input-prefix-icon` | Mixin for the prefix icon in paper-input | `{}`
+`--paper-input-focused-prefix` | Mixin for the prefix element when paper-input is focused | `{}`
+`--paper-input-suffix` | Mixin for the suffix element in paper-input | `{}`
+`--paper-input-focused-suffix` | Mixin for the suffix element when paper-input is focused | `{}`
+`--paper-input-color` | Color for input field - input underline, prefix icon and suffix icon | ``
+`--paper-input-focused-color` | Color for focused input field - input underline, prefix icon and suffix icon | `{}`
+
+-->
+
+<dom-module id="appsco-search">
+    <template>
+        <style>
+            :host {
+                display: block;
+                @apply(--layout-horizontal);
+                @apply(--layout-center);
+                @apply(--appsco-search);
+            }
+            paper-icon-button {
+                color: var(--paper-input-color);
+                --paper-icon-button-ink-color: var(--paper-input-color);
+            }
+            paper-input {
+                width: 100%;
+                line-height: 26px;
+                box-sizing: border-box;
+                @apply(--paper-input-search);
+
+                --paper-input-container: {
+                    padding: 0;
+                };
+
+                --paper-input-container-label: {
+                    font-size: 14px;
+                    line-height: 20px;
+                    bottom: 0;
+                    top: initial;
+                };
+
+                --paper-input-container-input: {
+                    font-size: 14px;
+                    line-height: 20px;
+                };
+
+                --paper-input-container-underline-focus: {
+                    border-bottom: 1px solid var(--paper-input-focused-color);
+                };
+            }
+            div[prefix] {
+                height: 20px;
+                margin-right: 4px;
+                @apply(--paper-input-prefix);
+            }
+            div[prefix] iron-icon {
+                width: 18px;
+                height: 18px;
+                margin: 0;
+                @apply(--paper-input-prefix-icon);
+
+                --iron-icon-fill-color: var(--paper-input-color);
+            }
+            paper-input[focused] div[prefix] {
+                @apply(--paper-input-focused-prefix);
+            }
+            paper-input[focused] div[prefix] iron-icon {
+                fill: var(--paper-input-focused-color);
+            }
+            paper-icon-button[suffix] {
+                width: 20px;
+                height: 20px;
+                padding: 0;
+                margin: 0;
+                color: var(--paper-input-color);
+                --paper-icon-button-ink-color: var(--paper-input-color);
+
+                @apply(--paper-input-suffix);
+            }
+            paper-input[focused] paper-icon-button[suffix] {
+                color: var(--paper-input-focused-color);
+                --paper-icon-button-ink-color: var(--paper-input-focused-color);
+
+                @apply(--paper-input-focused-suffix);
+            }
+            :host paper-icon-button::shadow paper-ripple {
+                width: 150%;
+                height: 150%;
+                top: -25%;
+                left: -25%;
+            }
+        </style>
+
+        <paper-input id="searchInput"
+                     label="[[ label ]]"
+                     no-label-float="[[ !floatLabel ]]"
+                     value="{{ _searchValue }}"
+                     tabindex="1"
+                     on-focus="_onFocus"
+                     on-input="_onSearch">
+
+            <div prefix>
+                <iron-icon icon="icons:search"></iron-icon>
+            </div>
+
+            <template is="dom-if" if="[[ _clearSearch ]]">
+                <paper-icon-button id="clear"
+                                   icon="icons:clear"
+                                   suffix
+                                   on-tap="_onClearSearch"></paper-icon-button>
+            </template>
+
+        </paper-input>
+
+    </template>
+
+    <script>
+        Polymer({
+
+            is: 'appsco-search',
+
+            properties: {
+
+                label: {
+                    type: String,
+                    value: 'Search'
+                },
+
+                floatLabel: {
+                    type: Boolean,
+                    value: false
+                },
+
+                filter: {
+                    type: Boolean,
+                    value: false
+                },
+
+                _searchValue: {
+                    type: String,
+                    value: ''
+                },
+
+                _clearSearch: {
+                    type: Boolean,
+                    value: false
+                },
+
+                _searchDebounce: {
+                    type: Number,
+                    value: 0
+                }
+            },
+
+            _computeHeaders: function(authorizationToken) {
+                return {
+                    'Authorization': 'token ' + authorizationToken,
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                }
+            },
+
+            _onFocus: function() {
+                this.fire('focus');
+            },
+
+            _onSearch: function(event) {
+                var value = this._searchValue,
+                    length = value.length;
+
+                if (this._searchDebounce > 0) {
+                    clearTimeout(this._searchDebounce);
+                }
+
+                this._searchDebounce = setTimeout(function() {
+                    this.set('_clearSearch', (length > 0));
+
+                    /**
+                     * Fired when user searches with more than 3 characters.
+                     *
+                     * @event search
+                     * @param {String} term
+                     */
+                    this.fire('search', {
+                        term: value
+                    });
+
+                }.bind(this), 300);
+            },
+
+            _onClearSearch: function() {
+                this.reset();
+                this.setup();
+
+                /**
+                 * Fired when user triggers clear search action.
+                 *
+                 * @event search-clear
+                 */
+                this.fire('search-clear');
+            },
+
+            getValue: function() {
+                return this._searchValue;
+            },
+
+            setValue: function(value) {
+                this._searchValue = value;
+
+                this.set('_clearSearch', (value.length > 0));
+            },
+
+            /**
+             * Sets focus on search input field.
+             */
+            setup: function() {
+                this.$.searchInput.$.input.focus();
+            },
+
+            /**
+             * Resets search component.
+             * Sets input value to empty string.
+             * Removes clear search action.
+             */
+            reset: function() {
+                this._searchValue = '';
+                this._clearSearch = false;
+            }
+        });
+    </script>
+</dom-module>

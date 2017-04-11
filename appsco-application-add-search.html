@@ -1,6 +1,5 @@
 <link rel="import" href="../polymer/polymer.html">
 <link rel="import" href="../iron-flex-layout/iron-flex-layout.html">
-<link rel="import" href="../paper-input/paper-input.html">
 <link rel="import" href="../iron-image/iron-image.html">
 <link rel="import" href="../paper-button/paper-button.html">
 <link rel="import" href="../paper-dialog/paper-dialog.html">
@@ -13,6 +12,7 @@
 
 <link rel="import" href="../appsco-components/appsco-loader.html">
 <link rel="import" href="appsco-application-card.html">
+<link rel="import" href="../appsco-components/appsco-search.html">
 
 <!--
 `appsco-application-add-search`
@@ -42,17 +42,12 @@ Custom property | Description | Default
             :host {
                 display: block;
             }
-            paper-input {
-            --paper-input-container-label: {
-                 left: 4px;
-             };
-            --paper-input-container-input: {
-                 padding: 0 4px;
-             };
+            appsco-search {
+                margin-bottom: 10px;
             }
             .application-list {
-            @apply(--layout-horizontal);
-            @apply(--layout-wrap);
+                @apply(--layout-horizontal);
+                @apply(--layout-wrap);
                 padding: 2px;
                 margin-right: -8px;
             }
@@ -64,8 +59,8 @@ Custom property | Description | Default
                 margin: 0;
                 color: var(--secondary-text-color);
                 font-style: italic;
-            @apply(--paper-font-body2);
-            @apply(--info-message);
+                @apply(--paper-font-body2);
+                @apply(--info-message);
             }
             :host .or-add-container {
                 color: var(--secondary-text-color);
@@ -81,15 +76,15 @@ Custom property | Description | Default
                 background-color: transparent;
                 font-size: inherit;
                 text-transform: uppercase;
-            @apply(--link-button);
+                @apply(--link-button);
             }
         </style>
 
-        <paper-input id="search"
-                     label="search applications"
-                     error-message="Please type three or more letters."
-                     on-keyup="_search">
-        </paper-input>
+        <appsco-search id="appscoSearch"
+                       label="Search applications"
+                       float-label
+                       on-search="_onSearch"
+                       on-search-clear="_onSearchClear"></appsco-search>
 
         <div class="application-list">
 
@@ -181,6 +176,11 @@ Custom property | Description | Default
                     value: 12
                 },
 
+                _computedHeaders: {
+                    type: Object,
+                    computed: '_computeHeaders(authorizationToken)'
+                },
+
                 _searchActive: {
                     type: Boolean,
                     value: false
@@ -243,18 +243,22 @@ Custom property | Description | Default
                 Polymer.NeonSharedElementAnimatableBehavior
             ],
 
+            _computeHeaders: function (authorizationToken) {
+                return {
+                    'Authorization': 'token ' + authorizationToken,
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                }
+            },
+
             /**
              * Gets applications by term.
              *
              * @param {Object} event
              * @private
              */
-            _search: function(event) {
-                var regexpBackspace = /^Backspace$/i,
-                        regexpAlphanumeric = /^\w$/,
-                        searchValue = this.$.search.value,
-                        searchLength = searchValue.length,
-                        me = this;
+            _onSearch: function(event) {
+                var searchValue = event.detail.term,
+                    searchLength = searchValue.length;
 
                 this._loader = true;
                 this._searchActive = true;
@@ -269,10 +273,7 @@ Custom property | Description | Default
                     return;
                 }
 
-                if (
-                        searchLength < 3 ||
-                        !(regexpAlphanumeric.test(event.key) || regexpBackspace.test(event.key))
-                ) {
+                if (searchLength < 3) {
                     this._message = 'Please type three or more letters.';
                     this._loader = false;
                     this.set('_searchList', []);
@@ -281,7 +282,7 @@ Custom property | Description | Default
                 }
 
                 var request = document.createElement('iron-request'),
-                        url = this.applicationsTemplateApi + '?extended=1&limit=' + this.size + '&term=' + searchValue;
+                    url = this.applicationsTemplateApi + '?extended=1&limit=' + this.size + '&term=' + searchValue;
 
                 this._message = '';
 
@@ -289,25 +290,31 @@ Custom property | Description | Default
                     url: url,
                     method: 'GET',
                     handleAs: 'json',
-                    headers: {
-                        'Authorization': 'token ' + this.authorizationToken
-                    }
+                    headers: this._computedHeaders
                 };
 
                 request.send(options).then(function() {
                     var applications = request.response.applications;
 
                     if (applications && applications.length > 0) {
-                        me.set('_searchList', applications);
-                        me._customApplicationAction = false;
+                        this.set('_searchList', applications);
+                        this._customApplicationAction = false;
                     }
                     else {
-                        me.set('_searchList', []);
-                        me._message = 'There are no applications with asked title. Please check your input.';
-                        me._showCustomApplicationAction()   ;
+                        this.set('_searchList', []);
+                        this._message = 'There are no applications with asked title. Please check your input.';
+                        this._showCustomApplicationAction()   ;
                     }
 
-                    me._loader = false;
+                    this._loader = false;
+                }.bind(this));
+            },
+
+            _onSearchClear: function() {
+                this._onSearch({
+                    detail: {
+                        term: ''
+                    }
                 });
             },
 
@@ -365,14 +372,14 @@ Custom property | Description | Default
              * Sets focus on search input.
              */
             setup: function() {
-                this.$.search.focus();
+                this.$.appscoSearch.setup();
             },
 
             /**
              * Resets component.
              */
             reset: function() {
-                this.$.search.value = '';
+                this.$.appscoSearch.reset();
                 this._searchList = [];
                 this._searchActive = false;
                 this._message = '';

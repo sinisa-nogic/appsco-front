@@ -1,9 +1,7 @@
 <link rel="import" href="../polymer/polymer.html">
 <link rel="import" href="../iron-ajax/iron-ajax.html">
 <link rel="import" href="../iron-flex-layout/iron-flex-layout.html">
-<link rel="import" href="../paper-input/paper-input.html">
 <link rel="import" href="../paper-icon-button/paper-icon-button.html">
-<link rel="import" href="../iron-icon/iron-icon.html">
 <link rel="import" href="../iron-icons/iron-icons.html">
 <link rel="import" href="../iron-icons/social-icons.html">
 <link rel="import" href="../paper-styles/typography.html">
@@ -16,6 +14,7 @@
 <link rel="import" href="../neon-animation/animations/fade-out-animation.html">
 
 <link rel="import" href="../paper-dropdown-menu/paper-dropdown-menu.html">
+<link rel="import" href="../appsco-components/appsco-search.html">
 
 <!--
 `appsco-application-actions`
@@ -38,7 +37,6 @@ Custom property | Description | Default
 `--appsco-application-actions` | Mixin for the root element | `{}`
 `--application-action` | Mixin for the action div container | `{}`
 `--add-application-button` | Mixin for add application action button | `{}`
-`--paper-input-focused-prefix` | Mixin for input prefix when input is in focused state | `{}`
 `--application-actions-tooltip` | Mixin for action's tooltip | `{}`
 
 @demo demo/appsco-application-actions.html
@@ -62,6 +60,9 @@ Custom property | Description | Default
                     @apply(--applications-actions-paper-dropdown-menu-button);
                 };
             }
+            appsco-search {
+                max-width: 200px;
+            }
             paper-icon-button {
                 color: var(--application-action-icon-color);
                 --paper-icon-button-ink-color: var(--application-action-icon-color);
@@ -81,12 +82,6 @@ Custom property | Description | Default
             }
             :host .bulk-action[hidden] {
                 display: none !important;
-            }
-            :host .action-search {
-                @apply(--paper-input-search-container);
-            }
-            :host .action-search paper-input {
-                max-width: 184px;
             }
             paper-dropdown-menu {
                 --paper-input-container-underline: {
@@ -112,31 +107,6 @@ Custom property | Description | Default
             :host paper-item:hover {
                 @apply(--paper-item-hover);
             }
-            div[prefix] iron-icon {
-                width: 18px;
-                height: 18px;
-                @apply(--input-search-prefix);
-
-                --iron-icon-fill-color: var(--paper-input-prefix-icon-fill-color);
-            }
-            paper-input[focused] div[prefix] {
-                @apply(--paper-input-focused-prefix);
-            }
-            paper-input[focused] div[prefix] iron-icon {
-                fill: var(--paper-input-focused-prefix-icon-fill-color);
-            }
-            paper-icon-button[suffix] {
-                width: 20px;
-                height: 20px;
-                padding: 0;
-                color: var(--paper-input-suffix-icon-fill-color);
-                --paper-icon-button-ink-color: var(--paper-input-suffix-icon-fill-color);
-            }
-            paper-input[focused] paper-icon-button[suffix] {
-                color: var(--paper-input-focused-suffix-icon-fill-color);
-                --paper-icon-button-ink-color: var(--paper-input-focused-suffix-icon-fill-color);
-                @apply(--paper-input-focused-sufix);
-            }
             :host .add-application-button {
                 @apply(--add-application-button);
             }
@@ -146,9 +116,6 @@ Custom property | Description | Default
             }
             :host .flex-none {
                 @apply(--layout-flex-none);
-            }
-            :host .action-search paper-input {
-                @apply(--paper-input-search);
             }
             :host paper-icon-button::shadow paper-ripple {
                 width: 150%;
@@ -179,22 +146,8 @@ Custom property | Description | Default
         ></iron-ajax>
 
         <div class="action action-search flex-none">
-            <paper-input label="Filter applications"
-                         on-keyup="_search"
-                         id="search"
-                         no-label-float
-                         tabindex="1">
-                <div prefix>
-                    <iron-icon icon="search"
-                               on-tap="_onSearchIcon"></iron-icon>
-                </div>
-
-                <template is="dom-if" if="[[ _clear ]]">
-                    <paper-icon-button class="clear-icon" id="clear" suffix icon="clear"
-                                       on-tap="_clearSearch"></paper-icon-button>
-                </template>
-
-            </paper-input>
+            <appsco-search id="appscoSearch"
+                           label="Search applications"></appsco-search>
         </div>
 
         <template is="dom-if" if="[[ !company ]]">
@@ -304,11 +257,6 @@ Custom property | Description | Default
                     value: function () {
                         return [{name: "All applications", value: 0}];
                     }
-                },
-
-                _clear: {
-                    type: Boolean,
-                    value: false
                 },
 
                 /**
@@ -431,40 +379,6 @@ Custom property | Description | Default
                 })
             },
 
-
-            _search: function() {
-
-                if (this._searchDebounce > 0) {
-                    clearTimeout(this._searchDebounce);
-                }
-
-                this._searchDebounce = setTimeout(function() {
-                    this.set('_clear', (this.$.search.value.length > 0));
-
-                    if (this.$.search.value.length < 3) {
-                        this.fire('search', {
-                            term: ''
-                        });
-                        return;
-                    }
-
-                    /**
-                     * Fired when user searches. Below 3 chars is empty
-                     *
-                     * @event search
-                     * @param {Object} filter {term: search_term}
-                     */
-                    this.fire('search', {
-                        term: this.$.search.value
-                    });
-                }.bind(this), 300);
-            },
-
-            _clearSearch: function () {
-                this.$.search.value = '';
-                this._search();
-            },
-
             _handleResponse: function (e) {
                 var me = this,
                     response = e.detail.response;
@@ -584,15 +498,11 @@ Custom property | Description | Default
                 this.fire('deselect-all');
             },
 
-            _onSearchIcon: function() {
-                this.fire('search-icon');
-            },
-
             /**
              * Sets focus on search input field.
              */
             focusSearch: function() {
-                this.$.search.$.input.focus();
+                this.$.appscoSearch.setup();
             },
 
             reloadDashboardFilter: function() {
@@ -657,8 +567,7 @@ Custom property | Description | Default
             },
 
             reset: function() {
-                this.$.search.value = '';
-                this._clear = false;
+                this.$.appscoSearch.reset();
 
                 if (!this.company) {
                     this.$$('#groupList').selected = 0;

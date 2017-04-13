@@ -78,6 +78,9 @@
                 padding-bottom: 10px;
                 text-align: center;
             }
+            paper-toggle-button {
+                cursor: pointer;
+            }
         </style>
 
         <paper-dialog id="dialog"
@@ -99,9 +102,9 @@
                     <appsco-form-error message="[[ _error ]]"></appsco-form-error>
 
                     <form is="iron-form"
-                          id="addAccountForm"
+                          id="createInvitationForm"
                           method="POST"
-                          action="[[ directoryRolesApi ]]"
+                          action="[[ directoryInvitationsApi ]]"
                           headers="[[ _headers ]]"
                           on-iron-form-error="_onFormError"
                           on-iron-form-response="_onFormResponse">
@@ -116,7 +119,7 @@
                                     <paper-input
                                             id="accountFirstName"
                                             label="First name"
-                                            name="register_account[firstName]"
+                                            name="invitation[first_name]"
                                             required
                                             auto-validate
                                             error-message="Please provide first name."
@@ -126,7 +129,7 @@
                                     <paper-input
                                             id="accountLastName"
                                             label="Last name"
-                                            name="register_account[lastName]"
+                                            name="invitation[last_name]"
                                             required
                                             auto-validate
                                             error-message="Please provide last name."
@@ -142,20 +145,20 @@
                                     <gold-email-input id="accountEmail"
                                                       label="Email"
                                                       value=""
-                                                      name="register_account[email]"
+                                                      name="invitation[email]"
                                                       required
                                                       auto-validate
                                                       error-message="Please provide valid email."></gold-email-input>
                                 </div>
                                 <div class="baseline">
                                     <paper-toggle-button id="sendActivationEmail"
-                                                         name="register_account[sendActivationMail]">Send Activation Email</paper-toggle-button>
+                                                         name="invitation[notify]">Send Activation Email</paper-toggle-button>
                                 </div>
                             </div>
 
-                            <paper-input name="register_account[companyRoles][COMPANY_ROLE_EMPLOYEE]"
-                                         value="COMPANY_ROLE_EMPLOYEE"
-                                         hidden></paper-input>
+                            <!--<paper-input name="register_account[companyRoles][COMPANY_ROLE_EMPLOYEE]"-->
+                                         <!--value="COMPANY_ROLE_EMPLOYEE"-->
+                                         <!--hidden></paper-input>-->
                         </div>
                     </form>
                 </div>
@@ -185,7 +188,7 @@
                     type: String
                 },
 
-                directoryRolesApi: {
+                directoryInvitationsApi: {
                     type: String
                 },
 
@@ -235,7 +238,7 @@
             _onDialogClosed: function() {
                 this._loader = false;
                 this._error = '';
-                this.$.addAccountForm.reset();
+                this.$.createInvitationForm.reset();
             },
 
             _onEnter: function() {
@@ -243,7 +246,7 @@
             },
 
             _submitForm: function() {
-                var form = this.$.addAccountForm;
+                var form = this.$.createInvitationForm;
 
                 if (form.validate()) {
                     this._loader = true;
@@ -257,13 +260,16 @@
             },
 
             _onFormResponse: function(event) {
+                var response = event.detail.response,
+                    invitation = response && response.length > 0 ? response[0] : null;
+
                 this.$.dialog.close();
 
                 /**
-                 * @event account-added
+                 * @event invitation-created
                  */
-                this.fire('account-added', {
-                    account: event.detail.response
+                this.fire('invitation-created', {
+                    invitation: invitation
                 });
             }
         });

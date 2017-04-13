@@ -63,6 +63,7 @@
 
 <link rel="import" href="directory/appsco-directory-page-actions.html">
 <link rel="import" href="directory/appsco-manage-account-page-actions.html">
+<link rel="import" href="../bower_components/appsco-account/appsco-invitation-remove.html">
 <link rel="import" href="directory/appsco-directory-add-account.html">
 <link rel="import" href="directory/appsco-directory-import-accounts.html">
 
@@ -645,9 +646,12 @@
                             selected-accounts="{{ _selectedAccounts }}"
                             authorization-token="[[ authorizationToken ]]"
                             computed-headers="[[ _computedHeaders ]]"
+                            company-invitations-api="[[ companyDirectoryInvitationsApi ]]"
                             company-directory-roles-api="[[ companyDirectoryRolesApi ]]"
                             company-orgunits-api="[[ companyOrgunitsApi ]]"
                             subscription-api="[[ _subscriptionApi ]]"
+                            on-invitation-resent="_onInvitationResent"
+                            on-remove-invitation="_onRemoveInvitation"
                             on-show-subscription-limit-reached-info="_onShowSubscriptionLimitReachedInfo"
                             on-hide-subscription-limit-reached-info="_onHideSubscriptionLimitReachedInfo"
                             on-edit-account="_onEditAccount"
@@ -894,11 +898,18 @@
                 on-applications-removed="_onApplicationsRemoved"
                 on-applications-remove-failed="_onApplicationsRemoveFailed"></appsco-company-application-remove>
 
+        <appsco-invitation-remove
+                id="appscoInvitationRemove"
+                authorization-token="[[ authorizationToken ]]"
+                on-invitation-removed="_onInvitationRemoved"
+                on-invitation-already-removed="_onInvitationAlreadyRemoved">
+        </appsco-invitation-remove>
+
         <appsco-directory-add-account
                 id="appscoDirectoryAccountAdd"
                 authorization-token="[[ authorizationToken ]]"
-                directory-roles-api="[[ companyDirectoryRolesApi ]]"
-                on-account-added="_onAccountAdded">
+                directory-invitations-api="[[ companyDirectoryInvitationsApi ]]"
+                on-invitation-created="_onInvitationCreated">
         </appsco-directory-add-account>
 
         <appsco-directory-import-accounts
@@ -1151,6 +1162,11 @@
                 },
 
                 companyApplicationsApi: {
+                    type: String,
+                    value: ''
+                },
+
+                companyDirectoryInvitationsApi: {
                     type: String,
                     value: ''
                 },
@@ -1539,6 +1555,7 @@
 
                 this.companyApi = company;
                 this.companyApplicationsApi = company + '/applications';
+                this.companyDirectoryInvitationsApi = company + '/invitation';
                 this.companyDirectoryRolesApi = company + '/directory/roles';
                 this.companyDirectoryImportAccounts = company + '/directory/roles/import';
                 this.companyOrgunitsApi = company + '/org-units?extended=1';
@@ -2398,6 +2415,32 @@
             /**
              * Directory page START
              */
+            _onInvitationResent: function(event) {
+                this._notify('Invitation for account ' + event.detail.invitation.email + ' has been sent.');
+            },
+
+            _onRemoveInvitation: function(event) {
+                var invitationDeleteComponent = this.$.appscoInvitationRemove;
+
+                invitationDeleteComponent.setInvitation(event.detail.invitation);
+                invitationDeleteComponent.open();
+            },
+
+            _onInvitationRemoved: function(event) {
+                var invitation = event.detail.invitation;
+
+                this.$.appscoDirectoryPage.removeInvitations([invitation]);
+                this._notify('Invitation for account ' + invitation.email + ' has been removed.');
+
+            },
+
+            _onInvitationAlreadyRemoved: function(event) {
+                var invitation = event.detail.invitation;
+
+                this.$.appscoDirectoryPage.removeInvitations([invitation]);
+                this._notify('Invitation for account ' + invitation.email + ' has already been removed.');
+            },
+
             _evaluateSubscriptionLicences: function() {
 
                 if (this.$.appscoDirectoryPage.$) {
@@ -2420,9 +2463,8 @@
                 this.$.appscoDirectoryImportAccounts.toggle();
             },
 
-            _onAccountAdded: function(event) {
-                this.$.appscoDirectoryPage.addAccounts([event.detail.account]);
-                this._reloadProvisioningIntegrationAccounts();
+            _onInvitationCreated: function(event) {
+                this.$.appscoDirectoryPage.addInvitations([event.detail.invitation]);
             },
             
             _onAccountsAdded: function(e) {

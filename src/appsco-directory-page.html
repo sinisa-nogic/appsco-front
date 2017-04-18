@@ -14,6 +14,8 @@
 <link rel="import" href="../bower_components/appsco-account/appsco-account-log.html">
 <link rel="import" href="../bower_components/appsco-orgunit/appsco-orgunit-tree.html">
 
+<link rel="import" href="../bower_components/appsco-account/appsco-invitations.html">
+
 <dom-module id="appsco-directory-page">
     <template>
         <style include="shared-styles webkit-scrollbar-style">
@@ -179,17 +181,29 @@
             </div>
 
             <div content>
-                <appsco-accounts
-                        id="appscoAccounts"
-                        size="100"
-                        load-more
-                        company
-                        authorization-token="[[ authorizationToken ]]"
-                        accounts-api="[[ companyDirectoryRolesApi ]]"
-                        on-edit="_onAccountEdit"
-                        on-account="_onAccount"
-                        on-loaded="_onAccountsLoaded"
-                        on-empty-load="_pageLoaded"></appsco-accounts>
+
+                <div class="directory-container">
+                    <appsco-invitations
+                            id="appscoInvitations"
+                            size="100"
+                            authorization-token="[[ authorizationToken ]]"
+                            invitations-api="[[ companyInvitationsApi ]]"
+                            on-remove="_onRemoveInvitation"
+                            on-empty-load="_pageLoaded"></appsco-invitations>
+
+                    <appsco-accounts
+                            id="appscoAccounts"
+                            size="100"
+                            load-more
+                            company
+                            authorization-token="[[ authorizationToken ]]"
+                            accounts-api="[[ companyDirectoryRolesApi ]]"
+                            on-edit="_onAccountEdit"
+                            on-account="_onAccount"
+                            on-loaded="_onAccountsLoaded"
+                            on-empty-load="_pageLoaded"></appsco-accounts>
+                </div>
+
             </div>
 
             <div class="flex-vertical" info>
@@ -310,6 +324,14 @@
                     value: function() {
                         return {};
                     }
+                },
+
+                /**
+                 * Get company invitations.
+                 */
+                companyInvitationsApi: {
+                    type: String,
+                    value: ''
                 },
 
                 /**
@@ -434,6 +456,12 @@
 
             _loadLog: function() {
                 this.$.accountLog.loadLog();
+            },
+
+            _onRemoveInvitation: function(event) {
+                this.fire('remove-invitation', {
+                    invitation: event.detail.invitation
+                });
             },
 
             _onAccountsLoaded: function() {
@@ -584,6 +612,14 @@
 
             removeOrgunit: function(orgunit) {
                 this.$.appscoOrgunitTree.removeOrgunit(orgunit);
+            },
+
+            addInvitations: function(invitations) {
+                this.$.appscoInvitations.addInvitations(invitations);
+            },
+
+            removeInvitations: function(invitations) {
+                this.$.appscoInvitations.removeInvitations(invitations);
             },
 
             addAccounts: function(accounts) {

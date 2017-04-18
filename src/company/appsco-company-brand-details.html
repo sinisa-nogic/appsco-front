@@ -33,6 +33,11 @@ Custom property | Description | Default
         <style>
             :host {
                 display: none;
+
+                --preview-brand-color: var(--brand-color);
+                --preview-brand-text-color: var(--brand-text-color);
+                --preview-brand-border: var(--border-color);
+                --preview-brand-text-border: var(--border-color);
             }
             :host > div {
                 margin: 6px 0;
@@ -58,12 +63,14 @@ Custom property | Description | Default
             :host .brand-color {
                 width: 70px;
                 height: 15px;
-                background-color: var(--app-primary-color);
+                background-color: var(--preview-brand-color);
+                border: 1px solid var(--preview-brand-border);
             }
             :host .brand-text-color {
                 width: 70px;
                 height: 15px;
-                background-color: var(--primary-text-color);
+                background-color: var(--preview-brand-text-color);
+                border: 1px solid var(--preview-brand-text-border);
             }
             :host .company-logo {
                 width: 70px;
@@ -148,31 +155,16 @@ Custom property | Description | Default
             ],
 
             _onCompanyChanged: function(company) {
-                var brandColorPreview = this.$$('#brandColor'),
-                    brandTextColorPreview = this.$$('#brandTextColor');
+                var brandColor = company.primary_color,
+                    brandTextColor = company.secondary_color;
 
-                if (company && company.primary_color) {
-                    brandColorPreview.style.backgroundColor = company.primary_color;
+                this.customStyle['--preview-brand-color'] = (company && brandColor) ? brandColor : 'var(--brand-color)';
+                this.customStyle['--preview-brand-border'] = (!brandColor || '#fff' === brandColor || '#ffffff' === brandColor) ? 'var(--border-color)' : 'transparent';
 
-                    if ('#fff' === company.primary_color || '#ffffff' === company.primary_color) {
-                        brandColorPreview.style.border = '1px solid #000000';
-                    }
-                    else {
-                        brandColorPreview.style.border = 'none';
-                    }
-                }
+                this.customStyle['--preview-brand-text-color'] = (company && brandTextColor) ? brandTextColor : 'var(--brand-text-color)';
+                this.customStyle['--preview-brand-text-border'] = (!brandTextColor || '#fff' === brandTextColor || '#ffffff' === brandTextColor) ? 'var(--border-color)' : 'transparent';
 
-                if (company && company.secondary_color) {
-                    brandTextColorPreview.style.backgroundColor = company.secondary_color;
-
-                    if ('#fff' === company.secondary_color || '#ffffff' === company.secondary_color) {
-                        brandTextColorPreview.style.border = '1px solid #000000';
-                    }
-                    else {
-                        brandTextColorPreview.style.border = 'none';
-                    }
-                }
-
+                this.updateStyles();
                 this._showDetails();
             },
 

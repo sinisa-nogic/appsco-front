@@ -1,27 +1,31 @@
 <link rel="import" href="../../polymer/polymer.html">
 <link rel="import" href="../../iron-flex-layout/iron-flex-layout.html">
-<link rel="import" href="../../paper-styles/typography.html">
-<link rel="import" href="../../paper-styles/shadow.html">
-<link rel="import" href="../../paper-button/paper-button.html">
-<link rel="import" href="../../iron-icon/iron-icon.html">
-<link rel="import" href="../../iron-icons/iron-icons.html">
-<link rel="import" href="../../paper-input/paper-input.html">
+<link rel="import" href="../../paper-input/paper-textarea.html">
 <link rel="import" href="../../iron-image/iron-image.html">
-<link rel="import" href="../../iron-ajax/iron-request.html">
+<link rel="import" href="../../paper-button/paper-button.html">
 <link rel="import" href="../../paper-dialog/paper-dialog.html">
 <link rel="import" href="../../paper-dialog-scrollable/paper-dialog-scrollable.html">
+<link rel="import" href="../../iron-ajax/iron-ajax.html">
+<link rel="import" href="../../iron-ajax/iron-request.html">
+<link rel="import" href="../../neon-animation/neon-animated-pages.html">
+<link rel="import" href="../../neon-animation/neon-animation-runner-behavior.html">
 <link rel="import" href="../../neon-animation/animations/scale-up-animation.html">
+<link rel="import" href="../../neon-animation/animations/fade-in-animation.html">
+<link rel="import" href="../../neon-animation/animations/fade-out-animation.html">
+<link rel="import" href="../../iron-a11y-keys/iron-a11y-keys.html">
 
-<link rel="import" href="../../appsco-components/appsco-loader.html">
-<link rel="import" href="../../appsco-components/appsco-form-error.html">
-<link rel="import" href="../appsco-application-card.html">
+<link rel="import" href="appsco-company-application-add-search.html">
+<link rel="import" href="appsco-company-application-add-settings.html">
 
 <!--
 `appsco-company-application-add`
-Provides functionality of adding applications to company.
+Is used to support adding new application process.
 
-    <appsco-company-application-add>
-    </appsco-company-application-add>
+Example:
+    <body>
+        <appsco-company-application-add>
+        </appsco-company-application-add>
+
 
 ### Styling
 
@@ -29,9 +33,12 @@ Provides functionality of adding applications to company.
 
 Custom property | Description | Default
 ----------------|-------------|----------
-`--appsco-company-application-add` | Mixin for the root element | `{}`
+`--neon-animated-pages` | Mixin for pages inside neon-animated-pages element | `{}`
+`--appsco-paper-dialog` | Mixin for inner dialog | `{}`
+`--paper-dialog-scrollable-child` | Mixin applied to elements inside scrollable content of paper-dialog | `{}`
+`--paper-dialog-confirm-button` | Mixin applied to Confirm action inside paper-dialog | `{}`
+`--paper-dialog-dismiss-button` | Mixin applied to Dismiss action inside paper-dialog | `{}`
 
-@demo demo/company/appsco-company-application-add.html
 -->
 
 <dom-module id="appsco-company-application-add">
@@ -39,118 +46,112 @@ Custom property | Description | Default
         <style>
             :host {
                 display: block;
-                position: relative;
-            @apply(--appsco-company-application-add);
             }
             :host paper-dialog {
                 width: 670px;
                 top: 20vh;
-            @apply(--appsco-paper-dialog);
+                @apply(--appsco-paper-dialog);
             }
             :host paper-dialog-scrollable > * {
             @apply(--paper-dialog-scrollable-child);
             }
-            :host paper-input {
-            --paper-input-container-label: {
-                 left: 4px;
-             };
-            --paper-input-container-input: {
-                 padding: 0 4px;
-             };
+            :host neon-animated-pages > * {
+            @apply(--neon-animated-pages);
             }
-            .application-list {
-            @apply(--layout-horizontal);
-            @apply(--layout-wrap);
-                padding: 2px;
-                margin-right: -8px;
+            :host neon-animated-pages > .iron-selected {
+                position: relative;
             }
-            appsco-application-card {
-                margin-right: 6px;
-                margin-bottom: 6px;
+            appsco-loader {
+                margin: 0 !important;
+                padding: 0 !important;
             }
-            .selected-application {
-            --application-card: {
-                 padding-right: 10px;
-                 width: 136px;
-             };
-            }
-            :host .message {
-                margin: 0;
-                color: var(--secondary-text-color);
-                font-style: italic;
-            @apply(--paper-font-body2);
-            @apply(--info-message);
+            :host .buttons {
+                padding-right: 24px;
             }
             :host .buttons paper-button {
             @apply(--paper-dialog-button);
             }
-            :host .buttons paper-button[dialog-confirm] {
-            @apply(--paper-dialog-confirm-button);
+            :host .buttons paper-button.add-action {
+                margin: 0 0 0 10px;
+                display: none;
+                @apply(--paper-dialog-confirm-button);
             }
             :host .buttons paper-button[dialog-dismiss] {
-            @apply(--paper-dialog-dismiss-button);
+                @apply(--paper-dialog-dismiss-button);
             }
         </style>
 
-        <paper-dialog id="dialog"
-                      with-backdrop
-                      entry-animation="scale-up-animation"
-                      exit-animation="fade-out-animation"
-                      on-iron-overlay-opened="_onDialogOpened"
-                      on-iron-overlay-closed="_onDialogClosed">
+        <iron-ajax auto
+                   url="[[ linkApi ]]"
+                   on-response="_onLinkResponse"
+                   headers="[[ _computedHeaders ]]">
+        </iron-ajax>
 
-            <h2>Add one or more applications</h2>
+        <iron-ajax auto
+                   url="[[ itemApi ]]"
+                   on-response="_onItemResponse"
+                   headers="[[ _computedHeaders ]]">
+        </iron-ajax>
+
+        <paper-dialog
+                with-backdrop
+                id="addApplicationDialog"
+                entry-animation="scale-up-animation"
+                exit-animation="fade-out-animation"
+                on-iron-overlay-opened="_onDialogOpened"
+                on-iron-overlay-closed="_onDialogClosed">
+
+            <h2>[[ _dialogTitle ]]</h2>
+
+            <appsco-loader active="[[ _loader ]]" loader-alt="Appsco is processing request" multi-color></appsco-loader>
 
             <paper-dialog-scrollable>
-                <div class="dialog-container">
+                <neon-animated-pages class="flex"
+                                     selected="{{ _selected }}"
+                                     attr-for-selected="name"
+                                     on-neon-animation-finish="_onPageAnimationFinish">
 
-                    <appsco-loader active="[[ _addLoader ]]"
-                                   loader-alt="Appsco is adding applications"
-                                   multi-color></appsco-loader>
+                    <appsco-company-application-add-search
+                            id="appscoApplicationAddSearch"
+                            name="appsco-application-add-search"
+                            authorization-token="[[ authorizationToken ]]"
+                            applications-template-api="[[ applicationsTemplateApi ]]"
+                            selected-application="{{ _selectedApplication }}"
+                            on-application-select="_onApplicationSelect"
+                            on-add-item="_onAddItem"
+                            on-add-link="_onAddLink">
+                    </appsco-company-application-add-search>
 
-                    <div class="application-list">
+                    <appsco-company-application-add-settings
+                            id="appscoApplicationAddSettings"
+                            name="appsco-application-add-settings"
+                            application="[[ _selectedApplication ]]"
+                            authorization-token="[[ authorizationToken ]]"
+                            add-application-api="[[ addApplicationApi ]]"
+                            loader="{{ _loader }}"
+                            on-application-added="_onApplicationAdded">
+                    </appsco-company-application-add-settings>
 
-                        <appsco-form-error message="[[ _error ]]"></appsco-form-error>
-
-                        <template is="dom-repeat" items="[[ _selectedApplications ]]">
-                            <appsco-application-card class="selected-application"
-                                                     application="[[ item ]]"
-                                                     remove-action
-                                                     on-selected="_onAddedApplicationSelect"></appsco-application-card>
-                        </template>
-                    </div>
-
-                    <paper-input id="search"
-                                 label="search applications"
-                                 error-message="Please type three or more letters."
-                                 on-keyup="_search">
-                    </paper-input>
-
-                    <div class="application-list">
-
-                        <appsco-loader active="[[ _searchLoader ]]" loader-alt="Appsco is searching applications" multi-color></appsco-loader>
-
-                        <template is="dom-repeat" items="[[ _searchList ]]">
-                            <appsco-application-card application="[[ item ]]"
-                                                     on-selected="_onApplicationSelect"></appsco-application-card>
-                        </template>
-
-                        <template is="dom-if" if="[[ _message ]]">
-                            <p class="message">
-                                [[ _message ]]
-                            </p>
-                        </template>
-                    </div>
-                </div>
+                </neon-animated-pages>
             </paper-dialog-scrollable>
 
             <div class="buttons">
                 <paper-button dialog-dismiss>Cancel</paper-button>
-                <paper-button autofocus on-tap="_onAddApplicationsAction">Add</paper-button>
+                <paper-button
+                        id="addApplicationAction"
+                        class="add-action"
+                        on-tap="_onAddApplication">
+                    Add
+                </paper-button>
             </div>
         </paper-dialog>
 
+        <iron-a11y-keys  keys="enter"
+                         on-keys-pressed="_onEnter">
+        </iron-a11y-keys>
+
     </template>
+
     <script>
         Polymer({
 
@@ -159,18 +160,52 @@ Custom property | Description | Default
             properties: {
 
                 /**
-                 * Authorization token.
+                 * Selected page.
+                 * It has value of component's 'name' attribute.
                  */
-                authorizationToken: {
-                    type: String
+                _selected: {
+                    type: String,
+                    value: 'appsco-application-add-search',
+                    notify: true
                 },
 
                 /**
-                 * Company API link.
-                 * API in which company to add application.
+                 * Selected application from search list.
                  */
-                companyApi: {
-                    type: String
+                _selectedApplication: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    },
+                    notify: true
+                },
+
+                /**
+                 * Link application resource.
+                 */
+                _link: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    }
+                },
+
+                /**
+                 * Item application resource.
+                 */
+                _item: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    }
+                },
+
+                /**
+                 * Authorization token
+                 */
+                authorizationToken: {
+                    type: String,
+                    value: ''
                 },
 
                 /**
@@ -182,70 +217,191 @@ Custom property | Description | Default
                 },
 
                 /**
-                 * Number of applications to load show in search result.
+                 * Dashboard API link.
+                 * API on which dashboard to save new application as icon.
                  */
-                size: {
-                    type: Number,
-                    value: 12
-                },
-
-                /**
-                 * Application list from search.
-                 */
-                _searchList: {
-                    type: Array,
-                    value: function() {
-                        return [];
-                    }
-                },
-
-                /**
-                 * Message to display if there is no search result.
-                 */
-                _message: {
+                addApplicationApi: {
                     type: String
                 },
 
                 /**
-                 * Selected applications from search list.
+                 * Get custom link resource API link.
+                 * API to get custom link resource.
                  */
-                _selectedApplications: {
-                    type: Array,
-                    value: function() {
-                        return [];
-                    }
+                linkApi: {
+                    type: String
                 },
 
                 /**
-                 * Indicates if search loader should be displayed or not.
+                 * Get custom item API link.
+                 * API to get custom item resource.
                  */
-                _searchLoader: {
+                itemApi: {
+                    type: String
+                },
+
+                /**
+                 * Computed headers.
+                 * It contains authorization token.
+                 */
+                _computedHeaders: {
+                    type: Object,
+                    computed: '_computeHeaders(authorizationToken)'
+                },
+
+                _dialogTitle: {
+                    type: String,
+                    value: 'Add application'
+                },
+
+                /**
+                 * Indicates wheather add action should be displayed or not.
+                 * It depends on which page is currently displayed.
+                 */
+                _addAction: {
                     type: Boolean,
                     value: false
                 },
 
                 /**
-                 * Indicates if add application loader should be displayed or not.
+                 * Indicates if appsco loader should be displayed.
                  */
-                _addLoader: {
+                _loader: {
                     type: Boolean,
-                    value: false
+                    value: false,
+                    observer: '_onLoaderChanged'
                 },
 
                 /**
-                 * Error message.
+                 * Animation config for add application action button (_addAction).
                  */
-                _error: {
-                    type: String
+                animationConfig: {
+                    value: function() {
+                        return {
+                            'entry': {
+                                name: 'fade-in-animation',
+                                node: this.$.addApplicationAction,
+                                timing: {
+                                    duration: 300
+                                }
+                            },
+                            'exit': {
+                                name: 'fade-out-animation',
+                                node: this.$.addApplicationAction,
+                                timing: {
+                                    duration: 200
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+
+            behaviors: [
+                Polymer.NeonAnimationRunnerBehavior
+            ],
+
+            listeners: {
+                '_selected-changed': '_onSelectedChanged',
+                'neon-animation-finish': '_onAddActionAnimationFinish'
+            },
+
+            /**
+             * Computes authorization headers.
+             *
+             * @param {Object} authorizationToken
+             * @returns {{Authorization: string}}
+             * @private
+             */
+            _computeHeaders: function (authorizationToken) {
+                return {
+                    'Authorization': 'token ' + authorizationToken
+                }
+            },
+
+            _onLoaderChanged: function(loader) {
+                this._loader = loader;
+            },
+
+            _onLinkResponse: function(event) {
+                var link = event.detail.response;
+
+                link.title = 'Link';
+                this.set('_link', link);
+            },
+
+            _onItemResponse: function(event) {
+                var customApp = event.detail.response;
+
+                customApp.title = 'Application title';
+                this.set('_item', customApp);
+            },
+
+            /**
+             * Called after selected page has been changed.
+             * According to selected page it shows / hides add application action (_addAction).
+             *
+             * @private
+             */
+            _onSelectedChanged: function() {
+
+                if (this._selected != 'appsco-application-add-search') {
+                    this.$.addApplicationAction.style.display = 'block';
+                    this.playAnimation('entry');
+                    this._addAction = true;
+                }
+                else {
+                    this._addAction = false;
+                    this.playAnimation('exit');
                 }
 
             },
 
             /**
-             * Toggles add applications dialog.
+             * Called after add application action animation is finished.
+             * It hides action if it shouldn't be visible.
+             *
+             * @private
              */
-            toggle: function() {
-                this.$.dialog.toggle();
+            _onAddActionAnimationFinish: function() {
+
+                if (!this._addAction) {
+                    this.$.addApplicationAction.style.display = 'none';
+                }
+
+            },
+
+            /**
+             * Called after application has been selected from search list.
+             * It shows appsco-application-add-settings page.
+             *
+             * @private
+             */
+            _onApplicationSelect: function() {
+                this._selected = 'appsco-application-add-settings';
+            },
+
+            /**
+             * Called after clicked on Add Custom Application action.
+             * It sets selected application to Item resource.
+             *
+             * @private
+             */
+            _onAddItem: function() {
+                this.set('_selectedApplication', this._item);
+                this._onApplicationSelect();
+                this._dialogTitle = 'Add custom application';
+            },
+
+            /**
+             * Called after clicked on Add Link action.
+             *
+             * @private
+             */
+            _onAddLink: function() {
+                this.set('_selectedApplication', this._link);
+                this._onApplicationSelect();
+                this._dialogTitle = 'Add link';
             },
 
             /**
@@ -254,144 +410,91 @@ Custom property | Description | Default
              * @private
              */
             _onDialogOpened: function() {
-                this.$.search.focus();
+                this._dialogTitle = 'Add application';
+                this.$.appscoApplicationAddSearch.setup();
             },
 
             /**
              * Called after dialog has been closed.
+             * It resets search and settings pages.
+             * It sets selected page to appsco-application-add-search.
              *
              * @private
              */
             _onDialogClosed: function() {
-                this.set('_searchList', []);
-                this.set('_selectedApplications', []);
-                this.$.search.value = '';
-                this._searchLoader = false;
-                this._addLoader = false;
-                this._message = '';
-                this._error = '';
+                this._selectedApplication = {};
+                this.$.appscoApplicationAddSearch.reset();
+                this.$.appscoApplicationAddSettings.reset();
+                this._selected = 'appsco-application-add-search';
+                this._dialogTitle = 'Add application';
             },
 
             /**
-             * Gets applications by term.
+             * Submits signup form on ENTER key using iron-a11y-keys component.
              *
-             * @param {Object} event
              * @private
              */
-            _search: function(event) {
-                var regexpBackspace = /^Backspace$/i,
-                        regexpAlphanumeric = /^\w$/,
-                        searchValue = this.$.search.value,
-                        searchLength = searchValue.length;
-
-                this._searchLoader = true;
-                this._message = '';
-                this._error = '';
-
-                if (searchLength === 0) {
-                    this._message = '';
-                    this._searchLoader = false;
-                    this.set('_searchList', []);
-                    return false;
-                }
-
-                if (searchLength < 3 || !(regexpAlphanumeric.test(event.key) || regexpBackspace.test(event.key))) {
-                    this._message = 'Please type three or more letters.';
-                    this._searchLoader = false;
-                    this.set('_searchList', []);
-                    return false;
-                }
-
-                var request = document.createElement('iron-request'),
-                        url = this.applicationsTemplateApi + '?extended=1&limit=' + this.size + '&term=' + searchValue;
-
-                this._message = '';
-
-                var options = {
-                    url: url,
-                    method: 'GET',
-                    handleAs: 'json',
-                    headers: {
-                        'Authorization': 'token ' + this.authorizationToken
-                    }
-                };
-
-                request.send(options).then(function() {
-                    var applications = request.response.applications;
-
-                    if (applications && applications.length > 0) {
-                        this.set('_searchList', applications);
-                    }
-                    else {
-                        this.set('_searchList', []);
-                        this._message = 'There are no applications with asked title.';
-                    }
-
-                    this._searchLoader = false;
-                }.bind(this));
+            _onEnter: function() {
+                this._onAddApplication();
             },
 
             /**
-             * Called after application has been selected from search list.
+             * Called when user wants to save chosen application.
+             * It calls addApplication method of appsco-application-add-settings page.
              *
-             * @param {Object} event
              * @private
              */
-            _onApplicationSelect: function(event) {
-                this._error = '';
-                this.push('_selectedApplications', event.detail.application);
+            _onAddApplication: function() {
+                this.$.appscoApplicationAddSettings.addApplication();
             },
 
-            _onAddedApplicationSelect: function(event) {
-                this.splice('_selectedApplications', this._selectedApplications.indexOf(event.detail.application), 1);
+            /**
+             * Called after application has been successfully added.
+             * It closes the dialog.
+             *
+             * @private
+             */
+            _onApplicationAdded: function() {
+                this._closeDialog();
             },
 
-            _onAddApplicationsAction: function() {
+            _closeDialog: function() {
+                this.$.addApplicationDialog.close();
+                this.$.addApplicationAction.disabled = false;
+            },
 
-                if (0 === this._selectedApplications.length) {
-                    this._error = 'Please select at least one application to add.';
-                    return false;
+            /**
+             * Toggles application add dialog.
+             */
+            toggle: function() {
+                this.$.addApplicationDialog.toggle();
+            },
+
+            _onPageAnimationFinish: function(event) {
+                var fromPage = event.detail.fromPage,
+                        toPage = event.detail.toPage;
+
+                switch(fromPage.getAttribute('name')) {
+                    case 'appsco-application-add-settings':
+                    case 'appsco-application-add-search':
+                        fromPage.reset();
+                        break;
+
+                    default:
+                        break;
                 }
 
-                var applications = this._selectedApplications,
-                        length = applications.length - 1,
-                        appRequest = document.createElement('iron-request'),
-                        options = {
-                            url: this.companyApi + '/applications',
-                            method: 'POST',
-                            handleAs: 'json',
-                            headers: {
-                                'Authorization': 'token ' + this.authorizationToken,
-                                'Content-Type': 'application/x-www-form-urlencoded'
-                            }
-                        },
-                        body = '';
+                switch(toPage.getAttribute('name')) {
+                    case 'appsco-application-add-search':
+                        toPage.setup();
+                        break;
 
-                this._addLoader = true;
-
-                for (var i = 0; i <= length; i++) {
-                    var next = (i === length) ? '' : '&';
-                    body += 'application_templates[]=' + encodeURIComponent(applications[i].self) + next;
+                    default:
+                        break;
                 }
 
-                options.body = body;
-
-                appRequest.send(options).then(function(request) {
-                    this.$.dialog.close();
-
-                    /**
-                     * Fired when application has been shared.
-                     *
-                     * @event application-shared
-                     */
-                    this.fire('applications-added', {
-                        applications: request.response.applications
-                    });
-
-                    this.set('_selectedApplications', []);
-                    this._addLoader = false;
-                }.bind(this));
             }
+
         });
     </script>
 </dom-module>

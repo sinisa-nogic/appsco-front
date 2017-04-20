@@ -265,11 +265,6 @@
                     }
                 },
 
-                _searchTerm: {
-                    type: String,
-                    value: ''
-                },
-
                 /**
                  * Message to display instead of log.
                  */
@@ -786,6 +781,10 @@
                 this.fire('empty-load');
             },
 
+            _showProgressBar: function() {
+                this.$.progress.hidden = false;
+            },
+
             _hideProgressBar: function() {
 
                 setTimeout(function() {
@@ -814,7 +813,7 @@
             filter: function(filterEventType, filterFromDate, filterToDate) {
                 var body = '';
 
-                this.$.progress.hidden = false;
+                this._showProgressBar();
 
                 if (filterEventType) {
                     body += body == '' ? '' : '&';
@@ -838,15 +837,21 @@
             filterLogByTerm: function(term) {
                 var length = this._wholeLogList.length;
 
-                this._searchTerm = term;
-
-                this.$.progress.hidden = false;
+                this._showProgressBar();
                 this._message = '';
 
-                if (length === 0) {
+                if (0 === length) {
                     this._hideProgressBar();
                     this._message = 'There are no logs to search.';
                     this.fire('filter-done');
+                    return false;
+                }
+
+                if (0 === term.length) {
+                    this.set('_logList', JSON.parse(JSON.stringify(this._wholeLogList)));
+                    this._hideProgressBar();
+                    this.fire('filter-done');
+
                     return false;
                 }
 

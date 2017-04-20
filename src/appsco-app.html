@@ -411,6 +411,7 @@
                                     filter-api="[[ api.dashboards ]]?extended=1"
                                     on-add-application="_onAddApplication"
                                     on-search="_onSearchApplications"
+                                    on-search-clear="_onSearchApplicationsClear"
                                     on-group-selected="_onGroupSelected"
                                     on-page-global-info="_onInfoAction"></appsco-home-page-actions>
 
@@ -419,7 +420,8 @@
                                     name="application"
                                     on-back="_showHomePage"
                                     on-resource-section="_onResourceActionApplicationPage"
-                                    on-search-subscribers="_onSearchSubscribers"></appsco-application-page-actions>
+                                    on-search-subscribers="_onSearchSubscribers"
+                                    on-search-subscribers-clear="_onSearchSubscribersClear"></appsco-application-page-actions>
 
                             <appsco-account-page-actions
                                     id="appscoAccountPageActions"
@@ -450,6 +452,7 @@
                                     filter-api="[[ api.dashboards ]]?extended=1"
                                     on-add-application="_onCompanyAddApplication"
                                     on-search="_onSearchCompanyApplications"
+                                    on-search-clear="_onSearchCompanyApplicationsClear"
                                     on-page-global-info="_onInfoAction"
                                     on-page-global-filters="_onFiltersAction"
                                     on-share="_onShareApplications"
@@ -463,7 +466,8 @@
                                     name="manage-application"
                                     on-back="_showCompanyApplicationsPage"
                                     on-resource-section="_onResourceActionManageApplicationPage"
-                                    on-search-assignees="_onSearchAssignees"></appsco-manage-application-page-actions>
+                                    on-search-assignees="_onSearchAssignees"
+                                    on-search-assignees-clear="_onSearchAssigneesClear"></appsco-manage-application-page-actions>
 
                             <appsco-directory-page-actions
                                     id="appscoDirectoryPageActions"
@@ -472,6 +476,7 @@
                                     on-add-account="_onCompanyAddAccount"
                                     on-import-accounts="_onCompanyImportAccounts"
                                     on-search="_onSearchAccounts"
+                                    on-search-clear="_onSearchAccountsClear"
                                     on-page-global-info="_onInfoAction"
                                     on-page-global-filters="_onFiltersAction"
                                     on-upgrade="_fireUpgrade"
@@ -1580,6 +1585,7 @@
             },
 
             _onVaultAction: function() {
+                this._setProduct(false);
                 this._showVaultPage();
             },
 
@@ -1687,11 +1693,17 @@
                 this.$.appscoVaultPage.toggleInfo();
             },
 
-            _onSearchApplications: function(event) {
-                var term = event.detail.term;
-
+            _filterApplicationsByTerm: function(term) {
                 this._showProgressBar();
                 this.$.appscoHomePage.filterApplicationsByTerm(term);
+            },
+
+            _onSearchApplications: function(event) {
+                this._filterApplicationsByTerm(event.detail.term);
+            },
+
+            _onSearchApplicationsClear: function() {
+                this._filterApplicationsByTerm('');
             },
 
             _onGroupSelected: function(event) {
@@ -1802,8 +1814,17 @@
                 this.$.appscoApplicationPageActions.disableSubscribersSearchAction();
             },
 
+            _searchSubscribers: function(term) {
+                this._showProgressBar();
+                this.$.appscoApplicationPage.searchSubscribers(term);
+            },
+
             _onSearchSubscribers: function(event) {
-                this.$.appscoApplicationPage.searchSubscribers(event.detail.term);
+                this._searchSubscribers(event.detail.term);
+            },
+
+            _onSearchSubscribersClear: function() {
+                this._searchSubscribers('');
             },
 
             _onShareApplication: function() {
@@ -2102,19 +2123,34 @@
             /**
              * Applications page START
              */
-            _onSearchCompanyApplications: function(event) {
-                var term = event.detail.term;
-
+            _filterCompanyApplicationsByTerm: function(term) {
                 this._showProgressBar();
                 this.$.appscoApplicationsPage.filterApplicationsByTerm(term);
+            },
+
+            _onSearchCompanyApplications: function(event) {
+                this._filterCompanyApplicationsByTerm(event.detail.term);
+            },
+
+            _onSearchCompanyApplicationsClear: function() {
+                this._filterCompanyApplicationsByTerm('');
             },
 
             _onResourceActionManageApplicationPage: function() {
                 this.$.appscoManageApplicationPage.toggleResource();
             },
 
+            _searchAssignees: function(term) {
+                this._showProgressBar();
+                this.$.appscoManageApplicationPage.searchAssignees(term);
+            },
+
             _onSearchAssignees: function(event) {
-                this.$.appscoManageApplicationPage.searchAssignees(event.detail.term);
+                this._searchAssignees(event.detail.term);
+            },
+
+            _onSearchAssigneesClear: function() {
+                this._searchAssignees('');
             },
 
             _onEditCompanyApplication: function() {
@@ -2455,11 +2491,17 @@
                 }
             },
 
-            _onSearchAccounts: function(event) {
-                var term = event.detail.term;
-
+            _searchAccounts: function(term) {
                 this._showProgressBar();
                 this.$.appscoDirectoryPage.filterAccountsByTerm(term);
+            },
+
+            _onSearchAccounts: function(event) {
+                this._searchAccounts(event.detail.term);
+            },
+
+            _onSearchAccountsClear: function() {
+                this._searchAccounts('');
             },
 
             _onCompanyAddAccount: function() {

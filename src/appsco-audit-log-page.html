@@ -5,16 +5,13 @@
 <link rel="import" href="../bower_components/iron-flex-layout/iron-flex-layout.html">
 <link rel="import" href="../bower_components/iron-ajax/iron-ajax.html">
 <link rel="import" href="../bower_components/iron-media-query/iron-media-query.html">
-<link rel="import" href="../bower_components/iron-icons/iron-icons.html">
-<link rel="import" href="../bower_components/iron-icon/iron-icon.html">
-<link rel="import" href="../bower_components/paper-icon-button/paper-icon-button.html">
 <link rel="import" href="../bower_components/paper-listbox/paper-listbox.html">
 <link rel="import" href="../bower_components/paper-item/paper-item.html">
 <link rel="import" href="../bower_components/vaadin-date-picker/vaadin-date-picker.html">
-<link rel="import" href="../bower_components/paper-input/paper-input.html">
 <link rel="import" href="../bower_components/paper-styles/shadow.html">
 
 <link rel="import" href="../bower_components/appsco-page/appsco-content.html">
+<link rel="import" href="../bower_components/appsco-components/appsco-search.html">
 <link rel="import" href="auditlog/appsco-audit-log.html">
 
 <dom-module id="appsco-audit-log-page">
@@ -30,27 +27,10 @@
                 --paper-dropdown-menu: {
                      width: 100%;
                  };
-                --paper-input-container-label: {
-                     font-size: 14px;
-                 };
-                --paper-input-container-input: {
-                     font-size: 14px;
-                 };
 
                 --audit-log-list: {
                      padding-top: 2px;
                  };
-
-                --paper-input-container: {
-                     padding-bottom: 0;
-                 };
-            }
-            .input-icon {
-                width: 18px;
-                height: 18px;
-            }
-            .search-icon {
-                margin-right: 5px;
             }
             paper-dropdown-menu {
                 --paper-input-container: {
@@ -92,7 +72,7 @@
                 max-height: calc(100vh - 2*64px - 20px - 45px - 2*54px);
                 overflow-y: auto;
                 position: absolute;
-                top: 55px;
+                top: 50px;
                 left: 0;
                 z-index: 10;
                 opacity: 1;
@@ -108,34 +88,18 @@
                 transform-origin: top center;
                 transition: all 0.1s linear;
             }
-            :host .filter paper-input {
-                @apply(--paper-input-search);
+            paper-item {
+                min-height: initial;
+                padding: 8px 10px;
+                line-height: 18px;
             }
-            div[prefix] iron-icon {
-                width: 18px;
-                height: 18px;
-                @apply(--input-search-prefix);
-
-                --iron-icon-fill-color: var(--paper-input-prefix-icon-fill-color);
-            }
-            paper-input[focused] div[prefix] {
-                @apply(--paper-input-focused-prefix);
-            }
-            paper-input[focused] div[prefix] iron-icon {
-                fill: var(--paper-input-focused-prefix-icon-fill-color);
-            }
-            paper-icon-button[suffix] {
-                width: 20px;
-                height: 20px;
-                padding: 0;
-
-                color: var(--paper-input-suffix-icon-fill-color);
-                --paper-icon-button-ink-color: var(--paper-input-suffix-icon-fill-color);
-            }
-            paper-input[focused] paper-icon-button[suffix] {
-                color: var(--paper-input-focused-suffix-icon-fill-color);
-                --paper-icon-button-ink-color: var(--paper-input-focused-suffix-icon-fill-color);
-                @apply(--paper-input-focused-sufix);
+            vaadin-date-picker {
+                --paper-input-container-label: {
+                    font-size: 14px;
+                };
+                --paper-input-container-input: {
+                    font-size: 14px;
+                };
             }
             :host([tabletScreen900]) {
                 --resource-width: 250px;
@@ -168,43 +132,23 @@
 
                 <div class="filters">
                     <div class="filter">
-                        <paper-input label="Filter log by account"
-                                     on-keyup="_onFilterSearch"
-                                     id="searchInput">
-                            <div prefix>
-                                <iron-icon icon="icons:search"
-                                           class="input-icon search-icon"></iron-icon>
-                            </div>
 
-                            <template is="dom-if" if="[[ _clearSearch ]]">
-                                <paper-icon-button icon="clear"
-                                                   id="clear"
-                                                   class="input-icon"
-                                                   suffix
-                                                   on-tap="_onClearSearch"></paper-icon-button>
-                            </template>
-
-                        </paper-input>
+                        <appsco-search id="appscoSearchLog"
+                                       label="Filter log by account"
+                                       float-label
+                                       on-search="_onFilterSearch"
+                                       on-search-clear="_onClearSearch"></appsco-search>
                     </div>
 
                     <div id="filterEventType" class="filter">
-                        <paper-input id="searchEventTypeInput"
-                                     label="Event type"
-                                     on-focus="_onFilterEventTypeFocus"
-                                     on-keyup="_onFilterEventTypeKeyup">
-                            <div prefix>
-                                <iron-icon icon="icons:search"
-                                           class="input-icon search-icon"></iron-icon>
-                            </div>
 
-                            <template is="dom-if" if="[[ _clearEventTypeSearch ]]">
-                                <paper-icon-button icon="clear"
-                                                   id="clearEventTypeSearch"
-                                                   class="input-icon"
-                                                   suffix
-                                                   on-tap="_onClearEventTypeSearch"></paper-icon-button>
-                            </template>
-                        </paper-input>
+                        <appsco-search id="appscoSearchEventType"
+                                       label="Filter log by event type"
+                                       float-label
+                                       on-focus="_onFilterEventTypeFocus"
+                                       on-keyup="_onFilterEventTypeKeyup"
+                                       on-search="_onFilterEventTypeSearch"
+                                       on-search-clear="_onClearEventTypeSearch"></appsco-search>
 
                         <paper-listbox id="filterListEventTypes"
                                        class="dropdown-content"
@@ -212,6 +156,7 @@
                                        on-iron-activate="_onFilterEventType" hidden>
                             <template is="dom-repeat" items="{{ _eventTypeListDisplay }}">
                                 <paper-item value="[[ item.value ]]"
+                                            label="[[ item.text ]]"
                                             id="eventType_[[ index ]]">[[ item.text ]]</paper-item>
                             </template>
                         </paper-listbox>
@@ -309,16 +254,6 @@
                     type: String
                 },
 
-                _clearSearch: {
-                    type: Boolean,
-                    value: false
-                },
-
-                _clearEventTypeSearch: {
-                    type: Boolean,
-                    value: false
-                },
-
                 mobileScreen: {
                     type: Boolean,
                     value: false,
@@ -364,6 +299,11 @@
                 pageLoaded: {
                     type: Boolean,
                     value: false
+                },
+
+                _attached: {
+                    type: Boolean,
+                    value: false
                 }
             },
 
@@ -377,6 +317,7 @@
 
             attached: function() {
                 this.pageLoaded = false;
+                this._attached = true;
 
                 if (this.mobileScreen || this.tabletScreen || this.tabletScreen900) {
                     this.updateStyles();
@@ -403,10 +344,8 @@
             initializePage: function() {},
 
             resetPage: function() {
-                this.$.searchInput.value = '';
-                this._clearSearch = false;
-                this.$.searchEventTypeInput.value = '';
-                this._clearEventTypeSearch = false;
+                this.$.appscoSearchLog.reset();
+                this.$.appscoSearchEventType.reset();
                 this._hideEventTypeList();
                 this.$.filterListEventTypes.selected = 0;
                 this.$.filterDateFrom.value = '';
@@ -481,30 +420,30 @@
                 this._filterFromDate = fromDate ? fromDate + ' 00:00:00' : '';
                 this._setValidToDate(fromDate);
 
-                if (fromDate) {
+                if (this._attached) {
                     this._filterLog();
                 }
             },
 
             _onFilterDateTo: function(event) {
-                this._filterToDate = event.detail.value ? event.detail.value + ' 23:59:59' : '';
+                var toDate = event.detail.value;
 
-                if (event.detail.value) {
+                this._filterToDate = toDate ? toDate + ' 23:59:59' : '';
+
+                if (this._attached) {
                     this._filterLog();
                 }
             },
 
             _onFilterEventType: function(event) {
                 this._filterEventType = event.detail.selected;
-                this.$.searchEventTypeInput.value = event.detail.item.firstChild.nodeValue;
+                this.$.appscoSearchEventType.setValue(event.detail.item.label);
                 this._filterLog();
                 this._hideEventTypeList();
             },
 
-            _onFilterSearch: function() {
-                var term = this.$.searchInput.value;
-
-                this.set('_clearSearch', (term.length > 0));
+            _onFilterSearch: function(event) {
+                var term = event.detail.term;
 
                 if (term.length < 3) {
                     term = '';
@@ -514,8 +453,12 @@
             },
 
             _onClearSearch: function () {
-                this.$.searchInput.value = '';
-                this._onFilterSearch();
+                this.$.appscoSearchLog.reset();
+                this._onFilterSearch({
+                    detail: {
+                        term: ''
+                    }
+                });
             },
 
             _formatEventType: function(item) {
@@ -768,7 +711,6 @@
                     length = eventTypes.length;
 
                 this.set('_eventTypeListDisplay', []);
-                this.set('_clearEventTypeSearch', (termLength > 0));
 
                 if (3 > termLength) {
                     term = '';
@@ -796,6 +738,13 @@
             },
 
             _hideEventTypeList: function() {
+                var eventTypeFilter = this.$.filterListEventTypes,
+                    appscoEventTypeSearch = this.$.appscoSearchEventType;
+
+                if (0 === appscoEventTypeSearch.getValue().length && eventTypeFilter.selectedItem) {
+                    this.$.appscoSearchEventType.setValue(eventTypeFilter.selectedItem.label);
+                }
+
                 this.$.filterListEventTypes.hidden = true;
             },
 
@@ -804,24 +753,20 @@
             },
 
             _onFilterEventTypeKeyup: function(event) {
-                var keyCode = event.keyCode,
-                    term = event.target.value ? event.target.value : '';
+                var keyCode = event.keyCode;
 
                 if (40 === keyCode) {
                     event.target.blur();
                     this._selectFirstEventType();
-                    return false;
                 }
-
-                this._filterEventTypeListByTerm(term);
 
             },
 
-            _onClearEventTypeSearch: function(event) {
-                var input = event.target.parentNode;
+            _onFilterEventTypeSearch: function(event) {
+                this._filterEventTypeListByTerm(event.detail.term);
+            },
 
-                input.value = '';
-                this._clearEventTypeSearch = false;
+            _onClearEventTypeSearch: function(event) {
                 this._filterEventTypeListByTerm('');
             },
 

@@ -1,22 +1,18 @@
 <link rel="import" href="../../bower_components/polymer/polymer.html">
 <link rel="import" href="../../bower_components/iron-ajax/iron-ajax.html">
 <link rel="import" href="../../bower_components/iron-flex-layout/iron-flex-layout.html">
-<link rel="import" href="../../bower_components/paper-input/paper-input.html">
 <link rel="import" href="../../bower_components/paper-icon-button/paper-icon-button.html">
-<link rel="import" href="../../bower_components/iron-icon/iron-icon.html">
 <link rel="import" href="../../bower_components/iron-icons/iron-icons.html">
 <link rel="import" href="../../bower_components/iron-icons/social-icons.html">
 <link rel="import" href="../../bower_components/paper-styles/typography.html">
-<link rel="import" href="../../bower_components/paper-listbox/paper-listbox.html">
-<link rel="import" href="../../bower_components/paper-item/paper-item.html">
 <link rel="import" href="../../bower_components/paper-tooltip/paper-tooltip.html">
 <link rel="import" href="../../bower_components/neon-animation/neon-animation-runner-behavior.html">
 <link rel="import" href="../../bower_components/neon-animation/animations/cascaded-animation.html">
 <link rel="import" href="../../bower_components/neon-animation/animations/fade-in-animation.html">
 <link rel="import" href="../../bower_components/neon-animation/animations/fade-out-animation.html">
-<link rel="import" href="../../bower_components/paper-dropdown-menu/paper-dropdown-menu.html">
 
 <link rel="import" href="appsco-subscription-info-dropdown.html">
+<link rel="import" href="../../bower_components/appsco-components/appsco-search.html">
 
 <dom-module id="appsco-directory-actions">
     <template>
@@ -29,18 +25,9 @@
                 @apply(--layout-center);
                 @apply(--layout-end-justified);
                 @apply(--appsco-directory-actions);
-
-                --paper-dropdown-menu-button: {
-                    display: block;
-                    padding: 0 0 0 8px;
-                    @apply(--applications-actions-paper-dropdown-menu-button);
-                };
-
-                --account-action-icon-color: var(--app-primary-color);
             }
-            paper-icon-button {
-                color: var(--account-action-icon-color);
-                --paper-icon-button-ink-color: var(--account-action-icon-color);
+            appsco-search {
+                max-width: 200px;
             }
             :host .action {
                 margin-right: 10px;
@@ -58,61 +45,6 @@
             :host .bulk-action[hidden] {
                 display: none !important;
             }
-            :host .action-search {
-                @apply(--paper-input-search-container);
-            }
-            :host .action-search paper-input {
-                max-width: 184px;
-            }
-            paper-dropdown-menu {
-                --paper-input-container-underline: {
-                    display: none;
-                };
-                --paper-input-container-underline-focus: {
-                    display: none;
-                };
-                --paper-dropdown-menu-ripple: {
-                    display: none;
-                };
-                --paper-input-container-input: {
-                    vertical-align: middle;
-                    cursor: pointer;
-                    @apply(--application-actions-paper-dropdown-menu-input);
-                };
-            }
-            :host paper-listbox {
-                @apply(--paper-listbox);
-                max-width: 230px;
-                overflow: hidden;
-            }
-            :host paper-item:hover {
-                @apply(--paper-item-hover);
-            }
-            div[prefix] iron-icon {
-                width: 18px;
-                height: 18px;
-                @apply(--input-search-prefix);
-
-                --iron-icon-fill-color: var(--paper-input-prefix-icon-fill-color);
-            }
-            paper-input[focused] div[prefix] {
-                @apply(--paper-input-focused-prefix);
-            }
-            paper-input[focused] div[prefix] iron-icon {
-                fill: var(--paper-input-focused-prefix-icon-fill-color);
-            }
-            paper-icon-button[suffix] {
-                width: 20px;
-                height: 20px;
-                padding: 0;
-                color: var(--paper-input-suffix-icon-fill-color);
-                --paper-icon-button-ink-color: var(--paper-input-suffix-icon-fill-color);
-            }
-            paper-input[focused] paper-icon-button[suffix] {
-                color: var(--paper-input-focused-suffix-icon-fill-color);
-                --paper-icon-button-ink-color: var(--paper-input-focused-suffix-icon-fill-color);
-                @apply(--paper-input-focused-sufix);
-            }
             :host .add-application-button {
                 @apply(--add-application-button);
             }
@@ -122,9 +54,6 @@
             }
             :host .flex-none {
                 @apply(--layout-flex-none);
-            }
-            :host .action-search paper-input {
-                @apply(--paper-input-search);
             }
             :host paper-icon-button::shadow paper-ripple {
                 width: 150%;
@@ -145,22 +74,9 @@
         </style>
 
         <div class="action action-search flex-none">
-            <paper-input label="Filter accounts"
-                         on-keyup="_search"
-                         id="search"
-                         no-label-float
-                         tabindex="1">
-                <div prefix>
-                    <iron-icon icon="search"
-                               on-tap="_onSearchIcon"></iron-icon>
-                </div>
 
-                <template is="dom-if" if="[[ _clear ]]">
-                    <paper-icon-button class="clear-icon" id="clear" suffix icon="clear"
-                                       on-tap="_clearSearch"></paper-icon-button>
-                </template>
-
-            </paper-input>
+            <appsco-search id="appscoSearch"
+                           label="Search accounts"></appsco-search>
         </div>
 
         <div class="action bulk-action flex-none">
@@ -231,21 +147,6 @@
 
             properties: {
 
-                authorizationToken: {
-                    type: String,
-                    value: ''
-                },
-
-                _computedHeaders: {
-                    type: Object,
-                    computed: "_computeHeaders(authorizationToken)"
-                },
-
-                _clear: {
-                    type: Boolean,
-                    value: false
-                },
-
                 /**
                  * Indicates if bulk actions for applications are visible or not.
                  * Used to show / hide bulk actions.
@@ -259,11 +160,6 @@
                 _selectedAll: {
                     type: Boolean,
                     value: false
-                },
-
-                _searchDebounce: {
-                    type: Number,
-                    value: 0
                 },
 
                 _info: {
@@ -315,47 +211,6 @@
                 'neon-animation-finish': '_onNeonAnimationFinish'
             },
 
-            ready: function() {
-                Polymer.Gestures.add(document, 'tap', this._handleDocumentClick.bind(this));
-            },
-
-            /**
-             * Evaluates if item is in given path.
-             *
-             * @param {HTMLElement} element The element to be evaluated.
-             * @param {Array<HTMLElements>=} path Elements in path to be checked against item element.
-             * @return {Boolean}
-             *
-             * @private
-             */
-            _isInPath: function(path, element) {
-                path = path || [];
-
-                for (var i = 0; i < path.length; i++) {
-
-                    if (path[i] == element) {
-                        return true;
-
-                        break;
-                    }
-                }
-
-                return false;
-            },
-
-            /**
-             * Listens for click outside.
-             * @private
-             */
-            _handleDocumentClick: function(event) {
-                var path = Polymer.dom(event).path;
-
-                if (!this._isInPath(path, this)) {
-                    this.fire('close-search');
-                }
-
-            },
-
             _selected: function (e) {
                 /**
                  * Fired when filter is selected
@@ -367,44 +222,6 @@
                     id: e.detail.item.getAttribute('value'),
                     name: e.detail.item.getAttribute('name')
                 })
-            },
-
-            _search: function() {
-
-                if (this._searchDebounce > 0) {
-                    clearTimeout(this._searchDebounce);
-                }
-
-                this._searchDebounce = setTimeout(function() {
-                    this.set('_clear', (this.$.search.value.length > 0));
-
-                    if (this.$.search.value.length < 3) {
-                        this.fire('search', {
-                            term: ''
-                        });
-                        return;
-                    }
-
-                    /**
-                     * Fired when user searches. Below 3 chars is empty
-                     *
-                     * @event search
-                     * @param {Object} filter {term: search_term}
-                     */
-                    this.fire('search', {
-                        term: this.$.search.value
-                    });
-                }.bind(this), 300);
-            },
-            _clearSearch: function () {
-                this.$.search.value = "";
-                this._search();
-            },
-
-            _computeHeaders: function (authorizationToken) {
-                return {
-                    "Authorization": "token " + authorizationToken
-                }
             },
 
             /**
@@ -479,7 +296,7 @@
              * Sets focus on search input field.
              */
             focusSearch: function() {
-                this.$.search.$.input.focus();
+                this.$.appscoSearch.setup();
             },
 
             _onBulkActionsChanged: function() {
@@ -546,8 +363,7 @@
             },
 
             reset: function() {
-                this.$.search.value = '';
-                this._clear = false;
+                this.$.appscoSearch.reset();
                 this.hideBulkActions();
             }
         });

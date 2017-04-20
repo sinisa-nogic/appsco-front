@@ -4,10 +4,11 @@
 <link rel="import" href="../../bower_components/neon-animation/animations/fade-in-animation.html">
 <link rel="import" href="../../bower_components/neon-animation/animations/fade-out-animation.html">
 <link rel="import" href="../../bower_components/paper-icon-button/paper-icon-button.html">
-<link rel="import" href="../../bower_components/paper-input/paper-input.html">
 <link rel="import" href="../../bower_components/iron-icon/iron-icon.html">
 <link rel="import" href="../../bower_components/iron-icons/iron-icons.html">
 <link rel="import" href="../../bower_components/iron-media-query/iron-media-query.html">
+
+<link rel="import" href="../../bower_components/appsco-components/appsco-search.html">
 
 <dom-module id="appsco-application-page-actions">
     <template>
@@ -19,28 +20,6 @@
 
                 --application-action-icon-color: var(--app-primary-color);
 
-                --paper-input-container-color: var(--secondary-text-color);
-                --paper-input-container-input-color: var(--primary-text-color);
-                --paper-input-container-focus-color: var(--primary-text-color);
-                --paper-input-container: {
-                     padding: 0;
-                 };
-                --paper-input-container-input: {
-                     font-size: 14px;
-                 };
-                --paper-input-container-label: {
-                     font-size: 14px;
-                     bottom: 0;
-                     top: initial;
-                 };
-                --paper-input-container-label-focus: {
-                     left: 30px;
-                 };
-                --paper-input-prefix: {
-                     height: 20px;
-                     margin-right: 4px;
-                     color: var(--secondary-text-color);
-                 };
                 --paper-icon-button: {
                      width: 24px;
                      height: 24px;
@@ -52,14 +31,8 @@
             :host > * {
                 height: 100%;
             }
-            :host .search-icon {
-                width: 18px;
-                height: 18px;
-                margin: 0;
-            }
-            :host .clear-icon {
-                width: 20px;
-                height: 20px;
+            appsco-search {
+                max-width: 200px;
             }
             :host paper-icon-button::shadow paper-ripple {
                 width: 150%;
@@ -68,21 +41,17 @@
                 left: -25%;
             }
             .search-subscribers-action {
-            @apply(--layout-horizontal);
-            @apply(--layout-center);
-            @apply(--layout-end-justified);
-            }
-            .search-subscribers-input {
-            @apply(--layout-flex-none);
-                max-width: 184px;
+                @apply(--layout-horizontal);
+                @apply(--layout-center);
+                @apply(--layout-end-justified);
             }
             .global-page-actions {
                 padding-left: 10px;
                 margin-left: 16px;
                 border-left: 1px solid var(--app-primary-color);
-            @apply(--layout-horizontal);
-            @apply(--layout-center);
-            @apply(--layout-end-justified);
+                @apply(--layout-horizontal);
+                @apply(--layout-center);
+                @apply(--layout-end-justified);
             }
             :host .back-action {
                 margin-right: 10px;
@@ -99,24 +68,11 @@
 
         <template is="dom-if" if="[[ _searchSubscribersActive ]]">
             <div class="search-subscribers-action">
-                <paper-input id="searchSubscribers"
-                             class="search-subscribers-input"
-                             label="Search subscribers"
-                             on-keyup="_searchSubscribers"
-                             no-label-float>
-                    <div prefix>
-                        <iron-icon icon="search" class="search-icon"></iron-icon>
-                    </div>
 
-                    <template is="dom-if" if="[[ _clearSearch ]]">
-                        <paper-icon-button id="clear"
-                                           class="search-icon clear-icon"
-                                           suffix
-                                           icon="clear"
-                                           on-tap="_clearSubscribersSearch"></paper-icon-button>
-                    </template>
-
-                </paper-input>
+                <appsco-search id="appscoSearch"
+                               label="Search subscribers"
+                               on-search="_onSearch"
+                               on-search-clear="_onSearchClear"></appsco-search>
             </div>
         </template>
 
@@ -145,16 +101,6 @@
                 _searchSubscribersActive: {
                     type: Boolean,
                     value: false
-                },
-
-                _clearSearch: {
-                    type: Boolean,
-                    value: false
-                },
-
-                _searchDebounce: {
-                    type: Number,
-                    value: 0
                 },
 
                 tabletScreen: {
@@ -198,6 +144,7 @@
             },
 
             disableSubscribersSearchAction: function() {
+                this._onSearchClear();
                 this._searchSubscribersActive = false;
             },
 
@@ -209,39 +156,26 @@
                 this.fire('resource-section');
             },
 
-            _searchSubscribers: function() {
+            _onSearch: function(event) {
 
-                if (this._searchDebounce > 0) {
-                    clearTimeout(this._searchDebounce);
-                }
+                this.fire('search-subscribers', {
+                    term: event.detail.term
+                });
+            },
 
-                this._searchDebounce = setTimeout(function() {
-                    var term = this.$$('#searchSubscribers').value;
+            _onSearchClear: function() {
+                this._resetSubscribersSearch();
 
-                    this.set('_clearSearch', (term.length > 0));
-
-                    if (term.length < 3) {
-                        this.fire('search-subscribers', {
-                            term: ''
-                        });
-
-                        return false;
-                    }
-
-                    this.fire('search-subscribers', {
-                        term: term
-                    });
-                }.bind(this), 300);
+                this.fire('search-subscribers-clear', {
+                    term: ''
+                });
             },
 
             _resetSubscribersSearch: function() {
-                this.$$('#searchSubscribers').value = '';
-                this._clearSearch = false;
-            },
 
-            _clearSubscribersSearch: function() {
-                this._resetSubscribersSearch();
-                this._searchSubscribers();
+                if (this._searchSubscribersActive) {
+                    this.$$('#appscoSearch').reset();
+                }
             },
 
             resetApplicationSubscribersPageActions: function() {

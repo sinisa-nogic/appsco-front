@@ -1,9 +1,6 @@
 <link rel="import" href="../polymer/polymer.html">
 <link rel="import" href="../paper-styles/typography.html">
 <link rel="import" href="../paper-button/paper-button.html">
-<link rel="import" href="../iron-icon/iron-icon.html">
-<link rel="import" href="../iron-icons/iron-icons.html">
-<link rel="import" href="../paper-input/paper-input.html">
 <link rel="import" href="../iron-image/iron-image.html">
 <link rel="import" href="../iron-ajax/iron-request.html">
 <link rel="import" href="../paper-dialog/paper-dialog.html">
@@ -14,6 +11,7 @@
 <link rel="import" href="../appsco-components/appsco-loader.html">
 <link rel="import" href="../appsco-components/appsco-form-error.html">
 <link rel="import" href="appsco-account-card.html">
+<link rel="import" href="../appsco-components/appsco-search.html">
 
 <!--
 `appsco-application-share`
@@ -39,30 +37,25 @@ Custom property | Description | Default
             :host {
                 display: block;
                 position: relative;
-            @apply(--appsco-application-share);
+                @apply(--appsco-application-share);
             }
             :host paper-dialog {
                 width: 670px;
                 top: 20vh;
-            @apply(--appsco-paper-dialog);
+                @apply(--appsco-paper-dialog);
             }
             :host paper-dialog-scrollable > * {
-            @apply(--paper-dialog-scrollable-child);
+                @apply(--paper-dialog-scrollable-child);
             }
-            paper-input {
-            --paper-input-container-label: {
-                 left: 4px;
-             };
-            --paper-input-container-input: {
-                 padding: 0 4px;
-             };
+            appsco-search {
+                margin-bottom: 10px;
             }
             .share-container {
                 padding-bottom: 20px;
             }
             .account-list {
-            @apply(--layout-horizontal);
-            @apply(--layout-wrap);
+                @apply(--layout-horizontal);
+                @apply(--layout-wrap);
                 padding: 2px;
                 margin-right: -8px;
             }
@@ -71,26 +64,26 @@ Custom property | Description | Default
                 margin-bottom: 6px;
             }
             .selected-account {
-            --account-card: {
-                 padding-right: 10px;
-                 width: 136px;
-             };
+                --account-card: {
+                    padding-right: 10px;
+                    width: 136px;
+                };
             }
             :host .buttons paper-button {
-            @apply(--paper-dialog-button);
+                @apply(--paper-dialog-button);
             }
             :host .buttons paper-button[dialog-confirm] {
-            @apply(--paper-dialog-confirm-button);
+                @apply(--paper-dialog-confirm-button);
             }
             :host .buttons paper-button[dialog-dismiss] {
-            @apply(--paper-dialog-dismiss-button);
+                @apply(--paper-dialog-dismiss-button);
             }
             :host .message {
                 margin: 0;
                 color: var(--secondary-text-color);
                 font-style: italic;
-            @apply(--paper-font-body2);
-            @apply(--info-message);
+                @apply(--paper-font-body2);
+                @apply(--info-message);
             }
         </style>
 
@@ -125,10 +118,11 @@ Custom property | Description | Default
                         </template>
                     </div>
 
-                    <paper-input label="Share to others"
-                                 id="search"
-                                 error-message="Please type three or more letters."
-                                 on-keyup="_search"></paper-input>
+                    <appsco-search id="appscoSearch"
+                                   label="Share to others"
+                                   float-label
+                                   on-search="_onSearch"
+                                   on-search-clear="_onSearchClear"></appsco-search>
 
                     <div class="account-list search-list">
 
@@ -288,7 +282,7 @@ Custom property | Description | Default
 
             _shareToUser: function(account) {
                 var appRequest = document.createElement('iron-request'),
-                        me = this;
+                    me = this;
 
                 appRequest.send({
                     url: account.self+"/share",
@@ -306,7 +300,7 @@ Custom property | Description | Default
 
             _shareApplication: function() {
                 var me = this,
-                        length = this._accounts.length - 1;
+                    length = this._accounts.length - 1;
 
                 this._accounts.forEach(function(item, index){
                     me._shareToUser(item);
@@ -346,14 +340,13 @@ Custom property | Description | Default
 
             _computeHeaders: function (authorizationToken) {
                 return {
-                    "Authorization": "token " + authorizationToken
+                    'Authorization': 'token ' + authorizationToken,
+                    'Content-Type': 'application/x-www-form-urlencoded'
                 }
             },
 
-            _search: function(e) {
-                var regexpBackspace = /^Backspace$/i,
-                        regexpAlphanumeric = /^\w$/,
-                        me = this;
+            _onSearch: function(event) {
+                var value = event.detail.term;
 
                 this._loader = true;
                 this.set('_message', '');
@@ -362,44 +355,43 @@ Custom property | Description | Default
                     this._error = '';
                 }.bind(this), 500);
 
-                if (
-                        this.$.search.value.length < 3 || !(regexpAlphanumeric.test(e.key) || regexpBackspace.test(e.key))
-                ) {
-
+                if (value.length < 3) {
                     this._message = 'Please type three or more letters.';
                     this._loader = false;
                     this.set('_searchList', []);
 
-                    return;
+                    return false;
                 }
 
                 var request = document.createElement('iron-request'),
-                        url = this.accountsApi + "?extended=1&limit=" + this.size + '&term=' + this.$.search.value
+                    url = this.accountsApi + "?extended=1&limit=" + this.size + '&term=' + value;
 
                 this._message = '';
 
                 var options = {
                     url: url,
-                    method: "GET",
+                    method: 'GET',
                     handleAs: 'json',
-                    headers: {
-                        "Authorization": "token " + this.authorizationToken
-                    }
+                    headers: this._computedHeaders
                 };
 
                 request.send(options).then(function() {
                     var accounts = request.response.accounts;
 
                     if (accounts && accounts.length > 0) {
-                        me.set('_searchList', accounts);
+                        this.set('_searchList', accounts);
                     }
                     else {
-                        me.set('_searchList', []);
-                        me._message = 'There are no accounts with asked term. Please check your input.';
+                        this.set('_searchList', []);
+                        this._message = 'There are no accounts with asked term. Please check your input.';
                     }
 
-                    me._loader = false;
-                });
+                    this._loader = false;
+                }.bind(this));
+            },
+
+            _onSearchClear: function() {
+                this._reset();
             },
 
             /**
@@ -415,20 +407,27 @@ Custom property | Description | Default
              * @private
              */
             _onDialogOpened: function() {
-                this.$.search.focus();
+                this.$.appscoSearch.setup();
             },
 
             /**
              * Called after dialog has been closed.
-             * It resets search and settings pages.
-             * It sets selected page to appsco-application-add-search.
              *
              * @private
              */
             _onDialogClosed: function() {
-                this.set('_searchList', []);
+                this._reset();
                 this.set('_accounts', []);
-                this.$.search.value = '';
+            },
+
+            /**
+             * It resets share component.
+             *
+             * @private
+             */
+            _reset: function() {
+                this.$.appscoSearch.reset();
+                this.set('_searchList', []);
                 this._shareLoader = false;
                 this._error = '';
                 this._message = '';

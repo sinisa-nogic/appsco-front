@@ -3,9 +3,6 @@
 <link rel="import" href="../../paper-styles/typography.html">
 <link rel="import" href="../../paper-styles/shadow.html">
 <link rel="import" href="../../paper-button/paper-button.html">
-<link rel="import" href="../../iron-icon/iron-icon.html">
-<link rel="import" href="../../iron-icons/iron-icons.html">
-<link rel="import" href="../../paper-input/paper-input.html">
 <link rel="import" href="../../iron-image/iron-image.html">
 <link rel="import" href="../../iron-ajax/iron-request.html">
 <link rel="import" href="../../paper-dialog/paper-dialog.html">
@@ -15,6 +12,7 @@
 <link rel="import" href="../../appsco-components/appsco-loader.html">
 <link rel="import" href="../../appsco-components/appsco-form-error.html">
 <link rel="import" href="../appsco-account-card.html">
+<link rel="import" href="../../appsco-components/appsco-search.html">
 
 <!--
 `appsco-company-application-share`
@@ -36,25 +34,20 @@ Provides functionality of sharing applications to users.
             :host paper-dialog {
                 width: 670px;
                 top: 20vh;
-            @apply(--appsco-paper-dialog);
+                @apply(--appsco-paper-dialog);
             }
             :host paper-dialog-scrollable > * {
-            @apply(--paper-dialog-scrollable-child);
+                @apply(--paper-dialog-scrollable-child);
             }
-            :host paper-input {
-            --paper-input-container-label: {
-                 left: 4px;
-             };
-            --paper-input-container-input: {
-                 padding: 0 4px;
-             };
+            appsco-search {
+                margin-bottom: 10px;
             }
             .dialog-container {
                 padding-bottom: 20px;
             }
             .account-list {
-            @apply(--layout-horizontal);
-            @apply(--layout-wrap);
+                @apply(--layout-horizontal);
+                @apply(--layout-wrap);
                 padding: 2px;
                 margin-right: -8px;
             }
@@ -63,26 +56,26 @@ Provides functionality of sharing applications to users.
                 margin-bottom: 6px;
             }
             .selected-account {
-            --account-card: {
-                 padding-right: 10px;
-                 width: 136px;
-             };
+                --account-card: {
+                    padding-right: 10px;
+                    width: 136px;
+                };
             }
             :host .message {
                 margin: 0;
                 color: var(--secondary-text-color);
                 font-style: italic;
-            @apply(--paper-font-body2);
-            @apply(--info-message);
+                @apply(--paper-font-body2);
+                @apply(--info-message);
             }
             :host .buttons paper-button {
-            @apply(--paper-dialog-button);
+                @apply(--paper-dialog-button);
             }
             :host .buttons paper-button[dialog-confirm] {
-            @apply(--paper-dialog-confirm-button);
+                @apply(--paper-dialog-confirm-button);
             }
             :host .buttons paper-button[dialog-dismiss] {
-            @apply(--paper-dialog-dismiss-button);
+                @apply(--paper-dialog-dismiss-button);
             }
         </style>
 
@@ -114,11 +107,11 @@ Provides functionality of sharing applications to users.
                         </template>
                     </div>
 
-                    <paper-input id="search"
-                                 label="search accounts"
-                                 error-message="Please type three or more letters."
-                                 on-keyup="_search">
-                    </paper-input>
+                    <appsco-search id="appscoSearch"
+                                   label="Share to others"
+                                   float-label
+                                   on-search="_onSearch"
+                                   on-search-clear="_onSearchClear"></appsco-search>
 
                     <div class="account-list">
 
@@ -184,6 +177,11 @@ Provides functionality of sharing applications to users.
                     value: 8
                 },
 
+                _computedHeaders: {
+                    type: Object,
+                    computed: '_computeHeaders(authorizationToken)'
+                },
+
                 /**
                  * Applications which are shared.
                  * This array is populated from sharing API response.
@@ -240,6 +238,13 @@ Provides functionality of sharing applications to users.
 
             },
 
+            _computeHeaders: function (authorizationToken) {
+                return {
+                    'Authorization': 'token ' + authorizationToken,
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                }
+            },
+
             /**
              * Toggles sharing dialog.
              */
@@ -253,7 +258,7 @@ Provides functionality of sharing applications to users.
              * @private
              */
             _onDialogOpened: function() {
-                this.$.search.focus();
+                this.$.appscoSearch.setup();
             },
 
             /**
@@ -262,13 +267,8 @@ Provides functionality of sharing applications to users.
              * @private
              */
             _onDialogClosed: function() {
-                this.set('_searchList', []);
+                this._reset();
                 this.set('_selectedAccounts', []);
-                this.$.search.value = '';
-                this._searchLoader = false;
-                this._shareLoader = false;
-                this._error = '';
-                this._message = '';
             },
 
             /**
@@ -277,11 +277,9 @@ Provides functionality of sharing applications to users.
              * @param {Object} event
              * @private
              */
-            _search: function(event) {
-                var regexpBackspace = /^Backspace$/i,
-                        regexpAlphanumeric = /^\w$/,
-                        searchValue = this.$.search.value,
-                        searchLength = searchValue.length;
+            _onSearch: function(event) {
+                var searchValue = event.detail.term,
+                    searchLength = searchValue.length;
 
                 this._searchLoader = true;
                 this._message = '';
@@ -293,7 +291,7 @@ Provides functionality of sharing applications to users.
                     return false;
                 }
 
-                if (searchLength < 3 || !(regexpAlphanumeric.test(event.key) || regexpBackspace.test(event.key))) {
+                if (searchLength < 3) {
                     this._message = 'Please type three or more letters.';
                     this._searchLoader = false;
                     this.set('_searchList', []);
@@ -301,7 +299,7 @@ Provides functionality of sharing applications to users.
                 }
 
                 var request = document.createElement('iron-request'),
-                        url = this.accountsApi + '?extended=1&limit=' + this.size + '&term=' + searchValue;
+                    url = this.accountsApi + '?extended=1&limit=' + this.size + '&term=' + searchValue;
 
                 this._message = '';
 
@@ -309,9 +307,7 @@ Provides functionality of sharing applications to users.
                     url: url,
                     method: 'GET',
                     handleAs: 'json',
-                    headers: {
-                        'Authorization': 'token ' + this.authorizationToken
-                    }
+                    headers: this._computedHeaders
                 };
 
                 request.send(options).then(function() {
@@ -327,6 +323,19 @@ Provides functionality of sharing applications to users.
 
                     this._searchLoader = false;
                 }.bind(this));
+            },
+
+            _onSearchClear: function() {
+                this._reset();
+            },
+
+            _reset: function() {
+                this.$.appscoSearch.reset();
+                this.set('_searchList', []);
+                this._searchLoader = false;
+                this._shareLoader = false;
+                this._error = '';
+                this._message = '';
             },
 
             /**
@@ -348,18 +357,18 @@ Provides functionality of sharing applications to users.
 
             _shareAccounts: function(application, more) {
                 var accounts = this._selectedAccounts,
-                        length = accounts.length - 1,
-                        appRequest = document.createElement('iron-request'),
-                        options = {
-                            url: application.self + '/share',
-                            method: 'POST',
-                            handleAs: 'json',
-                            headers: {
-                                'Authorization': 'token ' + this.authorizationToken,
-                                'Content-Type': 'application/x-www-form-urlencoded'
-                            }
-                        },
-                        body = '';
+                    length = accounts.length - 1,
+                    appRequest = document.createElement('iron-request'),
+                    options = {
+                        url: application.self + '/share',
+                        method: 'POST',
+                        handleAs: 'json',
+                        headers: {
+                            'Authorization': 'token ' + this.authorizationToken,
+                            'Content-Type': 'application/x-www-form-urlencoded'
+                        }
+                    },
+                    body = '';
 
                 for (var i = 0; i <= length; i++) {
                     var next = (i === length) ? '' : '&';
@@ -399,7 +408,7 @@ Provides functionality of sharing applications to users.
                 }
 
                 var applications = this.applications,
-                        length = applications.length - 1;
+                    length = applications.length - 1;
 
                 this._shareLoader = true;
 

@@ -1,0 +1,353 @@
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../bower_components/iron-image/iron-image.html">
+<link rel="import" href="../../bower_components/iron-icon/iron-icon.html">
+<link rel="import" href="../../bower_components/iron-icons/iron-icons.html">
+<link rel="import" href="../../bower_components/iron-flex-layout/iron-flex-layout.html">
+<link rel="import" href="../../bower_components/paper-button/paper-button.html">
+<link rel="import" href="../../bower_components/neon-animation/neon-animation-runner-behavior.html">
+<link rel="import" href="../../bower_components/neon-animation/animations/fade-in-animation.html">
+<link rel="import" href="../../bower_components/neon-animation/animations/fade-out-animation.html">
+<link rel="import" href="../../bower_components/paper-styles/typography.html">
+<link rel="import" href="../../bower_components/iron-ajax/iron-request.html">
+
+<link rel="import" href="../../bower_components/appsco-components/appsco-date-format.html">
+
+<!--
+`appsco-company-domain-item`
+Presents domain in form of an item.
+
+    <appsco-company-domain-item domain="{}" authorization-token="">
+    </appsco-company-domain-item>
+
+### Styling
+
+`<appsco-company-domain-item>` provides the following custom properties and mixins for styling:
+
+Custom property | Description | Default
+----------------|-------------|----------
+`--background-color` | Background color applied to the root element | `#fff`
+`--color` | Color applied to all the text | `#33`
+`--appsco-company-domain-item` | Mixin applied to domain item element | `{}`
+`--domain-basic-info` | Mixin applied to the basic info | `{}`
+`--domain-status-info` | Mixin applied to the status info | `{}`
+`--domain-basic-info-values` | Mixin applied to the basic info values | `{}`
+`--domain-status-info-values` | Mixin applied to the status info values | `{}`
+
+-->
+
+<dom-module id="appsco-company-domain-item">
+    <template>
+        <style>
+            :host {
+                display: none;
+                color: var(--primary-text-color);
+            }
+            :host .item-progress-bar {
+                min-width: 100px;
+                width: 100%;
+                position: absolute;
+                top: 0;
+                left: 0;
+                @apply(--item-progress-bar);
+            }
+            .item {
+                width: 100%;
+                height: 70px;
+                padding: 0 10px;
+                box-sizing: border-box;
+                overflow: hidden;
+                position: relative;
+                background-color: var(--background-color, #ffffff);
+                border-radius: 3px;
+                @apply(--shadow-elevation-2dp);
+                @apply(--layout-horizontal);
+                @apply(--layout-center);
+                transition: all 0.1s ease-out;
+                @apply(--appsco-company-domain-item);
+            }
+            .item:hover {
+                @apply(--shadow-elevation-4dp);
+            }
+            .domain-title {
+                display: block;
+                height: 32px;
+                line-height: 16px;
+            @apply(--paper-font-common-base);
+                font-size: 14px;
+                font-weight: 400;
+                overflow: hidden;
+            }
+            .actions {
+            @apply(--layout-horizontal);
+            @apply(--layout-center);
+                position: absolute;
+                right: 4px;
+                bottom: 4px;
+            }
+            paper-button {
+            @apply(--paper-font-common-base);
+            @apply(--paper-font-common-nowrap);
+
+                padding: 4px;
+                font-size: 12px;
+                font-weight: 400;
+                letter-spacing: 0.018em;
+                line-height: 18px;
+                text-transform: uppercase;
+            }
+            paper-button[disabled] {
+                background: transparent;
+            }
+            .domain-info {
+                @apply(--layout-vertical);
+                @apply(--layout-start);
+                padding: 0 10px;
+            }
+            .domain-basic-info {
+                width: 220px;
+                @apply(--domain-basic-info);
+            }
+            .domain-status-info {
+                border-left: 1px solid var(--divider-color);
+                @apply(--domain-status-info);
+            }
+            .domain-basic-info .info-label, .domain-basic-info .info-value {
+                width: 220px;
+                @apply(--paper-font-common-nowrap);
+                @apply(--domain-basic-info-values);
+            }
+            .domain-status-info .info-label, .domain-status-info .info-value {
+                width: 220px;
+                @apply(--paper-font-common-nowrap);
+                @apply(--domain-status-info-values);
+            }
+            .domain-status-info .info-label {
+                color: var(--app-primary-color);
+            }
+            .domain-status-info .not-sent {
+                color: var(--app-danger-color);
+            }
+            .info-label {
+                font-size: 16px;
+                height: auto;
+                line-height: normal;
+            }
+            .info-value {
+                display: block;
+                font-size: 12px;
+            }
+        </style>
+
+        <template is="dom-if" if="[[ preview ]]">
+            <span class="info-label domain-title">[[ domain.title ]]</span>
+        </template>
+
+        <template is="dom-if" if="[[ !preview ]]">
+            <div class="item">
+
+                <paper-progress class="item-progress-bar"
+                                indeterminate
+                                hidden$="[[ !_progressBarDisplay ]]"></paper-progress>
+
+                <div class="domain-info domain-basic-info">
+                    <span class="info-label domain-title">[[ domain.title ]]</span>
+                </div>
+
+                <div class="domain-info domain-status-info">
+                    <template is="dom-if" if="[[ _domainSent ]]">
+                        <span class="info-label">Verified</span>
+                        <span class="info-value">
+                            Verified at:
+                            <appsco-date-format date="[[ domain.verified_at.date ]]"
+                                                options='{"year": "numeric", "month": "long", "day": "numeric", "hour": "2-digit", "minute": "2-digit"}'></appsco-date-format>
+                        </span>
+                    </template>
+
+                    <template is="dom-if" if="[[ !_domainSent ]]">
+                        <span class="info-label not-sent">Pending</span>
+                        <span class="info-value">
+                            Created at:
+                            <appsco-date-format date="[[ domain.created_at.date ]]"
+                                                options='{"year": "numeric", "month": "long", "day": "numeric", "hour": "2-digit", "minute": "2-digit"}'></appsco-date-format>
+                        </span>
+                    </template>
+                </div>
+
+                <div class="actions">
+                    <paper-button on-tap="_onGetToken">Get token</paper-button>
+                    <paper-button on-tap="_onVerify">Verify</paper-button>
+                    <paper-button on-tap="_onRemove">Remove</paper-button>
+                </div>
+            </div>
+        </template>
+
+    </template>
+
+    <script>
+        Polymer({
+
+            is: 'appsco-company-domain-item',
+
+            properties: {
+
+                /**
+                 * Domain that is to be rendered
+                 */
+                domain: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    }
+                },
+
+                /**
+                 * Authorization token.
+                 */
+                authorizationToken: {
+                    type: String,
+                    value: ''
+                },
+
+                /**
+                 * Indicates if domain should be in preview mode rather then full detailed view.
+                 */
+                preview: {
+                    type: Boolean,
+                    value: false
+                },
+
+                _domainTitle: {
+                    type: String,
+                    value: ''
+                },
+
+                _headers: {
+                    type: Object,
+                    computed: '_computeHeaders(authorizationToken)'
+                },
+
+                _verifyApi: {
+                    type: String,
+                    computed: '_computeVerifyApi(domain)'
+                },
+
+                _progressBarDisplay: {
+                    type: Boolean,
+                    value: false
+                },
+
+                /**
+                 * Animation for loader appearance.
+                 */
+                animationConfig: {
+                    value: function() {
+                        return {
+                            'entry': {
+                                name: 'fade-in-animation',
+                                node: this,
+                                timing: {
+                                    duration: 200
+                                }
+                            },
+                            'exit': {
+                                name: 'fade-out-animation',
+                                node: this,
+                                timing: {
+                                    duration: 100
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+
+            behaviors: [
+                Polymer.NeonAnimationRunnerBehavior
+            ],
+
+            attached: function() {
+                this.style.display = 'inline-block';
+                this.playAnimation('entry');
+            },
+
+            _computeHeaders: function(authorizationToken) {
+                return {
+                    'Authorization': 'token ' + authorizationToken,
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                };
+            },
+
+            _computeVerifyApi: function(domain) {
+                return domain && domain.self ? domain.self + '/verify' : '';
+            },
+
+            _showProgressBar: function() {
+                this._progressBarDisplay = true;
+            },
+
+            _hideProgressBar: function() {
+
+                setTimeout(function() {
+                    this._progressBarDisplay = false;
+                }.bind(this), 500);
+            },
+
+            _onGetToken: function(event) {
+                event.stopPropagation();
+
+                /**
+                 * Fired when `get token` action is tapped.
+                 *
+                 * @event get-token
+                 * @param {Object} domain
+                 */
+                this.fire('get-token', {
+                    domain: this.domain
+                });
+            },
+
+            _onVerify: function(event) {
+//                var request = document.createElement('iron-request'),
+//                    options = {
+//                        url: this._verifyApi,
+//                        method: 'PATCH',
+//                        handleAs: 'json',
+//                        headers: this._headers
+//                    };
+//
+//                event.stopPropagation();
+//
+//                this._showProgressBar();
+//
+//                request.send(options).then(function() {
+//
+//                    if (200 == request.status) {
+//                        this.invitation = request.response[0];
+//
+//                        this.fire('invitation-resent', {
+//                            invitation: this.invitation
+//                        });
+//                    }
+//
+//                    this._hideProgressBar();
+//
+//                }.bind(this));
+            },
+
+            _onRemove: function(event) {
+                event.stopPropagation();
+
+                /**
+                 * Fired when `remove` action is tapped.
+                 *
+                 * @event remove
+                 * @param {Object} domain
+                 */
+                this.fire('remove', {
+                    domain: this.domain
+                });
+            }
+
+        });
+    </script>
+</dom-module>

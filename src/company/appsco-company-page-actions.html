@@ -8,13 +8,15 @@
 <link rel="import" href="../../bower_components/iron-media-query/iron-media-query.html">
 <link rel="import" href="../../bower_components/paper-button/paper-button.html">
 
-<dom-module id="appsco-provisioning-settings-page-actions">
+<dom-module id="appsco-company-page-actions">
     <template>
         <style include="shared-styles">
             :host {
                 @apply(--layout-horizontal);
                 @apply(--layout-center);
                 @apply(--layout-end-justified);
+
+                --application-action-icon-color: var(--app-primary-color);
             }
             :host > * {
                 height: 100%;
@@ -25,80 +27,62 @@
                 top: -25%;
                 left: -25%;
             }
-            .provisioning-settings-actions {
+            .domains-actions {
                 @apply(--layout-horizontal);
                 @apply(--layout-center);
                 @apply(--layout-end-justified);
-            }
-            .sync-accounts-action {
-                @apply(--primary-button);
             }
             .global-page-actions {
-                padding-left: 10px;
-                margin-left: 16px;
                 border-left: 1px solid var(--divider-color);
+                margin-left: 16px;
+                padding-left: 10px;
+                display: none;
+            }
+            .add-domain-action {
+                @apply(--primary-button);
+            }
+            :host([tablet-screen]) .global-page-actions {
+                display: block;
                 @apply(--layout-horizontal);
                 @apply(--layout-center);
                 @apply(--layout-end-justified);
-            }
-            :host .back-action {
-                margin-right: 10px;
-            }
-            :host .resource-action {
-                display: none;
-            }
-            :host([tablet-screen]) .resource-action {
-                display: block;
             }
         </style>
 
         <iron-media-query query="(max-width: 800px)" query-matches="{{ tabletScreen }}"></iron-media-query>
 
-        <template is="dom-if" if="[[ _actions ]]">
-            <template is="dom-if" if="[[ _bulkActions ]]">
-                <div class="provisioning-settings-actions">
-                    <paper-button class="sync-accounts-action"
-                                  on-tap="_onSyncAccountsAction">Sync all</paper-button>
-                </div>
-            </template>
-
-            <div class="global-page-actions">
-                <paper-icon-button
-                        class="back-action"
-                        icon="arrow-back"
-                        title="Back"
-                        on-tap="_backTo"></paper-icon-button>
-
-                <paper-icon-button
-                        class="resource-action"
-                        icon="info-outline"
-                        title="Manage Menu"
-                        on-tap="_onResourceAction"></paper-icon-button>
+        <template is="dom-if" if="[[ _domainsActions ]]">
+            <div class="domains-actions">
+                <paper-button class="add-domain-action"
+                              on-tap="_onAddDomainAction">Add domain</paper-button>
             </div>
         </template>
+
+        <div class="global-page-actions">
+            <paper-icon-button
+                    class="info-action"
+                    icon="info-outline"
+                    title="Application Resource"
+                    on-tap="_onResourceAction"></paper-icon-button>
+        </div>
     </template>
 
     <script>
         Polymer({
 
-            is: 'appsco-provisioning-settings-page-actions',
+            is: 'appsco-company-page-actions',
 
             properties: {
+
+                _domainsActions: {
+                    type: Boolean,
+                    value: false
+                },
 
                 tabletScreen: {
                     type: Boolean,
                     value: false,
                     reflectToAttribute: true
-                },
-
-                _actions: {
-                    type: Boolean,
-                    value: true
-                },
-
-                _bulkActions: {
-                    type: Boolean,
-                    value: true
                 },
 
                 /**
@@ -111,6 +95,7 @@
                                 name: 'fade-in-animation',
                                 node: this,
                                 timing: {
+                                    delay: 300,
                                     duration: 300
                                 }
                             },
@@ -130,32 +115,20 @@
                 Polymer.NeonAnimatableBehavior
             ],
 
-            _onSyncAccountsAction: function() {
-                this.fire('sync-accounts');
+            showDomainsPageActions: function() {
+                this._domainsActions = true;
             },
 
-            _backTo: function() {
-                this.fire('back');
+            hideDomainsPageActions: function() {
+                this._domainsActions = false;
             },
 
             _onResourceAction: function() {
                 this.fire('resource-section');
             },
 
-            showBulkActions: function() {
-                this._bulkActions = true;
-            },
-
-            hideBulkActions: function() {
-                this._bulkActions = false;
-            },
-
-            initializePage: function() {
-                this._actions = true;
-            },
-
-            resetPage: function() {
-                this._actions = false;
+            _onAddDomainAction: function() {
+                this.fire('add-domain');
             }
         });
     </script>

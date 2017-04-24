@@ -514,7 +514,9 @@ Custom property | Description | Default
             },
 
             addApplications: function(applications) {
-                var length = applications.length;
+                var length = applications.length,
+                    allApplications = this._allApplications,
+                    allLength = allApplications.length;
 
                 this._applicationsEmpty = false;
                 this._message = '';
@@ -523,12 +525,24 @@ Custom property | Description | Default
                 for (var i = 0; i < length; i++) {
                     var application = applications[i];
 
-                    if (this.company) {
-                        application.selected = false;
-                    }
+                    for (var j = 0; j < allLength; j++) {
 
-                    this.unshift('_applications', application);
-                    this.unshift('_allApplications', applications[i]);
+                        if (allApplications[j].self === application.self) {
+                            break;
+                        }
+                        else if (j === allLength - 1) {
+
+                            if (this.company) {
+                                application.selected = false;
+                            }
+
+                            this.unshift('_applications', application);
+                            this.unshift('_allApplications', application);
+
+                            this._totalApplications++;
+                        }
+
+                    }
                 }
             },
 
@@ -573,10 +587,10 @@ Custom property | Description | Default
 
             removeApplications: function(applications) {
                 var _applications = JSON.parse(JSON.stringify(this._applications)),
-                        _length = _applications.length,
-                        allApplications = JSON.parse(JSON.stringify(this._allApplications)),
-                        allLength = allApplications.length,
-                        lengthModify = applications.length;
+                    _length = _applications.length,
+                    allApplications = JSON.parse(JSON.stringify(this._allApplications)),
+                    allLength = allApplications.length,
+                    lengthModify = applications.length;
 
                 for (var i = 0; i < lengthModify; i++) {
                     var application = applications[i];
@@ -594,6 +608,8 @@ Custom property | Description | Default
                             break;
                         }
                     }
+
+                    this._totalApplications--;
 
                 }
 
@@ -947,6 +963,14 @@ Custom property | Description | Default
                     this._renderedIndex = -1;
                 }
 
+            },
+
+            initialize: function() {
+                this._applicationsEmpty = (0 === this._totalApplications);
+
+                if (this._applicationsEmpty) {
+                    this._message = 'There are no applications.';
+                }
             },
 
             reset: function() {

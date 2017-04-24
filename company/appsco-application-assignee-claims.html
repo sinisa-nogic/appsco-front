@@ -50,7 +50,7 @@ Shows dialog screen with form for changing claims for application instance.
                 @apply(--paper-dialog-dismiss-button);
             }
         </style>
-        
+
         <paper-dialog
                 with-backdrop
                 id="dialog"
@@ -83,8 +83,8 @@ Shows dialog screen with form for changing claims for application instance.
                                 value="{{ _applicationIcon.claims.username }}"
                                 name="account_claims[claims][username]"
                                 required
-                                error-message="Please enter username"
-                                on-keyup="_onInputKeyUp"></paper-input>
+                                auto-validate
+                                error-message="Please enter username."></paper-input>
                         <paper-input
                                 id="password"
                                 label="password"
@@ -92,16 +92,13 @@ Shows dialog screen with form for changing claims for application instance.
                                 value="{{ _applicationIcon.claims.password }}"
                                 name="account_claims[claims][password]"
                                 required
-                                error-message="Please enter password"
-                                on-keyup="_onInputKeyUp"></paper-input>
+                                auto-validate
+                                error-message="Please enter password."></paper-input>
                         <paper-textarea
                                 id="note"
                                 label="note"
                                 value="{{ _applicationIcon.claims.note }}"
-                                name="account_claims[claims][note]"
-                                required
-                                error-message="Please enter note"
-                                on-keyup="_onInputKeyUp"></paper-textarea>
+                                name="account_claims[claims][note]"></paper-textarea>
                     </form>
 
                     <iron-a11y-keys
@@ -286,19 +283,12 @@ Shows dialog screen with form for changing claims for application instance.
                 this._error = '';
             },
 
-            _onInputKeyUp: function(event) {
-                event.target.invalid = false;
-            },
-
             /**
              * Submits signup form on ENTER key using iron-a11y-keys component.
              *
              * @private
              */
             _onEnter: function() {
-                this.$.username.validate();
-                this.$.password.validate();
-                this.$.note.validate();
                 this._submit();
             },
 
@@ -307,9 +297,15 @@ Shows dialog screen with form for changing claims for application instance.
             },
 
             _onFormPresubmit: function() {
+                var form = this.$.form;
+
                 this._loader = true;
-                this.$.form.request.method = 'PUT';
-                this.$.form.request.body['account_claims[account]'] = this.assignee.self;
+                form.request.method = 'PUT';
+                form.request.body['account_claims[account]'] = this.assignee.self;
+
+                if (!form.request.body['account_claims[claims][note]']) {
+                    form.request.body['account_claims[claims][note]'] = '';
+                }
             },
 
             /**

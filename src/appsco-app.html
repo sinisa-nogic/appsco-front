@@ -1268,37 +1268,10 @@
                 'filter-done': '_onPageLoaded',
                 'upgrade-active': '_fireUpgrade',
                 'cancel-subscription': '_onCancelSubscription',
-                'application-added': '_reloadAccountLog',
-                'link-added': '_reloadAccountLog',
-                'application-removed': '_reloadAccountLog',
-                'application-revoked': '_reloadAccountLog',
-                'account-added': '_reloadAccountLog',
-                'accounts-added': '_reloadAccountLog',
-                'added-to-orgunit': '_reloadAccountLog',
-                'account-removed-from-orgunit': '_reloadAccountLog',
-                'accounts-removed': '_reloadAccountLog',
-                'orgunit-added': '_reloadAccountLog',
-                'orgunit-modified': '_reloadAccountLog',
-                'orgunit-removed': '_reloadAccountLog',
-                'company-settings-changed': '_reloadAccountLog',
-                'company-logo-changed': '_reloadAccountLog',
+                'reload-account-log': '_onReloadAccountLog',
                 'info-edit-application-credentials': '_onEditApplicationCredentials',
-                'autologin-changed': '_reloadApplications',
-                'applications-shared': '_reloadApplications',
-                'applications-removed': '_reloadApplications',
-                'access-revoked': '_reloadApplications',
-                'added-to-orgunit': '_reloadApplications',
-                'account-removed-from-orgunit': '_reloadApplications',
-                'settings-saved': '_onAccountUpdated',
-                'password-changed': '_onAccountUpdated',
-                'twofa-enabled': '_onAccountUpdated',
-                'twofa-disabled': '_onAccountUpdated',
-                'account-role-changed': '_onAccountUpdated',
-                'application-revoked': '_onAccountUpdated',
-                'added-to-orgunit': '_onAccountUpdated',
-                'account-removed-from-orgunit': '_onAccountUpdated',
-                'claims-changed': '_onAccountUpdated',
-                'access-revoked': '_onAccountUpdated',
+                'reload-applications': '_onReloadApplications',
+                'reload-accounts': '_onReloadAccounts',
                 'application-settings-saved': '_onApplicationUpdated'
             },
 
@@ -1868,6 +1841,8 @@
                 }
 
                 this._notify(message);
+
+                this._notifyAccountLog();
             },
 
             _onApplicationSettingsSaved: function(event) {
@@ -1884,10 +1859,10 @@
             },
 
             _onAutologinChanged: function() {
-                this._reloadApplications();
+                this._notifyReloadApplications();
             },
 
-            _reloadApplications: function() {
+            _onReloadApplications: function() {
 
                 switch (this.page) {
                     case 'application':
@@ -1980,6 +1955,8 @@
 
             _onApplicationsRemovedFromHomePage: function() {
                 this._showHomePage();
+
+                this._notifyReloadApplications();
             },
 
             /**
@@ -2010,10 +1987,14 @@
 
                         break;
                 }
+
+                this._notifyReloadAccounts();
             },
 
             _onAccountPasswordChanged: function() {
                 this._notify('Account password was successfully changed.');
+
+                this._notifyReloadAccounts();
             },
 
             _onRevokeAuthorizedApplication: function(event) {
@@ -2027,6 +2008,9 @@
                 this._authorizedApplication = {};
                 this._notify(application.title + ' was successfully revoked.');
                 this.$.appscoAccountPage.reloadAuthorizedApplications();
+
+                this._notifyAccountLog();
+                this._notifyReloadAccounts();
             },
 
             _onDisableAdvancedSettings: function() {
@@ -2039,13 +2023,17 @@
 
             _onTwoFaEnabled: function() {
                 this._notify("Two-factor authentication enabled.");
+
+                this._notifyReloadAccounts();
             },
 
             _onTwoFaDisabled: function() {
                 this._notify("Two-factor authentication disabled.");
+
+                this._notifyReloadAccounts();
             },
 
-            _reloadAccountLog: function() {
+            _onReloadAccountLog: function() {
                 if (this.$.appscoAccountPage.$) {
                     this.$.appscoAccountPage.reloadLog();
                 }
@@ -2224,6 +2212,8 @@
                 });
 
                 this._notify('Organization unit ' + orgunit.name + ' successfully added.');
+
+                this._notifyAccountLog();
             },
 
             _onModifyOrgunit: function(event) {
@@ -2244,6 +2234,8 @@
                 });
 
                 this._notify('Organization unit ' + orgunit.name + ' successfully modified.');
+
+                this._notifyAccountLog();
             },
 
             _onRemoveOrgunit: function(event) {
@@ -2263,6 +2255,8 @@
                 });
 
                 this._notify('Organization unit ' + orgunit.name + ' successfully removed.');
+
+                this._notifyAccountLog();
             },
 
             _onCompanyAddApplication: function() {
@@ -2314,7 +2308,11 @@
                     this._companyApplication = applications[0];
                 }
 
-                this._reloadApplicationsForCurrentAccount(orgunit);
+//                this._reloadApplicationsForCurrentAccount(orgunit);
+
+                this._notifyAccountLog();
+                this._notifyReloadApplications();
+                this._notifyReloadAccounts();
             },
 
             _onShareApplications: function() {
@@ -2342,6 +2340,8 @@
                 this.resetApplicationAssigneesPage();
 
                 this._notify('Selected applications were successfully shared.');
+
+                this._notifyReloadApplications();
             },
 
             resetApplicationAssigneesPage: function() {
@@ -2360,9 +2360,12 @@
             },
 
             _onAssigneeClaimsChanged: function(event) {
-                this._notify('Claims for ' + event.detail.assignee.display_name + ' were successfully changed.');
                 this.set('_companyApplication', {});
                 this.set('_companyApplication', event.detail.application);
+                
+                this._notify('Claims for ' + event.detail.assignee.display_name + ' were successfully changed.');
+
+                this._notifyReloadAccounts();
             },
 
             _onRevokeAssigneeAccess: function(event) {
@@ -2384,6 +2387,9 @@
                 if (this.$.appscoManageAccountPage.$) {
                     this.$.appscoManageAccountPage.reloadApplications();
                 }
+
+                this._notifyReloadApplications();
+                this._notifyReloadAccounts();
             },
 
             _removeApplications: function(applications) {
@@ -2409,6 +2415,8 @@
 
                 this._showCompanyApplicationsPage();
                 this._notify('Selected applications were successfully removed from company.');
+
+                this._notifyReloadApplications();
             },
 
             _onApplicationsRemoveFailed: function() {
@@ -2450,7 +2458,7 @@
 
                 this._companyApplication = application;
                 this._notify(application.title + ' has been removed from ' + orgunit.name + ' organization unit.');
-                this._reloadApplicationsForCurrentAccount(orgunit);
+//                this._reloadApplicationsForCurrentAccount(orgunit);
             },
 
             _onEnableAssigneesSearchAction: function() {
@@ -2536,6 +2544,8 @@
                 this.$.appscoDirectoryPage.addAccounts(e.detail.accounts);
                 this._reloadProvisioningIntegrationAccounts();
                 this._notify('Accounts were successfully imported.');
+
+                this._notifyAccountLog();
             },
 
             _addAccountsToOrgunit: function(accounts) {
@@ -2572,6 +2582,10 @@
                         break;
                     }
                 }
+
+                this._notifyAccountLog();
+                this._notifyReloadApplications();
+                this._notifyReloadAccounts();
             },
 
             _onRemoveAccounts: function() {
@@ -2589,6 +2603,8 @@
                 this.set('_selectedAccounts', []);
                 this._reloadProvisioningIntegrationAccounts();
                 this._notify('Selected accounts were successfully removed from company.');
+
+                this._notifyAccountLog();
             },
 
             _onAccountsRemoveFailed: function() {
@@ -2629,6 +2645,8 @@
 
             _onCompanyAccountPasswordChanged: function(event) {
                 this._notify('Password for ' + event.detail.account.name + ' was successfully changed.');
+
+                this._notifyReloadAccounts();
             },
 
             _onAddAccountToOrgunit: function(event) {
@@ -2654,6 +2672,10 @@
 
                 this._role = role;
                 this._notify(role.account.name + ' has been removed from ' + event.detail.orgunit.name + ' organization unit.');
+
+                this._notifyAccountLog();
+                this._notifyReloadApplications();
+                this._notifyReloadAccounts();
             },
 
             _onAccountRoleChanged: function(event) {
@@ -2669,6 +2691,8 @@
                 }
 
                 this._notify(message);
+
+                this._notifyReloadAccounts();
             },
 
             _reloadCompanyAccounts: function() {
@@ -2677,16 +2701,14 @@
                 }
             },
 
-            _onAccountUpdated: function() {
+            _onReloadAccounts: function() {
 
                 switch (this.page) {
                     case 'manage-account':
                         this._reloadCompanyAccounts();
                         break;
 
-                    case 'account':
-
-
+                    default:
                         break;
                 }
             },
@@ -2844,6 +2866,8 @@
             _onCompanyLogoChanged: function(event) {
                 this._setAccountCompany(event.detail.company);
                 this._notify('Company logo was successfully saved.');
+
+                this._notifyAccountLog();
             },
 
             _upgradedToBusiness: function(e) {
@@ -3098,6 +3122,18 @@
                     default:
                         break;
                 }
+            },
+
+            _notifyAccountLog: function() {
+                this.fire('reload-account-log');
+            },
+
+            _notifyReloadApplications: function() {
+                this.fire('reload-applications');
+            },
+
+            _notifyReloadAccounts: function() {
+                this.fire('reload-accounts');
             },
 
             _notify: function(message) {

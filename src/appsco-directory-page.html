@@ -364,6 +364,11 @@
                     observer: '_onRoleChange'
                 },
 
+                _accountAction: {
+                    type: Number,
+                    value: 0
+                },
+
                 mobileScreen: {
                     type: Boolean,
                     value: false,
@@ -524,25 +529,28 @@
             _onAccount: function(event) {
                 var role = event.detail.role;
 
-                if (role.selected) {
-                    this._onViewInfo(event);
-                    this.fire('show-bulk-actions');
-                }
-                else {
-                    var selectedAccount = this.$.appscoAccounts.getFirstSelectedAccount();
+                clearTimeout(this._accountAction);
 
-                    if (!selectedAccount) {
-                        this.hideInfo();
-                        this.fire('hide-bulk-actions');
+                this._accountAction = setTimeout(function() {
 
-                        setTimeout(function() {
+                    if (role.selected) {
+                        this._onViewInfo(event);
+                        this.fire('show-bulk-actions');
+                    }
+                    else {
+                        var selectedAccount = this.$.appscoAccounts.getFirstSelectedAccount();
+
+                        if (!selectedAccount) {
+                            this.hideInfo();
                             this.setDefaultAccount();
-                        }.bind(this), 500);
+                            this.fire('hide-bulk-actions');
+                        }
+                        else if (role.self === this.role.self && this.role.selected) {
+                            this._handleAccountInfo(selectedAccount);
+                        }
                     }
-                    else if (role.self === this.role.self && this.role.selected) {
-                        this._handleAccountInfo(selectedAccount);
-                    }
-                }
+
+                }.bind(this), 10);
             },
 
             _onAccountInfoEdit: function() {

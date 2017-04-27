@@ -327,6 +327,11 @@
                     value: ''
                 },
 
+                _applicationAction: {
+                    type: Number,
+                    value: 0
+                },
+
                 mobileScreen: {
                     type: Boolean,
                     value: false,
@@ -487,25 +492,28 @@
             _onApplication: function(event) {
                 var application = event.detail.application;
 
-                if (application.selected) {
-                    this._onViewApplicationInfo(event);
-                    this.fire('show-bulk-actions');
-                }
-                else {
-                    var selectedApplication = this.$.appscoApplications.getFirstSelectedApplication();
+                clearTimeout(this._applicationAction);
 
-                    if (!selectedApplication) {
-                        this.hideInfo();
-                        this.fire('hide-bulk-actions');
+                this._applicationAction = setTimeout(function() {
 
-                        setTimeout(function() {
+                    if (application.selected) {
+                        this._onViewApplicationInfo(event);
+                        this.fire('show-bulk-actions');
+                    }
+                    else {
+                        var selectedApplication = this.$.appscoApplications.getFirstSelectedApplication();
+
+                        if (!selectedApplication) {
+                            this.hideInfo();
                             this.setDefaultApplication();
-                        }.bind(this), 500);
+                            this.fire('hide-bulk-actions');
+                        }
+                        else if (application.self === this.application.self && this.application.selected) {
+                            this._handleApplicationInfo(selectedApplication);
+                        }
                     }
-                    else if (application.self === this.application.self && this.application.selected) {
-                        this._handleApplicationInfo(selectedApplication);
-                    }
-                }
+
+                }.bind(this), 10);
             },
 
             _onShareApplication: function() {

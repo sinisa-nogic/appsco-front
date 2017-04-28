@@ -155,15 +155,22 @@
 
         <iron-ajax auto
                    url="[[ companyOrgunitsApi ]]"
-                   on-response="_onOrgunitsResponse"
-                   headers="{{ computedHeaders }}"></iron-ajax>
+                   headers="[[ computedHeaders ]]"
+                   handle-as="json"
+                   on-response="_onOrgunitsResponse"></iron-ajax>
 
         <iron-ajax auto
                    url="[[ subscriptionApi ]]"
-                   handle-as="json"
                    headers="[[ computedHeaders ]]"
-                   on-response="_onSubscriptionResponse"
-        ></iron-ajax>
+                   handle-as="json"
+                   on-response="_onSubscriptionResponse"></iron-ajax>
+
+        <iron-ajax id="getDomainsCall"
+                   auto
+                   url="[[ domainsApi ]]"
+                   headers="[[ computedHeaders ]]"
+                   on-response="_onDomainResponse"></iron-ajax>
+
 
         <appsco-content id="appscoContent" resource-active>
 
@@ -307,11 +314,21 @@
                     value: ''
                 },
 
+                domainsApi: {
+                    type: String,
+                    value: ''
+                },
+
                 _subscription: {
                     type: Object,
                     value: function() {
                         return {};
                     }
+                },
+
+                _verifiedDomains: {
+                    type: Number,
+                    value: 0
                 },
 
                 /**
@@ -367,6 +384,11 @@
                 _accountAction: {
                     type: Number,
                     value: 0
+                },
+
+                _verifiedDomain: {
+                    type: Boolean,
+                    value: true
                 },
 
                 mobileScreen: {
@@ -581,6 +603,16 @@
                 }
             },
 
+            _onDomainResponse: function(event) {
+                var status = event.detail.status,
+                    response = event.detail.response;
+
+                if (200 === status && response) {
+                    this._verifiedDomains = response.verified;
+                    this._evaluateDomainVerification();
+                }
+            },
+
             _evaluateSubscriptionLicences: function() {
                 var subscription = this._subscription,
                     licencesTotal = subscription.quantity,
@@ -594,6 +626,28 @@
                 }
             },
 
+            evaluateSubscriptionLicences: function() {
+                this._evaluateSubscriptionLicences();
+            },
+
+            evaluateDomainVerification: function(config) {
+
+                if (config.added && config.domain.verified) {
+                    this._verifiedDomains++;
+                }
+                else if (config.removed && config.domain.verified) {
+                    this._verifiedDomains--;
+                }
+
+                this._evaluateDomainVerification();
+            },
+
+            _evaluateDomainVerification: function() {
+
+                (0 === this._verifiedDomains) ? this._showDomainNotVerifiedInfo() : this._hideDomainNotVerifiedInfo();
+
+            },
+
             _showSubscriptionLimitReachedInfo: function(subscription) {
                 this.fire('show-subscription-limit-reached-info', {
                     subscription: subscription
@@ -604,8 +658,21 @@
                 this.fire('hide-subscription-limit-reached-info');
             },
 
-            evaluateSubscriptionLicences: function() {
-                this._evaluateSubscriptionLicences();
+            _showDomainNotVerifiedInfo: function() {
+                this._verifiedDomain = false;
+                this.fire('show-domain-not-verified-info');
+            },
+
+            _hideDomainNotVerifiedInfo: function() {
+                this._verifiedDomain = true;
+                this.fire('hide-domain-not-verified-info');
+            },
+
+            hideDomainNotVerifiedInfo: function() {
+
+                if (!this._verifiedDomain) {
+                    this._hideDomainNotVerifiedInfo();
+                }
             },
 
             addOrgunit: function(orgunit) {

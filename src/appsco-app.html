@@ -489,6 +489,7 @@
                                     on-upgrade="_fireUpgrade"
                                     on-remove="_onRemoveAccounts"
                                     on-orgunits="_onAddAccountsToOrgunit"
+                                    on-manage-domains="_onManageDomains"
                             ></appsco-directory-page-actions>
 
                             <appsco-manage-account-page-actions
@@ -671,10 +672,13 @@
                             company-directory-roles-api="[[ companyDirectoryRolesApi ]]"
                             company-orgunits-api="[[ companyOrgunitsApi ]]"
                             subscription-api="[[ _subscriptionApi ]]"
+                            domains-api="[[ _domainsApi ]]"
                             on-invitation-resent="_onInvitationResent"
                             on-remove-invitation="_onRemoveInvitation"
                             on-show-subscription-limit-reached-info="_onShowSubscriptionLimitReachedInfo"
                             on-hide-subscription-limit-reached-info="_onHideSubscriptionLimitReachedInfo"
+                            on-show-domain-not-verified-info="_onShowDomainNotVerifiedInfo"
+                            on-hide-domain-not-verified-info="_onHideDomainNotVerifiedInfo"
                             on-edit-account="_onEditAccount"
                             on-info-edit-account="_onEditAccount"
                             on-show-bulk-actions="_onShowBulkActions"
@@ -1450,6 +1454,10 @@
                 this.set('routeData.page', 'company-home');
             },
 
+            _showCompanyPage: function() {
+                this.set('routeData.page', 'company');
+            },
+
             _showCompanyApplicationsPage: function() {
                 this.set('routeData.page', 'applications');
             },
@@ -1642,6 +1650,7 @@
             _onAllNotifications: function() {
                 this.$.appscoAccountPage.showAllNotifications = true;
                 this._showAccountPage();
+                this._setProduct(false);
             },
 
             _onAccountLogout: function() {
@@ -2676,6 +2685,11 @@
                     this.$.appscoDirectoryPage.reloadAccounts();
                 }
             },
+
+            _onManageDomains: function() {
+                this.$.appscoCompanyPage.showDomainsPage = true;
+                this._showCompanyPage();
+            },
             /**
              * Directory page END
              */
@@ -2690,6 +2704,15 @@
             _onHideSubscriptionLimitReachedInfo: function() {
                 this.$.appscoDirectoryPageActions.hideSubscriptionLimitReachedInfo();
             },
+
+            _onShowDomainNotVerifiedInfo: function() {
+                this.$.appscoDirectoryPageActions.showDomainNotVerifiedInfo();
+            },
+
+            _onHideDomainNotVerifiedInfo: function() {
+                this.$.appscoDirectoryPageActions.hideDomainNotVerifiedInfo();
+            },
+
             _onEditAccount: function(event) {
                 var role = event.detail.role,
                     routePath = 'manage-account/' + role.alias;
@@ -2962,6 +2985,14 @@
             _onDomainAdded: function(event) {
                 var domain = event.detail.domain;
 
+                if (this.$.appscoDirectoryPage.$) {
+                    this.$.appscoDirectoryPage.evaluateDomainVerification({
+                        domain: domain,
+                        added: true,
+                        removed: false
+                    });
+                }
+
                 this.$.appscoCompanyPage.addDomain(domain);
                 this._notify('Domain ' + domain.domain + ' was successfully saved.');
             },
@@ -2974,6 +3005,14 @@
             _onDomainRemoved: function(event) {
                 var domain = event.detail.domain;
 
+                if (this.$.appscoDirectoryPage.$) {
+                    this.$.appscoDirectoryPage.evaluateDomainVerification({
+                        domain: domain,
+                        added: false,
+                        removed: true
+                    });
+                }
+
                 this.$.appscoCompanyPage.removeDomain(domain);
                 this._notify('Domain ' + domain.domain + ' was successfully removed.');
             },
@@ -2985,6 +3024,10 @@
 
             _onDomainVerified: function(event) {
                 var domain = event.detail.domain;
+
+                if (this.$.appscoDirectoryPage.$) {
+                    this.$.appscoDirectoryPage.hideDomainNotVerifiedInfo();
+                }
 
                 this.$.appscoCompanyPage.modifyDomain(domain);
                 this._notify('Domain ' + domain.domain + ' was successfully verified.');

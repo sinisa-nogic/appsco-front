@@ -50,7 +50,6 @@ Custom property | Description | Default
             }
             .domains-container {
                 width: 100%;
-                padding-top: 10px;
                 position: relative;
             }
             appsco-loader {
@@ -87,7 +86,10 @@ Custom property | Description | Default
             }
             .total {
                 @apply(--paper-font-caption);
-                opacity: 0.6;
+                color: var(--secondary-text-color);
+            }
+            .emphasized {
+                color: var(--app-danger-color);
             }
             .message {
                 color: var(--secondary-text-color);
@@ -102,9 +104,9 @@ Custom property | Description | Default
             <iron-ajax
                     id="getDomainsApiRequest"
                     url="[[ _domainsApiUrl ]]"
+                    headers="[[ _computedHeaders ]]"
                     on-error="_onError"
                     on-response="_onResponse"
-                    headers="[[ _computedHeaders ]]"
                     debounce-duration="300"></iron-ajax>
 
             <paper-progress id="paperProgress"
@@ -118,7 +120,10 @@ Custom property | Description | Default
             <template is="dom-if" if="[[ !_domainsEmpty ]]">
 
                 <div class="info-total">
-                    <span class="total">Total verified domains: [[ _verifiedDomains ]] ([[ _unverifiedDomains ]] unverified)</span>
+                    <div class="total">
+                        Total verified domains: [[ _verifiedDomains ]]
+                        <span class="total emphasized">([[ _unverifiedDomains ]] unverified)</span>
+                    </div>
                 </div>
 
                 <div class="domains">
@@ -127,8 +132,10 @@ Custom property | Description | Default
                               on-dom-change="_onItemsDomChange">
 
                         <appsco-company-domain-item id="appscoDomainItem_[[ index ]]"
-                                                domain="{{ item }}"
-                                                authorization-token="[[ authorizationToken ]]"></appsco-company-domain-item>
+                                                    domain="{{ item }}"
+                                                    domains-api="[[ domainsApi ]]"
+                                                    authorization-token="[[ authorizationToken ]]"
+                                                    preview="[[ preview ]]"></appsco-company-domain-item>
 
                     </template>
                 </div>
@@ -167,7 +174,7 @@ Custom property | Description | Default
                 },
 
                 /**
-                 * Number of account items to load and present
+                 * Number of items to load and present
                  */
                 size: {
                     type: Number,
@@ -283,6 +290,20 @@ Custom property | Description | Default
                 return (domainsApi && size) ? (domainsApi + '?page=1&extended=1&limit=' + size) : '';
             },
 
+            _computeHeaders: function(authorizationToken) {
+                return {
+                    'Authorization': 'token ' + authorizationToken
+                }
+            },
+
+            _setLoadMoreAction: function() {
+                this._loadMore = (this.loadMore && this._allDomains.length < this._totalDomains);
+            },
+
+            _hideLoadMoreAction: function() {
+                this._loadMore = false;
+            },
+
             _onDomainsApiUrlChanged: function(url) {
 
                 if (url && url.length > 0) {
@@ -298,6 +319,10 @@ Custom property | Description | Default
                 this.$.getDomainsApiRequest.generateRequest();
             },
 
+            reloadDomains: function() {
+                this._loadDomains();
+            },
+
             _loadMoreDomains: function() {
                 this._showLoadMoreProgressBar();
                 this.$.getDomainsApiRequest.url = this._next;
@@ -311,6 +336,7 @@ Custom property | Description | Default
 
             _handleEmptyLoad: function() {
                 this._domainsEmpty = true;
+                this._message = 'There are no domains added.';
 
                 /**
                  * Fired when there are no domains.
@@ -327,9 +353,12 @@ Custom property | Description | Default
                 var response = event.detail.response,
                     domains = response.domains,
                     meta = response.meta,
+                    verifiedCount = response.verified,
                     domainsCount = domains.length - 1;
 
                 this._totalDomains = meta.total;
+                this._verifiedDomains = verifiedCount;
+                this._unverifiedDomains = this._totalDomains - verifiedCount;
                 this._next = meta.next + "&limit=" + this.size;
 
                 if (meta.total === 0) {
@@ -343,7 +372,6 @@ Custom property | Description | Default
                 domains.forEach(function(el, index) {
 
                     setTimeout( function() {
-                        el.selected = false;
 
                         this.push('_domains', el);
                         this.push('_allDomains', el);
@@ -376,69 +404,41 @@ Custom property | Description | Default
                 }.bind(this));
             },
 
-            _computeHeaders: function(authorizationToken) {
-                return {
-                    'Authorization': 'token ' + authorizationToken
-                }
-            },
-
-            _setLoadMoreAction: function() {
-
-                if (this._allDomains.length < this._totalDomains) {
-                    this._loadMore = true;
-                }
-                else {
-                    this._loadMore = false;
-                }
-
-            },
-
-            _hideLoadMoreAction: function() {
-                this._loadMore = false;
-            },
-
-            addDomains: function(domains) {
-                var length = domains.length;
-
+            addDomain: function(domain, respectLimit) {
                 this._domainsEmpty = false;
                 this._message = '';
-                this._renderedIndex = length - 1;
+                this._renderedIndex = 0;
 
-                for (var i = 0; i < length; i++) {
-                    domains[i].selected = false;
-                    this.unshift('_domains', domains[i]);
-                    this.unshift('_allDomains', domains[i]);
+                this.unshift('_domains', domain);
+                this.unshift('_allDomains', domain);
 
-                    this._totalDomains++;
+                if (respectLimit && this._allDomains.length >= this.size) {
+                    this.pop('_domains');
+                    this.pop('_allDomains');
                 }
+
+                domain.verified ? this._verifiedDomains++ : this._unverifiedDomains++;
+                this._totalDomains++;
             },
 
-            modifyDomains: function(domains) {
+            modifyDomain: function(domain) {
                 var _domains = JSON.parse(JSON.stringify(this._domains)),
                     _length = _domains.length,
                     allDomains = JSON.parse(JSON.stringify(this._allDomains)),
-                    allLength = allDomains.length,
-                    lengthModify = domains.length;
+                    allLength = allDomains.length;
 
-                for (var i = 0; i < lengthModify; i++) {
-                    var domain = domains[i];
-
-                    for (var j = 0; j < _length; j++) {
-                        if (domain.self === _domains[j].self) {
-                            domain.selected = _domains[j].selected;
-                            _domains[j] = domain;
-                            break;
-                        }
+                for (var j = 0; j < _length; j++) {
+                    if (domain.alias === _domains[j].alias) {
+                        _domains[j] = domain;
+                        break;
                     }
+                }
 
-                    for (var k = 0; k < allLength; k++) {
-                        if (domain.self === allDomains[k].self) {
-                            domain.selected = allDomains[k].selected;
-                            allDomains[k] = domain;
-                            break;
-                        }
+                for (var k = 0; k < allLength; k++) {
+                    if (domain.alias === allDomains[k].alias) {
+                        allDomains[k] = domain;
+                        break;
                     }
-
                 }
 
                 this.set('_domains', []);
@@ -446,41 +446,41 @@ Custom property | Description | Default
 
                 this.set('_allDomains', []);
                 this.set('_allDomains', allDomains);
+
+                if (domain.verified) {
+                    this._verifiedDomains++;
+                    this._unverifiedDomains--;
+                }
+                else {
+                    this._verifiedDomains--;
+                    this._unverifiedDomains++;
+                }
             },
 
-            reloadDomains: function() {
-                this._loadDomains();
-            },
-
-            removeDomains: function(domains) {
-                var length = domains.length,
-                    _domains = this._domains,
+            removeDomain: function(domain) {
+                var _domains = this._domains,
                     _length = _domains.length,
                     allDomains = this._allDomains,
                     allLength = allDomains.length;
 
-                for (var i = 0; i < length; i++) {
-                    var domain = domains[i];
+                for (var j = 0; j < _length; j++) {
 
-                    for (var j = 0; j < _length; j++) {
-
-                        if (domain.self === _domains[j].self) {
-                            this.splice('_domains', j, 1);
-                            break;
-                        }
+                    if (domain.alias === _domains[j].alias) {
+                        this.splice('_domains', j, 1);
+                        break;
                     }
-
-                    for (var k = 0; k < allLength; k++) {
-
-                        if (domain.self === allDomains[k].self) {
-                            this.splice('_allDomains', k, 1);
-                            break;
-                        }
-                    }
-
-                    this._totalDomains--;
-
                 }
+
+                for (var k = 0; k < allLength; k++) {
+
+                    if (domain.alias === allDomains[k].alias) {
+                        this.splice('_allDomains', k, 1);
+                        break;
+                    }
+                }
+
+                domain.verified ? this._verifiedDomains-- : this._unverifiedDomains--;
+                this._totalDomains--;
 
                 if (0 === this._domains.length) {
                     this._handleEmptyLoad();

@@ -90,6 +90,8 @@
 
 <link rel="import" href="company/appsco-company-page-actions.html">
 <link rel="import" href="company/appsco-company-add-domain.html">
+<link rel="import" href="company/appsco-company-remove-domain.html">
+<link rel="import" href="company/appsco-company-domain-token.html">
 
 <link rel="import" href="shared-styles.html">
 <link rel="import" href="webkit-scrollbar-style.html">
@@ -776,6 +778,9 @@
                             on-company-logo-changed="_onCompanyLogoChanged"
                             on-show-domains-page-actions="_onShowDomainsPageActions"
                             on-hide-domains-page-actions="_onHideDomainsPageActions"
+                            on-remove-domain="_onRemoveDomain"
+                            on-get-token="_onDomainGetToken"
+                            on-domain-verified="_onDomainVerified"
                     ></appsco-company-page>
 
                     <appsco-logout-page name="logout"
@@ -1005,9 +1010,18 @@
         <appsco-company-add-domain
                 id="appscoCompanyAddDomain"
                 authorization-token="[[ authorizationToken ]]"
-                company-api="[[ companyApi ]]"
+                add-domain-api="[[ _domainsApi ]]"
                 on-domain-added="_onDomainAdded">
         </appsco-company-add-domain>
+
+        <appsco-company-remove-domain
+                id="appscoCompanyRemoveDomain"
+                authorization-token="[[ authorizationToken ]]"
+                domains-api="[[ _domainsApi ]]"
+                on-domain-removed="_onDomainRemoved"></appsco-company-remove-domain>
+
+        <appsco-company-domain-token
+                id="appscoCompanyDomainToken"></appsco-company-domain-token>
 
         <template is="dom-if" if="[[ api.me ]]">
             <iron-ajax auto
@@ -1226,6 +1240,11 @@
                 _subscriptionApi: {
                     type: String,
                     computed: '_computeSubscriptionApi(companyApi)'
+                },
+
+                _domainsApi: {
+                    type: String,
+                    computed: '_computeDomainsApi(companyApi)'
                 },
 
                 _globalActions: {
@@ -1473,6 +1492,10 @@
 
             _computeSubscriptionApi: function(companyApi) {
                 return companyApi ? companyApi + '/billing/subscription' : '';
+            },
+
+            _computeDomainsApi: function(companyApi) {
+                return companyApi ? companyApi + '/domains' : '';
             },
 
             _onGetAccountResponse: function(event) {
@@ -2893,14 +2916,6 @@
                 this.getCurrentAppscoPageElement().toggleResource();
             },
 
-            _onAddDomain: function() {
-                this.$.appscoCompanyAddDomain.open();
-            },
-
-            _onDomainAdded: function(event) {
-                this._notify('Domain ' + event.detail.domain.name + ' was successfully saved.');
-            },
-
             _onCompanySettingsChanged: function(event) {
                 this._setAccountCompany(event.detail.company);
                 this._notify('Company settings were successfully saved.');
@@ -2938,6 +2953,41 @@
 
             _onHideDomainsPageActions: function() {
                 this.$.appscoCompanyPageActions.hideDomainsPageActions();
+            },
+
+            _onAddDomain: function() {
+                this.$.appscoCompanyAddDomain.open();
+            },
+
+            _onDomainAdded: function(event) {
+                var domain = event.detail.domain;
+
+                this.$.appscoCompanyPage.addDomain(domain);
+                this._notify('Domain ' + domain.domain + ' was successfully saved.');
+            },
+
+            _onRemoveDomain: function(event) {
+                this.$.appscoCompanyRemoveDomain.setDomain(event.detail.domain);
+                this.$.appscoCompanyRemoveDomain.open();
+            },
+
+            _onDomainRemoved: function(event) {
+                var domain = event.detail.domain;
+
+                this.$.appscoCompanyPage.removeDomain(domain);
+                this._notify('Domain ' + domain.domain + ' was successfully removed.');
+            },
+
+            _onDomainGetToken: function(event) {
+                this.$.appscoCompanyDomainToken.setDomain(event.detail.domain);
+                this.$.appscoCompanyDomainToken.open();
+            },
+
+            _onDomainVerified: function(event) {
+                var domain = event.detail.domain;
+
+                this.$.appscoCompanyPage.modifyDomain(domain);
+                this._notify('Domain ' + domain.domain + ' was successfully verified.');
             },
             /**
              * Company page END

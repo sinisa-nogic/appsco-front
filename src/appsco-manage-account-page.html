@@ -6,6 +6,7 @@
 <link rel="import" href="../bower_components/iron-image/iron-image.html">
 <link rel="import" href="../bower_components/iron-media-query/iron-media-query.html">
 <link rel="import" href="../bower_components/iron-ajax/iron-ajax.html">
+<link rel="import" href="../bower_components/iron-ajax/iron-request.html">
 
 <link rel="import" href="../bower_components/appsco-page/appsco-content.html">
 <link rel="import" href="../bower_components/appsco-account/appsco-account-image-settings.html">
@@ -178,7 +179,9 @@
                 <div class="resource-actions flex-horizontal">
                     <paper-button
                             class="change-password-button flex"
-                            on-tap="_onChangePassword">
+                            on-tap="_onChangePassword"
+                            disabled="[[ !_canManage ]]"
+                    >
                         Change password
                     </paper-button>
                 </div>
@@ -196,6 +199,7 @@
                         <appsco-manage-account-components-page
                                 id="appscoManageAccountComponentsPage"
                                 name="appsco-account-components-page"
+                                can-manage="[[ _canManage ]]"
                                 role="[[ role ]]"
                                 authorization-token="[[ authorizationToken ]]"
                                 notifications-api="[[ _notificationsApi ]]"
@@ -284,6 +288,11 @@
                     value: function() {
                         return {};
                     }
+                },
+
+                _canManage: {
+                    type: Boolean,
+                    value: false
                 },
 
                 role: {
@@ -535,6 +544,20 @@
 
             _onAccountResponse: function(event) {
                 this.set('role', event.detail.response);
+
+                var request = document.createElement('iron-request');
+                request.send({
+                    url: event.detail.response.self + '/can-be-managed',
+                    method: "GET",
+                    handleAs: 'json',
+                    headers: {
+                        "Authorization": "token " + this.authorizationToken
+                    }
+                }).then(function() {
+                    this.set('_canManage', true);
+                }.bind(this), function(){
+                    this.set('_canManage', false);
+                }.bind(this));
             },
 
             _onAccountError: function() {

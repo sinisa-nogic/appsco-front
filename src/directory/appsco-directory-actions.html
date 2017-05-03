@@ -11,7 +11,7 @@
 <link rel="import" href="../../bower_components/neon-animation/animations/fade-in-animation.html">
 <link rel="import" href="../../bower_components/neon-animation/animations/fade-out-animation.html">
 
-<link rel="import" href="appsco-subscription-info-dropdown.html">
+<link rel="import" href="appsco-info-dropdown.html">
 <link rel="import" href="../../bower_components/appsco-components/appsco-search.html">
 
 <dom-module id="appsco-directory-actions">
@@ -25,6 +25,10 @@
                 @apply(--layout-center);
                 @apply(--layout-end-justified);
                 @apply(--appsco-directory-actions);
+            }
+            paper-icon-button {
+                color: var(--account-action-icon-color);
+                --paper-icon-button-ink-color: var(--account-action-icon-color);
             }
             appsco-search {
                 max-width: 200px;
@@ -71,6 +75,12 @@
             .info-icon {
                 --iron-icon-fill-color: var(--info-icon-color, --paper-orange-300);
             }
+            :host .info {
+                margin: 0;
+            }
+            :host .emphasis {
+                font-weight: 600;
+            }
         </style>
 
         <div class="action action-search flex-none">
@@ -97,20 +107,52 @@
                            position="bottom">Remove</paper-tooltip>
         </div>
 
-        <template is="dom-if" if="[[ _info ]]">
+        <template is="dom-if" if="[[ _subscriptionInfo ]]">
             <div class="action flex-none">
                 <paper-icon-button id="infoAction"
                                    class="info-icon"
                                    icon="icons:info"
                                    alt="Show info"
-                                   on-tap="_onToggleInfo"></paper-icon-button>
+                                   on-tap="_onToggleSubscriptionInfo"></paper-icon-button>
             </div>
 
-            <appsco-subscription-info-dropdown id="appscoSubscriptionInfoDropdown"
-                                               subscription="[[ _subscription ]]"></appsco-subscription-info-dropdown>
+            <appsco-info-dropdown id="appscoSubscriptionInfoDropdown"
+                                  action-label="Upgrade"
+                                  on-info-action="_onSubscriptionInfoAction">
+
+                <div content>
+                    <p class="info">Maximum number of
+                        <span class="emphasis">[[ _subscription.quantity ]] AppsCo licences</span> have been reached.</p>
+                    <p class="info">Please upgrade subscription in order to add more accounts.</p>
+                </div>
+
+            </appsco-info-dropdown>
         </template>
 
-        <template is="dom-if" if="[[ !_info ]]">
+        <template is="dom-if" if="[[ _domainInfo ]]">
+            <div class="action flex-none">
+                <paper-icon-button id="infoAction"
+                                   class="info-icon"
+                                   icon="icons:info"
+                                   alt="Show info"
+                                   on-tap="_onToggleDomainInfo"></paper-icon-button>
+            </div>
+
+            <appsco-info-dropdown id="appscoDomainInfoDropdown"
+                                  action-label="Manage domains"
+                                  on-info-action="_onDomainInfoAction">
+
+                <div content>
+                    <p class="info">
+                        You do not have any managed domains registered in AppsCo.
+                    </p>
+                    <p class="info">Please verify at least one domain in order to be able to manage user profiles.</p>
+                </div>
+
+            </appsco-info-dropdown>
+        </template>
+
+        <template is="dom-if" if="[[ !_subscriptionInfo ]]">
             <div class="action flex-none">
                 <paper-button
                         class="add-application-button"
@@ -162,7 +204,12 @@
                     value: false
                 },
 
-                _info: {
+                _subscriptionInfo: {
+                    type: Boolean,
+                    value: false
+                },
+
+                _domainInfo: {
                     type: Boolean,
                     value: false
                 },
@@ -337,16 +384,36 @@
             },
 
             showSubscriptionLimitReachedInfo: function(subscription) {
-                this._subscription = subscription
-                this._info = true;
+                this._subscription = subscription;
+                this._subscriptionInfo = true;
             },
 
             hideSubscriptionLimitReachedInfo: function() {
-                this._info = false;
+                this._subscriptionInfo = false;
             },
 
-            _onToggleInfo: function(event) {
+            showDomainNotVerifiedInfo: function() {
+                this._domainInfo = true;
+            },
+
+            hideDomainNotVerifiedInfo: function() {
+                this._domainInfo = false;
+            },
+
+            _onToggleSubscriptionInfo: function(event) {
                 this.$$('#appscoSubscriptionInfoDropdown').toggle(event.target);
+            },
+
+            _onToggleDomainInfo: function(event) {
+                this.$$('#appscoDomainInfoDropdown').toggle(event.target);
+            },
+
+            _onSubscriptionInfoAction: function() {
+                this.fire('upgrade');
+            },
+
+            _onDomainInfoAction: function() {
+                this.fire('manage-domains');
             },
 
             _onNeonAnimationFinish: function() {

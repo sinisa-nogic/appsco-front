@@ -10,6 +10,7 @@
 <link rel="import" href="company/appsco-company-components-page.html">
 <link rel="import" href="company/appsco-company-settings-page.html">
 <link rel="import" href="company/appsco-company-brand-settings-page.html">
+<link rel="import" href="company/appsco-company-domains-page.html">
 
 
 <dom-module id="appsco-company-page">
@@ -110,12 +111,12 @@
                                 id="appscoCompanyComponentsPage"
                                 name="appsco-company-components-page"
                                 company="[[ company ]]"
-                                authorization-token="[[ authorizationToken ]]"
-                                image-settings-api="[[ imageSettingsApi ]]"
-                                settings-api="[[ settingsApi ]]"
                                 brand-logo="[[ brandLogo ]]"
+                                authorization-token="[[ authorizationToken ]]"
+                                domains-api="[[ domainsApi ]]"
                                 on-manage-company-settings="_onManageCompanySettings"
                                 on-manage-company-brand-settings="_onManageCompanyBrandSettings"
+                                on-manage-company-domains="_onManageCompanyDomains"
                                 on-page-loaded="_onPageLoaded">
                         </appsco-company-components-page>
 
@@ -137,6 +138,13 @@
                                 on-company-brand-settings-changed="_onCompanyBrandSettingsChanged"
                                 on-back="_onResourceBack">
                         </appsco-company-brand-settings-page>
+
+                        <appsco-company-domains-page id="appscoCompanyDomainsPage"
+                                name="appsco-company-domains-page"
+                                authorization-token="[[ authorizationToken ]]"
+                                domains-api="[[ domainsApi ]]"
+                                on-back="_onResourceBack">
+                        </appsco-company-domains-page>
 
                     </neon-animated-pages>
                 </div>
@@ -189,6 +197,14 @@
                 },
 
                 /**
+                 * Get domains link.
+                 */
+                domainsApi: {
+                    type: String,
+                    computed: '_computeDomainsApi(company)'
+                },
+
+                /**
                  * Selected page.
                  * It has value of component's 'name' attribute.
                  */
@@ -196,6 +212,12 @@
                     type: String,
                     value: 'appsco-company-components-page',
                     notify: true
+                },
+
+                showDomainsPage: {
+                    type: Boolean,
+                    value: false,
+                    observer: '_observeShowDomainsPage'
                 },
 
                 /**
@@ -253,6 +275,41 @@
                 this._showCompanyComponentsPage();
             },
 
+            toggleResource: function() {
+                this.$.appscoContent.toggleSection('resource');
+            },
+
+            addDomain: function(domain) {
+                this.$.appscoCompanyComponentsPage.addDomain(domain);
+                this.$.appscoCompanyDomainsPage.addDomain(domain);
+            },
+
+            modifyDomain: function(domain) {
+                this.$.appscoCompanyComponentsPage.modifyDomain(domain);
+                this.$.appscoCompanyDomainsPage.modifyDomain(domain);
+            },
+
+            removeDomain: function(domain) {
+                this.$.appscoCompanyComponentsPage.removeDomain(domain);
+                this.$.appscoCompanyDomainsPage.removeDomain(domain);
+            },
+
+            showManageDomainsPage: function() {
+                this.$.appscoCompanyComponentsPage.setSharedElement('domains');
+
+                setTimeout(function() {
+                    this._showCompanyDomainsPage();
+                    this.showDomainsPage = false;
+                }.bind(this), 50);
+            },
+
+            _observeShowDomainsPage: function(show) {
+
+                if (show) {
+                    this.showManageDomainsPage();
+                }
+            },
+
             _computeSettingsApi: function(company) {
                 return company.meta && company.meta.settings;
             },
@@ -263,6 +320,10 @@
 
             _computeImageSettingsApi: function(company) {
                 return company.meta && company.meta.logo;
+            },
+
+            _computeDomainsApi: function(company) {
+                return company.meta && company.meta.domains;
             },
 
             _updateScreen: function(medium, tablet, mobile) {
@@ -293,6 +354,10 @@
                 this._selected = 'appsco-company-brand-settings-page';
             },
 
+            _showCompanyDomainsPage: function() {
+                this._selected = 'appsco-company-domains-page';
+            },
+
             _onResourceBack: function() {
                 this._showCompanyComponentsPage();
             },
@@ -313,12 +378,17 @@
                 this._showCompanyComponentsPage();
             },
 
+            _onManageCompanyDomains: function() {
+                this._showCompanyDomainsPage();
+            },
+
             _onPageAnimationFinish: function(event) {
                 var fromPage = event.detail.fromPage,
                     toPage = event.detail.toPage;
 
                 switch(fromPage.getAttribute('name')) {
                     case 'appsco-company-settings-page':
+                    case 'appsco-company-domains-page':
                         fromPage.resetPage();
                         break;
 
@@ -328,6 +398,7 @@
 
                 switch(toPage.getAttribute('name')) {
                     case 'appsco-company-settings-page':
+                    case 'appsco-company-domains-page':
                         toPage.setupPage();
                         break;
 

@@ -5,24 +5,24 @@
 <link rel="import" href="../../bower_components/appsco-header/appsco-dropdown.html">
 
 <!--
-`appsco-subscription-info-dropdown`
+`appsco-info-dropdown`
 Is used to present subscription info dropdown.
 
 Example:
 
     <body>
-      <appsco-subscription-info-dropdown>
-     </appsco-subscription-info-dropdown>
+      <appsco-info-dropdown>
+     </appsco-info-dropdown>
 
  Custom property | Description | Default
 ----------------|-------------|----------
-`--appsco-subscription-info-dropdown` | Mixin applied to inner appsco-dropdown within root element | `{}`
+`--appsco-info-dropdown` | Mixin applied to inner appsco-dropdown within root element | `{}`
 `--subscription-info-dropdown-action` | Mixin applied to dropdown action button | `{}`
 `--subscription-info-dropdown-header-text` | Mixin applied to paper-card header text | `{}`
 
 -->
 
-<dom-module id="appsco-subscription-info-dropdown">
+<dom-module id="appsco-info-dropdown">
     <template>
         <style include="iron-flex iron-flex-alignment">
             :host {
@@ -32,17 +32,19 @@ Example:
 
                 --paper-card-content: {
                     @apply(--layout-flex-vertical);
+                    padding: 10px;
                     font-size: 14px;
                 };
                 --paper-card-actions: {
-                    padding: 0;
+                    padding: 6px 0;
                     border-color: #ffffff;
+                    font-size: 12px;
                 };
             }
             appsco-dropdown {
                 top: 12px;
                 right: 0;
-                @apply(--appsco-subscription-info-dropdown);
+                @apply(--appsco-info-dropdown);
 
                 --dropdown-caret-background-color: var(--paper-orange-300);
             }
@@ -54,18 +56,12 @@ Example:
             }
             :host .dropdown-action {
                 width: 100%;
-                padding: 6px 0;
+                padding: 0;
                 margin: 0;
                 border-radius: 0;
                 background-color: transparent;
-                font-size: 14px;
+                font-size: 12px;
                 border: none;
-            }
-            :host .info {
-                margin: 0;
-            }
-            :host .emphasis {
-                font-weight: 600;
             }
         </style>
 
@@ -76,16 +72,18 @@ Example:
             <paper-card class="layout vertical">
 
                 <div class="card-content">
-                    <p class="info">Maximum number of
-                        <span class="emphasis">[[ subscription.quantity ]] AppsCo licences</span> have been reached.</p>
-                    <p class="info">Please upgrade subscription in order to add more accounts.</p>
+
+                    <content select="[content]"></content>
+
                 </div>
 
-                <div id="dropdownActions"
-                     class="card-actions">
-                    <paper-button class="dropdown-action"
-                                  on-tap="_onDropdownAction">Upgrade</paper-button>
-                </div>
+                <template is="dom-if" if="[[ actionLabel ]]">
+                    <div id="dropdownActions"
+                         class="card-actions">
+                        <paper-button class="dropdown-action"
+                                      on-tap="_onDropdownAction">[[ actionLabel ]]</paper-button>
+                    </div>
+                </template>
 
             </paper-card>
 
@@ -96,15 +94,13 @@ Example:
     <script>
         Polymer({
 
-            is: 'appsco-subscription-info-dropdown',
+            is: 'appsco-info-dropdown',
 
             properties: {
 
-                subscription: {
-                    type: Object,
-                    value: function() {
-                        return {};
-                    }
+                actionLabel: {
+                    type: String,
+                    value: ''
                 },
 
                 /**
@@ -137,7 +133,7 @@ Example:
                  *
                  * @event upgrade
                  */
-                this.fire('upgrade');
+                this.fire('info-action');
 
                 this.toggle();
             }

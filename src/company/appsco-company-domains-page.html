@@ -6,12 +6,10 @@
 <link rel="import" href="../../bower_components/neon-animation/animations/slide-right-animation.html">
 <link rel="import" href="../../bower_components/paper-card/paper-card.html">
 <link rel="import" href="../../bower_components/paper-icon-button/paper-icon-button.html">
-<link rel="import" href="../../bower_components/paper-button/paper-button.html">
-<link rel="import" href="../../bower_components/paper-progress/paper-progress.html">
 
-<link rel="import" href="../../bower_components/appsco-application/appsco-application-subscribers.html">
+<link rel="import" href="appsco-company-domains.html">
 
-<dom-module id="appsco-application-subscribers-page">
+<dom-module id="appsco-company-domains-page">
     <template>
         <style include="webkit-scrollbar-style">
             :host {
@@ -23,31 +21,33 @@
 
                 --background-color: var(--body-background-color);
             }
-            :host paper-card {
+            paper-card {
                 @apply(--full-page-paper-card);
+
+                --paper-card-header-text: {
+                    color: var(--primary-text-color);
+                };
             }
             .page-close-action {
                 @apply(--page-close-action);
             }
         </style>
 
-        <paper-card heading="Subscribers" id="card">
+        <paper-card heading="Domains" id="card">
             <paper-icon-button
                     icon="close"
                     title="Close"
                     class="page-close-action"
-                    on-tap="_back"></paper-icon-button>
+                    on-tap="_onBack"></paper-icon-button>
 
-            <div class="card-content layout vertical">
-
-                <appsco-application-subscribers
-                        id="appscoApplicationSubscribers"
-                        application="[[ application ]]"
-                        account="[[ account ]]"
+            <div class="card-content">
+                <appsco-company-domains
+                        id="appscoCompanyDomains"
                         authorization-token="[[ authorizationToken ]]"
+                        domains-api="[[ domainsApi ]]"
                         size="10"
-                        load-more>
-                </appsco-application-subscribers>
+                        load-more
+                        on-remove="_onRemoveDomain"></appsco-company-domains>
             </div>
         </paper-card>
 
@@ -56,20 +56,20 @@
     <script>
         Polymer({
 
-            is: 'appsco-application-subscribers-page',
+            is: 'appsco-company-domains-page',
 
             properties: {
 
                 authorizationToken: {
-                    type: String,
-                    value: ''
+                    type: String
                 },
 
-                account: {
-                    type: Object,
-                    value: function() {
-                        return {};
-                    }
+                /**
+                 * Get domains link.
+                 */
+                domainsApi: {
+                    type: String,
+                    value: ''
                 },
 
                 /**
@@ -119,20 +119,34 @@
                 Polymer.NeonSharedElementAnimatableBehavior
             ],
 
-            _back: function() {
+            _onBack: function() {
                 this.fire('back');
             },
 
-            searchSubscribers: function(term) {
-                this.$.appscoApplicationSubscribers.search(term);
+            addDomain: function(domain) {
+                this.$.appscoCompanyDomains.addDomain(domain);
+            },
+
+            modifyDomain: function(domain) {
+                this.$.appscoCompanyDomains.modifyDomain(domain);
+            },
+
+            removeDomain: function(domain) {
+                this.$.appscoCompanyDomains.removeDomain(domain);
             },
 
             setupPage: function() {
-                this.fire('enable-subscribers-search-action');
+                this.fire('show-domains-page-actions');
             },
 
             resetPage: function() {
-                this.fire('disable-subscribers-search-action');
+                this.fire('hide-domains-page-actions');
+            },
+
+            _onRemoveDomain: function(event) {
+                this.fire('remove-domain', {
+                    domain: event.detail.domain
+                })
             }
         });
     </script>

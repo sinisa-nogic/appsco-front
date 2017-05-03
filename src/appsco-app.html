@@ -88,6 +88,11 @@
 <link rel="import" href="provisioning/appsco-provisioning-settings-page-actions.html">
 <link rel="import" href="provisioning/appsco-start-integration.html">
 
+<link rel="import" href="company/appsco-company-page-actions.html">
+<link rel="import" href="company/appsco-company-add-domain.html">
+<link rel="import" href="company/appsco-company-remove-domain.html">
+<link rel="import" href="company/appsco-company-domain-token.html">
+
 <link rel="import" href="shared-styles.html">
 <link rel="import" href="webkit-scrollbar-style.html">
 
@@ -381,7 +386,7 @@
                                 <a name="billing" href="/billing">
                                     <iron-icon icon="icons:payment"></iron-icon> <span class="menu-text">Billing</span>
                                 </a>
-                                <a name="settings" href="/company">
+                                <a name="company" href="/company">
                                     <iron-icon icon="icons:settings"></iron-icon> <span class="menu-text">Settings</span>
                                 </a>
                             </template>
@@ -484,6 +489,7 @@
                                     on-upgrade="_fireUpgrade"
                                     on-remove="_onRemoveAccounts"
                                     on-orgunits="_onAddAccountsToOrgunit"
+                                    on-manage-domains="_onManageDomains"
                             ></appsco-directory-page-actions>
 
                             <appsco-manage-account-page-actions
@@ -505,6 +511,12 @@
                                     on-back="_showCompanyProvisioningPage"
                                     on-resource-section="_onResourceActionProvisioningSettingsPage"
                                     on-sync-accounts="_onSyncAccounts"></appsco-provisioning-settings-page-actions>
+
+                            <appsco-company-page-actions
+                                    id="appscoCompanyPageActions"
+                                    name="company"
+                                    on-resource-section="_onResourceActionCompanyPage"
+                                    on-add-domain="_onAddDomain"></appsco-company-page-actions>
                         </neon-animated-pages>
 
                     </app-toolbar>
@@ -660,10 +672,13 @@
                             company-directory-roles-api="[[ companyDirectoryRolesApi ]]"
                             company-orgunits-api="[[ companyOrgunitsApi ]]"
                             subscription-api="[[ _subscriptionApi ]]"
+                            domains-api="[[ _domainsApi ]]"
                             on-invitation-resent="_onInvitationResent"
                             on-remove-invitation="_onRemoveInvitation"
                             on-show-subscription-limit-reached-info="_onShowSubscriptionLimitReachedInfo"
                             on-hide-subscription-limit-reached-info="_onHideSubscriptionLimitReachedInfo"
+                            on-show-domain-not-verified-info="_onShowDomainNotVerifiedInfo"
+                            on-hide-domain-not-verified-info="_onHideDomainNotVerifiedInfo"
                             on-edit-account="_onEditAccount"
                             on-info-edit-account="_onEditAccount"
                             on-show-bulk-actions="_onShowBulkActions"
@@ -756,7 +771,7 @@
                             on-send-invoice="_onSendInvoice"></appsco-billing-page>
 
                     <appsco-company-page
-                            id="appscoCompanySettingsPage"
+                            id="appscoCompanyPage"
                             name="company"
                             company="{{ currentCompany.company }}"
                             authorization-token="[[ authorizationToken ]]"
@@ -765,6 +780,11 @@
                             on-company-settings-changed="_onCompanySettingsChanged"
                             on-company-brand-settings-changed="_onCompanyBrandSettingsChanged"
                             on-company-logo-changed="_onCompanyLogoChanged"
+                            on-show-domains-page-actions="_onShowDomainsPageActions"
+                            on-hide-domains-page-actions="_onHideDomainsPageActions"
+                            on-remove-domain="_onRemoveDomain"
+                            on-get-token="_onDomainGetToken"
+                            on-domain-verified="_onDomainVerified"
                     ></appsco-company-page>
 
                     <appsco-logout-page name="logout"
@@ -991,6 +1011,22 @@
                 company-api="[[ companyApi ]]">
         </appsco-start-integration>
 
+        <appsco-company-add-domain
+                id="appscoCompanyAddDomain"
+                authorization-token="[[ authorizationToken ]]"
+                add-domain-api="[[ _domainsApi ]]"
+                on-domain-added="_onDomainAdded">
+        </appsco-company-add-domain>
+
+        <appsco-company-remove-domain
+                id="appscoCompanyRemoveDomain"
+                authorization-token="[[ authorizationToken ]]"
+                domains-api="[[ _domainsApi ]]"
+                on-domain-removed="_onDomainRemoved"></appsco-company-remove-domain>
+
+        <appsco-company-domain-token
+                id="appscoCompanyDomainToken"></appsco-company-domain-token>
+
         <template is="dom-if" if="[[ api.me ]]">
             <iron-ajax auto
                        url="[[ api.me ]]"
@@ -1210,6 +1246,11 @@
                     computed: '_computeSubscriptionApi(companyApi)'
                 },
 
+                _domainsApi: {
+                    type: String,
+                    computed: '_computeDomainsApi(companyApi)'
+                },
+
                 _globalActions: {
                     type: Boolean,
                     value: true
@@ -1413,6 +1454,10 @@
                 this.set('routeData.page', 'company-home');
             },
 
+            _showCompanyPage: function() {
+                this.set('routeData.page', 'company');
+            },
+
             _showCompanyApplicationsPage: function() {
                 this.set('routeData.page', 'applications');
             },
@@ -1455,6 +1500,10 @@
 
             _computeSubscriptionApi: function(companyApi) {
                 return companyApi ? companyApi + '/billing/subscription' : '';
+            },
+
+            _computeDomainsApi: function(companyApi) {
+                return companyApi ? companyApi + '/domains' : '';
             },
 
             _onGetAccountResponse: function(event) {
@@ -1601,6 +1650,7 @@
             _onAllNotifications: function() {
                 this.$.appscoAccountPage.showAllNotifications = true;
                 this._showAccountPage();
+                this._setProduct(false);
             },
 
             _onAccountLogout: function() {
@@ -1627,14 +1677,21 @@
                     case 'home':
                         return this.$.appscoHomePage;
                         break;
+
                     case 'company-home':
                         return this.$.appscoCompanyHomePage;
                         break;
+
                     case 'applications':
                         return this.$.appscoApplicationsPage;
                         break;
+
                     case 'directory':
                         return this.$.appscoDirectoryPage;
+                        break;
+
+                    case 'company':
+                        return this.$.appscoCompanyPage;
                         break;
                 }
             },
@@ -2628,6 +2685,11 @@
                     this.$.appscoDirectoryPage.reloadAccounts();
                 }
             },
+
+            _onManageDomains: function() {
+                this.$.appscoCompanyPage.showDomainsPage = true;
+                this._showCompanyPage();
+            },
             /**
              * Directory page END
              */
@@ -2642,6 +2704,15 @@
             _onHideSubscriptionLimitReachedInfo: function() {
                 this.$.appscoDirectoryPageActions.hideSubscriptionLimitReachedInfo();
             },
+
+            _onShowDomainNotVerifiedInfo: function() {
+                this.$.appscoDirectoryPageActions.showDomainNotVerifiedInfo();
+            },
+
+            _onHideDomainNotVerifiedInfo: function() {
+                this.$.appscoDirectoryPageActions.hideDomainNotVerifiedInfo();
+            },
+
             _onEditAccount: function(event) {
                 var role = event.detail.role,
                     routePath = 'manage-account/' + role.alias;
@@ -2864,6 +2935,10 @@
             /**
              * Company page START
              */
+            _onResourceActionCompanyPage: function() {
+                this.getCurrentAppscoPageElement().toggleResource();
+            },
+
             _onCompanySettingsChanged: function(event) {
                 this._setAccountCompany(event.detail.company);
                 this._notify('Company settings were successfully saved.');
@@ -2893,6 +2968,69 @@
                 setTimeout(function() {
                     this._notify('Please setup your company settings.');
                 }.bind(this), 2000);
+            },
+
+            _onShowDomainsPageActions: function() {
+                this.$.appscoCompanyPageActions.showDomainsPageActions();
+            },
+
+            _onHideDomainsPageActions: function() {
+                this.$.appscoCompanyPageActions.hideDomainsPageActions();
+            },
+
+            _onAddDomain: function() {
+                this.$.appscoCompanyAddDomain.open();
+            },
+
+            _onDomainAdded: function(event) {
+                var domain = event.detail.domain;
+
+                if (this.$.appscoDirectoryPage.$) {
+                    this.$.appscoDirectoryPage.evaluateDomainVerification({
+                        domain: domain,
+                        added: true,
+                        removed: false
+                    });
+                }
+
+                this.$.appscoCompanyPage.addDomain(domain);
+                this._notify('Domain ' + domain.domain + ' was successfully saved.');
+            },
+
+            _onRemoveDomain: function(event) {
+                this.$.appscoCompanyRemoveDomain.setDomain(event.detail.domain);
+                this.$.appscoCompanyRemoveDomain.open();
+            },
+
+            _onDomainRemoved: function(event) {
+                var domain = event.detail.domain;
+
+                if (this.$.appscoDirectoryPage.$) {
+                    this.$.appscoDirectoryPage.evaluateDomainVerification({
+                        domain: domain,
+                        added: false,
+                        removed: true
+                    });
+                }
+
+                this.$.appscoCompanyPage.removeDomain(domain);
+                this._notify('Domain ' + domain.domain + ' was successfully removed.');
+            },
+
+            _onDomainGetToken: function(event) {
+                this.$.appscoCompanyDomainToken.setDomain(event.detail.domain);
+                this.$.appscoCompanyDomainToken.open();
+            },
+
+            _onDomainVerified: function(event) {
+                var domain = event.detail.domain;
+
+                if (this.$.appscoDirectoryPage.$) {
+                    this.$.appscoDirectoryPage.hideDomainNotVerifiedInfo();
+                }
+
+                this.$.appscoCompanyPage.modifyDomain(domain);
+                this._notify('Domain ' + domain.domain + ' was successfully verified.');
             },
             /**
              * Company page END

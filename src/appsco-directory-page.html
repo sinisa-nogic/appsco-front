@@ -56,6 +56,9 @@
             :host div[content] > * {
                 padding: 0 10px 10px 10px;
             }
+            .directory-container {
+                margin-top: 10px;
+            }
             :host div[resource] > *, :host div[info] > * {
                 padding: 10px;
                 box-sizing: border-box;
@@ -158,12 +161,6 @@
                    headers="[[ computedHeaders ]]"
                    handle-as="json"
                    on-response="_onOrgunitsResponse"></iron-ajax>
-
-        <iron-ajax auto
-                   url="[[ subscriptionApi ]]"
-                   headers="[[ computedHeaders ]]"
-                   handle-as="json"
-                   on-response="_onSubscriptionResponse"></iron-ajax>
 
         <iron-ajax id="getDomainsCall"
                    auto
@@ -309,17 +306,12 @@
                     value: ''
                 },
 
-                subscriptionApi: {
-                    type: String,
-                    value: ''
-                },
-
                 domainsApi: {
                     type: String,
                     value: ''
                 },
 
-                _subscription: {
+                subscription: {
                     type: Object,
                     value: function() {
                         return {};
@@ -590,17 +582,7 @@
             },
 
             setSubscription: function(subscription) {
-                this._subscription = subscription;
-            },
-
-            _onSubscriptionResponse: function(event) {
-                var status = event.detail.status,
-                    response = event.detail.response;
-
-                if (200 === status && response) {
-                    this._subscription = response;
-                    this._evaluateSubscriptionLicences();
-                }
+                this.subscription = subscription;
             },
 
             _onDomainResponse: function(event) {
@@ -614,7 +596,7 @@
             },
 
             _evaluateSubscriptionLicences: function() {
-                var subscription = this._subscription,
+                var subscription = this.subscription,
                     licencesTotal = subscription.quantity,
                     accountsTotal = this.$.appscoAccounts.getTotalCount();
 
@@ -694,6 +676,10 @@
 
             removeInvitations: function(invitations) {
                 this.$.appscoInvitations.removeInvitations(invitations);
+            },
+
+            reloadInvitations: function() {
+                this.$.appscoInvitations.reloadInvitations();
             },
 
             addAccounts: function(accounts) {

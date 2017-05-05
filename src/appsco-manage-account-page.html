@@ -180,7 +180,7 @@
                     <paper-button
                             class="change-password-button flex"
                             on-tap="_onChangePassword"
-                            disabled="[[ !_canManage ]]"
+                            disabled$="[[ !_canManage ]]"
                     >
                         Change password
                     </paper-button>
@@ -274,6 +274,13 @@
                    on-response="_onAccountResponse"
                    headers="{{ _computedHeaders }}">
         </iron-ajax>
+        <iron-ajax id="ironAjaxCanBeManaged"
+                   url="[[ _canBeManagedUrl ]]"
+                   on-error="_onCanBeManagedError"
+                   on-response="_onCanBeManagedResponse"
+                   headers="[[ _computedHeaders ]]"
+                   auto>
+        </iron-ajax>
 
     </template>
 
@@ -288,6 +295,11 @@
                     value: function() {
                         return {};
                     }
+                },
+
+                _canBeManagedUrl: {
+                    type: String,
+                    computed: '_computeCanBeManagedUrl(role)'
                 },
 
                 _canManage: {
@@ -544,20 +556,6 @@
 
             _onAccountResponse: function(event) {
                 this.set('role', event.detail.response);
-
-                var request = document.createElement('iron-request');
-                request.send({
-                    url: event.detail.response.self + '/can-be-managed',
-                    method: "GET",
-                    handleAs: 'json',
-                    headers: {
-                        "Authorization": "token " + this.authorizationToken
-                    }
-                }).then(function() {
-                    this.set('_canManage', true);
-                }.bind(this), function(){
-                    this.set('_canManage', false);
-                }.bind(this));
             },
 
             _onAccountError: function() {
@@ -667,6 +665,18 @@
                         break;
                 }
 
+            },
+
+            _onCanBeManagedResponse: function(event) {
+                this._canManage = true;
+            },
+
+            _onCanBeManagedError: function(event) {
+                this._canManage = false;
+            },
+
+            _computeCanBeManagedUrl: function(role) {
+                return role.self ? role.self + '/can-be-managed' : '';
             },
 
             reloadApplications: function() {

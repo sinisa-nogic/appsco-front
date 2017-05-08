@@ -36,7 +36,7 @@ Custom property | Description | Default
 `--add-application-icon-color` | Color for add-application-button-icon | `{}`
 `--appsco-application-actions` | Mixin for the root element | `{}`
 `--application-action` | Mixin for the action div container | `{}`
-`--add-item-action` | Mixin for add item action button | `{}`
+`--add-application-button` | Mixin for add application action button | `{}`
 `--application-actions-tooltip` | Mixin for action's tooltip | `{}`
 
 @demo demo/appsco-application-actions.html
@@ -107,13 +107,12 @@ Custom property | Description | Default
             :host paper-item:hover {
                 @apply(--paper-item-hover);
             }
-            :host .add-item-action {
-                min-width: 100px;
-                @apply(--add-item-action);
+            :host .add-application-button {
+                @apply(--add-application-button);
             }
-            .add-item-icon-button {
+            .add-application-icon-button {
                 display: none;
-                @apply(--add-item-icon-button);
+                @apply(--add-application-icon-button);
             }
             :host .flex-none {
                 @apply(--layout-flex-none);
@@ -134,32 +133,6 @@ Custom property | Description | Default
                 --paper-tooltip: {
                     font-size: 11px;
                 };
-            }
-            .item-action-list {
-                position: absolute;
-                top: 34px;
-                right: 0;
-                width: 200px;
-                @apply(--shadow-elevation-2dp);
-                opacity: 0;
-                visibility: hidden;
-                transform: scale(1, 0.6);
-                transform-origin: top center;
-                transition: all 0.1s linear;
-                @apply(--item-action-list);
-
-            }
-            :host([_add-item-actions-visible]) .item-action-list {
-                opacity: 1;
-                visibility: visible;
-                transform: scale(1, 1);
-                transform-origin: top center;
-                transition: all 0.2s linear;
-            }
-            .item-icon {
-                width: 18px;
-                height: 18px;
-                margin-right: 8px;
             }
         </style>
 
@@ -240,27 +213,16 @@ Custom property | Description | Default
         </template>
 
         <div class="action flex-none">
-            <paper-button id="addItemAction"
-                          class="add-item-action"
-                          on-tap="_onAddItemAction">Add</paper-button>
-            <paper-icon-button id="addItemActionIconButton"
+            <paper-button
+                    class="add-application-button"
+                    on-tap="_onAddApplicationAction">Add application</paper-button>
+            <paper-icon-button id="addApplicationAction"
                                icon="icons:add-circle"
-                               class="add-item-icon-button"
-                               alt="Add item"
-                               on-tap="_onAddItemAction"></paper-icon-button>
-            <paper-tooltip for="addItemActionIconButton"
-                           position="bottom">Add item</paper-tooltip>
-
-            <paper-listbox id="actionList"
-                           class="item-action-list"
-                           on-iron-select="_onAddItemActionSelect">
-
-                <template is="dom-repeat" items="[[ _actionList ]]">
-                    <paper-item value="[[ item.value ]]">
-                        <iron-icon icon="[[ item.icon ]]" class="item-icon"></iron-icon>
-                        [[ item.name ]]</paper-item>
-                </template>
-            </paper-listbox>
+                               class="add-application-icon-button"
+                               alt="Add application"
+                               on-tap="_onAddApplicationAction"></paper-icon-button>
+            <paper-tooltip for="addApplicationAction"
+                           position="bottom">Add application</paper-tooltip>
         </div>
 
     </template>
@@ -314,65 +276,6 @@ Custom property | Description | Default
                     type: Boolean,
                     value: false,
                     observer: '_onBulkActionsChanged'
-                },
-
-                _actionList: {
-                    type: Array,
-                    value: function() {
-                        return [
-                            {
-                                value: 'catalogue-application',
-                                name: 'Application',
-                                icon: 'icons:list'
-                            },
-                            {
-                                value: 'custom-application',
-                                name: 'Custom Application',
-                                icon: 'icons:bookmark'
-                            },
-                            {
-                                value: 'link',
-                                name: 'Link',
-                                icon: 'icons:link'
-                            },
-                            {
-                                value: 'login',
-                                name: 'Login',
-                                icon: 'icons:input'
-                            },
-                            {
-                                value: 'credit-card',
-                                name: 'Credit Card',
-                                icon: 'icons:credit-card'
-                            },
-                            {
-                                value: 'identity',
-                                name: 'Identity',
-                                icon: 'icons:perm-identity'
-                            },
-                            {
-                                value: 'software-licence',
-                                name: 'Software Licence',
-                                icon: 'communication:vpn-key'
-                            },
-                            {
-                                value: 'passport',
-                                name: 'Passport',
-                                icon: 'icons:flight-takeoff'
-                            },
-                            {
-                                value: 'secure-note',
-                                name: 'Secure Note',
-                                icon: 'editor:insert-drive-file'
-                            }
-                        ]
-                    }
-                },
-
-                _addItemActionsVisible: {
-                    type: Boolean,
-                    value: false,
-                    reflectToAttribute: true
                 },
 
                 _selectedAll: {
@@ -457,30 +360,10 @@ Custom property | Description | Default
             _handleDocumentClick: function(event) {
                 var path = Polymer.dom(event).path;
 
-                if (!this._isInPath(path, this.$.addItemAction)) {
-                    this._addItemActionsVisible = false;
-                }
-
                 if (!this._isInPath(path, this)) {
                     this.fire('close-search');
                 }
 
-
-            },
-
-            _toggleActionList: function() {
-                this._addItemActionsVisible = !this._addItemActionsVisible;
-            },
-
-            _onAddItemActionSelect: function(event) {
-
-                this.fire('add-item-action', {
-                    action: event.detail.item.value
-                });
-
-                this._addItemActionsVisible = false;
-
-                this.$$('#actionList').selected = -1;
             },
 
             _selected: function (e) {
@@ -517,8 +400,20 @@ Custom property | Description | Default
                 }
             },
 
-            _onAddItemAction: function() {
-                this._toggleActionList();
+            /**
+             * Called on add aplication button tap.
+             * It fires an event.
+             *
+             * @private
+             */
+            _onAddApplicationAction: function() {
+
+                /**
+                 * Fired when add application action is tapped.
+                 *
+                 * @event add-application
+                 */
+                this.fire('add-application');
             },
 
             /**

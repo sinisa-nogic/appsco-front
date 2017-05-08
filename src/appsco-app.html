@@ -24,6 +24,7 @@
 
 <link rel="import" href="../bower_components/paper-button/paper-button.html">
 <link rel="import" href="../bower_components/paper-icon-button/paper-icon-button.html">
+<link rel="import" href="../bower_components/iron-icons/iron-icons.html">
 <link rel="import" href="../bower_components/paper-listbox/paper-listbox.html">
 <link rel="import" href="../bower_components/paper-item/paper-item.html">
 <link rel="import" href="../bower_components/paper-dropdown-menu/paper-dropdown-menu.html">
@@ -298,6 +299,15 @@
                 text-decoration: none;
                 outline: none;
             }
+            .toast-close-action {
+                position: absolute;
+                top: 0;
+                right: 2px;
+                width: 18px;
+                height: 18px;
+                margin: 0;
+                color: #ffffff;
+            }
         </style>
 
         <iron-media-query query="(max-width: 600px)" query-matches="{{ mobileScreen }}"></iron-media-query>
@@ -314,7 +324,11 @@
 
         <paper-toast id="toast"
                      text="[[ _toastMessage ]]"
-                     on-iron-overlay-closed="_onToastMessageClosed"></paper-toast>
+                     on-iron-overlay-closed="_onToastMessageClosed">
+            <paper-icon-button icon="icons:close"
+                               class="toast-close-action"
+                               on-tap="_onCloseToastAction"></paper-icon-button>
+        </paper-toast>
 
         <appsco-header id="appscoHeader"
                 account="[[ account ]]"
@@ -671,11 +685,9 @@
                             company-invitations-api="[[ companyDirectoryInvitationsApi ]]"
                             company-directory-roles-api="[[ companyDirectoryRolesApi ]]"
                             company-orgunits-api="[[ companyOrgunitsApi ]]"
-                            subscription-api="[[ _subscriptionApi ]]"
                             domains-api="[[ _domainsApi ]]"
                             on-invitation-resent="_onInvitationResent"
                             on-remove-invitation="_onRemoveInvitation"
-                            on-show-subscription-limit-reached-info="_onShowSubscriptionLimitReachedInfo"
                             on-hide-subscription-limit-reached-info="_onHideSubscriptionLimitReachedInfo"
                             on-show-domain-not-verified-info="_onShowDomainNotVerifiedInfo"
                             on-hide-domain-not-verified-info="_onHideDomainNotVerifiedInfo"
@@ -951,7 +963,7 @@
                 authorization-token="[[ authorizationToken ]]"
                 directory-import-api="[[ companyDirectoryImportAccounts ]]"
                 domain="[[ domain ]]"
-                on-accounts-added="_onAccountsAdded">
+                on-account-import-finished="_onAccountImportFinished">
         </appsco-directory-import-accounts>
 
         <appsco-account-orgunit
@@ -1032,15 +1044,21 @@
                        url="[[ api.me ]]"
                        on-response="_onGetAccountResponse"
                        on-error="_onGetAccountError"
-                       headers="{{ _computedHeaders }}"></iron-ajax>
+                       headers="[[ _computedHeaders ]]"></iron-ajax>
         </template>
 
         <template is="dom-if" if="[[ api.dashboards ]]">
             <iron-ajax id="getDashboardsLink"
                        url="[[ api.dashboards ]]?extended=1"
                        on-response="_onDashboardsResponse"
-                       headers="{{ _computedHeaders }}"></iron-ajax>
+                       headers="[[ _computedHeaders ]]"></iron-ajax>
         </template>
+
+        <iron-ajax auto
+                   url="[[ _subscriptionApi ]]"
+                   headers="[[ _computedHeaders ]]"
+                   handle-as="json"
+                   on-response="_onSubscriptionResponse"></iron-ajax>
     </template>
 
     <script>
@@ -1251,6 +1269,13 @@
                     computed: '_computeDomainsApi(companyApi)'
                 },
 
+                _subscription: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    }
+                },
+
                 _globalActions: {
                     type: Boolean,
                     value: true
@@ -1314,7 +1339,8 @@
                 'info-edit-application-credentials': '_onEditApplicationCredentials',
                 'reload-applications': '_onReloadApplications',
                 'reload-accounts': '_onReloadAccounts',
-                'application-settings-saved': '_onApplicationUpdated'
+                'application-settings-saved': '_onApplicationUpdated',
+                'show-subscription-limit-reached-info': '_onShowSubscriptionLimitReachedInfo'
             },
 
             attached: function() {
@@ -1594,6 +1620,17 @@
                 }
                 else {
                     this._createDefaultDashboard();
+                }
+            },
+
+            _onSubscriptionResponse: function(event) {
+                var status = event.detail.status,
+                    response = event.detail.response;
+
+                if (200 === status && response) {
+                    this._subscription = response;
+                    this._setSubscription(response);
+                    this._evaluateSubscriptionLicences();
                 }
             },
 
@@ -2619,12 +2656,29 @@
                 this._reloadProvisioningIntegrationAccounts();
                 this._notify('Account ' + event.detail.role.account.email + ' was successfully added.');
             },
-            
-            _onAccountsAdded: function(e) {
-                this.$.appscoDirectoryPage.addAccounts(e.detail.accounts);
-                this._reloadProvisioningIntegrationAccounts();
-                this._notify('Accounts were successfully imported.');
 
+            _onAccountImportFinished: function(event) {
+                var response = event.detail.response,
+                    message;
+
+                message = response.numberOfRoles + ' accounts imported out of ' + response.total + '.'
+                        + ' Number of invitations created: ' + response.numberOfInvitations + '.'
+                        + ' Number of failed imports: ' + response.numberOfFailed + '.';
+
+                if (0 < response.numberOfRoles) {
+                    this._reloadCompanyAccounts();
+                    this._reloadProvisioningIntegrationAccounts();
+                }
+
+                if (0 < response.numberOfInvitations) {
+                    this._reloadCompanyInvitations();
+                }
+
+                if (response.maxSubscriptionSizeReached) {
+                    this._showSubscriptionLimitReachedInfo(this._subscription);
+                }
+
+                this._notify(message, true);
                 this._notifyAccountLog();
             },
 
@@ -2692,15 +2746,40 @@
                 this._notify('An error occurred. Selected accounts were not removed from company. Please try again.');
             },
 
+            _onManageDomains: function() {
+                this.$.appscoCompanyPage.showDomainsPage = true;
+                this._showCompanyPage();
+            },
+
             _reloadCompanyAccounts: function() {
                 if (this.$.appscoDirectoryPage.$) {
                     this.$.appscoDirectoryPage.reloadAccounts();
                 }
             },
 
-            _onManageDomains: function() {
-                this.$.appscoCompanyPage.showDomainsPage = true;
-                this._showCompanyPage();
+            _reloadCompanyInvitations: function() {
+                if (this.$.appscoDirectoryPage.$) {
+                    this.$.appscoDirectoryPage.reloadInvitations();
+                }
+            },
+
+            _onReloadAccounts: function() {
+
+                switch (this.page) {
+                    case 'manage-account':
+                        this._reloadCompanyAccounts();
+                        break;
+
+                    default:
+                        break;
+                }
+            },
+
+            _showSubscriptionLimitReachedInfo: function(subscription) {
+
+                this.fire('show-subscription-limit-reached-info', {
+                    subscription: subscription
+                });
             },
             /**
              * Directory page END
@@ -2787,24 +2866,6 @@
                 this._notify(message);
 
                 this._notifyReloadAccounts();
-            },
-
-            _reloadCompanyAccounts: function() {
-                if (this.$.appscoDirectoryPage.$) {
-                    this.$.appscoDirectoryPage.reloadAccounts();
-                }
-            },
-
-            _onReloadAccounts: function() {
-
-                switch (this.page) {
-                    case 'manage-account':
-                        this._reloadCompanyAccounts();
-                        break;
-
-                    default:
-                        break;
-                }
             },
             /**
              * Manage Account page END
@@ -2916,6 +2977,7 @@
             },
 
             _reloadProvisioningIntegrationAccounts: function() {
+
                 if (this.$.appscoProvisioningSettingsPage.$) {
                     this.$.appscoProvisioningSettingsPage.reloadAccounts();
                 }
@@ -3297,8 +3359,10 @@
                 this.fire('reload-accounts');
             },
 
-            _notify: function(message) {
+            _notify: function(message, persistant) {
                 var toast = this.$.toast;
+
+                toast.duration = persistant ? 0 : 3000;
 
                 if (toast.opened) {
                     toast.cancel();
@@ -3308,6 +3372,10 @@
                     this._toastMessage = message;
                     toast.open();
                 }
+            },
+
+            _onCloseToastAction: function() {
+                this.$.toast.close();
             },
 
             _onToastMessageClosed: function(event) {

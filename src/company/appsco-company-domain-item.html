@@ -144,7 +144,6 @@ Custom property | Description | Default
         </style>
 
         <iron-ajax id="getDomainStatus"
-                   auto
                    url="[[ _domainStatusApiUrl ]]"
                    headers="[[ _headers ]]"
                    on-error="_onDomainStatusError"
@@ -166,27 +165,25 @@ Custom property | Description | Default
                     <span class="info-label domain-title">[[ domain.domain ]]</span>
                 </div>
 
-                <template is="dom-if" if="[[ _status ]]">
-                    <div class="domain-info domain-status-info">
-                        <template is="dom-if" if="[[ _verified ]]">
-                            <span class="info-label">Verified</span>
-                            <span class="info-value">
-                                Verified at:
-                                <appsco-date-format date="[[ domain.verified_at.date ]]"
-                                                    options='{"year": "numeric", "month": "long", "day": "numeric", "hour": "2-digit", "minute": "2-digit"}'></appsco-date-format>
-                            </span>
-                        </template>
+                <div class="domain-info domain-status-info">
+                    <template is="dom-if" if="[[ _verified ]]">
+                        <span class="info-label">Verified</span>
+                        <span class="info-value">
+                            Verified at:
+                            <appsco-date-format date="[[ domain.verified_at.date ]]"
+                                                options='{"year": "numeric", "month": "long", "day": "numeric", "hour": "2-digit", "minute": "2-digit"}'></appsco-date-format>
+                        </span>
+                    </template>
 
-                        <template is="dom-if" if="[[ !_verified ]]">
-                            <span class="info-label not-sent">Not verified</span>
-                            <span class="info-value">
-                                Created at:
-                                <appsco-date-format date="[[ domain.created_at.date ]]"
-                                                    options='{"year": "numeric", "month": "long", "day": "numeric", "hour": "2-digit", "minute": "2-digit"}'></appsco-date-format>
-                            </span>
-                        </template>
-                    </div>
-                </template>
+                    <template is="dom-if" if="[[ !_verified ]]">
+                        <span class="info-label not-sent">Not verified</span>
+                        <span class="info-value">
+                            Created at:
+                            <appsco-date-format date="[[ domain.created_at.date ]]"
+                                                options='{"year": "numeric", "month": "long", "day": "numeric", "hour": "2-digit", "minute": "2-digit"}'></appsco-date-format>
+                        </span>
+                    </template>
+                </div>
 
                 <div class="actions">
                     <template is="dom-if" if="[[ !_verified ]]">
@@ -215,7 +212,8 @@ Custom property | Description | Default
                     type: Object,
                     value: function() {
                         return {};
-                    }
+                    },
+                    observer: '_domainChanged'
                 },
 
                 domainsApi: {
@@ -240,11 +238,6 @@ Custom property | Description | Default
                 },
 
                 _verificationAction: {
-                    type: Boolean,
-                    value: false
-                },
-
-                _status: {
                     type: Boolean,
                     value: false
                 },
@@ -317,8 +310,8 @@ Custom property | Description | Default
                 }
             },
 
-            _computeVerifiedState: function(domain) {
-                return !!domain.verified_at;
+            _domainChanged: function(domain) {
+                this._verified = domain.verified;
             },
 
             _computeHeaders: function(authorizationToken) {
@@ -351,7 +344,6 @@ Custom property | Description | Default
             _onDomainStatusError: function(event) {
 
                 if (422 === event.detail.request.status) {
-                    this._status = true;
                     this._verified = false;
                     this._notifyDomainStatus();
                 }
@@ -362,7 +354,6 @@ Custom property | Description | Default
             _onDomainStatusResponse: function(event) {
 
                 if (event.detail.response && 200 === event.detail.status) {
-                    this._status = true;
                     this._verified = true;
                     this._notifyDomainStatus();
                 }

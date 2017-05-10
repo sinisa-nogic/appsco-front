@@ -1,5 +1,6 @@
 <link rel="import" href="../bower_components/polymer/polymer.html">
 <link rel="import" href="../bower_components/paper-tabs/paper-tabs.html">
+<link rel="import" href="../bower_components/paper-tabs/paper-tab.html">
 <link rel="import" href="../bower_components/neon-animation/neon-animated-pages.html">
 <link rel="import" href="../bower_components/neon-animation/animations/fade-in-animation.html">
 <link rel="import" href="../bower_components/neon-animation/animations/fade-out-animation.html">
@@ -46,15 +47,16 @@
                      padding-top: 0;
                  };
             }
-            :host .resource-header {
-                border-bottom: 1px solid var(--divider-color);
-            }
             :host div[resource] {
                 height: 100%;
                 overflow: auto;
             }
             :host div[content] > * {
                 padding: 0 10px 10px 10px;
+            }
+            .resource-container {
+                @apply(--layout-vertical);
+                height: 100%;
             }
             .directory-container {
                 margin-top: 10px;
@@ -83,18 +85,11 @@
                 height: calc(100% - 50px - 40px);
                 margin-top: 10px;
             }
-            :host .details-log paper-tabs {
-                height: 38px;
-                color: var(--primary-text-color);
-            }
-            :host div[info] .info-details-section {
-                margin-top: 10px;
-                height: 100%;
+            .paper-tabs-pages {
+                @apply(--paper-tabs-pages);
             }
             .tab-content {
-                margin-right: -10px;
-                padding-right: 10px;
-                overflow: auto;
+                @apply(--paper-tabs-content-style);
             }
             :host div[info] .info-actions {
                 padding: 0;
@@ -173,13 +168,38 @@
 
             <div class="flex-vertical" resource>
 
-                <div class="resource-header">
-                    Filters
+                <div class="resource-container">
+                    <paper-tabs id="paperTabs" selected="{{ _selectedFilter }}">
+                        <paper-tab name="organization-units">Organization units</paper-tab>
+                        <paper-tab name="labels">Labels</paper-tab>
+                    </paper-tabs>
+
+                    <neon-animated-pages
+                            selected="{{ _selectedFilter }}"
+                            entry-animation="fade-in-animation"
+                            exit-animation="fade-out-animation"
+                            class="paper-tabs-pages">
+
+                        <div name="organization-units" class="tab-content organization-units">
+                            <appsco-orgunit-tree id="appscoOrgunitTree"
+                                                 org-units="[[ _orgUnits ]]"
+                                                 on-selected="_onOrgunitSelected"></appsco-orgunit-tree>
+                        </div>
+
+                        <div name="labels" class="tab-content labels">
+                            Labels....
+                        </div>
+
+                    </neon-animated-pages>
                 </div>
 
-                <appsco-orgunit-tree id="appscoOrgunitTree"
-                                     org-units="[[ _orgUnits ]]"
-                                     on-selected="_onOrgunitSelected"></appsco-orgunit-tree>
+                <!--<div class="resource-header">-->
+                    <!--Filters-->
+                <!--</div>-->
+
+                <!--<appsco-orgunit-tree id="appscoOrgunitTree"-->
+                                     <!--org-units="[[ _orgUnits ]]"-->
+                                     <!--on-selected="_onOrgunitSelected"></appsco-orgunit-tree>-->
 
             </div>
 
@@ -232,7 +252,7 @@
                             selected="{{ _selectedTab }}"
                             entry-animation="fade-in-animation"
                             exit-animation="fade-out-animation"
-                            class="info-details-section">
+                            class="paper-tabs-pages">
 
                         <div name="info" class="tab-content details">
                             <appsco-account-details account="[[ role.account ]]"></appsco-account-details>
@@ -414,6 +434,11 @@
                     type: Boolean,
                     value: false,
                     observer: '_onSubscriptionLimitInfoHandled'
+                },
+
+                _selectedFilter: {
+                    type: Number,
+                    value: 0
                 },
 
                 mobileScreen: {

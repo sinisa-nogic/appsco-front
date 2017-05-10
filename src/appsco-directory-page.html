@@ -192,7 +192,8 @@
                             authorization-token="[[ authorizationToken ]]"
                             invitations-api="[[ companyInvitationsApi ]]"
                             on-remove="_onRemoveInvitation"
-                            on-empty-load="_pageLoaded"></appsco-invitations>
+                            on-loaded="_onInvitationsLoaded"
+                            on-empty-load="_onInvitationsEmptyLoad"></appsco-invitations>
 
                     <appsco-accounts
                             id="appscoAccounts"
@@ -204,7 +205,7 @@
                             on-edit="_onAccountEdit"
                             on-account="_onAccount"
                             on-loaded="_onAccountsLoaded"
-                            on-empty-load="_pageLoaded"></appsco-accounts>
+                            on-empty-load="_onAccountsEmptyLoad"></appsco-accounts>
                 </div>
 
             </div>
@@ -383,6 +384,33 @@
                     value: true
                 },
 
+                _accountsLoaded: {
+                    type: Boolean,
+                    value: false
+                },
+
+                _invitationsLoaded: {
+                    type: Boolean,
+                    value: false
+                },
+
+                _domainsLoaded: {
+                    type: Boolean,
+                    value: false
+                },
+
+                _pageReady: {
+                    type: Boolean,
+                    computed: '_computePageReadyState(_accountsLoaded, _invitationsLoaded, _domainsLoaded, subscription)',
+                    observer: '_onPageReadyChanged'
+                },
+
+                _subscriptionLimitInfoHandled: {
+                    type: Boolean,
+                    value: false,
+                    observer: '_onSubscriptionLimitInfoHandled'
+                },
+
                 mobileScreen: {
                     type: Boolean,
                     value: false,
@@ -453,6 +481,32 @@
                 this.updateStyles();
             },
 
+            _computePageReadyState: function(accounts, invitations, domains, subscription) {
+                var subscriptionSet;
+
+                for (key in subscription) {
+                    subscriptionSet = true;
+                    break;
+                }
+
+                return accounts && invitations && domains && subscriptionSet;
+            },
+
+            _onPageReadyChanged: function(pageReady) {
+
+                if (pageReady) {
+                    this._pageLoaded();
+                    this._handleSubscriptionLimitReachedInfo();
+                }
+            },
+
+            _onSubscriptionLimitInfoHandled: function(handled) {
+
+                if (handled) {
+                    this._evaluateDomainVerification();
+                }
+            },
+
             _pageLoaded: function() {
                 this.pageLoaded = true;
                 this.fire('page-loaded');
@@ -476,6 +530,14 @@
                 this.$.accountLog.loadLog();
             },
 
+            _onInvitationsLoaded: function() {
+                this._invitationsLoaded = true;
+            },
+
+            _onInvitationsEmptyLoad: function() {
+                this._invitationsLoaded = true;
+            },
+
             _onRemoveInvitation: function(event) {
                 this.fire('remove-invitation', {
                     invitation: event.detail.invitation
@@ -483,8 +545,12 @@
             },
 
             _onAccountsLoaded: function() {
+                this._accountsLoaded = true;
                 this.setDefaultAccount();
-                this._pageLoaded();
+            },
+
+            _onAccountsEmptyLoad: function() {
+                this._accountsLoaded = true;
             },
 
             reloadAccounts: function() {
@@ -591,20 +657,29 @@
 
                 if (200 === status && response) {
                     this._verifiedDomains = response.verified;
-                    this._evaluateDomainVerification();
+                    this._domainsLoaded = true;
                 }
             },
 
-            _evaluateSubscriptionLicences: function() {
+            _handleSubscriptionLimitReachedInfo: function() {
                 var subscription = this.subscription,
                     licencesTotal = subscription.quantity,
-                    accountsTotal = this.$.appscoAccounts.getTotalCount();
+                    accountsTotal = this.$.appscoAccounts.getTotalCount() + this.$.appscoInvitations.getTotalCount();
 
                 if (licencesTotal === accountsTotal) {
                     this._showSubscriptionLimitReachedInfo(subscription);
                 }
                 else {
                     this._hideSubscriptionLimitReachedInfo();
+                }
+
+                this._subscriptionLimitInfoHandled = true;
+            },
+
+            _evaluateSubscriptionLicences: function() {
+
+                if (this._pageReady) {
+                    this._handleSubscriptionLimitReachedInfo();
                 }
             },
 
@@ -673,10 +748,12 @@
 
             addInvitations: function(invitations) {
                 this.$.appscoInvitations.addInvitations(invitations);
+                this._evaluateSubscriptionLicences();
             },
 
             removeInvitations: function(invitations) {
                 this.$.appscoInvitations.removeInvitations(invitations);
+                this._evaluateSubscriptionLicences();
             },
 
             reloadInvitations: function() {
@@ -692,22 +769,22 @@
                 this.$.appscoAccounts.modifyAccounts(accounts);
             },
 
-            getSelectedAccounts: function() {
-                return this.$.appscoAccounts.getSelectedAccounts();
+            removeAccounts: function(accounts) {
+                this.$.appscoAccounts.removeAccounts(accounts);
+                this.setDefaultAccount();
+                this._evaluateSubscriptionLicences();
             },
 
-            _onOrgunitSelected: function(event) {
-                this.$.appscoAccounts.filterByOrgunit(event.detail);
+            getSelectedAccounts: function() {
+                return this.$.appscoAccounts.getSelectedAccounts();
             },
 
             filterAccountsByTerm: function(term) {
                 this.$.appscoAccounts.filterByTerm(term);
             },
 
-            removeAccounts: function(accounts) {
-                this.$.appscoAccounts.removeAccounts(accounts);
-                this.setDefaultAccount();
-                this._evaluateSubscriptionLicences();
+            _onOrgunitSelected: function(event) {
+                this.$.appscoAccounts.filterByOrgunit(event.detail);
             }
         });
     </script>

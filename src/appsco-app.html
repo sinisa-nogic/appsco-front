@@ -94,6 +94,9 @@
 <link rel="import" href="company/appsco-company-remove-domain.html">
 <link rel="import" href="company/appsco-company-domain-token.html">
 
+<link rel="import" href="application/appsco-dialog-application-add.html">
+<link rel="import" href="applications/appsco-dialog-application-company-add.html">
+
 <link rel="import" href="shared-styles.html">
 <link rel="import" href="webkit-scrollbar-style.html">
 
@@ -1036,6 +1039,20 @@
                 domains-api="[[ _domainsApi ]]"
                 on-domain-removed="_onDomainRemoved"></appsco-company-remove-domain>
 
+        <appsco-dialog-application-add
+                id="appscoDialogApplicationAdd"
+                authorization-token="[[ authorizationToken ]]"
+                dashboard-api="[[ _addAppApi ]]"
+                on-application-added="_onApplicationAdded"
+        ></appsco-dialog-application-add>
+
+        <appsco-dialog-application-company-add
+                id="appscoDialogApplicationCompanyAdd"
+                authorization-token="[[ authorizationToken ]]"
+                add-application-api="[[ companyApplicationsApi ]]"
+                on-application-added="_onCompanyApplicationAdded"
+        ></appsco-dialog-application-company-add>
+
         <appsco-company-domain-token
                 id="appscoCompanyDomainToken"></appsco-company-domain-token>
 
@@ -1800,8 +1817,35 @@
 
             },
 
-            _onAddApplication: function() {
-                this.$.appscoApplicationAdd.toggle();
+            _onAddItemAction: function(event) {
+                var action = event.detail.action,
+                    applicationTemplate = event.detail.applicationTemplate;
+
+                switch (action) {
+                    case 'catalogue-application':
+                        this.$.appscoApplicationAdd.toggle();
+                        break;
+                    default:
+                        var request = document.createElement('iron-request'),
+                            options = {
+                                url: this.domain + applicationTemplate,
+                                method: 'GET',
+                                handleAs: 'json',
+                                headers: {
+                                    'Authorization': 'token ' + this.authorizationToken
+                                }
+                            };
+
+                        request.send(options).then(function() {
+
+                            if (200 == request.status) {
+                                this.$.appscoDialogApplicationAdd.setApplicationTemplate(request.response.application);
+                                this.$.appscoDialogApplicationAdd.toggle();
+                            }
+
+                        }.bind(this));
+                        break;
+                }
             },
 
             _onApplicationAdded: function(event) {
@@ -2365,8 +2409,35 @@
                 this._notifyAccountLog();
             },
 
-            _onCompanyAddApplication: function() {
-                this.$.appscoCompanyApplicationsAdd.toggle();
+            _onAddCompanyItemAction: function() {
+                var action = event.detail.action,
+                    applicationTemplate = event.detail.applicationTemplate;
+
+                switch (action) {
+                    case 'catalogue-application':
+                        this.$.appscoCompanyApplicationsAdd.toggle();
+                        break;
+                    default:
+                        var request = document.createElement('iron-request'),
+                            options = {
+                                url: this.domain + applicationTemplate,
+                                method: 'GET',
+                                handleAs: 'json',
+                                headers: {
+                                    'Authorization': 'token ' + this.authorizationToken
+                                }
+                            };
+
+                        request.send(options).then(function() {
+
+                            if (200 == request.status) {
+                                this.$.appscoDialogApplicationCompanyAdd.setApplicationTemplate(request.response.application);
+                                this.$.appscoDialogApplicationCompanyAdd.toggle();
+                            }
+
+                        }.bind(this));
+                        break;
+                }
             },
 
             _onCompanyApplicationAdded: function(event) {

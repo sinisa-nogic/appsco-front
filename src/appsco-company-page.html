@@ -11,6 +11,7 @@
 <link rel="import" href="company/appsco-company-settings-page.html">
 <link rel="import" href="company/appsco-company-brand-settings-page.html">
 <link rel="import" href="company/appsco-company-domains-page.html">
+<link rel="import" href="company/appsco-company-labels-page.html">
 
 
 <dom-module id="appsco-company-page">
@@ -114,9 +115,11 @@
                                 brand-logo="[[ brandLogo ]]"
                                 authorization-token="[[ authorizationToken ]]"
                                 domains-api="[[ domainsApi ]]"
+                                labels-api="[[ labelsApi ]]"
                                 on-manage-company-settings="_onManageCompanySettings"
                                 on-manage-company-brand-settings="_onManageCompanyBrandSettings"
                                 on-manage-company-domains="_onManageCompanyDomains"
+                                on-manage-company-labels="_onManageCompanyLabels"
                                 on-page-loaded="_onPageLoaded">
                         </appsco-company-components-page>
 
@@ -145,6 +148,20 @@
                                 domains-api="[[ domainsApi ]]"
                                 on-back="_onResourceBack">
                         </appsco-company-domains-page>
+
+                        <appsco-company-labels-page id="appscoCompanyLabelsPage"
+                                name="appsco-company-labels-page"
+                                authorization-token="[[ authorizationToken ]]"
+                                labels-api="[[ labelsApi ]]"
+                                on-back="_onResourceBack"
+                                on-info="_onLabelInfo">
+                        </appsco-company-labels-page>
+
+                        <appsco-company-label-info-page id="appscoCompanyLabelInfoPage"
+                                name="appsco-company-label-info-page"
+                                authorization-token="[[ authorizationToken ]]"
+                                on-back="_onResourceBackLabelInfo">
+                        </appsco-company-label-info-page>
 
                     </neon-animated-pages>
                 </div>
@@ -202,6 +219,14 @@
                 domainsApi: {
                     type: String,
                     computed: '_computeDomainsApi(company)'
+                },
+
+                /**
+                 * Get labels link.
+                 */
+                labelsApi: {
+                    type: String,
+                    computed: '_computeLabelsApi(company)'
                 },
 
                 /**
@@ -294,6 +319,20 @@
                 this.$.appscoCompanyDomainsPage.removeDomain(domain);
             },
 
+            searchLabels: function(term) {
+                this.$.appscoCompanyLabelsPage.searchLabels(term);
+            },
+
+            addLabel: function(label) {
+                this.$.appscoCompanyComponentsPage.addLabel(label);
+                this.$.appscoCompanyLabelsPage.addLabel(label);
+            },
+
+            removeLabel: function(label) {
+                this.$.appscoCompanyComponentsPage.removeLabel(label);
+                this.$.appscoCompanyLabelsPage.removeLabel(label);
+            },
+
             showManageDomainsPage: function() {
                 this.$.appscoCompanyComponentsPage.setSharedElement('domains');
 
@@ -324,6 +363,10 @@
 
             _computeDomainsApi: function(company) {
                 return company.meta && company.meta.domains;
+            },
+
+            _computeLabelsApi: function(company) {
+                return company.self && company.self + '/labels';
             },
 
             _updateScreen: function(medium, tablet, mobile) {
@@ -358,8 +401,20 @@
                 this._selected = 'appsco-company-domains-page';
             },
 
+            _showCompanyLabelsPage: function() {
+                this._selected = 'appsco-company-labels-page';
+            },
+
+            _showCompanyLabelInfoPage: function() {
+                this._selected = 'appsco-company-label-info-page';
+            },
+
             _onResourceBack: function() {
                 this._showCompanyComponentsPage();
+            },
+
+            _onResourceBackLabelInfo: function() {
+                this._showCompanyLabelsPage();
             },
 
             _onManageCompanySettings: function() {
@@ -382,6 +437,15 @@
                 this._showCompanyDomainsPage();
             },
 
+            _onManageCompanyLabels: function() {
+                this._showCompanyLabelsPage();
+            },
+
+            _onLabelInfo: function(event) {
+                this.$.appscoCompanyLabelInfoPage.setLabel(event.detail.label);
+                this._showCompanyLabelInfoPage();
+            },
+
             _onPageAnimationFinish: function(event) {
                 var fromPage = event.detail.fromPage,
                     toPage = event.detail.toPage;
@@ -389,6 +453,7 @@
                 switch(fromPage.getAttribute('name')) {
                     case 'appsco-company-settings-page':
                     case 'appsco-company-domains-page':
+                    case 'appsco-company-labels-page':
                         fromPage.resetPage();
                         break;
 
@@ -399,6 +464,7 @@
                 switch(toPage.getAttribute('name')) {
                     case 'appsco-company-settings-page':
                     case 'appsco-company-domains-page':
+                    case 'appsco-company-labels-page':
                         toPage.setupPage();
                         break;
 

@@ -6,29 +6,29 @@
 <link rel="import" href="../../bower_components/neon-animation/animations/fade-out-animation.html">
 <link rel="import" href="../../bower_components/neon-animation/animations/scale-up-animation.html">
 
-<link rel="import" href="../components/components/appsco-loader.html">
-<link rel="import" href="../components/components/appsco-form-error.html">
+<link rel="import" href="../../bower_components/appsco-components/appsco-loader.html">
+<link rel="import" href="../../bower_components/appsco-components/appsco-form-error.html">
 
 <!--
-`appsco-company-remove-domain`
+`appsco-company-remove-label`
 Shows dialog screen with confirmation for account removal from organization unit.
 
-    <appsco-company-remove-domain domain="{}" authorization-token="">
-    </appsco-company-remove-domain>
+    <appsco-company-remove-label label="{}" authorization-token="">
+    </appsco-company-remove-label>
 
 ### Styling
 
-`<appsco-company-remove-domain>` provides the following custom properties and mixins for styling:
+`<appsco-company-remove-label>` provides the following custom properties and mixins for styling:
 
 -->
 
-<dom-module id="appsco-company-remove-domain">
+<dom-module id="appsco-company-remove-label">
     <template>
         <style>
             :host {
                 display: block;
                 position: relative;
-                @apply(--appsco-domain-remove);
+                @apply(--appsco-label-remove);
 
                 --form-error-box: {
                      margin-top: 0;
@@ -59,20 +59,21 @@ Shows dialog screen with confirmation for account removal from organization unit
                 exit-animation="fade-out-animation"
                 on-iron-overlay-closed="_onDialogClosed">
 
-            <h2>Remove [[ domain.domain ]]</h2>
+            <h2>Remove [[ label.name ]]</h2>
 
             <appsco-loader active="[[ _loader ]]" loader-alt="Appsco is processing request" multi-color></appsco-loader>
 
             <paper-dialog-scrollable>
                 <div class="remove-container">
                     <appsco-form-error message="[[ _error ]]"></appsco-form-error>
-                    <p>Please confirm removal of [[ domain.domain ]] from company.</p>
+                    <p>Removing label detaches all accounts from it.</p>
+                    <p>Please confirm removal of this label.</p>
                 </div>
             </paper-dialog-scrollable>
 
             <div class="buttons">
                 <paper-button dialog-dismiss>Cancel</paper-button>
-                <paper-button autofocus on-tap="_remove">Remove</paper-button>
+                <paper-button autofocus on-tap="_onRemove">Remove</paper-button>
             </div>
         </paper-dialog>
 
@@ -80,23 +81,23 @@ Shows dialog screen with confirmation for account removal from organization unit
     <script>
         Polymer({
 
-            is: 'appsco-company-remove-domain',
+            is: 'appsco-company-remove-label',
 
             properties: {
 
                 /**
-                 * Domain to remove.
+                 * Label to remove.
                  */
-                domain: {
+                label: {
                     type: Array,
                     value: function() {
                         return {};
                     }
                 },
 
-                _removeDomainApi: {
+                _removeLabelApi: {
                     type: String,
-                    computed: '_computeRemoveDomainApi(domain)'
+                    computed: '_computeRemoveLabelApi(label)'
                 },
 
                 /**
@@ -125,8 +126,8 @@ Shows dialog screen with confirmation for account removal from organization unit
                 }
             },
 
-            setDomain: function(domain) {
-                this.domain = domain;
+            setLabel: function(label) {
+                this.label = label;
             },
 
             open: function () {
@@ -148,8 +149,8 @@ Shows dialog screen with confirmation for account removal from organization unit
                 };
             },
 
-            _computeRemoveDomainApi: function(domain) {
-                return domain.self ? domain.self : '';
+            _computeRemoveLabelApi: function(label) {
+                return label.self ? label.self : '';
             },
 
             _showLoader: function() {
@@ -173,10 +174,10 @@ Shows dialog screen with confirmation for account removal from organization unit
                 this._hideLoader();
             },
 
-            _remove: function() {
+            _onRemove: function() {
                 var request = document.createElement('iron-request'),
                         options = {
-                            url: this._removeDomainApi,
+                            url: this._removeLabelApi,
                             method: 'DELETE',
                             handleAs: 'json',
                             headers: this._headers
@@ -188,19 +189,19 @@ Shows dialog screen with confirmation for account removal from organization unit
                     this.close();
 
                     /**
-                     * Fired when domain is deleted.
+                     * Fired when label is deleted.
                      *
-                     * @event domain-removed
-                     * @param [Object] domain
+                     * @event label-removed
+                     * @param [Object] label
                      */
-                    this.fire('domain-removed', {
-                        domain: this.domain
+                    this.fire('label-removed', {
+                        label: this.label
                     });
 
                 }.bind(this), function() {
 
                     if (request.status === 404) {
-                        this._showError('We couldn\'t remove domain from company. Please try again in a minute.');
+                        this._showError('We couldn\'t remove label from company. Please try again in a minute.');
                     }
 
                     this._hideLoader();

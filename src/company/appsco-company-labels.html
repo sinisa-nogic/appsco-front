@@ -6,30 +6,34 @@
 <link rel="import" href="../../bower_components/neon-animation/neon-animation-runner-behavior.html">
 <link rel="import" href="../../bower_components/neon-animation/animations/transform-animation.html">
 
-<link rel="import" href="appsco-company-domain-item.html">
+<link rel="import" href="appsco-company-label-item.html">
 
 <!--
-`appsco-company-domains`
-Contains domain list and Load More action.
-Domains are loaded inside component through iron-ajax.
+`appsco-company-labels`
+Contains label list and Load More action.
+Labels are loaded inside component through iron-ajax.
 
-    <appsco-company-domains company="{}">
-    </appsco-company-domains>
+    <appsco-company-labels labels-api=""
+                            authorization-token=""
+                            size=""
+                            load-more
+                            preview>
+    </appsco-company-labels>
 
 ### Styling
 
-`<appsco-company-domains>` provides the following custom properties and mixins for styling:
+`<appsco-company-labels>` provides the following custom properties and mixins for styling:
 
 Custom property | Description | Default
 ----------------|-------------|----------
-`--appsco-company-domains` | Mixin for the root element | `{}`
-`--appsco-company-domain-item` | Mixin for item style | `{}`
-`--domains-container` | Mixin for the domains container | `{}`
-`--domains-progress-bar` | Mixin applied to paper-progress for domain list | `{}`
+`--appsco-company-labels` | Mixin for the root element | `{}`
+`--appsco-company-label-item` | Mixin for item style | `{}`
+`--labels-container` | Mixin for the labels container | `{}`
+`--labels-progress-bar` | Mixin applied to paper-progress for label list | `{}`
 
 -->
 
-<dom-module id="appsco-company-domains">
+<dom-module id="appsco-company-labels">
     <template>
         <style>
             :host {
@@ -37,18 +41,18 @@ Custom property | Description | Default
                 position: relative;
                 @apply(--layout-vertical);
                 @apply(--layout-center);
-                @apply(--appsco-company-domains);
+                @apply(--appsco-company-labels);
             }
-            .domains {
+            .labels {
                 @apply(--layout-vertical);
                 @apply(--layout-start);
             }
-            appsco-company-domain-item {
+            appsco-company-label-item {
                 width: 100%;
                 margin: 0 0 10px 0;
-                @apply(--appsco-company-domain-item);
+                @apply(--appsco-company-label-item);
             }
-            .domains-container {
+            .labels-container {
                 width: 100%;
                 position: relative;
             }
@@ -72,7 +76,7 @@ Custom property | Description | Default
                 position: absolute;
                 top: 0;
                 left: 0;
-                @apply(--domains-progress-bar);
+                @apply(--labels-progress-bar);
             }
             paper-button {
                 display: block;
@@ -88,9 +92,6 @@ Custom property | Description | Default
                 @apply(--paper-font-caption);
                 color: var(--secondary-text-color);
             }
-            .emphasized {
-                color: var(--app-danger-color);
-            }
             .message {
                 color: var(--secondary-text-color);
                 font-style: italic;
@@ -99,11 +100,11 @@ Custom property | Description | Default
             }
         </style>
 
-        <div class="domains-container">
+        <div class="labels-container">
 
             <iron-ajax
-                    id="getDomainsApiRequest"
-                    url="[[ _domainsApiUrl ]]"
+                    id="getLabelsApiRequest"
+                    url="[[ _labelsApiUrl ]]"
                     headers="[[ _computedHeaders ]]"
                     on-error="_onError"
                     on-response="_onResponse"
@@ -117,35 +118,32 @@ Custom property | Description | Default
                 <p class="message">[[ _message ]]</p>
             </template>
 
-            <template is="dom-if" if="[[ !_domainsEmpty ]]">
+            <template is="dom-if" if="[[ !_labelsEmpty ]]">
 
                 <div class="info-total">
                     <div class="total">
-                        Total verified domains: [[ _verifiedDomains ]]
-                        <span class="total emphasized">([[ _unverifiedDomains ]] unverified)</span>
+                        Total labels: [[ _totalLabels ]]
                     </div>
                 </div>
 
-                <div class="domains">
+                <div class="labels">
                     <template is="dom-repeat"
-                              items="{{ _domains }}"
+                              items="{{ _labels }}"
                               on-dom-change="_onItemsDomChange">
 
-                        <appsco-company-domain-item id="appscoDomainItem_[[ index ]]"
-                                                    domain="{{ item }}"
-                                                    domains-api="[[ domainsApi ]]"
-                                                    authorization-token="[[ authorizationToken ]]"
-                                                    preview="[[ preview ]]"></appsco-company-domain-item>
+                        <appsco-company-label-item id="appscoLabelItem_[[ index ]]"
+                                                    label="{{ item }}"
+                                                    preview="[[ preview ]]"></appsco-company-label-item>
 
                     </template>
                 </div>
             </template>
         </div>
 
-        <template is="dom-if" if="[[ !_domainsEmpty ]]">
+        <template is="dom-if" if="[[ !_labelsEmpty ]]">
             <div class="load-more-box" hidden$="[[ !_loadMore ]]">
                 <paper-progress id="loadMoreProgress" indeterminate></paper-progress>
-                <paper-button on-tap="_loadMoreDomains" id="loadMore">Load More</paper-button>
+                <paper-button on-tap="_loadMoreLabels" id="loadMore">Load More</paper-button>
             </div>
         </template>
     </template>
@@ -153,7 +151,7 @@ Custom property | Description | Default
     <script>
         Polymer({
 
-            is: 'appsco-company-domains',
+            is: 'appsco-company-labels',
 
             properties: {
 
@@ -166,9 +164,9 @@ Custom property | Description | Default
                 },
 
                 /**
-                 * Route to retrieve company domains
+                 * Route to retrieve company labels
                  */
-                domainsApi: {
+                labelsApi: {
                     type: String,
                     value: ''
                 },
@@ -190,7 +188,7 @@ Custom property | Description | Default
                 },
 
                 /**
-                 * Indicates if domain should be in preview mode rather then full detailed view.
+                 * Indicates if label should be in preview mode rather then full detailed view.
                  */
                 preview: {
                     type: Boolean,
@@ -207,7 +205,7 @@ Custom property | Description | Default
                     computed: '_computeHeaders(authorizationToken)'
                 },
 
-                _domains: {
+                _labels: {
                     type: Array,
                     value: function() {
                         return [];
@@ -215,26 +213,16 @@ Custom property | Description | Default
                     notify: true
                 },
 
-                _allDomains: {
+                _allLabels: {
                     type: Array,
                     value: function() {
                         return [];
                     }
                 },
 
-                _domainsEmpty: {
+                _labelsEmpty: {
                     type: Boolean,
                     value: false
-                },
-
-                _verifiedDomains: {
-                    type: Number,
-                    value: 0
-                },
-
-                _unverifiedDomains: {
-                    type: Number,
-                    value: 0
                 },
 
                 _message: {
@@ -242,17 +230,22 @@ Custom property | Description | Default
                     value: ''
                 },
 
-                _domainsApiUrl: {
+                _labelsApiUrl: {
                     type: String,
-                    computed: '_computeDomainsApiUrl(domainsApi, size)',
-                    observer: '_onDomainsApiUrlChanged'
+                    computed: '_computeLabelsApiUrl(labelsApi, size)',
+                    observer: '_onLabelsApiUrlChanged'
                 },
 
-                _next: {
+                _nextLabelsPageApiUrl: {
                     type: String
                 },
 
-                _totalDomains: {
+                _searchLabelsApi: {
+                    type: String,
+                    computed: '_computeSearchLabelsApi(labelsApi)'
+                },
+
+                _totalLabels: {
                     type: Number,
                     value: 0
                 },
@@ -286,60 +279,64 @@ Custom property | Description | Default
                 Polymer.NeonAnimationRunnerBehavior
             ],
 
-            _computeDomainsApiUrl: function(domainsApi, size) {
-                return (domainsApi && size) ? (domainsApi + '?page=1&extended=1&limit=' + size) : '';
-            },
-
             _computeHeaders: function(authorizationToken) {
                 return {
                     'Authorization': 'token ' + authorizationToken
                 }
             },
 
+            _computeLabelsApiUrl: function(labelsApi, size) {
+                return (labelsApi && size) ? (labelsApi + '?page=1&extended=1&limit=' + size) : '';
+            },
+
+            _computeSearchLabelsApi: function(labelsApi) {
+                return labelsApi ? labelsApi + '?page=1&limit=100&extended=1' : '';
+            },
+
             _setLoadMoreAction: function() {
-                this._loadMore = (this.loadMore && this._allDomains.length < this._totalDomains);
+                this._loadMore = (this.loadMore && this._allLabels.length < this._totalLabels);
             },
 
             _hideLoadMoreAction: function() {
                 this._loadMore = false;
             },
 
-            _onDomainsApiUrlChanged: function(url) {
+            _onLabelsApiUrlChanged: function(url) {
 
                 if (url && url.length > 0) {
-                    this._loadDomains();
+                    this._loadLabels();
                 }
             },
 
-            _loadDomains: function() {
+            _loadLabels: function() {
                 this._showProgressBar();
                 this._loadMore = false;
-                this.set('_domains', []);
-                this.set('_allDomains', []);
-                this.$.getDomainsApiRequest.generateRequest();
+                this.set('_labels', []);
+                this.set('_allLabels', []);
+                this.$.getLabelsApiRequest.generateRequest();
             },
 
-            reloadDomains: function() {
-                this._loadDomains();
+            reloadLabels: function() {
+                this._loadLabels();
             },
 
-            _loadMoreDomains: function() {
+            _loadMoreLabels: function() {
                 this._showLoadMoreProgressBar();
-                this.$.getDomainsApiRequest.url = this._next;
-                this.$.getDomainsApiRequest.generateRequest();
+                this.$.getLabelsApiRequest.url = this._nextLabelsPageApiUrl;
+                this.$.getLabelsApiRequest.generateRequest();
             },
 
             _onError: function() {
-                this._message = 'We couldn\'t load domains at the moment. Please try again in a minute.';
+                this._message = 'We couldn\'t load labels at the moment. Please try again in a minute.';
                 this._handleEmptyLoad();
             },
 
             _handleEmptyLoad: function() {
-                this._domainsEmpty = true;
-                this._message = 'There are no domains added.';
+                this._labelsEmpty = true;
+                this._message = 'There are no labels added.';
 
                 /**
-                 * Fired when there are no domains.
+                 * Fired when there are no labels.
                  *
                  * @event empty-load
                  */
@@ -350,37 +347,42 @@ Custom property | Description | Default
             },
 
             _onResponse: function(event) {
-                var response = event.detail.response,
-                    domains = response.domains,
-                    meta = response.meta,
-                    verifiedCount = response.verified,
-                    domainsCount = domains.length - 1;
 
-                this._totalDomains = meta.total;
-                this._verifiedDomains = verifiedCount;
-                this._unverifiedDomains = this._totalDomains - verifiedCount;
-                this._next = meta.next + "&limit=" + this.size;
+                // Temporary - until apiv2.company.label.list is implemented.
+                if (!event.detail.response.labels) {
+                    this._handleEmptyLoad();
+                    return false;
+                }
+                // Temporary
+
+                var response = event.detail.response,
+                    labels = response.labels,
+                    meta = response.meta,
+                    labelsCount = labels.length - 1;
+
+                this._totalLabels = meta.total;
+                this._nextLabelsPageApiUrl = meta.next + "&limit=" + this.size;
 
                 if (meta.total === 0) {
                     this._handleEmptyLoad();
                     return false;
                 }
 
-                this._domainsEmpty = false;
+                this._labelsEmpty = false;
                 this._message = '';
 
-                domains.forEach(function(el, index) {
+                labels.forEach(function(el, index) {
 
                     setTimeout( function() {
 
-                        this.push('_domains', el);
-                        this.push('_allDomains', el);
+                        this.push('_labels', el);
+                        this.push('_allLabels', el);
 
-                        if (index == domainsCount) {
+                        if (index == labelsCount) {
 
                             this._loadMore = this.loadMore;
 
-                            if (this._domains.length === meta.total) {
+                            if (this._labels.length === meta.total) {
                                 this._loadMore = false;
                             }
 
@@ -389,13 +391,13 @@ Custom property | Description | Default
                             this._setLoadMoreAction();
 
                             /**
-                             * Fired when domains are loaded
+                             * Fired when labels are loaded
                              *
                              * @event loaded
-                             * @param {Object} domains[]
+                             * @param {Object} labels[]
                              */
                             this.fire('loaded', {
-                                domains: domains
+                                labels: labels
                             });
                         }
 
@@ -404,87 +406,149 @@ Custom property | Description | Default
                 }.bind(this));
             },
 
-            addDomain: function(domain, respectLimit) {
-                this._domainsEmpty = false;
+            addLabel: function(label, respectLimit) {
+                this._labelsEmpty = false;
                 this._message = '';
                 this._renderedIndex = 0;
 
-                this.unshift('_domains', domain);
-                this.unshift('_allDomains', domain);
+                this.unshift('_labels', label);
+                this.unshift('_allLabels', label);
 
-                if (respectLimit && this._allDomains.length >= this.size) {
-                    this.pop('_domains');
-                    this.pop('_allDomains');
+                if (respectLimit && this._allLabels.length >= this.size) {
+                    this.pop('_labels');
+                    this.pop('_allLabels');
                 }
-
-                domain.verified ? this._verifiedDomains++ : this._unverifiedDomains++;
-                this._totalDomains++;
+                
+                this._totalLabels++;
             },
 
-            modifyDomain: function(domain) {
-                var _domains = JSON.parse(JSON.stringify(this._domains)),
-                    _length = _domains.length,
-                    allDomains = JSON.parse(JSON.stringify(this._allDomains)),
-                    allLength = allDomains.length;
+            modifyLabel: function(label) {
+                var _labels = JSON.parse(JSON.stringify(this._labels)),
+                    _length = _labels.length,
+                    allLabels = JSON.parse(JSON.stringify(this._allLabels)),
+                    allLength = allLabels.length;
 
                 for (var j = 0; j < _length; j++) {
-                    if (domain.alias === _domains[j].alias) {
-                        _domains[j] = domain;
+                    if (label.alias === _labels[j].alias) {
+                        _labels[j] = label;
                         break;
                     }
                 }
 
                 for (var k = 0; k < allLength; k++) {
-                    if (domain.alias === allDomains[k].alias) {
-                        allDomains[k] = domain;
+                    if (label.alias === allLabels[k].alias) {
+                        allLabels[k] = label;
                         break;
                     }
                 }
 
-                this.set('_domains', []);
-                this.set('_domains', _domains);
+                this.set('_labels', []);
+                this.set('_labels', _labels);
 
-                this.set('_allDomains', []);
-                this.set('_allDomains', allDomains);
-
-                if (domain.verified) {
-                    this._verifiedDomains++;
-                    this._unverifiedDomains--;
-                }
-                else {
-                    this._verifiedDomains--;
-                    this._unverifiedDomains++;
-                }
+                this.set('_allLabels', []);
+                this.set('_allLabels', allLabels);
             },
 
-            removeDomain: function(domain) {
-                var _domains = this._domains,
-                    _length = _domains.length,
-                    allDomains = this._allDomains,
-                    allLength = allDomains.length;
+            removeLabel: function(label) {
+                var _labels = this._labels,
+                    _length = _labels.length,
+                    allLabels = this._allLabels,
+                    allLength = allLabels.length;
 
                 for (var j = 0; j < _length; j++) {
 
-                    if (domain.alias === _domains[j].alias) {
-                        this.splice('_domains', j, 1);
+                    if (label.alias === _labels[j].alias) {
+                        this.splice('_labels', j, 1);
                         break;
                     }
                 }
 
                 for (var k = 0; k < allLength; k++) {
 
-                    if (domain.alias === allDomains[k].alias) {
-                        this.splice('_allDomains', k, 1);
+                    if (label.alias === allLabels[k].alias) {
+                        this.splice('_allLabels', k, 1);
                         break;
                     }
                 }
 
-                domain.verified ? this._verifiedDomains-- : this._unverifiedDomains--;
-                this._totalDomains--;
+                this._totalLabels--;
 
-                if (0 === this._domains.length) {
+                if (0 === this._labels.length) {
                     this._handleEmptyLoad();
                 }
+            },
+
+            search: function(term) {
+
+                if (term.length < 3) {
+                    this._message = this._message.length ? this._message : '';
+                    this.set('_labels', JSON.parse(JSON.stringify(this._allLabels)));
+                    this.fire('filter-done');
+                    this._setLoadMoreAction();
+                    return false;
+                }
+
+                this._searchLabels(term).then(function(labels) {
+                    this._hideLoadMoreAction();
+                    this.set('_labels', []);
+
+                    if (labels.length > 0) {
+                        this._message = '';
+
+                        labels.forEach(function(label, index) {
+                            this.push('_labels', label);
+
+                            if (index === (labels.length - 1)) {
+
+                                this._hideProgressBar();
+                                this.fire('labels-loaded');
+                            }
+
+                        }.bind(this));
+
+                    }
+                    else {
+                        this._message = 'There are no labels with asked term.';
+                    }
+
+                }.bind(this), function(message) {
+                    this.set('_labels', []);
+                    this._hideLoadMoreAction();
+                    this._message = message;
+                    this.fire('filter-done');
+                }.bind(this));
+            },
+
+            _searchLabels: function(term) {
+
+                return new Promise(function(resolve, reject) {
+                    var request = document.createElement('iron-request'),
+                        options = {
+                            url: this._searchLabelsApi + '&term=' + term,
+                            method: 'GET',
+                            handleAs: 'json',
+                            headers: this._computedHeaders
+                        };
+
+                    request.send(options).then(function() {
+
+                        if (200 === request.status && request.response && request.response.labels) {
+                            resolve(request.response.labels);
+                        }
+                        else {
+                            reject('There is no appropriate response.');
+                        }
+
+                    }, function() {
+
+                        if (request.response) {
+                            reject(request.response.message);
+                        }
+                        else {
+                            reject('There was an error in searching labels with given term. Please contact AppsCo support.');
+                        }
+                    });
+                }.bind(this));
             },
 
             _showProgressBar: function() {
@@ -519,7 +583,7 @@ Custom property | Description | Default
                     this.animationConfig.entry.nodes = [];
 
                     for (var i = 0; i <= index; i++) {
-                        var addedItem = this.$$('#appscoDomainItem_' + i);
+                        var addedItem = this.$$('#appscoLabelItem_' + i);
                         this.animationConfig.entry.nodes.push(addedItem);
                     }
 

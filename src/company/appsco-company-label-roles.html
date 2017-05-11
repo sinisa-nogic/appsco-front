@@ -1,0 +1,511 @@
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../bower_components/iron-ajax/iron-ajax.html">
+<link rel="import" href="../../bower_components/iron-flex-layout/iron-flex-layout.html">
+<link rel="import" href="../../bower_components/paper-button/paper-button.html">
+<link rel="import" href="../../bower_components/paper-progress/paper-progress.html">
+<link rel="import" href="../../bower_components/neon-animation/neon-animation-runner-behavior.html">
+<link rel="import" href="../../bower_components/neon-animation/animations/transform-animation.html">
+
+<link rel="import" href="appsco-company-label-role-item.html">
+
+<!--
+`appsco-company-label-roles`
+Contains label's role list and Load More action.
+Roles are loaded inside component through iron-ajax.
+
+    <appsco-company-label-roles list-api=""
+                           authorization-token=""
+                           size=""
+                           load-more
+                           preview>
+    </appsco-company-label-roles>
+
+### Styling
+
+`<appsco-company-label-roles>` provides the following custom properties and mixins for styling:
+
+Custom property | Description | Default
+----------------|-------------|----------
+`--appsco-company-label-roles` | Mixin for the root element | `{}`
+`--appsco-company-label-role-item` | Mixin for item style | `{}`
+`--label-roles-container` | Mixin for the roles container | `{}`
+`--label-roles-progress-bar` | Mixin applied to paper-progress for role list | `{}`
+
+-->
+
+<dom-module id="appsco-company-label-roles">
+    <template>
+        <style>
+            :host {
+                display: inline-block;
+                position: relative;
+                @apply(--layout-vertical);
+                @apply(--layout-center);
+                @apply(--appsco-company-label-roles);
+            }
+            .roles {
+                @apply(--layout-vertical);
+                @apply(--layout-start);
+            }
+            appsco-company-label-role-item {
+                width: 100%;
+                margin: 0 0 10px 0;
+                @apply(--appsco-company-label-role-item);
+            }
+            .label-roles-container {
+                width: 100%;
+                position: relative;
+            }
+            appsco-loader {
+                background-color: rgba(255, 255, 255, 0.4);
+            }
+            .load-more-box {
+                margin-top: 10px;
+                padding-top: 4px;
+                position: relative;
+            }
+            .load-more-box paper-progress {
+                width: 100%;
+                position: absolute;
+                top: 4px;
+                left: 0;
+            }
+            .progress-bar {
+                min-width: 100px;
+                width: 100%;
+                position: absolute;
+                top: 0;
+                left: 0;
+                @apply(--label-roles-progress-bar);
+            }
+            paper-button {
+                display: block;
+                width: 120px;
+                margin: 20px auto 0;
+                text-align: center;
+                @apply(--load-more-button);
+            }
+            .info-total {
+                margin-bottom: 10px;
+            }
+            .total {
+                @apply(--paper-font-caption);
+                color: var(--secondary-text-color);
+            }
+            .message {
+                color: var(--secondary-text-color);
+                font-style: italic;
+                @apply(--paper-font-body2);
+                @apply(--info-message);
+            }
+        </style>
+
+        <div class="label-roles-container">
+
+            <iron-ajax
+                    id="getLabelRolesApiRequest"
+                    url="[[ listApi ]]"
+                    headers="[[ _computedHeaders ]]"
+                    on-error="_onError"
+                    on-response="_onResponse"
+                    debounce-duration="300"></iron-ajax>
+
+            <paper-progress id="paperProgress"
+                            class="progress-bar"
+                            indeterminate></paper-progress>
+
+            <template is="dom-if" if="[[ _message ]]">
+                <p class="message">[[ _message ]]</p>
+            </template>
+
+            <template is="dom-if" if="[[ !_rolesEmpty ]]">
+
+                <div class="info-total">
+                    <div class="total">
+                        Total roles: [[ _totalRoles ]]
+                    </div>
+                </div>
+
+                <div class="roles">
+                    <template is="dom-repeat"
+                              items="{{ _roles }}"
+                              on-dom-change="_onItemsDomChange">
+
+                        <appsco-company-label-role-item id="appscoLabelRoleItem_[[ index ]]"
+                                                    role="{{ item }}"
+                                                    preview="[[ preview ]]"></appsco-company-label-role-item>
+
+                    </template>
+                </div>
+            </template>
+        </div>
+
+        <template is="dom-if" if="[[ !_rolesEmpty ]]">
+            <div class="load-more-box" hidden$="[[ !_loadMore ]]">
+                <paper-progress id="loadMoreProgress" indeterminate></paper-progress>
+                <paper-button on-tap="_loadMoreRoles" id="loadMore">Load More</paper-button>
+            </div>
+        </template>
+    </template>
+
+    <script>
+        Polymer({
+
+            is: 'appsco-company-label-roles',
+
+            properties: {
+
+                /**
+                 * Authorization token.
+                 */
+                authorizationToken: {
+                    type: String,
+                    value: ''
+                },
+
+                /**
+                 * Route to retrieve list
+                 */
+                listApi: {
+                    type: String,
+                    value: ''
+                },
+
+                /**
+                 * Number of items to load and present
+                 */
+                size: {
+                    type: Number,
+                    value: 10
+                },
+
+                /**
+                 * Show load more button
+                 */
+                loadMore: {
+                    type: Boolean,
+                    value: false
+                },
+
+                /**
+                 * Indicates if label should be in preview mode rather then full detailed view.
+                 */
+                preview: {
+                    type: Boolean,
+                    value: false
+                },
+
+                _loadMore: {
+                    type: Boolean,
+                    value: false
+                },
+
+                _computedHeaders: {
+                    type: Object,
+                    computed: '_computeHeaders(authorizationToken)'
+                },
+
+                _roles: {
+                    type: Array,
+                    value: function() {
+                        return [];
+                    },
+                    notify: true
+                },
+
+                _allRoles: {
+                    type: Array,
+                    value: function() {
+                        return [];
+                    }
+                },
+
+                _rolesEmpty: {
+                    type: Boolean,
+                    value: false
+                },
+
+                _message: {
+                    type: String,
+                    value: ''
+                },
+
+                listApi: {
+                    type: String,
+                    value: ''
+                },
+
+                _nextPageApiUrl: {
+                    type: String
+                },
+
+                _totalRoles: {
+                    type: Number,
+                    value: 0
+                },
+
+                _renderedIndex: {
+                    type: Number,
+                    value: -1
+                },
+
+                /**
+                 * Animation for loader appearance.
+                 */
+                animationConfig: {
+                    value: function() {
+                        return {
+                            'entry': {
+                                name: 'cascaded-animation',
+                                animation: 'slide-from-left-animation',
+                                nodes: [],
+                                nodeDelay: 50,
+                                timing: {
+                                    duration: 300
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+
+            behaviors: [
+                Polymer.NeonAnimationRunnerBehavior
+            ],
+
+            _computeHeaders: function(authorizationToken) {
+                return {
+                    'Authorization': 'token ' + authorizationToken
+                }
+            },
+
+            _setLoadMoreAction: function() {
+                this._loadMore = (this.loadMore && this._allRoles.length < this._totalRoles);
+            },
+
+            _hideLoadMoreAction: function() {
+                this._loadMore = false;
+            },
+
+            _onLabelsApiUrlChanged: function(url) {
+
+                if (url && url.length > 0) {
+                    this._loadLabels();
+                }
+            },
+
+            _loadLabels: function() {
+                this._showProgressBar();
+                this._loadMore = false;
+                this.set('_roles', []);
+                this.set('_allRoles', []);
+                this.$.getLabelRolesApiRequest.generateRequest();
+            },
+
+            reloadLabels: function() {
+                this._loadLabels();
+            },
+
+            _loadMoreRoles: function() {
+                this._showLoadMoreProgressBar();
+                this.$.getLabelRolesApiRequest.url = this._nextPageApiUrl;
+                this.$.getLabelRolesApiRequest.generateRequest();
+            },
+
+            _onError: function() {
+                this._message = 'We couldn\'t load listApi at the moment. Please try again in a minute.';
+                this._handleEmptyLoad();
+            },
+
+            _handleEmptyLoad: function() {
+                this._rolesEmpty = true;
+                this._message = 'There are no roles attached to this label.';
+
+                /**
+                 * Fired when there are no roles.
+                 *
+                 * @event empty-load
+                 */
+                this.fire('empty-load');
+
+                this._hideProgressBar();
+                this._hideLoadMoreProgressBar();
+            },
+
+            _onResponse: function(event) {
+
+                // Temporary - until apiv2.company.label.company-roles.list is implemented.
+                if (!event.detail.response.roles) {
+                    this._handleEmptyLoad();
+                    return false;
+                }
+                // Temporary
+
+//                var response = event.detail.response,
+//                    labels = response.labels,
+//                    meta = response.meta,
+//                    labelsCount = labels.length - 1;
+//
+//                this._totalRoles = meta.total;
+//                this._nextPageApiUrl = meta.next + "&limit=" + this.size;
+//
+//                if (meta.total === 0) {
+//                    this._handleEmptyLoad();
+//                    return false;
+//                }
+//
+//                this._rolesEmpty = false;
+//                this._message = '';
+//
+//                labels.forEach(function(el, index) {
+//
+//                    setTimeout( function() {
+//
+//                        this.push('_roles', el);
+//                        this.push('_allRoles', el);
+//
+//                        if (index == labelsCount) {
+//
+//                            this._loadMore = this.loadMore;
+//
+//                            if (this._roles.length === meta.total) {
+//                                this._loadMore = false;
+//                            }
+//
+//                            this._hideProgressBar();
+//                            this._hideLoadMoreProgressBar();
+//                            this._setLoadMoreAction();
+//
+//                            /**
+//                             * Fired when labels are loaded
+//                             *
+//                             * @event loaded
+//                             * @param {Object} labels[]
+//                             */
+//                            this.fire('loaded', {
+//                                labels: labels
+//                            });
+//                        }
+//
+//                    }.bind(this), (index + 1) * 30 );
+//
+//                }.bind(this));
+            },
+
+//            addLabel: function(label, respectLimit) {
+//                this._rolesEmpty = false;
+//                this._message = '';
+//                this._renderedIndex = 0;
+//
+//                this.unshift('_roles', label);
+//                this.unshift('_allRoles', label);
+//
+//                if (respectLimit && this._allRoles.length >= this.size) {
+//                    this.pop('_roles');
+//                    this.pop('_allRoles');
+//                }
+//                
+//                this._totalRoles++;
+//            },
+//
+//            modifyLabel: function(label) {
+//                var _roles = JSON.parse(JSON.stringify(this._roles)),
+//                    _length = _roles.length,
+//                    allRoles = JSON.parse(JSON.stringify(this._allRoles)),
+//                    allLength = allRoles.length;
+//
+//                for (var j = 0; j < _length; j++) {
+//                    if (label.alias === _roles[j].alias) {
+//                        _roles[j] = label;
+//                        break;
+//                    }
+//                }
+//
+//                for (var k = 0; k < allLength; k++) {
+//                    if (label.alias === allRoles[k].alias) {
+//                        allRoles[k] = label;
+//                        break;
+//                    }
+//                }
+//
+//                this.set('_roles', []);
+//                this.set('_roles', _roles);
+//
+//                this.set('_allRoles', []);
+//                this.set('_allRoles', allRoles);
+//            },
+//
+//            removeLabel: function(label) {
+//                var _roles = this._roles,
+//                    _length = _roles.length,
+//                    allRoles = this._allRoles,
+//                    allLength = allRoles.length;
+//
+//                for (var j = 0; j < _length; j++) {
+//
+//                    if (label.alias === _roles[j].alias) {
+//                        this.splice('_roles', j, 1);
+//                        break;
+//                    }
+//                }
+//
+//                for (var k = 0; k < allLength; k++) {
+//
+//                    if (label.alias === allRoles[k].alias) {
+//                        this.splice('_allRoles', k, 1);
+//                        break;
+//                    }
+//                }
+//
+//                this._totalRoles--;
+//
+//                if (0 === this._roles.length) {
+//                    this._handleEmptyLoad();
+//                }
+//            },
+
+            _showProgressBar: function() {
+                this.$$('#paperProgress').hidden = false;
+            },
+
+            _showLoadMoreProgressBar: function() {
+                this.$$('#loadMoreProgress').hidden = false;
+            },
+
+            _hideProgressBar: function() {
+
+                setTimeout(function() {
+                    this.$$('#paperProgress').hidden = true;
+                }.bind(this), 300);
+
+            },
+
+            _hideLoadMoreProgressBar: function() {
+
+                setTimeout(function() {
+                    this.$$('#loadMoreProgress').hidden = true;
+                }.bind(this), 300);
+
+            },
+
+            _onItemsDomChange: function() {
+                var index = this._renderedIndex;
+
+                if (-1 != index) {
+
+                    this.animationConfig.entry.nodes = [];
+
+                    for (var i = 0; i <= index; i++) {
+                        var addedItem = this.$$('#appscoLabelRoleItem_' + i);
+                        this.animationConfig.entry.nodes.push(addedItem);
+                    }
+
+                    this.playAnimation('entry');
+
+                    this._renderedIndex = -1;
+                }
+
+            }
+        });
+    </script>
+</dom-module>

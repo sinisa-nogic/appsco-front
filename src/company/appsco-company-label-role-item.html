@@ -1,0 +1,290 @@
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../bower_components/iron-image/iron-image.html">
+<link rel="import" href="../../bower_components/iron-icon/iron-icon.html">
+<link rel="import" href="../../bower_components/iron-flex-layout/iron-flex-layout.html">
+<link rel="import" href="../../bower_components/paper-button/paper-button.html">
+<link rel="import" href="../../bower_components/neon-animation/neon-animation-runner-behavior.html">
+<link rel="import" href="../../bower_components/neon-animation/animations/fade-in-animation.html">
+<link rel="import" href="../../bower_components/neon-animation/animations/fade-out-animation.html">
+<link rel="import" href="../../bower_components/paper-styles/typography.html">
+
+<!--
+`appsco-company-label-role-item`
+Account item is used to present account in form of an item.
+
+    <appsco-company-label-role-item>
+    </appsco-company-label-role-item>
+
+### Styling
+
+`<appsco-company-label-role-item>` provides the following custom properties and mixins for styling:
+
+Custom property | Description | Default
+----------------|-------------|----------
+`--background-color` | Background color applied to the root element | `#fff`
+`--color` | Color applied to all the text | `#33`
+`--appsco-company-label-role-item` | Mixin applied to role item | `{}`
+
+-->
+
+<dom-module id="appsco-company-label-role-item">
+    <template>
+        <style>
+            :host {
+                display: none;
+                color: var(--primary-text-color);
+            }
+            .item {
+                width: 100%;
+                height: 70px;
+                padding: 0 10px;
+                box-sizing: border-box;
+                overflow: hidden;
+                position: relative;
+                background-color: var(--background-color, #fff);
+                border-radius: 3px;
+                @apply(--shadow-elevation-2dp);
+                @apply(--layout-horizontal);
+                @apply(--layout-center);
+                transition: all 0.1s ease-out;
+                @apply(--appsco-company-label-role-item);
+            }
+            .item:hover {
+                @apply(--shadow-elevation-4dp);
+            }
+            .account-icon {
+                width: 52px;
+                height: 52px;
+                background-color: var(--app-primary-color);
+                @apply(--layout-flex-none);
+                border-radius: 50%;
+                position: relative;
+            }
+            .account-icon::shadow #sizedImgDiv, .account-icon::shadow #placeholder {
+                border-radius: 50%;
+            }
+            :host .account-initials {
+                position: relative;
+                background-color: var(--body-background-color, #f5f8fa);
+                color: var(--primary-text-color);
+            }
+            .account-initials .initials {
+                position: absolute;
+                top: 0;
+                right: 0;
+                bottom: 0;
+                left: 0;
+                margin: auto;
+                line-height: 52px;
+                text-align: center;
+                text-transform: uppercase;
+                font-size: 18px;
+            }
+            .account-title {
+                display: block;
+                height: 32px;
+                line-height: 16px;
+                @apply(--paper-font-common-base);
+                font-size: 14px;
+                font-weight: 400;
+                overflow: hidden;
+            }
+            .actions {
+                @apply(--layout-horizontal);
+                @apply(--layout-center);
+                position: absolute;
+                right: 4px;
+                bottom: 4px;
+            }
+            paper-button {
+                @apply(--paper-font-common-base);
+                @apply(--paper-font-common-nowrap);
+
+                padding: 4px;
+                font-size: 12px;
+                font-weight: 400;
+                letter-spacing: 0.018em;
+                line-height: 18px;
+                text-transform: uppercase;
+            }
+            paper-button[disabled] {
+                background: transparent;
+            }
+            .account-info {
+                @apply(--layout-vertical);
+                @apply(--layout-start);
+                padding: 0 10px;
+            }
+            .account-basic-info {
+                width: 220px;
+                @apply(--account-basic-info);
+            }
+            .account-status-info {
+                border-left: 1px solid var(--divider-color);
+                @apply(--account-status-info);
+            }
+            .account-basic-info .info-label, .account-basic-info .info-value {
+                width: 220px;
+                @apply(--paper-font-common-nowrap);
+                @apply(--account-basic-info-values);
+            }
+            .account-status-info .info-label, .account-status-info .info-value {
+                width: 220px;
+                @apply(--paper-font-common-nowrap);
+                @apply(--account-status-info-values);
+            }
+            .account-status-info .info-label {
+                color: var(--app-primary-color);
+            }
+            .info-label {
+                font-size: 16px;
+                height: auto;
+                line-height: normal;
+            }
+            .info-value {
+                display: block;
+                font-size: 12px;
+            }
+        </style>
+
+        <div class="item">
+
+            <template is="dom-if" if="[[ role.account.picture_url ]]">
+                <iron-image class="account-icon"
+                            sizing="cover"
+                            preload fade
+                            src="[[ role.account.picture_url ]]"></iron-image>
+            </template>
+
+            <template is="dom-if" if="[[ !role.account.picture_url ]]">
+                <div class="account-icon account-initials">
+                    <span class="initials">[[ _accountInitials ]]</span>
+                </div>
+            </template>
+
+            <div class="account-info account-basic-info">
+                <span class="info-label account-title">[[ role.account.display_name ]]</span>
+                <span class="info-value">[[ role.account.email ]]</span>
+            </div>
+
+
+            <div class="account-info account-status-info">
+                <span class="info-label">Organization units</span>
+                <span class="info-value">[[ _orgUnits ]]</span>
+            </div>
+
+            <div class="actions">
+                <paper-button on-tap="_onDetach">Detach</paper-button>
+            </div>
+        </div>
+
+    </template>
+
+    <script>
+        Polymer({
+
+            is: 'appsco-company-label-role-item',
+
+            properties: {
+
+                role: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    }
+                },
+
+                _orgUnits: {
+                    type: String,
+                    computed: '_computeOrganizationUnits(role)'
+                },
+
+                _accountInitials: {
+                    type: String,
+                    computed: '_computeAccountInitials(role)'
+                },
+
+                /**
+                 * Animation for loader appearance.
+                 */
+                animationConfig: {
+                    value: function() {
+                        return {
+                            'entry': {
+                                name: 'fade-in-animation',
+                                node: this,
+                                timing: {
+                                    duration: 200
+                                }
+                            },
+                            'exit': {
+                                name: 'fade-out-animation',
+                                node: this,
+                                timing: {
+                                    duration: 100
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+
+            behaviors: [
+                Polymer.NeonAnimationRunnerBehavior
+            ],
+
+            attached: function() {
+                this.style.display = 'inline-block';
+                this.playAnimation('entry');
+            },
+
+            _computeOrganizationUnits: function(role) {
+
+                if (role.account.org_units) {
+                    var result = '',
+                        orgUnits = role.account..org_units,
+                        length = orgUnits.length;
+
+                    for (var i = 0; i < length; i++) {
+                        result += orgUnits[i].name;
+                        result += (i === length -1) ? '' : ', ';
+                    }
+
+                    return result;
+                }
+
+                return '';
+
+            },
+
+            _computeAccountInitials: function(role) {
+                var account = role.account,
+                    initials = '';
+
+                if (account.self && account.first_name.length > 0 && account.last_name.length > 0) {
+                    initials = account.first_name.substring(0, 1) + account.last_name.substring(0, 1);
+                }
+                else if (account.self && account.name) {
+                    initials = account.name.substring(0, 2);
+                }
+
+                return initials;
+            },
+
+            _onDetach: function (event) {
+                event.stopPropagation();
+
+                /**
+                 * Fired when `detach` action is tapped.
+                 *
+                 * @event detach
+                 * @param {Object} role
+                 */
+                this.fire('detach', {
+                    role: this.role
+                });
+            }
+
+        });
+    </script>
+</dom-module>

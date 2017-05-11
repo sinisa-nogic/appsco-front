@@ -1,0 +1,160 @@
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../bower_components/iron-flex-layout/iron-flex-layout.html">
+<link rel="import" href="../../bower_components/neon-animation/neon-shared-element-animatable-behavior.html">
+<link rel="import" href="../../bower_components/neon-animation/animations/hero-animation.html">
+<link rel="import" href="../../bower_components/neon-animation/animations/fade-in-animation.html">
+<link rel="import" href="../../bower_components/neon-animation/animations/slide-right-animation.html">
+<link rel="import" href="../../bower_components/paper-card/paper-card.html">
+<link rel="import" href="../../bower_components/paper-icon-button/paper-icon-button.html">
+
+<link rel="import" href="appsco-company-labels.html">
+
+<dom-module id="appsco-company-labels-page">
+    <template>
+        <style include="webkit-scrollbar-style">
+            :host {
+                @apply(--full-page);
+
+                --paper-card-header: {
+                     border-bottom: 1px solid var(--divider-color);
+                 };
+
+                --background-color: var(--body-background-color);
+            }
+            paper-card {
+                @apply(--full-page-paper-card);
+
+                --paper-card-header-text: {
+                    color: var(--primary-text-color);
+                };
+            }
+            .page-close-action {
+                @apply(--page-close-action);
+            }
+        </style>
+
+        <paper-card heading="Labels" id="card">
+            <paper-icon-button
+                    icon="close"
+                    title="Close"
+                    class="page-close-action"
+                    on-tap="_onBack"></paper-icon-button>
+
+            <div class="card-content">
+                <appsco-company-labels
+                        id="appscoCompanyLabels"
+                        authorization-token="[[ authorizationToken ]]"
+                        labels-api="[[ labelsApi ]]"
+                        size="10"
+                        load-more
+                        on-remove="_onRemoveLabel"></appsco-company-labels>
+            </div>
+        </paper-card>
+
+    </template>
+
+    <script>
+        Polymer({
+
+            is: 'appsco-company-labels-page',
+
+            properties: {
+
+                authorizationToken: {
+                    type: String
+                },
+
+                /**
+                 * Get labels link.
+                 */
+                labelsApi: {
+                    type: String,
+                    value: ''
+                },
+
+                /**
+                 * Animation config with hero animation.
+                 */
+                animationConfig: {
+                    value: function() {
+                        return {
+                            'entry': [{
+                                name: 'hero-animation',
+                                id: 'hero',
+                                toPage: this,
+                                timing: {
+                                    duration: 300
+                                }
+                            }, {
+                                name: 'fade-in-animation',
+                                node: this,
+                                timing: {
+                                    duration: 500
+                                }
+                            }],
+                            'exit': {
+                                name: 'slide-right-animation',
+                                node: this,
+                                timing: {
+                                    duration: 200
+                                }
+                            }
+                        }
+                    }
+                },
+
+                /**
+                 * Defines shared element of hero animation.
+                 */
+                sharedElements: {
+                    value: function() {
+                        return {
+                            'hero': this.$.card
+                        }
+                    }
+                }
+            },
+
+            behaviors: [
+                Polymer.NeonSharedElementAnimatableBehavior
+            ],
+
+            _onBack: function() {
+                this.fire('back');
+            },
+
+            searchLabels: function(term) {
+                this.$.appscoCompanyLabels.search(term);
+            },
+
+            addLabel: function(label) {
+                this.$.appscoCompanyLabels.addLabel(label);
+            },
+
+            modifyLabel: function(label) {
+                this.$.appscoCompanyLabel.modifyLabel(label);
+            },
+
+            removeLabel: function(label) {
+                this.$.appscoCompanyLabel.removeLabel(label);
+            },
+
+            setupPage: function() {
+                this.fire('show-labels-page-actions');
+            },
+
+            resetPage: function() {
+                this.fire('hide-labels-page-actions');
+            },
+
+            _onRemoveLabel: function(event) {
+                event.stopPropagation();
+
+                this.fire('remove-label', {
+                    label: event.detail.label
+                })
+            }
+        });
+    </script>
+</dom-module>
+

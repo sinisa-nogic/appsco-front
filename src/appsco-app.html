@@ -93,6 +93,8 @@
 <link rel="import" href="company/appsco-company-add-domain.html">
 <link rel="import" href="company/appsco-company-remove-domain.html">
 <link rel="import" href="company/appsco-company-domain-token.html">
+<link rel="import" href="company/appsco-company-add-label.html">
+<link rel="import" href="company/appsco-company-remove-label.html">
 
 <link rel="import" href="application/appsco-dialog-application-add.html">
 <link rel="import" href="applications/appsco-dialog-application-company-add.html">
@@ -534,7 +536,10 @@
                                     id="appscoCompanyPageActions"
                                     name="company"
                                     on-resource-section="_onResourceActionCompanyPage"
-                                    on-add-domain="_onAddDomain"></appsco-company-page-actions>
+                                    on-add-domain="_onAddDomain"
+                                    on-add-label="_onAddLabel"
+                                    on-search-labels="_onSearchLabels"
+                                    on-search-labels-clear="_onSearchLabelsClear"></appsco-company-page-actions>
                         </neon-animated-pages>
 
                     </app-toolbar>
@@ -799,10 +804,13 @@
                             on-company-logo-changed="_onCompanyLogoChanged"
                             on-show-domains-page-actions="_onShowDomainsPageActions"
                             on-hide-domains-page-actions="_onHideDomainsPageActions"
+                            on-show-labels-page-actions="_onShowLabelsPageActions"
+                            on-hide-labels-page-actions="_onHideLabelsPageActions"
                             on-remove-domain="_onRemoveDomain"
                             on-get-token="_onDomainGetToken"
                             on-domain-verified="_onDomainVerified"
                             on-domain-not-verified="_onDomainNotVerified"
+                            on-remove-label="_onRemoveLabel"
                     ></appsco-company-page>
 
                     <appsco-logout-page name="logout"
@@ -1033,13 +1041,11 @@
                 id="appscoCompanyAddDomain"
                 authorization-token="[[ authorizationToken ]]"
                 add-domain-api="[[ _domainsApi ]]"
-                on-domain-added="_onDomainAdded">
-        </appsco-company-add-domain>
+                on-domain-added="_onDomainAdded"></appsco-company-add-domain>
 
         <appsco-company-remove-domain
                 id="appscoCompanyRemoveDomain"
                 authorization-token="[[ authorizationToken ]]"
-                domains-api="[[ _domainsApi ]]"
                 on-domain-removed="_onDomainRemoved"></appsco-company-remove-domain>
 
         <appsco-dialog-application-add
@@ -1058,6 +1064,17 @@
 
         <appsco-company-domain-token
                 id="appscoCompanyDomainToken"></appsco-company-domain-token>
+
+        <appsco-company-add-label
+                id="appscoCompanyAddLabel"
+                authorization-token="[[ authorizationToken ]]"
+                add-label-api="[[ _labelsApi ]]"
+                on-label-added="_onLabelAdded"></appsco-company-add-label>
+
+        <appsco-company-remove-label
+                id="appscoCompanyRemoveLabel"
+                authorization-token="[[ authorizationToken ]]"
+                on-label-removed="_onLabelRemoved"></appsco-company-remove-label>
 
         <template is="dom-if" if="[[ api.me ]]">
             <iron-ajax auto
@@ -1287,6 +1304,11 @@
                 _domainsApi: {
                     type: String,
                     computed: '_computeDomainsApi(companyApi)'
+                },
+
+                _labelsApi: {
+                    type: String,
+                    computed: '_computeLabelsApi(companyApi)'
                 },
 
                 _subscription: {
@@ -1557,6 +1579,10 @@
 
             _computeDomainsApi: function(companyApi) {
                 return companyApi ? companyApi + '/domains' : '';
+            },
+
+            _computeLabelsApi: function(companyApi) {
+                return companyApi ? companyApi + '/labels' : '';
             },
 
             _onGetAccountResponse: function(event) {
@@ -3198,6 +3224,50 @@
                 var domain = event.detail.domain;
 
                 this._notify('Unable to verify ' + domain.domain + ' domain - please wait until the DNS record change is propagated.', true);
+            },
+
+            _onShowLabelsPageActions: function() {
+                this.$.appscoCompanyPageActions.showLabelsPageActions();
+            },
+
+            _onHideLabelsPageActions: function() {
+                this.$.appscoCompanyPageActions.hideLabelsPageActions();
+            },
+
+            _onAddLabel: function() {
+                this.$.appscoCompanyAddLabel.open();
+            },
+
+            _onLabelAdded: function(event) {
+                var label = event.detail.label;
+
+                this.$.appscoCompanyPage.addLabel(label);
+                this._notify('Label ' + label.name + ' was successfully saved.');
+            },
+
+            _searchLabels: function(term) {
+                this._showProgressBar();
+                this.$.appscoCompanyPage.searchLabels(term);
+            },
+
+            _onSearchLabels: function(event) {
+                this._searchLabels(event.detail.term);
+            },
+
+            _onSearchLabelsClear: function() {
+                this._searchLabels('');
+            },
+
+            _onRemoveLabel: function(event) {
+                this.$.appscoCompanyRemoveLabel.setLabel(event.detail.label);
+                this.$.appscoCompanyRemoveLabel.open();
+            },
+
+            _onLabelRemoved: function(event) {
+                var label = event.detail.label;
+
+                this.$.appscoCompanyPage.removeLabel(label);
+                this._notify('Label ' + label.name + ' was successfully removed.');
             },
             /**
              * Company page END

@@ -8,6 +8,14 @@
 
 <link rel="import" href="../appsco-components/appsco-loader.html">
 
+<link rel="import" href="appsco-application-form-item.html">
+<link rel="import" href="appsco-application-form-unpw.html">
+<link rel="import" href="appsco-application-form-cc.html">
+<link rel="import" href="appsco-application-form-login.html">
+<link rel="import" href="appsco-application-form-passport.html">
+<link rel="import" href="appsco-application-form-securenote.html">
+<link rel="import" href="appsco-application-form-softwarelicence.html">
+
 <!--
 `appsco-application-settings`
 Application settings is used update application.
@@ -41,73 +49,87 @@ Custom property | Description | Default
                 margin: 10px 0 0 0;
                 @apply(--form-action);
             }
-            :host .info {
+            .info, .label {
+                margin: 0;
+                font-size:16px;
+            }
+
+            .label {
                 margin-top: 10px;
-                margin-bottom: 0;
+                margin-bottom: 2px;
+                font-size:14px;
+                color: var(--secondary-text-color);
             }
         </style>
 
-        <template is="dom-if" if="[[ !disableSubmit ]]">
+        <template is="dom-if" if="[[ formSubmitAction ]]">
             <appsco-loader active="[[ _loader ]]" loader-alt="Appsco is saving application" multi-color></appsco-loader>
         </template>
 
-        <template is="dom-if" if="[[ applicationSettings ]]" >
+        <template is="dom-if" if="[[ _canChangeTitle ]]" >
             <paper-input
                     id="title"
                     label="Title"
-                    value="[[ application.title ]]"
+                    value="[[ _applicationComputed.title ]]"
                     name="configure_application[title]"
                     required
+                    auto-validate
+                    error-message="Please enter application title."
             ></paper-input>
+        </template>
+        <!--<template is="dom-if" if="[[ !_canChangeTitle ]]" >-->
+            <!--<p class="label">Title</p>-->
+            <!--<p class="info">[[ _applicationComputed.title ]]</p>-->
+        <!--</template>-->
+
+        <template is="dom-if" if="[[ _canChangeUrl ]]" >
             <paper-input
                     id="url"
                     label="Url"
-                    value="[[ application.url ]]"
+                    value="[[ _applicationComputed.url ]]"
                     pattern="https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)"
-                    error-message="Invalid Url"
+                    error-message="Url is invalid."
                     required
                     auto-validate
                     name="configure_application[url]"
             ></paper-input>
         </template>
+        <!--<template is="dom-if" if="[[ _shouldShowUrl ]]" >-->
+            <!--<p class="label">Url</p>-->
+            <!--<p class="info">[[ _applicationComputed.url ]]</p>-->
+        <!--</template>-->
 
-        <template is="dom-if" if="[[ !applicationSettings ]]" >
-            <p class="info">Title: [[ application.title ]]</p>
-            <p class="info">Url: [[ application.url ]]</p>
+        <template is="dom-if" if="[[ _unPwAuth ]]" restamp>
+            <appsco-application-form-unpw data-claims claims="[[ _claims ]]"></appsco-application-form-unpw>
+        </template>
+        <template is="dom-if" if="[[ _itemAuth ]]" restamp>
+            <appsco-application-form-item data-claims claims="[[ _claims ]]"></appsco-application-form-item>
+        </template>
+        <template is="dom-if" if="[[ _creditCardAuth ]]" restamp>
+            <appsco-application-form-cc data-claims claims="[[ _claims ]]"></appsco-application-form-cc>
+        </template>
+        <template is="dom-if" if="[[ _loginAuth ]]" restamp>
+            <appsco-application-form-login data-claims claims="[[ _claims ]]"></appsco-application-form-login>
+        </template>
+        <template is="dom-if" if="[[ _passportAuth ]]" restamp>
+            <appsco-application-form-passport data-claims claims="[[ _claims ]]"></appsco-application-form-passport>
+        </template>
+        <template is="dom-if" if="[[ _secureNoteAuth ]]" restamp>
+            <appsco-application-form-securenote data-claims claims="[[ _claims ]]"></appsco-application-form-securenote>
+        </template>
+        <template is="dom-if" if="[[ _softwareLicenceAuth ]]" restamp>
+            <appsco-application-form-softwarelicence data-claims claims="[[ _claims ]]"></appsco-application-form-softwarelicence>
         </template>
 
-        <template is="dom-if" if="[[ _applicationClaims ]]">
-            <paper-input
-                    id="username"
-                    label="Username"
-                    value="[[ application.claims.username ]]"
-                    name="icon_claims[username]"
-                    error-message="Please type in username."
-                    on-value-changed="_onTypeIn"
-            ></paper-input>
-            <paper-input
-                    id="password"
-                    label="Password"
-                    type="password"
-                    value="[[ application.claims.password ]]"
-                    name="icon_claims[password]"
-                    error-message="Please type in password."
-                    on-value-changed="_onTypeIn"
-            ></paper-input>
-            <paper-textarea
-                    id="note"
-                    label="Note"
-                    value="[[ application.claims.note ]]"
-                    name="icon_claims[note]"
-            ></paper-textarea>
+        <template is="dom-if" if="[[ formSubmitAction ]]" restamp>
+            <paper-button on-tap="_submit" id="submit" class="save-action">Save</paper-button>
+
+            <iron-a11y-keys
+                    keys="enter"
+                    on-keys-pressed="_onEnter">
+            </iron-a11y-keys>
         </template>
 
-        <paper-button on-tap="_submit" id="submit" class="save-action">Save</paper-button>
-
-        <iron-a11y-keys
-                keys="enter"
-                on-keys-pressed="_onEnter">
-        </iron-a11y-keys>
     </template>
     <script>
         Polymer({
@@ -115,6 +137,13 @@ Custom property | Description | Default
             is: 'appsco-application-settings',
 
             properties: {
+
+                formSubmitAction: {
+                    type: Boolean,
+                    value: false,
+                    reflectToAttribute: true
+                },
+
                 /**
                  * [Application](https://developers.appsco.com/api/dashboard/id/icons/id) that is to be rendered
                  */
@@ -124,10 +153,41 @@ Custom property | Description | Default
                     notify: true
                 },
 
+                applicationTpl: {
+                    type: Object,
+                    value: function() { return {}; },
+                    notify: true
+                },
+
+                _applicationComputed: {
+                    type: Object,
+                    computed: '_computeApplicationFromAppAndTpl(application, applicationTpl)'
+                },
+
+                _claims: {
+                    type: Object,
+                    computed: '_computeClaims(application)'
+                },
+
                 applicationSettings: {
                     type: Boolean,
                     value: true,
                     notify: true
+                },
+
+                _canChangeTitle: {
+                    type: Boolean,
+                    computed: '_computeCanChangeTitle(applicationSettings)'
+                },
+
+                _canChangeUrl: {
+                    type: Boolean,
+                    computed: '_computeCanChangeUrl(applicationSettings, _applicationComputed)'
+                },
+
+                _shouldShowUrl: {
+                    type: Boolean,
+                    computed: '_computeShouldShowUrl(applicationSettings, application, applicationTpl)'
                 },
 
                 authorizationToken: {
@@ -140,28 +200,120 @@ Custom property | Description | Default
                     value: false
                 },
 
-                _applicationClaims: {
-                    type: Boolean,
-                    computed: '_computeApplicationClaims(application, company)'
-                },
-
                 _loader: {
                     type: Boolean,
                     value: false
                 },
 
-                disableSubmit: {
+                _unPwAuth: {
                     type: Boolean,
-                    value: false
+                    computed: "_computeAuthType(application, company, 'unpw', applicationTpl)"
+                },
+                _itemAuth: {
+                    type: Boolean,
+                    computed: "_computeAuthType(application, company, 'item', applicationTpl)"
+                },
+                _creditCardAuth: {
+                    type: Boolean,
+                    computed: "_computeAuthType(application, company, 'cc', applicationTpl)"
+                },
+                _loginAuth: {
+                    type: Boolean,
+                    computed: "_computeAuthType(application, company, 'login', applicationTpl)"
+                },
+                _passportAuth: {
+                    type: Boolean,
+                    computed: "_computeAuthType(application, company, 'passport', applicationTpl)"
+                },
+                _secureNoteAuth: {
+                    type: Boolean,
+                    computed: "_computeAuthType(application, company, 'securenote', applicationTpl)"
+                },
+                _softwareLicenceAuth: {
+                    type: Boolean,
+                    computed: "_computeAuthType(application, company, 'softwarelicence', applicationTpl)"
+                },
+
+                _supportedAuthTypes: {
+                    type: Array,
+                    value: function () {
+                        return [
+                            'icon_item', 'icon_unpw', 'icon_saml', 'icon_jwt', 'icon_cc', 'icon_login',
+                            'icon_passport', 'icon_securenote', 'icon_softwarelicence', 'icon_none'
+                        ]
+                    }
                 }
             },
 
-            _computeApplicationClaims: function(application, company) {
-                return (application.claims && !company);
+            listeners: {
+                'iron-overlay-closed': '_stopPropagation'
             },
 
-            save: function() {
-                this._submit();
+            _stopPropagation: function (e) {
+                e.stopPropagation();
+            },
+
+            _computeApplicationFromAppAndTpl: function (application, applicationTpl) {
+                if (!application.self && !applicationTpl.self) {
+                    return {};
+                }
+
+                return application.self ? application : applicationTpl;
+            },
+
+            _computeClaims: function (application) {
+                if(!application.self) {
+                    return {};
+                }
+
+                return application.claims;
+            },
+
+            _supportedAuthTypeByPriority: function(authTypes) {
+                var authType = null,
+                    priority = 100;
+                for (var prop in authTypes) {
+
+                    currentPriority = this._supportedAuthTypes.indexOf(authTypes[prop]);
+                    if(priority > currentPriority) {
+                        authType = authTypes[prop];
+                        priority = currentPriority;
+                    }
+                }
+
+                return authType.substring('icon_'.length);
+            },
+
+            _computeAuthType: function (applicationIcon, company, authType, applicationTpl) {
+                if (!applicationIcon.auth_type && !applicationTpl.auth_types) {
+                    return false;
+                }
+                var auth = applicationIcon.auth_type ? applicationIcon.auth_type : this._supportedAuthTypeByPriority(applicationTpl.auth_types);
+
+                return !company && auth === authType;
+            },
+
+            _computeCanChangeTitle: function (applicationSettings) {
+                return applicationSettings;
+            },
+
+            _computeCanChangeUrl: function (applicationSettings, applicationComputed) {
+                return applicationSettings && applicationComputed.url_editable;
+            },
+
+            _computeShouldShowUrl: function (applicationSettings, applicationIcon, applicationTpl) {
+                if (!applicationIcon.auth_type && !applicationTpl.auth_types) {
+                    return false;
+                }
+                var auth = applicationIcon.auth_type ? applicationIcon.auth_type : this._supportedAuthTypeByPriority(applicationTpl.auth_types),
+                    tpl = applicationIcon.application ? applicationIcon.application : applicationTpl
+                ;
+                return !(applicationSettings && tpl.url_editable) &&
+                    ['unpw', 'item', 'login'].indexOf(auth) !== -1;
+            },
+
+            save: function(application) {
+                this._submit(application);
             },
 
             /**
@@ -170,10 +322,7 @@ Custom property | Description | Default
              * @private
              */
             _onEnter: function() {
-
-                if (!this.disableSubmit) {
-                    this._submit();
-                }
+                this._submit({});
             },
 
             _applicationSaved: function(app) {
@@ -193,43 +342,44 @@ Custom property | Description | Default
                 }
             },
 
-            _submit: function () {
+            _submit: function (application) {
 
+                application = (application && application.self) ?
+                    application :
+                    this._computeApplicationFromAppAndTpl(
+                        this.application ? this.application : {},
+                        this.applicationTemplate ? this.applicationTemplate : {}
+                    )
+                ;
                 this._loader = true;
                 this.message = "";
                 var me = this;
-                this._submitApplicationConfigure().then(function(app) {
-
-                    if (me._applicationClaims) {
-
+                this._submitApplicationConfigure(application).then(function(app) {
                         me._submitNewClaims(app).then(function(app) {
                             me._applicationSaved(app);
+                        }, function() {
+                            me._applicationSaved(app);
                         });
-                    }
-                    else {
-                        me._applicationSaved(app);
-                    }
                 });
             },
 
-            _submitApplicationConfigure: function () {
+            _submitApplicationConfigure: function (application) {
                 var me = this;
                 if(!this.applicationSettings) {
                     return new Promise(function(resolve, reject){ resolve(me.application)});
                 }
                 return new Promise(function (resolve, reject) {
                     var body = "";
-                    if (me.application.title != me.$$('#title').value) {
+                    if (application.title != me.$$('#title').value) {
                         body = encodeURIComponent(me.$$('#title').name) + "=" + encodeURIComponent(me.$$('#title').value);
                     }
-                    if (me.application.url != me.$$('#url').value) {
+                    if (me.$$('#url') && application.url != me.$$('#url').value) {
                         body += body == "" ? '' : '&';
                         body += encodeURIComponent(me.$$('#url').name) + "=" + encodeURIComponent(me.$$('#url').value);
                     }
-
                     if ('' != body) {
                         var options = {
-                            url: me.application.self + (me.company ? '' : '/application'),
+                            url: application.self + (me.company ? '' : '/application'),
                             method: 'PATCH',
                             body: body,
                             handleAs: 'json',
@@ -247,91 +397,75 @@ Custom property | Description | Default
                             }
                         });
                     } else {
-                        resolve(false);
+                        resolve(application);
                     }
                 });
             },
 
             _submitNewClaims: function (application) {
-                var me = this;
-                return new Promise(function (resolve, reject) {
-                    var usernameInput = me.$$('#username'),
-                        username = usernameInput.value ? usernameInput.value : '',
-                        passwordInput = me.$$('#password'),
-                        password = passwordInput.value ? passwordInput.value : '',
-                        noteInput = me.$$('#note'),
-                        note = noteInput.value ? noteInput.value : '',
-                        body = '';
+                var me = this,
+                    form = Polymer.dom(me.root).querySelector('[data-claims]');
 
-                    usernameInput.invalid = (username == '');
-                    passwordInput.invalid = (password == '');
+                return new Promise(function(resolve, reject){
+                    if(form.didFieldsChanged()) {
+                        var options = {
+                            url: application.self,
+                            method: 'PATCH',
+                            body: form.encodedBodyValues(),
+                            handleAs: 'json',
+                            headers: {
+                                'Authorization': 'token ' + me.authorizationToken,
+                                'Content-Type': 'application/x-www-form-urlencoded'
+                            }
+                        };
 
-                    if (
-                        (username != '' || password != '') &&
-                        (me.application.claims.username != username ||
-                        me.application.claims.password != password ||
-                        me.application.claims.note != note)
-                    ) {
+                        var request = document.createElement('iron-request');
+                        request.send(options).then(function() {
 
-//                        usernameInput.invalid = (username == '');
-//                        passwordInput.invalid = (password == '');
+                            if (request.succeeded) {
+                                resolve(request.response.icon);
+                            }
 
-                        body =
-                            encodeURIComponent(usernameInput.name) + "=" + encodeURIComponent(username) +
-                            '&' +
-                            encodeURIComponent(passwordInput.name) + "=" + encodeURIComponent(password) +
-                            '&' +
-                            encodeURIComponent(noteInput.name) + "=" + encodeURIComponent(note)
-                        ;
-                    }
-
-                    if (!usernameInput.invalid && !passwordInput.invalid) {
-                        if ('' != body) {
-                            var options = {
-                                url: me.application.self,
-                                method: "PATCH",
-                                body: body,
-                                handleAs: 'json',
-                                headers: {
-                                    "Authorization": "token " + me.authorizationToken,
-                                    "Content-Type": "application/x-www-form-urlencoded"
-                                }
-                            };
-
-                            var request = document.createElement('iron-request');
-                            request.send(options).then(function() {
-                                if (request.succeeded) {
-                                    resolve(request.response.icon);
-                                }
-                            });
-                        } else {
-                            resolve(application);
-                        }
-                    }
-                    else {
+                        });
+                    } else {
                         me._loader = false;
                         me.fire('form-error');
-                        return;
+//                        resolve(false);
+                        resolve(application)
                     }
                 });
             },
 
-            _onTypeIn: function(event) {
-                event.target.invalid = false;
+            isValid: function () {
+                var form = Polymer.dom(this.root).querySelector('[data-claims]'),
+                    title = this.$$('#title'),
+                    url = this.$$('#url'),
+                    valid = false;
+
+                if (title && url) {
+                    valid = (!title.invalid && !url.invalid);
+                }
+                else if (title && !url) {
+                    valid = !title.invalid;
+                }
+                else if (!title && url) {
+                    valid = !url.invalid;
+                }
+                else {
+                    valid = true;
+                }
+
+                return valid && (form ? form.isValid() : true);
             },
 
-            setUp: function() {
-//                this.$.title.focus();
-            },
+            setUp: function() {},
 
             /**
              * Resets component.
              */
             reset: function() {
-                var application = JSON.parse(JSON.stringify(this.application));
-
-                this.application = {};
-                this.application = application;
+                this.set('application', {});
+                this.set('applicationTpl', {});
             }
         });
     </script>

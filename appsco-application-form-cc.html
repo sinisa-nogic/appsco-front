@@ -1,0 +1,174 @@
+<link rel="import" href="../polymer/polymer.html">
+
+<link rel="import" href="../paper-input/paper-input.html">
+<link rel="import" href="../paper-input/paper-textarea.html">
+<link rel="import" href="../paper-dropdown-menu/paper-dropdown-menu.html">
+<link rel="import" href="../paper-listbox/paper-listbox.html">
+<link rel="import" href="../paper-item/paper-item.html">
+<link rel="import" href="../gold-cc-input/gold-cc-input.html">
+<link rel="import" href="../gold-cc-cvc-input/gold-cc-cvc-input.html">
+<link rel="import" href="../vaadin-date-picker/vaadin-date-picker.html">
+<link rel="import" href="../appsco-components/appsco-credit-card-types.html">
+
+<dom-module id="appsco-application-form-cc">
+    <template>
+        <appsco-credit-card-types types="{{ cardTypes }}"></appsco-credit-card-types>
+
+        <div class="input-container">
+            <paper-input
+                    id="cardHolder"
+                    data-field
+                    label="Card holder"
+                    value="[[ claims.cardHolder ]]"
+                    name$="[[ claimsNamePrefix ]][cardHolder]"
+            ></paper-input>
+        </div>
+
+        <div class="input-container" hidden>
+            <paper-dropdown-menu id="dropdownCreditCardType"
+                                 label="Credit card type"
+                                 horizontal-align="left">
+                <paper-listbox id="paperListboxCardType"
+                               class="dropdown-content filter"
+                               attr-for-selected="name"
+                               selected="[[ cardType ]]">
+
+                    <template is="dom-repeat" items="[[ cardTypes ]]">
+                        <paper-item name="[[ item.name ]]"
+                                    code="[[ item.code ]]">[[ item.title ]]</paper-item>
+                    </template>
+
+                </paper-listbox>
+            </paper-dropdown-menu>
+        </div>
+
+        <div class="input-container">
+            <gold-cc-input id="cardNumber"
+                           data-field
+                           label="Card number"
+                           card-type='{{ cardType }}'
+                           required
+                           auto-validate
+                           error-message="Credit card number is not valid."
+                           value="[[ _cardNumber ]]"
+                           name$="[[ claimsNamePrefix ]][cardNumber]"
+            ></gold-cc-input>
+        </div>
+
+        <div class="input-container">
+            <gold-cc-cvc-input id="verificationNumber"
+                               data-field
+                               label="Verification number"
+                               card-type='[[ cardType ]]'
+                               required
+                               auto-validate
+                               error-message="Verification number is not valid."
+                               value="[[ _verificationNumber ]]"
+                               name$="[[ claimsNamePrefix ]][verificationNumber]"
+            ></gold-cc-cvc-input>
+        </div>
+
+        <div class="input-container date-container">
+            <vaadin-date-picker
+                    id="expiryDate"
+                    data-field
+                    label="Expiry date"
+                    value="[[ claims.expiryDate ]]"
+                    name$="[[ claimsNamePrefix ]][expiryDate]"
+            ></vaadin-date-picker>
+        </div>
+
+        <div class="input-container date-container">
+            <vaadin-date-picker
+                    id="validFrom"
+                    data-field
+                    label="Valid from date"
+                    value="[[ claims.validFrom ]]"
+                    name$="[[ claimsNamePrefix ]][validFrom]"
+            ></vaadin-date-picker>
+        </div>
+        <paper-textarea
+                id="note"
+                data-field
+                label="Note"
+                value="[[ claims.note ]]"
+                name$="[[ claimsNamePrefix ]][note]"
+        ></paper-textarea>
+    </template>
+
+    <script>
+        Polymer({
+            is: 'appsco-application-form-cc',
+
+            properties: {
+                claims: {
+                    type: Object,
+                    value: function () { return {}; }
+                },
+
+                _cardNumber: {
+                    type: String,
+                    computed: '_cardNumberComputed(claims)'
+                },
+
+                _verificationNumber: {
+                    type: String,
+                    computed: '_verificationNumberComputed(claims)'
+                },
+
+                claimsNamePrefix: {
+                    type: String,
+                    value: "claims_cc"
+                }
+            },
+
+            _cardNumberComputed: function (claims) {
+                return claims.cardNumber ? claims.cardNumber : '';
+            },
+
+            _verificationNumberComputed: function (claims) {
+                return claims.verificationNumber ? claims.verificationNumber : '';
+            },
+
+            isValid: function() {
+                this.$.cardNumber.validate();
+                this.$.verificationNumber.validate();
+                return !this.$.cardNumber.invalid && !this.$.verificationNumber.invalid;
+            },
+
+            encodedBodyValues: function () {
+                var body = '';
+
+                Polymer.dom(this.root).querySelectorAll('[data-field]').forEach(function(item, key) {
+                    if(item.value) {
+                        body += body === '' ? '' : '&';
+                        body += encodeURIComponent(item.getAttribute('name')) + '=' + encodeURIComponent(item.value)
+                    }
+                }.bind(this));
+
+                return body;
+            },
+
+            didFieldsChanged: function() {
+                var fieldChanged = false,
+                    claimsExist = false;
+                for ( var prop in this.claims ) {
+                    claimsExist = true;
+                }
+                if(!claimsExist) {
+                    Polymer.dom(this.root).querySelectorAll('[data-field]').forEach(function(item, key) {
+                        fieldChanged = fieldChanged || (item.value && '' !== item.value);
+                    }.bind(this));
+
+                    return fieldChanged;
+                }
+
+                Polymer.dom(this.root).querySelectorAll('[data-field]').forEach(function(item, key) {
+                    fieldChanged = fieldChanged || this.claims[item.getAttribute('id')] !== item.value;
+                }.bind(this));
+
+                return fieldChanged;
+            }
+        });
+    </script>
+</dom-module>

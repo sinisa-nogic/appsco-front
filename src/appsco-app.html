@@ -1340,7 +1340,8 @@
                 'reload-applications': '_onReloadApplications',
                 'reload-accounts': '_onReloadAccounts',
                 'application-settings-saved': '_onApplicationUpdated',
-                'show-subscription-limit-reached-info': '_onShowSubscriptionLimitReachedInfo'
+                'show-subscription-limit-reached-info': '_onShowSubscriptionLimitReachedInfo',
+                'copied-application-attribute': '_onCopiedApplicationAttribute'
             },
 
             attached: function() {
@@ -2466,7 +2467,7 @@
             _onAssigneeClaimsChanged: function(event) {
                 this.set('_companyApplication', {});
                 this.set('_companyApplication', event.detail.application);
-                
+
                 this._notify('Claims for ' + event.detail.assignee.display_name + ' were successfully changed.');
 
                 this._notifyReloadAccounts();
@@ -3415,7 +3416,26 @@
                 }
 
                 this.updateStyles();
+            },
+
+            _onCopiedApplicationAttribute: function(event) {
+                var appRequest = document.createElement('iron-request'),
+                        application = event.detail.application.application;
+
+                if (!!application.company) {
+                    appRequest.send({
+                        url: application.self + '/track-events',
+                        method: 'POST',
+                        handleAs: 'json',
+                        body: 'track_events[event_type] = copy_event&track_events[field]=' + encodeURIComponent(event.detail.attribute),
+                        headers: {
+                            'Authorization': 'token ' + this.authorizationToken,
+                            'Content-Type': 'application/x-www-form-urlencoded'
+                        }
+                    });
+                }
             }
+
             /**
              * Global END
              */

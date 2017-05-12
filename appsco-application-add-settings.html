@@ -1,10 +1,10 @@
 <link rel="import" href="../polymer/polymer.html">
 <link rel="import" href="../iron-flex-layout/iron-flex-layout.html">
+<link rel="import" href="../paper-input/paper-input.html">
 <link rel="import" href="../paper-input/paper-textarea.html">
 <link rel="import" href="../paper-button/paper-button.html">
 <link rel="import" href="../iron-ajax/iron-request.html">
 <link rel="import" href="../iron-form/iron-form.html">
-<link rel="import" href="../paper-input/paper-input.html">
 
 <link rel="import" href="../neon-animation/neon-shared-element-animatable-behavior.html">
 <link rel="import" href="../neon-animation/animations/hero-animation.html">
@@ -14,6 +14,9 @@
 <link rel="import" href="../appsco-components/appsco-loader.html">
 <link rel="import" href="../appsco-components/appsco-form-error.html">
 <link rel="import" href="appsco-application-info.html">
+
+
+<link rel="import" href="appsco-application-settings.html">
 
 <!--
 `appsco-application-add-settings`
@@ -52,11 +55,10 @@ Custom property | Description | Default
         </style>
 
         <div id="applicationHeader">
-            <template is="dom-if" if="[[ !application.custom_application ]]">
+            <template is="dom-if" if="[[ application.self ]]">
                 <appsco-application-info application="[[ application ]]"></appsco-application-info>
             </template>
         </div>
-
         <div id="appscoApplicationSettings">
 
             <appsco-loader active="[[ _loader ]]" loader-alt="Appsco is saving application" multi-color></appsco-loader>
@@ -70,53 +72,18 @@ Custom property | Description | Default
                   action$="[[ _computedAction ]]"
                   headers="[[ _computedHeaders ]]"
                   on-iron-form-response="_onFormResponse">
-                <paper-input type="text" name="application[resource]" value="[[ application.self ]]"></paper-input>
+                <input type="text" name="application[resource]" value$="[[ applicationTemplate.self ]]">
             </form>
 
-            <form is="iron-form"
-                  id="saveApplicationForm">
-                <paper-input
-                        id="title"
-                        label="title"
-                        value="{{ _icon.title }}"
-                        name="configure_application[title]"
-                        required
-                        auto-validate
-                        error-message="Please enter application title."
-                        ></paper-input>
-                <paper-input
-                        id="url"
-                        label="url"
-                        value="{{ _icon.url }}"
-                        pattern="https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)"
-                        error-message="Url is invalid."
-                        required
-                        auto-validate
-                        name="configure_application[url]"
-                        ></paper-input>
-
-                <div hidden$="[[ _computedAuthTypes ]]">
-                    <paper-input
-                            id="username"
-                            label="username"
-                            value="{{ _icon.claims.username }}"
-                            name="icon_claims[username]"
-                            ></paper-input>
-                    <paper-input
-                            id="password"
-                            label="password"
-                            type="password"
-                            value="{{ _icon.claims.password }}"
-                            name="icon_claims[password]"
-                            ></paper-input>
-                    <paper-textarea
-                            id="note"
-                            label="note"
-                            value="{{ _icon.claims.note }}"
-                            name="icon_claims[note]"
-                            ></paper-textarea>
-                </div>
-            </form>
+            <appsco-application-settings
+                    id="applicationSettings"
+                    show-save-button="[[ _saveButton ]]"
+                    on-application-settings-no-changes="_fireNoChangesInSettings"
+                    on-application-settings-saved="_fireSettingsChanged"
+                    authorization-token="[[ authorizationToken ]]"
+                    application-tpl="[[ applicationTemplate ]]"
+                    application="[[ application ]]"
+            ></appsco-application-settings>
 
         </div>
     </template>
@@ -128,30 +95,23 @@ Custom property | Description | Default
 
             properties: {
 
+                _saveButton: {
+                    type: Boolean,
+                    value: false
+                },
+
+                applicationTemplate: {
+                    type: Object,
+                    value: function () { return {}; }
+                },
+
                 /**
                  * Application to add.
                  */
                 application: {
                     type: Object,
-                    notify: true
-                },
-
-                /**
-                 * Selected application from search.
-                 */
-                _selectedApplication: {
-                    type: Object
-                },
-
-                /**
-                 * Stores typed values (title, url and claims) to add.
-                 */
-                _icon: {
-                    type: Object,
-                    value: function() {
-                        return {};
-                    },
-                    notify: true
+                    notify: true,
+                    value: function () { return {}; }
                 },
 
                 /**
@@ -184,15 +144,6 @@ Custom property | Description | Default
                 _computedHeaders: {
                     type: Object,
                     computed: '_computeHeaders(authorizationToken)'
-                },
-
-                /**
-                 * Computed auth types.
-                 * It returns true if application has auth type: item or unpw.
-                 */
-                _computedAuthTypes: {
-                    type: Boolean,
-                    computed: '_computeAuthTypes(_selectedApplication)'
                 },
 
                 /**
@@ -251,8 +202,14 @@ Custom property | Description | Default
                 Polymer.NeonSharedElementAnimatableBehavior
             ],
 
-            listeners: {
-                'application-changed': '_onApplicationChanged'
+            _fireNoChangesInSettings: function (e) {
+                this.application = e.detail.application;
+                this._onApplicationAdded();
+            },
+
+            _fireSettingsChanged: function (e) {
+                this.application = e.detail.application;
+                this._onApplicationAdded();
             },
 
             /**
@@ -280,171 +237,6 @@ Custom property | Description | Default
             },
 
             /**
-             * Computes auth types of application.
-             *
-             * @param {Object} application
-             * @returns Boolean
-             * @private
-             */
-            _computeAuthTypes: function (application) {
-                return !(application.auth_types && (application.auth_types.item || application.auth_types.unpw));
-            },
-
-            /**
-             * Called after application has been changed.
-             * It sets _icon property values.
-             * It sets focus to title input field.
-             *
-             * @private
-             */
-            _onApplicationChanged: function() {
-
-                if (!this._selectedApplication || (this._selectedApplication && !this._selectedApplication.auth_types)) {
-                    this._selectedApplication = this.application;
-                }
-
-                this._icon.claims = this.application.claims;
-
-                if (!this._icon.title || this._icon.title == '') {
-                    this.set('_icon.title', this.application.title);
-                }
-
-                if (!this._icon.url || this._icon.url == '') {
-                    this.set('_icon.url', this.application.url);
-                }
-
-                setTimeout(function() {
-                    this.$.title.focus();
-                }.bind(this), 100);
-
-            },
-
-            /**
-             * Saves application configuration and claims.
-             *
-             * @private
-             */
-            _submit: function () {
-                this._submitApplicationConfigure().then(function(application) {
-
-                    if (application) {
-                        this.application = application;
-                    }
-
-                    this._submitNewClaims().then(function(application) {
-
-                        if (application) {
-                            this.application = application;
-                        }
-
-                        this._onApplicationAdded();
-
-                    }.bind(this));
-                }.bind(this));
-            },
-
-            /**
-             * Configures application with given title and url.
-             *
-             * @returns {*}
-             * @private
-             */
-            _submitApplicationConfigure: function() {
-                var me = this;
-
-                return new Promise(function(resolve, reject){
-                    var body = '';
-
-                    if (me.application.title != me.$.title.value) {
-                        body = encodeURIComponent(me.$.title.name) + '=' + encodeURIComponent(me.$.title.value);
-                    }
-
-                    if (me.application.url != me.$.url.value) {
-                        body += body == "" ? '' : '&';
-                        body += encodeURIComponent(me.$.url.name) + '=' + encodeURIComponent(me.$.url.value);
-                    }
-
-                    if('' != body) {
-                        var options = {
-                            url: me.application.self + '/application',
-                            method: 'PATCH',
-                            body: body,
-                            handleAs: 'json',
-                            headers: {
-                                'Authorization': 'token ' + me.authorizationToken,
-                                'Content-Type': 'application/x-www-form-urlencoded'
-                            }
-                        };
-
-                        var request = document.createElement('iron-request');
-                        request.send(options).then(function() {
-
-                            if (request.succeeded) {
-                                resolve(request.response.icon);
-                            }
-
-                        });
-                    } else {
-                        resolve(false);
-                    }
-                });
-            },
-
-            /**
-             * Saves application claims.
-             *
-             * @param {Object} application
-             * @returns {*}
-             * @private
-             */
-            _submitNewClaims: function() {
-                var me = this;
-
-                return new Promise(function(resolve, reject){
-                    var body = '';
-
-                    if(
-                            me.application.claims &&
-                            (me.application.claims.username != me.$.username.value ||
-                            me.application.claims.password != me.$.password.value ||
-                            me.application.claims.note != me.$.note.value)
-                    ) {
-                        body =
-                                encodeURIComponent(me.$.username.name) + '=' + encodeURIComponent(me.$.username.value) +
-                                '&' +
-                                encodeURIComponent(me.$.password.name) + '=' + encodeURIComponent(me.$.password.value) +
-                                '&' +
-                                encodeURIComponent(me.$.note.name) + '=' + encodeURIComponent(me.$.note.value)
-                        ;
-                    }
-
-                    if('' != body) {
-                        var options = {
-                            url: me.application.self,
-                            method: 'PATCH',
-                            body: body,
-                            handleAs: 'json',
-                            headers: {
-                                'Authorization': 'token ' + me.authorizationToken,
-                                'Content-Type': 'application/x-www-form-urlencoded'
-                            }
-                        };
-
-                        var request = document.createElement('iron-request');
-                        request.send(options).then(function() {
-
-                            if (request.succeeded) {
-                                resolve(request.response.icon);
-                            }
-
-                        });
-                    } else {
-                        resolve(false);
-                    }
-                });
-            },
-
-            /**
              * Called on form error when trying to add new application as icon.
              *
              * @param {Object} event
@@ -463,26 +255,19 @@ Custom property | Description | Default
              * @private
              */
             _onFormResponse: function(event) {
-                var icon = event.detail.response.icon;
-
-                this.application = icon;
-
-                if (this.$.username.value != '' && this.$.password.value != '') {
-                    this._submit();
-                }
-                else {
-                    this._onApplicationAdded();
-                }
+//                this.applicationTemplate = event.detail.response.icon;
+                this.$.applicationSettings.save(event.detail.response.icon);
             },
 
             /**
              * Submits form which adds application as item.
              */
             addApplication: function() {
-
-                if (this.$.saveApplicationForm.validate()) {
-                    this._showLoader();
+                if (this.$.applicationSettings.isValid()) {
+//                    this._showLoader();
                     this.$.addApplicationForm.submit();
+                } else {
+                    this.fire('form-error')
                 }
 
             },
@@ -518,10 +303,10 @@ Custom property | Description | Default
              * Resets component.
              */
             reset: function() {
-                this._icon = {};
-                this._selectedApplication = {};
                 this.$.addApplicationForm.reset();
-                this.$.saveApplicationForm.reset();
+                this.set('application', {});
+                this.set('applicationTemplate', {});
+                this.$.applicationSettings.reset();
                 this._hideLoader();
             }
         });

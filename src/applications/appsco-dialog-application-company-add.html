@@ -9,9 +9,9 @@
 <link rel="import" href="../../bower_components/iron-a11y-keys/iron-a11y-keys.html">
 
 <link rel="import" href="../../bower_components/appsco-components/appsco-loader.html">
-<link rel="import" href="../../bower_components/appsco-application/appsco-application-settings.html">
+<link rel="import" href="../../bower_components/appsco-application/company/appsco-company-application-add-settings.html">
 
-<dom-module id="appsco-application-settings-dialog">
+<dom-module id="appsco-dialog-application-company-add">
     <template>
         <style>
             :host {
@@ -49,7 +49,7 @@
                       exit-animation="fade-out-animation"
                       on-iron-overlay-closed="_onDialogClosed">
 
-            <h2>Manage</h2>
+            <h2>Add Resource</h2>
 
             <appsco-loader active="[[ _loader ]]"
                            loader-alt="Appsco is processing request"
@@ -58,15 +58,15 @@
             <paper-dialog-scrollable>
                 <div class="dialog-container">
                     <div>
-                        <appsco-application-settings id="appscoApplicationSettings"
-                                                     application="[[ application ]]"
-                                                     authorization-token="[[ authorizationToken ]]"
-                                                     application-settings="[[ _applicationSettings ]]"
-                                                     disable-submit
-                                                     on-application-settings-saved="_onApplicationsSettingsSaved"
-                                                     on-application-settings-no-changes="_onApplicationsSettingsSaved"
-                                                     on-form-error="_onFormError"
-                        ></appsco-application-settings>
+                        <appsco-company-application-add-settings
+                                id="appscoApplicationAddSettings"
+                                name="appsco-application-add-settings"
+                                application="[[ applicationTemplate ]]"
+                                authorization-token="[[ authorizationToken ]]"
+                                add-application-api="[[ addApplicationApi ]]"
+                                loader="{{ _loader }}"
+                                on-application-added="_onApplicationAdded">
+                        </appsco-company-application-add-settings>
                     </div>
                 </div>
             </paper-dialog-scrollable>
@@ -87,23 +87,11 @@
     <script>
         Polymer({
 
-            is: 'appsco-application-settings-dialog',
+            is: 'appsco-dialog-application-company-add',
 
             properties: {
 
-                account: {
-                    type: Object,
-                    value: function() {
-                        return {};
-                    }
-                },
-
-                _applicationSettings: {
-                    type: Boolean,
-                    value: false
-                },
-
-                application: {
+                applicationTemplate: {
                     type: Object,
                     value: function() {
                         return {};
@@ -114,6 +102,10 @@
                  * Authorization token.
                  */
                 authorizationToken: {
+                    type: String
+                },
+
+                addApplicationApi: {
                     type: String
                 },
 
@@ -130,7 +122,11 @@
                     type: Boolean,
                     value: false
                 }
+            },
 
+            listeners: {
+                "application-added": "toggle",
+                "form-error": "_hideLoader"
             },
 
             /**
@@ -147,12 +143,8 @@
                 }
             },
 
-            _computeSendInvoiceApi: function(companyApi, invoice) {
-                return companyApi + '/billing/invoice/' + invoice.id + '/send';
-            },
-
-            setApplication: function(application) {
-                this.application = application;
+            setApplicationTemplate: function(applicationTpl) {
+                this.applicationTemplate = applicationTpl;
             },
 
             /**
@@ -169,6 +161,7 @@
              */
             _onDialogClosed: function() {
                 this._loader = false;
+                this.reset();
             },
 
             _onEnter: function() {
@@ -177,16 +170,7 @@
 
             _onSave: function() {
                 this._showLoader();
-                this.$.appscoApplicationSettings.save();
-            },
-
-            _onApplicationsSettingsSaved: function() {
-                this._hideLoader();
-                this.toggle();
-            },
-
-            _onFormError: function() {
-                this._hideLoader();
+                this.$.appscoApplicationAddSettings.addApplication();
             },
 
             _showLoader: function() {
@@ -195,6 +179,10 @@
 
             _hideLoader: function() {
                 this._loader = false;
+            },
+
+            reset: function() {
+                this.$.appscoApplicationAddSettings.reset();
             }
         });
     </script>

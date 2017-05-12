@@ -58,10 +58,16 @@
                         font-size: 14px;
                  };
             }
+            :host([col2]) {
+                @apply(--layout-start-justified);
+            }
             :host > * {
                 width: calc(100% / 3 - 10px);
                 margin-bottom: 10px;
                 @apply(--layout-self-start);
+            }
+            :host([col2]) > * {
+                width: calc(100% / 2 - 10px);
             }
             :host .details-subscribers, :host .security-autologin {
                 @apply(--layout-vertical);
@@ -111,6 +117,9 @@
             :host([medium-screen]) > .appsco-application-log {
                 width: 100%;
             }
+            :host([col2][medium-screen]) > .appsco-application-log {
+                width: calc(100% / 2 - 10px);
+            }
             :host([medium-screen]) .security-autologin {
                 margin-right: 0;
             }
@@ -157,48 +166,50 @@
             </paper-card>
         </div>
 
-        <div class="security-autologin">
-            <paper-card heading="Security" class="appsco-application-security">
-                <div class="card-content">
-                    <template is="dom-if" if="[[ application.claims ]]">
-                        <appsco-application-security application="[[ application ]]"
-                                                     info></appsco-application-security>
-                    </template>
-
-                    <template is="dom-if" if="[[ !application.claims ]]">
-                        <p class="message">
-                            This application doesn't have username and password.
-                        </p>
-                    </template>
-                </div>
-            </paper-card>
-
-            <paper-card heading="Autologin" class="appsco-application-autologin">
-                <div class="card-content">
-                    <appsco-application-autologin
-                            application="[[ application ]]"
-                            authorization-token="[[ authorizationToken ]]"
-                            on-autologin-unavailable="_onAutologinUnavailable"
-                            on-autologin-changed="_onAutologinChanged"></appsco-application-autologin>
-
-                    <template is="dom-if" if="[[ _autologinUnavailable ]]">
-                        <p>Auto Login sign on method for this application is unavailable.</p>
-                    </template>
-
-                    <template is="dom-if" if="[[ !_autologinUnavailable ]]">
-
-                        <template is="dom-if" if="[[ _autologinItem ]]">
-                            <p>Turn on Auto Login to automate sign-in process.</p>
+        <template is="dom-if" if="[[ _isUnPwAuthType ]]">
+            <div class="security-autologin">
+                <paper-card heading="Security" class="appsco-application-security">
+                    <div class="card-content">
+                        <template is="dom-if" if="[[ application.claims ]]">
+                            <appsco-application-security application="[[ application ]]"
+                                                         info></appsco-application-security>
                         </template>
 
-                        <template is="dom-if" if="[[ !_autologinItem ]]">
-                            <p>Turn off Auto Login if you prefer to choose login account manually after application opens in browser.</p>
+                        <template is="dom-if" if="[[ !application.claims ]]">
+                            <p class="message">
+                                This application doesn't have username and password.
+                            </p>
+                        </template>
+                    </div>
+                </paper-card>
+
+                <paper-card heading="Autologin" class="appsco-application-autologin">
+                    <div class="card-content">
+                        <appsco-application-autologin
+                                application="[[ application ]]"
+                                authorization-token="[[ authorizationToken ]]"
+                                on-autologin-unavailable="_onAutologinUnavailable"
+                                on-autologin-changed="_onAutologinChanged"></appsco-application-autologin>
+
+                        <template is="dom-if" if="[[ _autologinUnavailable ]]">
+                            <p>Auto Login sign on method for this application is unavailable.</p>
                         </template>
 
-                    </template>
-                </div>
-            </paper-card>
-        </div>
+                        <template is="dom-if" if="[[ !_autologinUnavailable ]]">
+
+                            <template is="dom-if" if="[[ _autologinItem ]]">
+                                <p>Turn on Auto Login to automate sign-in process.</p>
+                            </template>
+
+                            <template is="dom-if" if="[[ !_autologinItem ]]">
+                                <p>Turn off Auto Login if you prefer to choose login account manually after application opens in browser.</p>
+                            </template>
+
+                        </template>
+                    </div>
+                </paper-card>
+            </div>
+        </template>
 
         <paper-card heading="Application Log" class="appsco-application-log">
             <div class="card-content">
@@ -222,6 +233,12 @@
             is: 'appsco-application-components-page',
 
             properties: {
+
+                col2: {
+                    type: Boolean,
+                    value: false,
+                    reflectToAttribute: true
+                },
 
                 /**
                  * Indicates if it is medium screen size.
@@ -254,6 +271,11 @@
                     },
                     notify: true,
                     observer: '_onApplicationChanged'
+                },
+
+                _isUnPwAuthType: {
+                    type: Boolean,
+                    computed: '_computeIsUnPwAuthType(application)'
                 },
 
                 _autologinUnavailable: {
@@ -301,6 +323,15 @@
             behaviors: [
                 Polymer.NeonSharedElementAnimatableBehavior
             ],
+
+            _computeIsUnPwAuthType: function (application) {
+                var isUnpw =
+                    application.auth_type &&
+                    (application.auth_type === 'unpw' || application.auth_type === 'item')
+                ;
+                this.col2 = !isUnpw;
+                return isUnpw;
+            },
 
             _setSharedElement: function(target) {
 

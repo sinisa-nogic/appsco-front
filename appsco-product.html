@@ -107,6 +107,9 @@ Custom property | Description | Default
                 font-size: 14px;
                 cursor: pointer;
             }
+            .paper-item:hover {
+                @apply(--paper-item-hover);
+            }
             .product-active {
                 font-size: 18px;
             }
@@ -343,20 +346,40 @@ Custom property | Description | Default
             _onPartnerChanged: function(partner) {
 
                 if (this._products && partner) {
+                    var products = this._products,
+                        productsLength = products.length;
 
-                    this.push('_products', {
-                        label: 'Partner',
-                        value: 'appsco-partner-product',
-                        name: 'appsco-partner-product',
-                        company: null
-                    });
+                    for (var i = 0; i < productsLength; i++) {
 
+                        if ('appsco-partner-product' === products[i].name) {
+                            break;
+                        }
+                        else if (i === productsLength - 1) {
+                            var newProduct = this._createNewPartnerProduct();
+
+                            this.push('_products', newProduct);
+                        }
+                    }
+
+                    this.set('_productListDisplay', []);
                     this.set('_productListDisplay', this._products);
+
+                    // paper-item doesn't display product name inside paper-listbox list without click event.
+                    document.body.click();
 
                     this._multiProducts = true;
                     this.setProduct(this._productToSelect);
                 }
 
+            },
+
+            _createNewPartnerProduct: function() {
+                return {
+                    label: 'Partner',
+                    value: 'appsco-partner-product',
+                    name: 'appsco-partner-product',
+                    company: null
+                };
             },
 
             _onBusinessChanged: function(business) {
@@ -401,7 +424,7 @@ Custom property | Description | Default
                     value: 'appsco-business-product' + company.company.alias,
                     name: 'appsco-business-product',
                     company: company
-                }
+                };
             },
 
             /**

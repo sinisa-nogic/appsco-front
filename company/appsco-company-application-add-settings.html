@@ -88,6 +88,7 @@ Custom property | Description | Default
                         required
                         auto-validate
                         name="configure_application[url]"
+                        hidden$="[[ !_shouldShowUrl ]]"
                         ></paper-input>
             </form>
 
@@ -124,6 +125,11 @@ Custom property | Description | Default
                     type: String
                 },
 
+                _shouldShowUrl: {
+                    type: Boolean,
+                    computed: '_computeShouldShowUrl(application)'
+                },
+
                 /**
                  * Computed headers.
                  * It contains authorization token.
@@ -147,6 +153,16 @@ Custom property | Description | Default
                  */
                 _error: {
                     type: String
+                },
+
+                _supportedAuthTypes: {
+                    type: Array,
+                    value: function () {
+                        return [
+                            'icon_item', 'icon_unpw', 'icon_saml', 'icon_jwt', 'icon_cc', 'icon_login',
+                            'icon_passport', 'icon_securenote', 'icon_softwarelicence', 'icon_none'
+                        ]
+                    }
                 },
 
                 /**
@@ -192,6 +208,35 @@ Custom property | Description | Default
 
             listeners: {
                 'application-changed': '_onApplicationChanged'
+            },
+
+            _computeShouldShowUrl: function (application) {
+                if (!(application && application.self)) {
+                    return false;
+                }
+
+                var auth = this._supportedAuthTypeByPriority(application.auth_types);
+                return application.url_editable &&
+                    ['unpw', 'item', 'login', 'none'].indexOf(auth) !== -1;
+            },
+
+            _supportedAuthTypeByPriority: function(authTypes) {
+                var authType = null,
+                    priority = 100;
+                for (var prop in authTypes) {
+
+                    currentPriority = this._supportedAuthTypes.indexOf(authTypes[prop]);
+                    if(priority > currentPriority) {
+                        authType = authTypes[prop];
+                        priority = currentPriority;
+                    }
+                }
+
+                if(null === authType) {
+                    return [];
+                }
+
+                return authType.substring('icon_'.length);
             },
 
             /**
@@ -241,9 +286,7 @@ Custom property | Description | Default
 
                         this._onApplicationAdded();
 
-                    }.bind(this), function() {
-                        this._hideLoader();
-                    }.bind(this));
+                    }.bind(this), function() { this.fire('form-error'); }.bind(this));
                 }
                 else {
                     this.application = application;
@@ -299,7 +342,7 @@ Custom property | Description | Default
              */
             _onFormError: function(event) {
                 this._error = event.detail.error.message;
-                this._hideLoader();
+                this.fire('form-error');
             },
 
             /**
@@ -323,8 +366,9 @@ Custom property | Description | Default
             addApplication: function() {
 
                 if (this.$.saveApplicationForm.validate()) {
-                    this._showLoader();
                     this.$.addApplicationForm.submit();
+                } else {
+                    this.fire('form-error');
                 }
 
             },
@@ -336,8 +380,6 @@ Custom property | Description | Default
              * @private
              */
             _onApplicationAdded: function() {
-                this._hideLoader();
-
                 /**
                  * Fired after application has been added.
                  *
@@ -348,21 +390,12 @@ Custom property | Description | Default
                 });
             },
 
-            _showLoader: function() {
-                this.loader = true;
-            },
-
-            _hideLoader: function() {
-                this.loader = false;
-            },
-
             /**
              * Resets component.
              */
             reset: function() {
                 this.$.addApplicationForm.reset();
                 this.$.saveApplicationForm.reset();
-                this._hideLoader();
             }
         });
     </script>

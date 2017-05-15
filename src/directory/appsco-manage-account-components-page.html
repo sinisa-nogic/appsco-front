@@ -279,16 +279,18 @@
                 </div>
             </paper-card>
 
-            <paper-card heading="Company roles"
-                        class="appsco-account-roles">
-                <div class="card-content">
-                    <appsco-account-roles
-                            id="appscoAccountRoles"
-                            account="[[ role ]]"
-                            authorization-token="[[ authorizationToken ]]">
-                    </appsco-account-roles>
-                </div>
-            </paper-card>
+            <template is="dom-if" if="[[ _changeCompanyRolePermission ]]">
+                <paper-card heading="Company roles"
+                            class="appsco-account-roles">
+                    <div class="card-content">
+                        <appsco-account-roles
+                                id="appscoAccountRoles"
+                                account="[[ role ]]"
+                                authorization-token="[[ authorizationToken ]]">
+                        </appsco-account-roles>
+                    </div>
+                </paper-card>
+            </template>
 
             <paper-card heading="Applications" class="appsco-application-assignees">
                 <div class="card-content">
@@ -341,6 +343,13 @@
                     }
                 },
 
+                administrator: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    }
+                },
+
                 authorizationToken: {
                     type: String
                 },
@@ -378,6 +387,11 @@
                 _twoFAEnabled: {
                     type: Boolean,
                     value: false
+                },
+
+                _changeCompanyRolePermission: {
+                    type: Boolean,
+                    computed: '_computeChangeCompanyRolePermission(role, administrator)'
                 },
 
                 /**
@@ -499,6 +513,10 @@
                 this.sharedElements = {
                     'hero': target
                 };
+            },
+
+            _computeChangeCompanyRolePermission: function(role, administrator) {
+                return (role.account && administrator.self && (role.account.self != administrator.self));
             },
 
             _loadNotifications: function() {

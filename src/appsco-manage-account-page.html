@@ -275,11 +275,10 @@
                    headers="{{ _computedHeaders }}">
         </iron-ajax>
         <iron-ajax id="ironAjaxCanBeManaged"
-                   url="[[ _canBeManagedUrl ]]"
                    on-error="_onCanBeManagedError"
                    on-response="_onCanBeManagedResponse"
                    headers="[[ _computedHeaders ]]"
-                   auto>
+                   >
         </iron-ajax>
 
     </template>
@@ -295,11 +294,6 @@
                     value: function() {
                         return {};
                     }
-                },
-
-                _canBeManagedUrl: {
-                    type: String,
-                    computed: '_computeCanBeManagedUrl(role)'
                 },
 
                 _canManage: {
@@ -566,7 +560,13 @@
                 if (role.self) {
                     this.$.appscoManageAccountComponentsPage.load();
                     this.account = role.account;
+                    this._getCanManage(this._computeCanBeManagedUrl(role));
                 }
+            },
+
+            _getCanManage: function(url) {
+                this.$.ironAjaxCanBeManaged.url = url;
+                this.$.ironAjaxCanBeManaged.generateRequest();
             },
 
             /**
@@ -668,7 +668,7 @@
             },
 
             _onCanBeManagedResponse: function(event) {
-                this._canManage = true;
+                this._canManage = (200 === event.detail.status);
             },
 
             _onCanBeManagedError: function(event) {

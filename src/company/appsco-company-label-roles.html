@@ -106,9 +106,10 @@ Custom property | Description | Default
                     id="getLabelRolesApiRequest"
                     url="[[ listApi ]]"
                     headers="[[ _computedHeaders ]]"
+                    auto
+                    debounce-duration="300"
                     on-error="_onError"
-                    on-response="_onResponse"
-                    debounce-duration="300"></iron-ajax>
+                    on-response="_onResponse"></iron-ajax>
 
             <paper-progress id="paperProgress"
                             class="progress-bar"
@@ -333,63 +334,58 @@ Custom property | Description | Default
             },
 
             _onResponse: function(event) {
+                var response = event.detail.response;
 
-                // Temporary - until apiv2.company.label.company-roles.list is implemented.
-                if (!event.detail.response.roles) {
-                    this._handleEmptyLoad();
-                    return false;
+                if (response && response.company_roles) {
+                    var roles = response.company_roles,
+                        meta = response.meta,
+                        rolesCount = roles.length - 1;
+
+                    this._totalRoles = meta.total;
+                    this._nextPageApiUrl = meta.next + "&limit=" + this.size;
+
+                    if (meta.total === 0) {
+                        this._handleEmptyLoad();
+                        return false;
+                    }
+
+                    this._rolesEmpty = false;
+                    this._message = '';
+
+                    roles.forEach(function(el, index) {
+
+                        setTimeout(function() {
+
+                            this.push('_roles', el);
+                            this.push('_allRoles', el);
+
+                            if (index == rolesCount) {
+
+                                this._loadMore = this.loadMore;
+
+                                if (this._roles.length === meta.total) {
+                                    this._loadMore = false;
+                                }
+
+                                this._hideProgressBar();
+                                this._hideLoadMoreProgressBar();
+                                this._setLoadMoreAction();
+
+                                /**
+                                 * Fired when labels are loaded
+                                 *
+                                 * @event loaded
+                                 * @param {Object} labels[]
+                                 */
+                                this.fire('loaded', {
+                                    companyRoles: roles
+                                });
+                            }
+
+                        }.bind(this), (index + 1) * 30);
+
+                    }.bind(this));
                 }
-                // Temporary
-
-//                var response = event.detail.response,
-//                    labels = response.labels,
-//                    meta = response.meta,
-//                    labelsCount = labels.length - 1;
-//
-//                this._totalRoles = meta.total;
-//                this._nextPageApiUrl = meta.next + "&limit=" + this.size;
-//
-//                if (meta.total === 0) {
-//                    this._handleEmptyLoad();
-//                    return false;
-//                }
-//
-//                this._rolesEmpty = false;
-//                this._message = '';
-//
-//                labels.forEach(function(el, index) {
-//
-//                    setTimeout( function() {
-//
-//                        this.push('_roles', el);
-//                        this.push('_allRoles', el);
-//
-//                        if (index == labelsCount) {
-//
-//                            this._loadMore = this.loadMore;
-//
-//                            if (this._roles.length === meta.total) {
-//                                this._loadMore = false;
-//                            }
-//
-//                            this._hideProgressBar();
-//                            this._hideLoadMoreProgressBar();
-//                            this._setLoadMoreAction();
-//
-//                            /**
-//                             * Fired when labels are loaded
-//                             *
-//                             * @event loaded
-//                             * @param {Object} labels[]
-//                             */
-//                            this.fire('loaded', {
-//                                labels: labels
-//                            });
-//                        }
-//
-//                    }.bind(this), (index + 1) * 30 );
-//
-//                }.bind(this));
             },
 
 //            addLabel: function(label, respectLimit) {

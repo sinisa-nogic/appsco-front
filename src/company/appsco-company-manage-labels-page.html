@@ -1,0 +1,197 @@
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../bower_components/iron-flex-layout/iron-flex-layout.html">
+<link rel="import" href="../../bower_components/neon-animation/neon-shared-element-animatable-behavior.html">
+<link rel="import" href="../../bower_components/neon-animation/animations/hero-animation.html">
+<link rel="import" href="../../bower_components/neon-animation/animations/fade-in-animation.html">
+<link rel="import" href="../../bower_components/neon-animation/animations/slide-right-animation.html">
+<link rel="import" href="../../bower_components/neon-animation/neon-animated-pages.html">
+<link rel="import" href="../../bower_components/paper-card/paper-card.html">
+<link rel="import" href="../../bower_components/paper-icon-button/paper-icon-button.html">
+
+<link rel="import" href="appsco-company-labels-page.html">
+<link rel="import" href="appsco-company-label-info-page.html">
+
+<dom-module id="appsco-company-manage-labels-page">
+    <template>
+        <style include="webkit-scrollbar-style">
+            :host {
+                overflow: hidden;
+            }
+            :host neon-animated-pages {
+                height: 100%;
+            }
+        </style>
+
+        <neon-animated-pages class="flex"
+                             selected="[[ _selectedPage ]]"
+                             attr-for-selected="name"
+                             on-neon-animation-finish="_onPageAnimationFinish">
+
+            <appsco-company-labels-page id="appscoCompanyLabelsPage"
+                                        name="appsco-company-labels-page"
+                                        authorization-token="[[ authorizationToken ]]"
+                                        labels-api="[[ labelsApi ]]"
+                                        on-info="_onLabelInfo"></appsco-company-labels-page>
+
+            <appsco-company-label-info-page id="appscoCompanyLabelInfoPage"
+                                            name="appsco-company-label-info-page"
+                                            authorization-token="[[ authorizationToken ]]"
+                                            on-back="_onBackLabelInfoPage"></appsco-company-label-info-page>
+
+        </neon-animated-pages>
+    </template>
+
+    <script>
+        Polymer({
+
+            is: 'appsco-company-manage-labels-page',
+
+            properties: {
+
+                authorizationToken: {
+                    type: String
+                },
+
+                /**
+                 * Get labels link.
+                 */
+                labelsApi: {
+                    type: String,
+                    value: ''
+                },
+
+                _selectedPage: {
+                    type: String,
+                    value: 'appsco-company-labels-page'
+                },
+
+                /**
+                 * Animation config with hero animation.
+                 */
+                animationConfig: {
+                    value: function() {
+                        return {
+                            'entry': [{
+                                name: 'hero-animation',
+                                id: 'hero',
+                                toPage: this,
+                                timing: {
+                                    duration: 300
+                                }
+                            }, {
+                                name: 'fade-in-animation',
+                                node: this,
+                                timing: {
+                                    duration: 500
+                                }
+                            }],
+                            'exit': {
+                                name: 'slide-right-animation',
+                                node: this,
+                                timing: {
+                                    duration: 200
+                                }
+                            }
+                        }
+                    }
+                },
+
+                /**
+                 * Defines shared element of hero animation.
+                 */
+                sharedElements: {
+                    value: function() {
+                        return {
+                            'hero': this
+                        }
+                    }
+                }
+            },
+
+            behaviors: [
+                Polymer.NeonSharedElementAnimatableBehavior,
+                Polymer.NeonAnimatableBehavior
+            ],
+
+            _onBack: function() {
+                this.fire('back');
+            },
+
+            searchLabels: function(term) {
+                this.$.appscoCompanyLabelsPage.searchLabels(term);
+            },
+
+            addLabel: function(label) {
+                this.$.appscoCompanyLabelsPage.addLabel(label);
+            },
+
+            modifyLabel: function(label) {
+                this.$.appscoCompanyLabelsPage.modifyLabel(label);
+            },
+
+            removeLabel: function(label) {
+                this.$.appscoCompanyLabelsPage.removeLabel(label);
+            },
+
+            setupPage: function() {
+                this.$.appscoCompanyLabelsPage.setupPage();
+            },
+
+            resetPage: function() {
+                this.$.appscoCompanyLabelsPage.resetPage();
+            },
+
+            _onBackLabelInfoPage: function(event) {
+                event.stopPropagation();
+
+                this._showCompanyLabelsPage();
+            },
+
+            _showCompanyLabelsPage: function() {
+                this._selectedPage = 'appsco-company-labels-page';
+            },
+
+            _showCompanyLabelInfoPage: function() {
+                this._selectedPage = 'appsco-company-label-info-page';
+            },
+
+            _onLabelInfo: function(event) {
+                this._showCompanyLabelInfoPage();
+                this.$.appscoCompanyLabelInfoPage.setLabel(event.detail.label);
+            },
+
+            _onRemoveLabel: function(event) {
+                event.stopPropagation();
+
+                this.fire('remove-label', {
+                    label: event.detail.label
+                })
+            },
+
+            _onPageAnimationFinish: function(event) {
+                var fromPage = event.detail.fromPage,
+                    toPage = event.detail.toPage;
+
+                switch(fromPage.getAttribute('name')) {
+                    case 'appsco-company-labels-page':
+                        fromPage.resetPage();
+                        break;
+
+                    default:
+                        break;
+                }
+
+                switch(toPage.getAttribute('name')) {
+                    case 'appsco-company-labels-page':
+                        toPage.setupPage();
+                        break;
+
+                    default:
+                        break;
+                }
+
+            }
+        });
+    </script>
+</dom-module>
+

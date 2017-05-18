@@ -1883,6 +1883,13 @@
                 this.$.appscoApplicationSettingsDialog.setApplication(event.detail.application);
                 this.$.appscoApplicationSettingsDialog.toggle();
             },
+
+            _reloadHomePageApplications: function() {
+
+                if (this.$.appscoHomePage.$) {
+                    this.$.appscoHomePage.reloadApplications();
+                }
+            },
             /**
              * Home page END
              */
@@ -1913,9 +1920,7 @@
                             this.$.appscoCompanyHomePage.setApplication(application);
                         }
 
-                        if (this.$.appscoApplicationsPage.$) {
-                            this.$.appscoApplicationsPage.reloadApplications();
-                        }
+                        this._reloadCompanyApplications();
 
                         break;
 
@@ -1923,13 +1928,8 @@
                         this.set('_companyApplication', {});
                         this.set('_companyApplication', application);
 
-                        if (this.$.appscoCompanyHomePage.$) {
-                            this.$.appscoCompanyHomePage.reloadApplications();
-                        }
-
-                        if (this.$.appscoApplicationsPage.$) {
-                            this.$.appscoApplicationsPage.reloadApplications();
-                        }
+                        this._reloadCompanyHomePageApplications();
+                        this._reloadCompanyApplications();
 
                         break;
                 }
@@ -2025,34 +2025,19 @@
 
                 switch (this.page) {
                     case 'application':
-
-                        if (this.$.appscoHomePage.$) {
-                            this.$.appscoHomePage.reloadApplications();
-                        }
+                        this._reloadHomePageApplications();
 
                         break;
 
                     case 'applications':
-
-                        if (this.$.appscoHomePage.$) {
-                            this.$.appscoHomePage.reloadApplications();
-                        }
-
-                        if (this.$.appscoCompanyHomePage.$) {
-                            this.$.appscoCompanyHomePage.reloadApplications();
-                        }
+                        this._reloadHomePageApplications();
+                        this._reloadCompanyHomePageApplications();
 
                         break;
 
                     case 'manage-application':
-
-                        if (this.$.appscoApplicationsPage.$) {
-                            this.$.appscoApplicationsPage.reloadApplications();
-                        }
-
-                        if (this.$.appscoCompanyHomePage.$) {
-                            this.$.appscoCompanyHomePage.reloadApplications();
-                        }
+                        this._reloadCompanyApplications();
+                        this._reloadCompanyHomePageApplications();
 
                         break;
                 }
@@ -2480,24 +2465,14 @@
                 var applications = event.detail.applications,
                     orgunit = event.detail.orgunit;
 
-                this._notify('Selected applications were successfully added to ' + orgunit.name + '.');
-
-                if (this.$.appscoApplicationsPage.$) {
-                    this.$.appscoApplicationsPage.modifyApplications(applications);
-                }
-
-                if (this.$.appscoCompanyHomePage.$) {
-                    this.$.appscoCompanyHomePage.reloadApplications();
-                }
-
-                if (this.$.appscoHomePage.$) {
-                    this.$.appscoHomePage.reloadApplications();
-                }
-
                 if (applications.length === 1) {
                     this._companyApplication = applications[0];
                 }
 
+                this._notify('Selected applications were successfully added to ' + orgunit.name + '.');
+                this._modifyCompanyApplications(applications);
+                this._reloadCompanyHomePageApplications();
+                this._reloadHomePageApplications();
                 this._notifyAccountLog();
                 this._notifyReloadApplications();
                 this._notifyReloadAccounts();
@@ -2536,6 +2511,34 @@
 
                 if (this.$.appscoManageApplicationPageActions.$) {
                     this.$.appscoManageApplicationPageActions.resetApplicationAssigneesPageActions();
+                }
+            },
+
+            _reloadApplicationAssignees: function() {
+
+                if (this.$.appscoManageApplicationPage.$) {
+                    this.$.appscoManageApplicationPage.reloadAssignees();
+                }
+            },
+
+            _modifyCompanyApplications: function(applications) {
+
+                if (this.$.appscoApplicationsPage.$) {
+                    this.$.appscoApplicationsPage.modifyApplications(applications);
+                }
+            },
+
+            _reloadCompanyHomePageApplications: function() {
+
+                if (this.$.appscoCompanyHomePage.$) {
+                    this.$.appscoCompanyHomePage.reloadApplications();
+                }
+            },
+
+            _reloadCompanyApplications: function() {
+
+                if (this.$.appscoApplicationsPage.$) {
+                    this.$.appscoApplicationsPage.reloadApplications();
                 }
             },
 
@@ -2640,9 +2643,8 @@
                 var application = event.detail.application,
                     orgunit = event.detail.orgunit;
 
-                if (this.$.appscoApplicationsPage.$) {
-                    this.$.appscoApplicationsPage.modifyApplications([application]);
-                }
+                this._modifyCompanyApplications([application]);
+                this._reloadApplicationAssignees();
 
                 this._companyApplication = application;
                 this._notify(application.title + ' has been removed from ' + orgunit.name + ' organization unit.');
@@ -2783,8 +2785,8 @@
                 }
 
                 for (var i = 0; i < length; i++) {
-                    if (accounts[i].account.email === this.account.email && this.$.appscoHomePage.$) {
-                        this.$.appscoHomePage.reloadApplications();
+                    if (accounts[i].account.email === this.account.email) {
+                        this._reloadHomePageApplications();
                         break;
                     }
                 }
@@ -2907,8 +2909,8 @@
             _onAccountRemovedFromOrgunit: function(event) {
                 var role = event.detail.account;
 
-                if (role.account.email === this.account.email && this.$.appscoHomePage.$) {
-                    this.$.appscoHomePage.reloadApplications();
+                if (role.account.email === this.account.email) {
+                    this._reloadHomePageApplications();
                 }
 
                 if (this.$.appscoDirectoryPage.$) {

@@ -163,15 +163,6 @@ Custom property | Description | Default
             }
         </style>
 
-        <iron-ajax id="getFilterLink"
-                   auto
-                   id="filterRequest"
-                   url="[[ filterApi ]]"
-                   on-response="_handleResponse"
-                   headers="{{ _computedHeaders }}"
-                   debounce-duration="300"
-        ></iron-ajax>
-
         <div class="action action-search flex-none">
             <appsco-search id="appscoSearch"
                            label="Search applications"></appsco-search>
@@ -179,7 +170,7 @@ Custom property | Description | Default
 
         <template is="dom-if" if="[[ !company ]]">
             <div class="action flex-none">
-                <paper-dropdown-menu on-iron-activate="_selected" id="dashboardList" horizontal-align="right" no-label-float>
+                <paper-dropdown-menu on-iron-activate="_onFilterItems" id="dashboardList" horizontal-align="right" no-label-float>
                     <paper-listbox id="groupList" class="dropdown-content filter" selected="0">
                         <template is="dom-repeat" items="[[ _filterItems ]]">
                             <paper-item value$="[[ item.value ]]" name$="[[ item.name ]]">[[ item.name ]]</paper-item>
@@ -272,28 +263,22 @@ Custom property | Description | Default
 
             properties: {
 
-                authorizationToken: {
-                    type: String,
-                    value: ''
-                },
-
-                _computedHeaders: {
-                    type: Object,
-                    computed: "_computeHeaders(authorizationToken)"
-                },
-
-                /**
-                 * Link to retrieve filters from
-                 */
-                filterApi: {
-                    type: String,
-                    value: ''
-                },
-
                 _filterItems: {
                     type: Array,
                     value: function () {
-                        return [{name: "All applications", value: 0}];
+                        return [
+                            {
+                                name: 'All items',
+                                value: 0
+                            },
+                            {
+                                name: 'My items',
+                                value: 1
+                            },
+                            {
+                                name: 'Shared with me',
+                                value: 2
+                            }];
                     }
                 },
 
@@ -487,38 +472,17 @@ Custom property | Description | Default
                 this.$$('#actionList').selected = -1;
             },
 
-            _selected: function (e) {
+            _onFilterItems: function(event) {
                 /**
-                 * Fired when filter is selected
+                 * Fired when filter items is selected
                  *
-                 * @event filtered
+                 * @event filter-items
                  * @param {Object} filter {id: filter_id, name: filter_name}
                  */
-                this.fire('group-selected', {
-                    id: e.detail.item.getAttribute('value'),
-                    name: e.detail.item.getAttribute('name')
-                })
-            },
-
-            _handleResponse: function (e) {
-                var me = this,
-                    response = e.detail.response;
-
-                if (response) {
-
-                    response.dashboards.forEach(function(el, index) {
-                        me.push("_filterItems", {
-                            name: el.title,
-                            value: el.role_id
-                        })
-                    });
-
-                }
-            },
-            _computeHeaders: function (authorizationToken) {
-                return {
-                    "Authorization": "token " + authorizationToken
-                }
+                this.fire('filter-items', {
+                    id: event.detail.item.getAttribute('value'),
+                    name: event.detail.item.getAttribute('name')
+                });
             },
 
             _onAddItemAction: function() {
@@ -612,17 +576,6 @@ Custom property | Description | Default
              */
             focusSearch: function() {
                 this.$.appscoSearch.setup();
-            },
-
-            reloadDashboardFilter: function() {
-                this.set('_filterItems', [
-                    {
-                        name: 'All applications',
-                        value: 0
-                    }
-                ]);
-
-                this.$.getFilterLink.generateRequest();
             },
 
             _onBulkActionsChanged: function() {

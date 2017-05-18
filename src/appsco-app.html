@@ -328,9 +328,12 @@
         <paper-toast id="toast"
                      text="[[ _toastMessage ]]"
                      on-iron-overlay-closed="_onToastMessageClosed">
-            <paper-icon-button icon="icons:close"
-                               class="toast-close-action"
-                               on-tap="_onCloseToastAction"></paper-icon-button>
+
+            <template is="dom-if" if="[[ _toastPersistence ]]">
+                <paper-icon-button icon="icons:close"
+                                   class="toast-close-action"
+                                   on-tap="_onCloseToastAction"></paper-icon-button>
+            </template>
         </paper-toast>
 
         <appsco-header id="appscoHeader"
@@ -799,6 +802,7 @@
                             on-remove-domain="_onRemoveDomain"
                             on-get-token="_onDomainGetToken"
                             on-domain-verified="_onDomainVerified"
+                            on-domain-not-verified="_onDomainNotVerified"
                     ></appsco-company-page>
 
                     <appsco-logout-page name="logout"
@@ -1305,6 +1309,11 @@
                 _toastMessage: {
                     type: String,
                     value: ''
+                },
+
+                _toastPersistence: {
+                    type: Boolean,
+                    value: false
                 },
 
                 mobileScreen: {
@@ -3174,6 +3183,12 @@
                 this.$.appscoCompanyPage.modifyDomain(domain);
                 this._notify('Domain ' + domain.domain + ' was successfully verified.');
             },
+
+            _onDomainNotVerified: function(event) {
+                var domain = event.detail.domain;
+
+                this._notify('Unable to verify ' + domain.domain + ' domain - please wait until the DNS record change is propagated.', true);
+            },
             /**
              * Company page END
              */
@@ -3430,6 +3445,7 @@
             _notify: function(message, persistant) {
                 var toast = this.$.toast;
 
+                this._toastPersistence = persistant;
                 toast.duration = persistant ? 0 : 3000;
 
                 if (toast.opened) {

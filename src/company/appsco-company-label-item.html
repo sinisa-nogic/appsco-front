@@ -37,6 +37,12 @@ Custom property | Description | Default
                 display: none;
                 color: var(--primary-text-color);
                 font-size: 14px;
+                -webkit-touch-callout: none;
+                -webkit-user-select: none;
+                -khtml-user-select: none;
+                -moz-user-select: none;
+                -ms-user-select: none;
+                user-select: none;
             }
             .item {
                 width: 100%;
@@ -55,6 +61,12 @@ Custom property | Description | Default
             }
             .item:hover {
                 @apply(--shadow-elevation-4dp);
+            }
+            :host([selectable]) {
+                cursor: pointer;
+            }
+            :host([active]) {
+                background-color: #e8e8e8;
             }
             .label-title {
                 display: block;
@@ -147,8 +159,8 @@ Custom property | Description | Default
                 </div>
 
                 <div class="actions">
-                    <paper-button on-tap="_onInfo">Info</paper-button>
-                    <paper-button on-tap="_onRemove">Remove</paper-button>
+                    <paper-button on-tap="_onInfoAction">Info</paper-button>
+                    <paper-button on-tap="_onRemoveAction">Remove</paper-button>
                 </div>
             </div>
         </template>
@@ -169,7 +181,8 @@ Custom property | Description | Default
                     type: Object,
                     value: function() {
                         return {};
-                    }
+                    },
+                    observer: '_onLabelChanged'
                 },
 
                 /**
@@ -178,6 +191,21 @@ Custom property | Description | Default
                 preview: {
                     type: Boolean,
                     value: false
+                },
+
+                /**
+                 * Indicates if labels should be selectable.
+                 */
+                selectable: {
+                    type: Boolean,
+                    value: false,
+                    reflectToAttribute: true
+                },
+
+                active: {
+                    type: Boolean,
+                    value: false,
+                    reflectToAttribute: true
                 },
 
                 authorizationToken: {
@@ -229,6 +257,10 @@ Custom property | Description | Default
                 Polymer.NeonAnimationRunnerBehavior
             ],
 
+            listeners: {
+                'tap': '_onLabelAction'
+            },
+
             attached: function() {
                 this.style.display = 'inline-block';
                 this.playAnimation('entry');
@@ -244,6 +276,10 @@ Custom property | Description | Default
                 return (label.meta && !preview) ? label.meta.company_roles : '';
             },
 
+            _onLabelChanged: function(label) {
+                this.active = label.selected ? label.selected : false;
+            },
+
             _onLabelRolesError: function() {
                 this._labelRolesCount = 0;
             },
@@ -254,7 +290,22 @@ Custom property | Description | Default
                 this._labelRolesCount = (response && response.meta) ? response.meta.total : 0;
             },
 
-            _onInfo: function() {
+            _onLabelAction: function() {
+                this.active = !this.active;
+                this.label.selected = this.active;
+
+                /**
+                 * Fired when whole item is tapped.
+                 *
+                 * @event label
+                 * @param {Object} label
+                 */
+                this.fire('label-selected', {
+                    label: this.label
+                });
+            },
+
+            _onInfoAction: function() {
                 event.stopPropagation();
 
                 /**
@@ -268,7 +319,7 @@ Custom property | Description | Default
                 });
             },
 
-            _onRemove: function(event) {
+            _onRemoveAction: function(event) {
                 event.stopPropagation();
 
                 /**

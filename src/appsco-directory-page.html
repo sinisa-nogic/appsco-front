@@ -14,8 +14,10 @@
 <link rel="import" href="components/account/appsco-account-security.html">
 <link rel="import" href="components/account/appsco-account-log.html">
 <link rel="import" href="components/orgunit/appsco-orgunit-tree.html">
-
 <link rel="import" href="components/account/appsco-invitations.html">
+<link rel="import" href="components/components/appsco-search.html">
+
+<link rel="import" href="company/appsco-company-labels.html">
 
 <dom-module id="appsco-directory-page">
     <template>
@@ -89,7 +91,16 @@
                 @apply(--paper-tabs-pages);
             }
             .tab-content {
+                margin-top: 20px;
                 @apply(--paper-tabs-content-style);
+            }
+            appsco-company-labels {
+                margin-top: 20px;
+
+                --appsco-company-label-item: {
+                    padding: 4px;
+                    margin-bottom: 5px;
+                };
             }
             :host div[info] .info-actions {
                 padding: 0;
@@ -101,6 +112,16 @@
             :host .edit-button {
                 @apply(--primary-button);
                 border-radius: 0;
+            }
+            :host .account-icon {
+                width: 32px;
+                height: 32px;
+                border-radius: 50%;
+                margin-right: 10px;
+            }
+            :host .account-name {
+                @apply(--paper-font-subhead);
+                font-size: 18px;
             }
             :host .flex-horizontal {
                 @apply(--layout-horizontal);
@@ -119,16 +140,6 @@
             :host([mobile-screen]) {
                 --resource-width: 100%;
                 --info-width: 100%;
-            }
-            :host .account-icon {
-                width: 32px;
-                height: 32px;
-                border-radius: 50%;
-                margin-right: 10px;
-            }
-            :host .account-name {
-                @apply(--paper-font-subhead);
-                font-size: 18px;
             }
             :host([screen992]) {
                 --account-basic-info: {
@@ -187,19 +198,23 @@
                         </div>
 
                         <div name="labels" class="tab-content labels">
-                            Labels....
+                            <appsco-search id="appscoSearch"
+                                           label="Search labels"
+                                           on-search="_onSearchLabels"
+                                           on-search-clear="_onSearchLabelsClear"></appsco-search>
+
+                            <appsco-company-labels id="appscoCompanyLabels"
+                                                   labels-api="[[ labelsApi ]]"
+                                                   authorization-token="[[ authorizationToken ]]"
+                                                   size="100"
+                                                   preview
+                                                   hide-total
+                                                   selectable
+                                                   on-label-selected="_onLabelSelected"></appsco-company-labels>
                         </div>
 
                     </neon-animated-pages>
                 </div>
-
-                <!--<div class="resource-header">-->
-                    <!--Filters-->
-                <!--</div>-->
-
-                <!--<appsco-orgunit-tree id="appscoOrgunitTree"-->
-                                     <!--org-units="[[ _orgUnits ]]"-->
-                                     <!--on-selected="_onOrgunitSelected"></appsco-orgunit-tree>-->
 
             </div>
 
@@ -332,6 +347,11 @@
                     value: ''
                 },
 
+                labelsApi: {
+                    type: String,
+                    value: ''
+                },
+
                 subscription: {
                     type: Object,
                     value: function() {
@@ -342,11 +362,6 @@
                 subscriptionLoaded: {
                     type: Boolean,
                     value: false
-                },
-
-                _verifiedDomains: {
-                    type: Number,
-                    value: 0
                 },
 
                 /**
@@ -404,11 +419,6 @@
                     value: 0
                 },
 
-                _verifiedDomain: {
-                    type: Boolean,
-                    value: true
-                },
-
                 _accountsLoaded: {
                     type: Boolean,
                     value: false
@@ -422,6 +432,16 @@
                 _domainsLoaded: {
                     type: Boolean,
                     value: false
+                },
+
+                _verifiedDomain: {
+                    type: Boolean,
+                    value: true
+                },
+
+                _verifiedDomains: {
+                    type: Number,
+                    value: 0
                 },
 
                 _pageReady: {
@@ -535,6 +555,41 @@
                 this.fire('page-loaded');
             },
 
+            hideInfo: function() {
+                this.$.appscoContent.hideSection('info');
+                this._infoShown = false;
+            },
+
+            toggleInfo: function() {
+                this.$.appscoContent.toggleSection('info');
+                this._infoShown = !this._infoShown;
+
+                if (this._infoShown) {
+                    this._selectedTab = 0;
+                }
+            },
+
+            toggleResource: function() {
+                this.$.appscoContent.toggleSection('resource');
+            },
+
+            reloadAccounts: function() {
+                this.$.appscoAccounts.reloadAccounts();
+            },
+
+            setSubscription: function(subscription) {
+                this.subscription = subscription;
+                this.subscriptionLoaded = true;
+            },
+
+            addLabel: function(label) {
+                this.$.appscoCompanyLabels.addLabel(label);
+            },
+
+            removeLabel: function(label) {
+                this.$.appscoCompanyLabels.removeLabel(label);
+            },
+
             resetPage: function() {
                 this.set('selectedAccounts', []);
                 this.$.appscoAccounts.selectAllAccounts(false);
@@ -576,32 +631,10 @@
                 this._accountsLoaded = true;
             },
 
-            reloadAccounts: function() {
-                this.$.appscoAccounts.reloadAccounts();
-            },
-
             _showInfo: function() {
                 this.$.appscoContent.showSection('info');
                 this._infoShown = true;
                 this._selectedTab = 0;
-            },
-
-            hideInfo: function() {
-                this.$.appscoContent.hideSection('info');
-                this._infoShown = false;
-            },
-
-            toggleInfo: function() {
-                this.$.appscoContent.toggleSection('info');
-                this._infoShown = !this._infoShown;
-
-                if (this._infoShown) {
-                    this._selectedTab = 0;
-                }
-            },
-
-            toggleResource: function() {
-                this.$.appscoContent.toggleSection('resource');
             },
 
             _handleAccountInfo: function(role) {
@@ -668,11 +701,6 @@
                 }
 
                 this._orgUnits = event.detail.response.orgunits
-            },
-
-            setSubscription: function(subscription) {
-                this.subscription = subscription;
-                this.subscriptionLoaded = true;
             },
 
             _onDomainResponse: function(event) {
@@ -809,6 +837,23 @@
 
             _onOrgunitSelected: function(event) {
                 this.$.appscoAccounts.filterByOrgunit(event.detail);
+            },
+
+            _searchLabels: function(term) {
+                this.$.appscoCompanyLabels.search(term);
+            },
+
+            _onSearchLabels: function(event) {
+                this._searchLabels(event.detail.term);
+            },
+
+            _onSearchLabelsClear: function() {
+                this.$.appscoSearch.reset();
+                this._searchLabels('');
+            },
+
+            _onLabelSelected: function(event) {
+
             }
         });
     </script>

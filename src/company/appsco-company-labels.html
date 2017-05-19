@@ -120,11 +120,13 @@ Custom property | Description | Default
 
             <template is="dom-if" if="[[ !_labelsEmpty ]]">
 
-                <div class="info-total">
-                    <div class="total">
-                        Total labels: [[ _totalLabels ]]
+                <template is="dom-if" if="[[ !hideTotal ]]">
+                    <div class="info-total">
+                        <div class="total">
+                            Total labels: [[ _totalLabels ]]
+                        </div>
                     </div>
-                </div>
+                </template>
 
                 <div class="labels">
                     <template is="dom-repeat"
@@ -132,9 +134,10 @@ Custom property | Description | Default
                               on-dom-change="_onItemsDomChange">
 
                         <appsco-company-label-item id="appscoLabelItem_[[ index ]]"
-                                                   label="[[ item ]]"
+                                                   label="{{ item }}"
+                                                   authorization-token="[[ authorizationToken ]]"
                                                    preview="[[ preview ]]"
-                                                   authorization-token="[[ authorizationToken ]]"></appsco-company-label-item>
+                                                   selectable="[[ selectable ]]"></appsco-company-label-item>
 
                     </template>
                 </div>
@@ -192,6 +195,22 @@ Custom property | Description | Default
                  * Indicates if label should be in preview mode rather then full detailed view.
                  */
                 preview: {
+                    type: Boolean,
+                    value: false
+                },
+
+                /**
+                 * Indicates if info about total labels should be displayed.
+                 */
+                hideTotal: {
+                    type: Boolean,
+                    value: false
+                },
+
+                /**
+                 * Indicates if labels should be selectable.
+                 */
+                selectable: {
                     type: Boolean,
                     value: false
                 },
@@ -407,7 +426,7 @@ Custom property | Description | Default
                 this.unshift('_labels', label);
                 this.unshift('_allLabels', label);
 
-                if (respectLimit && this._allLabels.length >= this.size) {
+                if (respectLimit && this._labels.length > this.size) {
                     this.pop('_labels');
                     this.pop('_allLabels');
                 }
@@ -465,6 +484,7 @@ Custom property | Description | Default
                 }
 
                 this._totalLabels--;
+                this._setLoadMoreAction();
 
                 if (0 === this._labels.length) {
                     this._handleEmptyLoad();
@@ -472,6 +492,8 @@ Custom property | Description | Default
             },
 
             search: function(term) {
+
+                this._labelsEmpty = false;
 
                 if (term.length < 3) {
                     this._message = '';
@@ -486,10 +508,26 @@ Custom property | Description | Default
                     this.set('_labels', []);
 
                     if (labels.length > 0) {
+                        var length = this._allLabels.length;
+
                         this._message = '';
 
                         labels.forEach(function(label, index) {
-                            this.push('_labels', label);
+
+                            for (var i = 0; i < length; i++) {
+                                var l = this._allLabels[i];
+
+                                if (label.alias === l.alias) {
+                                    this.push('_labels', l);
+                                    break;
+                                }
+                                else {
+
+                                    if (i === length - 1) {
+                                        this.push('_labels', label);
+                                    }
+                                }
+                            }
 
                             if (index === (labels.length - 1)) {
                                 this._hideProgressBar();

@@ -1,0 +1,344 @@
+<link rel="import" href="../polymer/polymer.html">
+
+<link rel="import" href="../iron-image/iron-image.html">
+<link rel="import" href="../iron-flex-layout/iron-flex-layout.html">
+<link rel="import" href="../paper-button/paper-button.html">
+<link rel="import" href="../neon-animation/neon-animation-runner-behavior.html">
+<link rel="import" href="../neon-animation/animations/fade-in-animation.html">
+<link rel="import" href="../neon-animation/animations/fade-out-animation.html">
+<link rel="import" href="../paper-styles/typography.html">
+
+<!--
+`appsco-application-item`
+Application item is used to present application in form of an item.
+
+    <appsco-application-item>
+    </appsco-application-item>
+
+### Styling
+
+`<appsco-application-item>` provides the following custom properties and mixins for styling:
+
+Custom property | Description | Default
+----------------|-------------|----------
+`--background-color` | Background color applied to the root element | `#fff`
+`--color` | Color applied to all the text | `#33`
+`--appsco-application-item` | Mixin for the root element | `{}`
+
+@demo demo/appsco-application-item.html
+-->
+
+<dom-module id="appsco-application-item">
+    <template>
+        <style>
+            :host {
+                display: none;
+            }
+            :host .item {
+                text-align: center;
+                width: 141px;
+                height: 156px;
+                overflow: hidden;
+            @apply(--shadow-elevation-2dp);
+                position: relative;
+                background-color: var(--background-color, #fff);
+                color: var(--color, #333);
+                padding: 0 4px;
+                cursor: pointer;
+            @apply(--appsco-application-item);
+            }
+            :host .item:hover {
+            @apply(--shadow-elevation-4dp);
+            }
+            :host .application-icon {
+                width: 52px;
+                height: 52px;
+                margin: 24px 0 8px 0;
+            }
+            :host .application-title {
+                display: block;
+                height: 32px;
+                line-height: 16px;
+            @apply(--paper-font-common-base);
+                font-size: 14px;
+                font-weight: 400;
+                overflow: hidden;
+            }
+            :host .application-org-units {
+                display: none;
+            }
+            :host .actions {
+            @apply(--layout-horizontal);
+            @apply(--layout-center);
+                position: absolute;
+                bottom: 2px;
+            }
+            :host paper-button {
+            @apply(--paper-font-common-base);
+            @apply(--paper-font-common-nowrap);
+
+                padding: 4px;
+                font-size: 12px;
+                font-weight: 400;
+                letter-spacing: 0.018em;
+                line-height: 18px;
+                text-transform: uppercase;
+            }
+            :host paper-button[disabled] {
+                background: transparent;
+            }
+            :host([company][active]) .item {
+                background: var(--brand-color);
+                color: var(--brand-text-color);
+                transition: all 0.2s ease-in;
+            }
+            :host([company]) .item {
+                width: 100%;
+                height: 70px;
+                padding: 0 10px;
+                box-sizing: border-box;
+                border-radius: 3px;
+                text-align: left;
+            @apply(--layout-horizontal);
+            @apply(--layout-center);
+                transition: all 0.1s ease-out;
+            }
+            :host([company]) .application-icon {
+                margin: 0;
+            @apply(--layout-flex-none);
+            }
+            :host([company]) .application-info {
+            @apply(--layout-vertical);
+            @apply(--layout-start);
+                padding: 0 10px;
+            }
+            :host([company]) .application-basic-info {
+                width: 220px;
+            }
+            :host([company]) .application-basic-info .info-label, :host([company]) .application-basic-info .info-value {
+                width: 226px;
+            @apply(--paper-font-common-nowrap);
+            }
+            :host([company]) .application-info-auth-type {
+                border-left: 1px solid var(--divider-color);
+            }
+            :host([company]) .info-label {
+                font-size: 16px;
+                height: auto;
+                line-height: normal;
+            }
+            :host([company]) .info-value {
+                display: block;
+                font-size: 12px;
+            }
+            :host([company]) .actions {
+                right: 4px;
+                bottom: 4px;
+            }
+        </style>
+
+        <div class="item" on-tap="_onApplicationAction">
+            <iron-image class="application-icon"
+                        placeholder="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAABGdBTUEAALGPC/xhBQAAAI5JREFUeAHt1YEJwCAQBEFN/60KYgMRbGMnHXjs5Ofa5x/h7wu//T3dAAqIL4BAPIChAAXEF0AgHoCfIAIIxBdAIB6AK4AAAvEFEIgH4AoggEB8AQTiAbgCCCAQXwCBeACuAAIIxBdAIB6AK4AAAvEFEIgH4AoggEB8AQTiAbgCCCAQXwCBeACuAAIIxBe4yV0EThqVC64AAAAASUVORK5CYII="
+                        sizing="cover"
+                        preload fade src="[[ _applicationIcon ]]"></iron-image>
+
+            <div class="application-info application-basic-info">
+                <span class="info-label application-title">[[ application.title ]]</span>
+                <span class="info-value"
+                      hidden$="[[ !company ]]">[[ _orgUnits ]]</span>
+            </div>
+
+            <div class="application-info application-info-auth-type"
+                 hidden$="[[ !company ]]">
+                <span class="info-label">Auth type</span>
+                <span class="info-value">[[ application.auth_type ]]</span>
+            </div>
+
+            <div class="actions">
+                <template is="dom-if" if="[[ !company ]]">
+                    <paper-button on-tap="_onInfo">Info</paper-button>
+                </template>
+
+                <paper-button on-tap="_onEdit"
+                              disabled$="[[ _shared ]]">Edit</paper-button>
+            </div>
+        </div>
+
+    </template>
+
+    <script>
+        Polymer({
+
+            is: 'appsco-application-item',
+
+            properties: {
+
+                /**
+                 * Indicates if user manages company applications or not.
+                 */
+                company: {
+                    type: Boolean,
+                    value: false,
+                    reflectToAttribute: true
+                },
+
+                /**
+                 * [Application](https://developers.appsco.com/api/dashboard/id/icons/id) that is to be rendered
+                 */
+                application: {
+                    type: Object,
+                    value: {},
+                    observer: '_onApplicationChanged'
+                },
+
+                _orgUnits: {
+                    type: String,
+                    computed: '_computeOrganizationUnits(company, application)'
+                },
+
+                active: {
+                    type: Boolean,
+                    value: false,
+                    reflectToAttribute: true
+                },
+
+                _applicationIcon: {
+                    type: String,
+                    computed: '_computeApplicationIcon(company, application)'
+                },
+
+                _shared: {
+                    type: Boolean,
+                    computed: '_computeApplicationShared(company, application)'
+                },
+
+                /**
+                 * Animation for loader appearance.
+                 */
+                animationConfig: {
+                    value: function() {
+                        return {
+                            'entry': {
+                                name: 'fade-in-animation',
+                                node: this,
+                                timing: {
+                                    duration: 200
+                                }
+                            },
+                            'exit': {
+                                name: 'fade-out-animation',
+                                node: this,
+                                timing: {
+                                    duration: 100
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+
+            behaviors: [
+                Polymer.NeonAnimationRunnerBehavior
+            ],
+
+            attached: function() {
+                this.style.display = 'inline-block';
+                this.playAnimation('entry');
+            },
+
+            _onApplicationChanged: function(application) {
+
+                if (this.company) {
+                    this.active = application.selected;
+                }
+
+            },
+
+            _computeOrganizationUnits: function(company, application) {
+
+                if (company && application.org_units) {
+                    var result = '',
+                            orgUnits = application.org_units,
+                            length = orgUnits.length;
+
+                    for (var i = 0; i < length; i++) {
+                        result += orgUnits[i].name;
+                        result += (i === length -1) ? '' : ', ';
+                    }
+
+                    return result;
+                }
+
+                return '';
+
+            },
+
+            _computeApplicationIcon: function(company, application) {
+                return company ? application.application_url : application.icon_url;
+            },
+
+            _computeApplicationShared: function(company, application) {
+                return (!company && !application.owner);
+            },
+
+            _onInfo: function (event) {
+                event.stopPropagation();
+
+                /**
+                 * Fired when `info` is tapped.
+                 *
+                 * @event info
+                 * @param {Object} application [Application](https://developers.appsco.com/api/dashboard/id/icons/id)
+                 *                              for which event is fired
+                 */
+                this.fire('info', {
+                    application: this.application
+                });
+            },
+
+            _onEdit: function (event) {
+                event.stopPropagation();
+
+                /**
+                 * Fired when `edit` is tapped.
+                 *
+                 * @event edit
+                 * @param {Object} application [Application](https://developers.appsco.com/api/dashboard/id/icons/id)
+                 *                              for which event is fired
+                 */
+                this.fire('edit', {
+                    application: this.application
+                });
+            },
+
+            _onApplicationAction: function() {
+                this.active = !this.active;
+
+                if (this.company) {
+                    this.application.selected = this.active;
+                }
+
+                /**
+                 * Fired when whole item is tapped.
+                 *
+                 * @event application
+                 * @param {Object} application [Application](https://developers.appsco.com/api/dashboard/id/icons/id)
+                 *                              for which event is fired
+                 */
+                this.fire('application', {
+                    application: this.application
+                });
+            },
+
+            select: function() {
+                this.active = true;
+            },
+
+            deselect: function() {
+                this.active = false;
+            }
+
+        });
+    </script>
+</dom-module>

@@ -1,0 +1,312 @@
+<link rel="import" href="../polymer/polymer.html">
+<link rel="import" href="../iron-flex-layout/iron-flex-layout-classes.html">
+<link rel="import" href="../neon-animation/neon-animation-runner-behavior.html">
+<link rel="import" href="../neon-animation/animations/fade-in-animation.html">
+<link rel="import" href="../neon-animation/animations/fade-out-animation.html">
+<link rel="import" href="../paper-tooltip/paper-tooltip.html">
+<link rel="import" href="../paper-styles/typography.html">
+<link rel="import" href="../paper-styles/shadow.html">
+<link rel="import" href="../iron-image/iron-image.html">
+
+<!--
+`appsco-application-subscriber`
+Is used to represent subscriber item for application.
+
+Example:
+
+    <body>
+      <appsco-application-subscriber subscriber="{}">
+     </appsco-application-subscriber>
+
+ Custom property | Description | Default
+----------------|-------------|----------
+`--appsco-application-subscriber` | Mixin applied to root element | `{}`
+`--appsco-application-subscriber-image` | Mixin applied to inner image element | `{}`
+`--appsco-application-subscriber-image-contain` | Mixin applied to iron-image #sizedImgDiv | `{}`
+
+@demo demo/appsco-application-subscriber.html
+-->
+
+<dom-module id="appsco-application-subscriber">
+    <template>
+        <style include="iron-flex iron-flex-alignment">
+            :host {
+                display: none;
+            @apply(--appsco-application-subscriber);
+            }
+            :host .subscriber-image {
+                width: 28px;
+                height: 28px;
+                border-radius: 50%;
+            @apply(--appsco-application-subscriber-image);
+            }
+            :host .subscriber-image::shadow #sizedImgDiv, :host .subscriber-image::shadow #placeholder {
+                border-radius: 50%;
+            @apply(--appsco-application-subscriber-image-contain);
+            }
+            paper-tooltip {
+            --paper-tooltip: {
+                 font-size: 11px;
+                 line-height: 12px;
+             };
+            }
+            :host .account-initials {
+                position: relative;
+                background-color: var(--body-background-color, #f5f8fa);
+                color: var(--primary-text-color);
+                cursor: default;
+            @apply(--subscriber-initials);
+            }
+            :host .account-initials .initials {
+                position: absolute;
+                top: 0;
+                right: 0;
+                bottom: 0;
+                left: 0;
+                margin: auto;
+                line-height: 28px;
+                text-align: center;
+                text-transform: uppercase;
+                font-size: 12px;
+            }
+            :host .subscriber {
+            @apply(--layout-horizontal);
+            @apply(--layout-center);
+            @apply(--shadow-elevation-2dp);
+                width: 100%;
+                height: 70px;
+                padding: 0 10px;
+                box-sizing: border-box;
+                border-radius: 3px;
+                overflow: hidden;
+                position: relative;
+                background-color: var(--background-color, #fafafa);
+                cursor: pointer;
+            @apply(--appsco-application-subscriber);
+            }
+            :host .subscriber:hover {
+            @apply(--shadow-elevation-4dp);
+            }
+            :host .subscriber .subscriber-image {
+                width: 52px;
+                height: 52px;
+                margin: 0;
+                border-radius: 50%;
+            @apply(--layout-flex-none);
+            }
+            :host .subscriber .initials {
+                line-height: 52px;
+                font-size: 18px;
+            }
+            :host .subscriber-info {
+            @apply(--layout-vertical);
+            @apply(--layout-start);
+                padding: 0 10px;
+            }
+            :host .subscriber-basic-info {
+                width: 220px;
+            }
+            :host.subscriber-basic-info .info-label, :host .subscriber-basic-info .info-value {
+                width: 226px;
+            @apply(--paper-font-common-nowrap);
+            }
+            :host .info-label {
+                font-size: 16px;
+                height: auto;
+                line-height: normal;
+            }
+            :host .info-value {
+                display: block;
+                font-size: 12px;
+            }
+            :host .subscriber-name {
+                display: block;
+            @apply(--paper-font-common-base);
+                font-size: 16px;
+                font-weight: 400;
+                overflow: hidden;
+            }
+            :host .actions {
+            @apply(--layout-horizontal);
+            @apply(--layout-center);
+                position: absolute;
+                right: 4px;
+                bottom: 4px;
+                display: none;
+            }
+            :host .actions[revoke] {
+            @apply(--layout-horizontal);
+            @apply(--layout-center);
+            }
+            :host .action-button {
+            @apply(--paper-font-common-base);
+            @apply(--paper-font-common-nowrap);
+                padding: 4px;
+                font-size: 12px;
+                font-weight: 400;
+                letter-spacing: 0.018em;
+                line-height: 18px;
+                text-transform: uppercase;
+            }
+        </style>
+
+        <template is="dom-if" if="[[ preview ]]">
+            <template is="dom-if" if="[[ subscriber.picture_url ]]">
+                <iron-image class="subscriber-image"
+                            sizing="cover"
+                            preload fade
+                            src="[[ subscriber.picture_url ]]"
+                            alt="[[ subscriber.name ]]"></iron-image>
+            </template>
+
+            <template is="dom-if" if="[[ !subscriber.picture_url ]]">
+                <div class="subscriber-image account-initials">
+                    <span class="initials">[[ _initials ]]</span>
+                </div>
+            </template>
+
+            <paper-tooltip
+                    position="right">[[ subscriber.name ]]<br/>[[ subscriber.email ]]</paper-tooltip>
+        </template>
+
+        <template is="dom-if" if="[[ !preview ]]">
+            <div class="subscriber">
+                <template is="dom-if" if="[[ subscriber.picture_url ]]">
+                    <iron-image class="subscriber-image"
+                                sizing="cover"
+                                preload fade
+                                src="[[ subscriber.picture_url ]]"
+                                alt="[[ subscriber.name ]]"></iron-image>
+                </template>
+
+                <template is="dom-if" if="[[ !subscriber.picture_url ]]">
+                    <div class="subscriber-image account-initials">
+                        <span class="initials">[[ _initials ]]</span>
+                    </div>
+                </template>
+
+                <div class="subscriber-info subscriber-basic-info">
+                    <span class="info-label subscriber-name">[[ subscriber.name ]]</span>
+                    <span class="info-value">[[ subscriber.email ]]</span>
+                </div>
+
+                <div class="actions" revoke$="[[ !_owner ]]">
+                    <paper-button class="action-button"
+                                  on-tap="_onRevokeAccessAction">Revoke</paper-button>
+                </div>
+            </div>
+        </template>
+
+    </template>
+
+    <script>
+        Polymer({
+
+            is: 'appsco-application-subscriber',
+
+            properties: {
+
+                application: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    }
+                },
+
+                /**
+                 * Item to display.
+                 *
+                 * @type {Object}
+                 */
+                subscriber: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    }
+                },
+
+                account: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    }
+                },
+
+                /**
+                 * Indicates if subscriber should be in preview mode rather then full detailed view.
+                 */
+                preview: {
+                    type: Boolean,
+                    value: false
+                },
+
+                _initials: {
+                    type: String,
+                    computed: '_computeInitials(subscriber)'
+                },
+
+                _owner: {
+                    type: Boolean,
+                    computed: '_computeOwner(subscriber, account)'
+                },
+
+                /**
+                 * Animation for loader appearance.
+                 */
+                animationConfig: {
+                    value: function() {
+                        return {
+                            'entry': {
+                                name: 'fade-in-animation',
+                                node: this,
+                                timing: {
+                                    duration: 300
+                                }
+                            },
+                            'exit': {
+                                name: 'fade-out-animation',
+                                node: this,
+                                timing: {
+                                    duration: 100
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+
+            behaviors: [
+                Polymer.NeonAnimationRunnerBehavior
+            ],
+
+            attached: function() {
+                this.style.display = 'inline-block';
+                this.playAnimation('entry');
+            },
+
+            _computeInitials: function(account) {
+                var initials = '';
+
+                if (account.self && account.first_name.length > 0 && account.last_name.length > 0) {
+                    initials = account.first_name.substring(0, 1) + account.last_name.substring(0, 1);
+                }
+                else if (account.self && account.name) {
+                    initials = account.name.substring(0, 2);
+                }
+
+                return initials;
+            },
+
+            _computeOwner: function(subscriber, account) {
+                return account && subscriber.email == account.email;
+            },
+
+            _onRevokeAccessAction: function() {
+                this.fire('subscription-revoke', {
+                    application: this.application,
+                    account: this.subscriber
+                });
+            }
+        });
+    </script>
+</dom-module>

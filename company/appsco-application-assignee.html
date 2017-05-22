@@ -1,0 +1,356 @@
+<link rel="import" href="../../polymer/polymer.html">
+<link rel="import" href="../../iron-flex-layout/iron-flex-layout-classes.html">
+<link rel="import" href="../../neon-animation/neon-animation-runner-behavior.html">
+<link rel="import" href="../../neon-animation/animations/fade-in-animation.html">
+<link rel="import" href="../../neon-animation/animations/fade-out-animation.html">
+<link rel="import" href="../../paper-tooltip/paper-tooltip.html">
+<link rel="import" href="../../paper-styles/typography.html">
+<link rel="import" href="../../paper-styles/shadow.html">
+<link rel="import" href="../../iron-image/iron-image.html">
+
+<!--
+`appsco-application-assignee`
+Is used to represent assignee for application.
+
+Example:
+
+    <body>
+      <appsco-application-assignee assignee="{}" preview>
+     </appsco-application-assignee>
+
+ Custom property | Description | Default
+----------------|-------------|----------
+`--appsco-application-assignee` | Mixin applied to root element | `{}`
+`--appsco-application-assignee-image` | Mixin applied to inner image element | `{}`
+`--appsco-application-assignee-image-contain` | Mixin applied to iron-image #sizedImgDiv | `{}`
+
+@demo demo/company/appsco-application-assignee.html
+-->
+
+<dom-module id="appsco-application-assignee">
+    <template>
+        <style include="iron-flex iron-flex-alignment">
+            :host {
+                display: none;
+                color: var(--primary-text-color);
+            @apply(--appsco-application-assignee);
+            }
+            :host .iron-image {
+                border-radius: 50%;
+            }
+            :host .iron-image::shadow #sizedImgDiv, :host .iron-image::shadow #placeholder {
+                border-radius: 50%;
+            }
+            :host .assignee-image-preview {
+                width: 28px;
+                height: 28px;
+            @apply(--appsco-application-assignee-image);
+            }
+            :host .assignee-image-preview::shadow #sizedImgDiv, :host .assignee-image-preview::shadow #placeholder {
+            @apply(--appsco-application-assignee-image-contain);
+            }
+            :host .account-initials {
+                position: relative;
+                background-color: var(--body-background-color, #f5f8fa);
+                color: var(--primary-text-color);
+                cursor: default;
+            @apply(--subscriber-initials);
+            }
+            :host .account-initials .initials {
+                position: absolute;
+                top: 0;
+                right: 0;
+                bottom: 0;
+                left: 0;
+                margin: auto;
+                line-height: 28px;
+                text-align: center;
+                text-transform: uppercase;
+                font-size: 12px;
+            }
+            paper-tooltip {
+            --paper-tooltip: {
+                 font-size: 11px;
+                 line-height: 12px;
+             };
+            }
+            :host .assignee {
+            @apply(--layout-horizontal);
+            @apply(--layout-center);
+            @apply(--shadow-elevation-2dp);
+                width: 100%;
+                height: 70px;
+                padding: 0 10px;
+                box-sizing: border-box;
+                border-radius: 3px;
+                overflow: hidden;
+                position: relative;
+                background-color: var(--background-color, #fafafa);
+                cursor: pointer;
+            @apply(--appsco-application-assignee);
+            }
+            :host .assignee:hover {
+            @apply(--shadow-elevation-4dp);
+            }
+            :host .assignee .assignee-image-preview {
+                width: 52px;
+                height: 52px;
+                margin: 0;
+                border-radius: 50%;
+            @apply(--layout-flex-none);
+            }
+            :host .assignee .initials {
+                line-height: 52px;
+                font-size: 18px;
+            }
+            :host .assignee-info {
+            @apply(--layout-vertical);
+            @apply(--layout-start);
+                padding: 0 10px;
+            }
+            :host .assignee-basic-info {
+                width: 220px;
+            }
+            :host.assignee-basic-info .info-label, :host .assignee-basic-info .info-value {
+                width: 226px;
+            @apply(--paper-font-common-nowrap);
+            }
+            :host .assignee-security-info {
+                border-left: 1px solid var(--divider-color);
+            }
+            :host .info-label {
+                font-size: 16px;
+                height: auto;
+                line-height: normal;
+            }
+            :host .info-value {
+                display: block;
+                font-size: 12px;
+            }
+            :host .assignee-name {
+                display: block;
+            @apply(--paper-font-common-base);
+                font-size: 16px;
+                font-weight: 400;
+                overflow: hidden;
+            }
+            :host .actions {
+            @apply(--layout-horizontal);
+            @apply(--layout-center);
+                position: absolute;
+                right: 4px;
+                bottom: 4px;
+            }
+            :host .action-button {
+            @apply(--paper-font-common-base);
+            @apply(--paper-font-common-nowrap);
+                padding: 4px;
+                font-size: 12px;
+                font-weight: 400;
+                letter-spacing: 0.018em;
+                line-height: 18px;
+                text-transform: uppercase;
+            }
+            :host paper-button[disabled] {
+                background: transparent;
+            }
+        </style>
+
+        <template is="dom-if" if="[[ preview ]]">
+
+            <template is="dom-if" if="[[ assignee.picture_url ]]">
+                <iron-image class="iron-image assignee-image-preview"
+                            sizing="cover"
+                            preload fade
+                            src="[[ assignee.picture_url ]]"
+                            alt="[[ assignee.name ]]"></iron-image>
+            </template>
+
+            <template is="dom-if" if="[[ !assignee.picture_url ]]">
+                <div class="iron-image assignee-image-preview account-initials">
+                    <span class="initials">[[ _initials ]]</span>
+                </div>
+            </template>
+
+            <paper-tooltip position="right">[[ assignee.display_name ]]<br/>[[ assignee.email ]]</paper-tooltip>
+        </template>
+
+        <template is="dom-if" if="[[ !preview ]]">
+            <div class="assignee" on-tap="_onAssigneeAction">
+
+                <template is="dom-if" if="[[ assignee.picture_url ]]">
+                    <iron-image class="iron-image assignee-image-preview"
+                                sizing="cover"
+                                preload fade
+                                src="[[ assignee.picture_url ]]"
+                                alt="[[ assignee.name ]]"></iron-image>
+                </template>
+
+                <template is="dom-if" if="[[ !assignee.picture_url ]]">
+                    <div class="iron-image assignee-image-preview account-initials">
+                        <span class="initials">[[ _initials ]]</span>
+                    </div>
+                </template>
+
+                <div class="assignee-info assignee-basic-info">
+                    <span class="info-label assignee-name">[[ assignee.display_name ]]</span>
+                    <span class="info-value">[[ assignee.email ]]</span>
+                </div>
+
+                <div class="assignee-info assignee-security-info">
+                    <span class="info-label">Security</span>
+                    <span class="info-value">Score: [[ assignee.application_security.score ]]</span>
+                </div>
+
+                <div class="actions">
+                    <template is="dom-if" if="[[ _individualClaims ]]">
+                        <paper-button class="action-button"
+                                      on-tap="_onClaimsAction">Claims</paper-button>
+                    </template>
+
+                    <paper-button class="action-button"
+                                  on-tap="_onRevokeAction">Revoke</paper-button>
+                </div>
+            </div>
+        </template>
+
+    </template>
+
+    <script>
+        Polymer({
+
+            is: 'appsco-application-assignee',
+
+            properties: {
+
+                /**
+                 * Application which is assigned to account.
+                 */
+                application: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    }
+                },
+
+                /**
+                 * Assignee to display.
+                 *
+                 * @type {Object}
+                 */
+                assignee: {
+                    type: Object
+                },
+
+                /**
+                 * Indicates if assignee should be in preview mode rather then full detailed view.
+                 */
+                preview: {
+                    type: Boolean,
+                    value: false
+                },
+
+                _initials: {
+                    type: String,
+                    computed: '_computeInitials(assignee)'
+                },
+
+                _individualClaims: {
+                    type: Boolean,
+                    computed: '_computeIndividualClaims(application)'
+                },
+
+                /**
+                 * Animation for loader appearance.
+                 */
+                animationConfig: {
+                    value: function() {
+                        return {
+                            'entry': {
+                                name: 'fade-in-animation',
+                                node: this,
+                                timing: {
+                                    duration: 300
+                                }
+                            },
+                            'exit': {
+                                name: 'fade-out-animation',
+                                node: this,
+                                timing: {
+                                    duration: 100
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+
+            behaviors: [
+                Polymer.NeonAnimationRunnerBehavior
+            ],
+
+            attached: function() {
+                this.style.display = 'inline-block';
+                this.playAnimation('entry');
+            },
+
+            _computeInitials: function(account) {
+                var initials = '';
+
+                if (account.self && account.first_name && account.last_name) {
+                    initials = account.first_name.substring(0, 1) + account.last_name.substring(0, 1);
+                }
+                else if (account.self && account.name) {
+                    initials = account.name.substring(0, 2);
+                }
+
+                return initials;
+            },
+
+            _computeIndividualClaims: function(application) {
+                return application.claim_type === 'individual';
+            },
+
+            _onAssigneeAction: function() {
+
+                /**
+                 * Fired when assignee is tapped.
+                 *
+                 * @event assignee
+                 * @param {Object} assignee
+                 */
+                this.fire('assignee', {
+                    detail: this.assignee
+                });
+            },
+
+            _onClaimsAction: function(event) {
+                event.stopPropagation();
+
+                /**
+                 * Fired when claims action is tapped.
+                 *
+                 * @event assignee-claims
+                 * @param {Object} assignee
+                 */
+                this.fire('assignee-claims', {
+                    assignee: this.assignee
+                });
+            },
+
+            _onRevokeAction: function(event) {
+                event.stopPropagation();
+
+                /**
+                 * Fired when revoke action is tapped.
+                 *
+                 * @event revoke-assignee
+                 * @param {Object} assignee
+                 */
+                this.fire('revoke-assignee', {
+                    assignee: this.assignee
+                });
+            }
+        });
+    </script>
+</dom-module>

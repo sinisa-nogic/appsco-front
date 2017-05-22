@@ -1,0 +1,402 @@
+<link rel="import" href="../../polymer/polymer.html">
+<link rel="import" href="../../iron-flex-layout/iron-flex-layout.html">
+<link rel="import" href="../../paper-input/paper-textarea.html">
+<link rel="import" href="../../paper-button/paper-button.html">
+<link rel="import" href="../../iron-ajax/iron-request.html">
+<link rel="import" href="../../iron-form/iron-form.html">
+<link rel="import" href="../../paper-input/paper-input.html">
+<link rel="import" href="../../neon-animation/neon-shared-element-animatable-behavior.html">
+<link rel="import" href="../../neon-animation/animations/hero-animation.html">
+<link rel="import" href="../../neon-animation/animations/fade-in-animation.html">
+<link rel="import" href="../../neon-animation/animations/fade-out-animation.html">
+
+<link rel="import" href="../../appsco-components/appsco-form-error.html">
+<link rel="import" href="../appsco-application-info.html">
+
+<!--
+`appsco-company-application-add-settings`
+Is used to present application settings.
+
+Example:
+    <body>
+        <appsco-company-application-add-settings>
+        </appsco-company-application-add-settings>
+
+
+### Styling
+
+`<appsco-company-application-add-settings>` provides the following custom properties and mixins for styling:
+
+Custom property | Description | Default
+----------------|-------------|----------
+`--appsco-company-application-add-settings` | Mixin for the root element | `{}`
+
+-->
+
+<dom-module id="appsco-company-application-add-settings">
+    <template>
+        <style>
+            :host {
+                display: block;
+            }
+            :host appsco-application-info {
+                margin-bottom: 10px;
+
+            --paper-font-caption: {
+                 font-size: 14px;
+             };
+            }
+        </style>
+
+        <div id="applicationHeader">
+            <template is="dom-if" if="[[ !application.custom_application ]]">
+                <appsco-application-info application="[[ application ]]"></appsco-application-info>
+            </template>
+        </div>
+
+        <div id="appscoApplicationSettings">
+
+            <appsco-form-error message="[[ _error ]]"></appsco-form-error>
+
+            <form is="iron-form"
+                  hidden
+                  id="addApplicationForm"
+                  method="POST"
+                  action$="[[ addApplicationApi ]]"
+                  headers="[[ _headers ]]"
+                  on-iron-form-response="_onFormResponse">
+                <paper-input type="text" name="application_templates[]" value="[[ application.self ]]"></paper-input>
+            </form>
+
+            <form is="iron-form"
+                  id="saveApplicationForm">
+                <paper-input
+                        id="title"
+                        label="title"
+                        value="[[ application.title ]]"
+                        name="configure_application[title]"
+                        required
+                        auto-validate
+                        error-message="Please enter application title."
+                        ></paper-input>
+                <paper-input
+                        id="url"
+                        label="url"
+                        value="[[ application.url ]]"
+                        pattern="https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)"
+                        error-message="Url is invalid."
+                        required
+                        auto-validate
+                        name="configure_application[url]"
+                        hidden$="[[ !_shouldShowUrl ]]"
+                        ></paper-input>
+            </form>
+
+        </div>
+    </template>
+
+    <script>
+        Polymer({
+
+            is: 'appsco-company-application-add-settings',
+
+            properties: {
+
+                /**
+                 * Application to add.
+                 */
+                application: {
+                    type: Object,
+                    notify: true
+                },
+
+                /**
+                 * Authorization token.
+                 */
+                authorizationToken: {
+                    type: String
+                },
+
+                /**
+                 * Dashboard API link.
+                 * API on which dashboard to save new application.
+                 */
+                addApplicationApi: {
+                    type: String
+                },
+
+                _shouldShowUrl: {
+                    type: Boolean,
+                    computed: '_computeShouldShowUrl(application)'
+                },
+
+                /**
+                 * Computed headers.
+                 * It contains authorization token.
+                 */
+                _headers: {
+                    type: Object,
+                    computed: '_computeHeaders(authorizationToken)'
+                },
+
+                /**
+                 * Indicates if appsco loader should be displayed.
+                 */
+                loader: {
+                    type: Boolean,
+                    value: false,
+                    notify: true
+                },
+
+                /**
+                 * Error message for settings form.
+                 */
+                _error: {
+                    type: String
+                },
+
+                _supportedAuthTypes: {
+                    type: Array,
+                    value: function () {
+                        return [
+                            'icon_item', 'icon_unpw', 'icon_saml', 'icon_jwt', 'icon_cc', 'icon_login',
+                            'icon_passport', 'icon_securenote', 'icon_softwarelicence', 'icon_none'
+                        ]
+                    }
+                },
+
+                /**
+                 * Animation config with hero animation.
+                 */
+                animationConfig: {
+                    value: function() {
+                        return {
+                            'entry': [{
+                                name: 'hero-animation',
+                                id: 'hero',
+                                toPage: this
+                            }, {
+                                name: 'fade-in-animation',
+                                node: this,
+                                timing: {
+                                    duration: 600
+                                }
+                            }],
+                            'exit': {
+                                name: 'fade-out-animation',
+                                node: this
+                            }
+                        }
+                    }
+                },
+
+                /**
+                 * Defines shared element of hero animation.
+                 */
+                sharedElements: {
+                    value: function() {
+                        return {
+                            'hero': this.$.applicationHeader
+                        }
+                    }
+                }
+            },
+
+            behaviors: [
+                Polymer.NeonSharedElementAnimatableBehavior
+            ],
+
+            listeners: {
+                'application-changed': '_onApplicationChanged'
+            },
+
+            _computeShouldShowUrl: function (application) {
+                if (!(application && application.self)) {
+                    return false;
+                }
+
+                var auth = this._supportedAuthTypeByPriority(application.auth_types);
+                return application.url_editable &&
+                    ['unpw', 'item', 'login', 'none'].indexOf(auth) !== -1;
+            },
+
+            _supportedAuthTypeByPriority: function(authTypes) {
+                var authType = null,
+                    priority = 100;
+                for (var prop in authTypes) {
+
+                    currentPriority = this._supportedAuthTypes.indexOf(authTypes[prop]);
+                    if(priority > currentPriority) {
+                        authType = authTypes[prop];
+                        priority = currentPriority;
+                    }
+                }
+
+                if(null === authType) {
+                    return [];
+                }
+
+                return authType.substring('icon_'.length);
+            },
+
+            /**
+             * Computes authorization headers.
+             *
+             * @param {Object} authorizationToken
+             * @returns {{Authorization: string}}
+             * @private
+             */
+            _computeHeaders: function (authorizationToken) {
+                return {
+                    'Authorization': 'token ' + authorizationToken,
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                }
+            },
+
+            /**
+             * Called after application has been changed.
+             * It sets focus to title input field.
+             *
+             * @private
+             */
+            _onApplicationChanged: function() {
+
+                setTimeout(function() {
+                    this.$.title.focus();
+                    this.$.url.invalid = false;
+                }.bind(this), 100);
+
+            },
+
+            /**
+             * Saves application configuration.
+             *
+             * @private
+             */
+            _updateApplicationSettings: function(application) {
+                var title = this.$.title.value,
+                    url = this.$.url.value;
+
+                if (application.title !== title || application.url != url) {
+                    this._submitApplicationConfigure(application).then(function(application) {
+
+                        if (application) {
+                            this.application = application;
+                        }
+
+                        this._onApplicationAdded();
+
+                    }.bind(this), function() { this.fire('form-error'); }.bind(this));
+                }
+                else {
+                    this.application = application;
+                    this._onApplicationAdded();
+                }
+            },
+
+            /**
+             * Configures application with given title and url.
+             *
+             * @returns {*}
+             * @private
+             */
+            _submitApplicationConfigure: function(application) {
+                var titleInput = this.$.title,
+                    urlInput = this.$.url;
+
+                return new Promise(function(resolve, reject) {
+                    var body = '';
+
+                    body = encodeURIComponent(titleInput.name) + '=' + encodeURIComponent(titleInput.value);
+                    body += body == "" ? '' : '&';
+                    body += encodeURIComponent(urlInput.name) + '=' + encodeURIComponent(urlInput.value);
+
+                    if('' != body) {
+                        var options = {
+                            url: application.self,
+                            method: 'PATCH',
+                            body: body,
+                            handleAs: 'json',
+                            headers: this._headers
+                        };
+
+                        var request = document.createElement('iron-request');
+                        request.send(options).then(function() {
+
+                            if (request.succeeded) {
+                                resolve(request.response);
+                            }
+
+                        });
+                    } else {
+                        reject(false);
+                    }
+                }.bind(this));
+            },
+
+            /**
+             * Called on form error when trying to add new application as icon.
+             *
+             * @param {Object} event
+             * @private
+             */
+            _onFormError: function(event) {
+                this._error = event.detail.error.message;
+                this.fire('form-error');
+            },
+
+            /**
+             * Called after application is added as icon.
+             * It calls application configure method.
+             *
+             * @param {Object} event
+             * @private
+             */
+            _onFormResponse: function(event) {
+                var applications = event.detail.response.applications;
+
+                if (applications && applications.length > 0) {
+                    this._updateApplicationSettings(applications[0]);
+                }
+            },
+
+            /**
+             * Submits form which adds application as item.
+             */
+            addApplication: function() {
+
+                if (this.$.saveApplicationForm.validate()) {
+                    this.$.addApplicationForm.submit();
+                } else {
+                    this.fire('form-error');
+                }
+
+            },
+
+            /**
+             * Called after application has been added.
+             * It fires event.
+             *
+             * @private
+             */
+            _onApplicationAdded: function() {
+                /**
+                 * Fired after application has been added.
+                 *
+                 * @event application-added
+                 */
+                this.fire('application-added', {
+                    application: this.application
+                });
+            },
+
+            /**
+             * Resets component.
+             */
+            reset: function() {
+                this.$.addApplicationForm.reset();
+                this.$.saveApplicationForm.reset();
+            }
+        });
+    </script>
+</dom-module>

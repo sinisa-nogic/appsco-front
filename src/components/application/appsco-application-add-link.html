@@ -1,0 +1,314 @@
+<link rel="import" href="../polymer/polymer.html">
+<link rel="import" href="../iron-flex-layout/iron-flex-layout.html">
+<link rel="import" href="../paper-button/paper-button.html">
+<link rel="import" href="../iron-ajax/iron-request.html">
+<link rel="import" href="../iron-form/iron-form.html">
+<link rel="import" href="../paper-input/paper-input.html">
+<link rel="import" href="../neon-animation/neon-shared-element-animatable-behavior.html">
+<link rel="import" href="../neon-animation/animations/hero-animation.html">
+<link rel="import" href="../neon-animation/animations/fade-in-animation.html">
+<link rel="import" href="../neon-animation/animations/fade-out-animation.html">
+
+<link rel="import" href="../appsco-components/appsco-loader.html">
+<link rel="import" href="../appsco-components/appsco-form-error.html">
+
+<!--
+`appsco-application-add-link`
+Is used to present application as link settings.
+
+Example:
+    <body>
+        <appsco-application-add-link>
+        </appsco-application-add-link>
+
+
+### Styling
+
+`<appsco-application-add-link>` provides the following custom properties and mixins for styling:
+
+Custom property | Description | Default
+----------------|-------------|----------
+`--appsco-application-add-link` | Mixin for the root element | `{}`
+
+@demo demo/appsco-application-add.html
+-->
+
+<dom-module id="appsco-application-add-link">
+    <template>
+        <style>
+            :host {
+                display: block;
+            }
+        </style>
+
+        <appsco-loader active="[[ _loader ]]" loader-alt="Appsco is saving application" multi-color></appsco-loader>
+
+        <appsco-form-error message="[[ _error ]]"></appsco-form-error>
+
+        <form is="iron-form"
+              hidden
+              id="addLinkForm"
+              method="post"
+              action="[[ _computedAction ]]"
+              headers="[[ _computedHeaders ]]"
+              on-iron-form-response="_onFormResponse">
+            <paper-input type="text" name="application[resource]" value="[[ link.self ]]"></paper-input>
+        </form>
+
+        <form is="iron-form"
+              id="saveLinkForm">
+            <paper-input
+                    id="title"
+                    label="title"
+                    name="configure_application[title]"
+                    required
+                    auto-validate
+                    error-message="Please enter link title."></paper-input>
+
+            <paper-input
+                    id="url"
+                    label="url"
+                    name="configure_application[url]"
+                    pattern="https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)"
+                    error-message="Url is invalid."
+                    required
+                    auto-validate></paper-input>
+        </form>
+    </template>
+
+    <script>
+        Polymer({
+
+            is: 'appsco-application-add-link',
+
+            properties: {
+
+                /**
+                 * Authorization token.
+                 */
+                authorizationToken: {
+                    type: String
+                },
+
+                /**
+                 * Link application resource.
+                 */
+                link: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    }
+                },
+
+                /**
+                 * Dashboard API link.
+                 * API on which dashboard to save new application.
+                 */
+                dashboardApi: {
+                    type: String
+                },
+
+                /**
+                 * Computed action to call in order to save application as icon.
+                 */
+                _computedAction: {
+                    type: String,
+                    computed: "_computeAction(dashboardApi)"
+                },
+
+                /**
+                 * Computed headers.
+                 * It contains authorization token.
+                 */
+                _computedHeaders: {
+                    type: Object,
+                    computed: "_computeHeaders(authorizationToken)"
+                },
+
+                /**
+                 * Indicates if appsco loader should be displayed.
+                 */
+                _loader: {
+                    type: Boolean,
+                    value: false
+                },
+
+                /**
+                 * Error message for settings form.
+                 */
+                _error: {
+                    type: String
+                },
+
+                /**
+                 * Animation config with hero animation.
+                 */
+                animationConfig: {
+                    value: function() {
+                        return {
+                            'entry': [{
+                                name: 'hero-animation',
+                                id: 'hero',
+                                toPage: this
+                            }, {
+                                name: 'fade-in-animation',
+                                node: this,
+                                timing: {
+                                    duration: 600
+                                }
+                            }],
+                            'exit': {
+                                name: 'fade-out-animation',
+                                node: this
+                            }
+                        }
+                    }
+                },
+
+                /**
+                 * Defines shared element of hero animation.
+                 */
+                sharedElements: {
+                    value: function() {
+                        return {
+                            'hero': this.$.saveLinkForm
+                        }
+                    }
+                }
+            },
+
+            behaviors: [
+                Polymer.NeonSharedElementAnimatableBehavior
+            ],
+
+            /**
+             * Computes action for saving application as icon.
+             *
+             * @param {String} dashboardApi
+             * @returns {string}
+             * @private
+             */
+            _computeAction: function (dashboardApi) {
+                return dashboardApi + '/icons';
+            },
+
+            /**
+             * Computes authorization headers.
+             *
+             * @param {Object} authorizationToken
+             * @returns {{Authorization: string}}
+             * @private
+             */
+            _computeHeaders: function (authorizationToken) {
+                return {
+                    'Authorization': 'token ' + authorizationToken
+                }
+            },
+
+            _showLoader: function() {
+                this._loader = true;
+            },
+
+            _hideLoader: function() {
+                this._loader = false;
+            },
+
+            /**
+             * Configures application with given title and url.
+             *
+             * @returns {*}
+             * @private
+             */
+            _saveLink: function(icon) {
+
+                return new Promise(function(resolve, reject){
+                    var body = encodeURIComponent(this.$.title.name) + '=' + encodeURIComponent(this.$.title.value) +
+                            '&' +
+                            encodeURIComponent(this.$.url.name) + '=' + encodeURIComponent(this.$.url.value);
+
+                    var options = {
+                        url: icon.self + '/application',
+                        method: 'PATCH',
+                        body: body,
+                        handleAs: 'json',
+                        headers: {
+                            'Authorization': 'token ' + this.authorizationToken,
+                            'Content-Type': 'application/x-www-form-urlencoded'
+                        }
+                    };
+
+                    var request = document.createElement('iron-request');
+                    request.send(options).then(function() {
+
+                        if (request.succeeded) {
+                            resolve(request.response.icon);
+                        }
+
+                    });
+                }.bind(this));
+            },
+
+            /**
+             * Called on form error when trying to add new application as icon.
+             *
+             * @param {Object} event
+             * @private
+             */
+            _onFormError: function(event) {
+                this._error = event.detail.error.message;
+                this._hideLoader();
+            },
+
+            /**
+             * Called after application is added as icon.
+             * It calls application configure method.
+             *
+             * @param {Object} event
+             * @private
+             */
+            _onFormResponse: function(event) {
+                this._saveLink(event.detail.response.icon).then(function(application) {
+
+                    /**
+                     * Fired after application has been added.
+                     *
+                     * @event application-added
+                     */
+                    this.fire('link-added', {
+                        application: application
+                    });
+
+                    this._hideLoader();
+
+                }.bind(this));
+            },
+
+            /**
+             * Submits form which adds link.
+             */
+            addLink: function() {
+
+                if (this.$.saveLinkForm.validate()) {
+                    this._showLoader();
+                    this.$.addLinkForm.submit();
+                }
+
+            },
+
+            /**
+             * Sets focus on title input.
+             */
+            setup: function() {
+                this.$.title.focus();
+            },
+
+            /**
+             * Resets component.
+             */
+            reset: function() {
+                this.$.saveLinkForm.reset();
+                this._hideLoader();
+            }
+        });
+    </script>
+</dom-module>

@@ -1,0 +1,206 @@
+<link rel="import" href="../../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../../bower_components/paper-button/paper-button.html">
+<link rel="import" href="../../../bower_components/iron-ajax/iron-request.html">
+<link rel="import" href="../../../bower_components/paper-dialog/paper-dialog.html">
+<link rel="import" href="../../../bower_components/paper-dialog-scrollable/paper-dialog-scrollable.html">
+<link rel="import" href="../../../bower_components/neon-animation/animations/fade-out-animation.html">
+<link rel="import" href="../../../bower_components/neon-animation/animations/scale-up-animation.html">
+
+<link rel="import" href="../components/appsco-loader.html">
+
+<!--
+`appsco-invitation-remove`
+Shows dialog screen with confirmation for invitation removal.
+
+    <appsco-invitation-remove invitation="{}">
+    </appsco-invitation-remove>
+
+-->
+
+<dom-module id="appsco-invitation-remove">
+    <template>
+        <style>
+            :host {
+                display: block;
+                position: relative;
+            }
+            :host paper-dialog {
+                width: 670px;
+                top: 20vh;
+            @apply(--appsco-paper-dialog);
+            }
+            :host paper-dialog-scrollable > * {
+                @apply(--paper-dialog-scrollable-child);
+            }
+            appsco-loader {
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+            .buttons paper-button {
+            @apply(--paper-dialog-button);
+            }
+            .buttons paper-button[dialog-confirm] {
+            @apply(--paper-dialog-confirm-button);
+            }
+            .buttons paper-button[dialog-dismiss] {
+            @apply(--paper-dialog-dismiss-button);
+            }
+        </style>
+        <paper-dialog
+                with-backdrop
+                id="dialog"
+                entry-animation="scale-up-animation"
+                exit-animation="fade-out-animation">
+
+            <div class="header">
+                <h2>Invitation remove</h2>
+            </div>
+
+            <appsco-loader active="[[ _loader ]]"
+                           loader-alt="Appsco is processing request"
+                           multi-color></appsco-loader>
+
+            <paper-dialog-scrollable>
+                <div class="remove-container">
+                    <p>Please confirm invitation removing for [[ invitation.email ]].</p>
+                </div>
+            </paper-dialog-scrollable>
+
+            <div class="buttons">
+                <paper-button dialog-dismiss>Cancel</paper-button>
+                <paper-button dialog-confirm autofocus on-tap="_onRemove">Remove</paper-button>
+            </div>
+        </paper-dialog>
+
+    </template>
+    <script>
+        Polymer({
+
+            is: 'appsco-invitation-remove',
+
+            properties: {
+
+                /**
+                 * Invitation to delete.
+                 */
+                invitation: {
+                    type: Array,
+                    value: function() {
+                        return [];
+                    }
+                },
+
+                /**
+                 * Authorization token.
+                 */
+                authorizationToken: {
+                    type: String
+                },
+
+                _headers: {
+                    type: Object,
+                    computed: '_computeHeaders(authorizationToken)'
+                },
+
+                _removeApi: {
+                    type: String,
+                    computed: '_computeRemoveApi(invitation)'
+                },
+
+                _loader: {
+                    type: Boolean,
+                    value: false
+                }
+            },
+
+            _computeHeaders: function(authorizationToken) {
+                return {
+                    'Authorization': 'token ' + authorizationToken,
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                };
+            },
+
+            _computeRemoveApi: function(invitation) {
+                return invitation && invitation.self ? invitation.self : '';
+            },
+
+            setInvitation: function(invitation) {
+                this.set('invitation', invitation);
+            },
+
+            open: function () {
+                this.$.dialog.open();
+            },
+
+            _hide: function() {
+                this.$.dialog.close();
+            },
+
+            _showLoader: function() {
+                this._loader = true;
+            },
+
+            _hideLoader: function() {
+                this._loader = false;
+            },
+
+            _onRemove: function() {
+                var request = document.createElement('iron-request'),
+                    options = {
+                        url: this._removeApi,
+                        method: 'DELETE',
+                        handleAs: 'json',
+                        headers: this._headers
+                    };
+
+                this._showLoader();
+
+                request.send(options).then(function() {
+                    var status = request.status;
+
+                    if (200 == status) {
+
+                        /**
+                         * Fired when invitation is removed.
+                         *
+                         * @event invitation-removed
+                         */
+                        this.fire('invitation-removed', {
+                            invitation: this.invitation
+                        });
+                    }
+
+                    this.set('invitation', {});
+                    this._hideLoader();
+                    this._hide();
+
+                }.bind(this), function() {
+                    var status = request.status;
+
+                    if (404 == status) {
+                        /**
+                         * Fired when invitation is already removed.
+                         *
+                         * @event invitation-already-removed
+                         */
+                        this.fire('invitation-already-removed', {
+                            invitation: this.invitation
+                        });
+                    }
+                    else {
+                        /**
+                         * Fired when invitation is not deleted.
+                         *
+                         * @event invitation-remove-failed
+                         */
+                        this.fire('invitation-remove-failed');
+                    }
+
+                    this.set('invitation', {});
+                    this._hideLoader();
+                    this._hide();
+                }.bind(this));
+            }
+        });
+    </script>
+</dom-module>

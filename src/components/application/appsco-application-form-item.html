@@ -1,0 +1,92 @@
+<link rel="import" href="../../../bower_components/polymer/polymer.html">
+
+<link rel="import" href="../../../bower_components/paper-input/paper-input.html">
+<link rel="import" href="../../../bower_components/paper-input/paper-textarea.html">
+
+<dom-module id="appsco-application-form-item">
+    <template>
+        <paper-input
+                id="username"
+                data-field
+                label="Username"
+                value="[[ claims.username ]]"
+                name$="[[ claimsNamePrefix ]][username]"
+                required
+                error-message="Please enter username"
+        ></paper-input>
+        <paper-input
+                id="password"
+                data-field
+                label="Password"
+                type="password"
+                value="[[ claims.password ]]"
+                name$="[[ claimsNamePrefix ]][password]"
+                required
+                error-message="Please enter password"
+        ></paper-input>
+        <paper-textarea
+                id="note"
+                data-field
+                label="Note"
+                value="[[ claims.note ]]"
+                name$="[[ claimsNamePrefix ]][note]"
+        ></paper-textarea>
+    </template>
+    <script>
+        Polymer({
+            is: 'appsco-application-form-item',
+            
+            properties: {
+                claims: {
+                    type: Object,
+                    value: function () { return {}; }
+                },
+
+                claimsNamePrefix: {
+                    type: String,
+                    value: "claims_item"
+                }
+            },
+
+            isValid: function() {
+                this.$.username.validate();
+                this.$.password.validate();
+                return !this.$.username.invalid && !this.$.password.invalid;
+            },
+
+            encodedBodyValues: function () {
+                var body = '';
+
+                Polymer.dom(this.root).querySelectorAll('[data-field]').forEach(function(item, key) {
+                    if(item.value) {
+                        body += body === '' ? '' : '&';
+                        body += encodeURIComponent(item.getAttribute('name')) + '=' + encodeURIComponent(item.value)
+                    }
+                }.bind(this));
+
+                return body;
+            },
+            
+            didFieldsChanged: function() {
+                var fieldChanged = false,
+                    claimsExist = false;
+                for ( var prop in this.claims ) {
+                    claimsExist = true;
+                }
+                if(!claimsExist) {
+                    Polymer.dom(this.root).querySelectorAll('[data-field]').forEach(function(item, key) {
+                        fieldChanged = fieldChanged || (item.value && '' !== item.value);
+                    }.bind(this));
+
+                    return fieldChanged;
+                }
+
+                Polymer.dom(this.root).querySelectorAll('[data-field]').forEach(function(item, key) {
+                    fieldChanged = fieldChanged || this.claims[item.getAttribute('id')] !== item.value;
+                }.bind(this));
+
+                return fieldChanged;
+            }
+        });
+    </script>
+</dom-module>

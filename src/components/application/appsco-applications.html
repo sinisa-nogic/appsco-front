@@ -1,0 +1,1004 @@
+<link rel="import" href="../../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../../bower_components/iron-ajax/iron-ajax.html">
+<link rel="import" href="../../../bower_components/iron-flex-layout/iron-flex-layout.html">
+<link rel="import" href="../../../bower_components/paper-button/paper-button.html">
+<link rel="import" href="../../../bower_components/paper-progress/paper-progress.html">
+<link rel="import" href="../../../bower_components/neon-animation/neon-animation-runner-behavior.html">
+<link rel="import" href="../../../bower_components/neon-animation/animations/transform-animation.html">
+
+<link rel="import" href="appsco-application-item.html">
+
+<!--
+`appsco-applications`
+Contains application list and Load More action (if there are more applications then presented).
+Applications are loaded inside component through iron-ajax.
+Component listens for events which have influence on result and changes query in order to retrieve appropriate applications.
+
+
+    <appsco-applications>
+    </appsco-applications>
+
+### Styling
+
+`<appsco-applications>` provides the following custom properties and mixins for styling:
+
+Custom property | Description | Default
+----------------|-------------|----------
+`--appsco-applications-item` | Mixin for item style | `{}`
+`--appsco-applications` | Mixin for the root element | `{}`
+`--applications-container` | Mixin for the applications container | `{}`
+`--applications-progress-bar` | Mixin applied to paper-progress for application list | `{}`
+
+@demo demo/appsco-applications.html
+-->
+
+<dom-module id="appsco-applications">
+    <template>
+        <style>
+            :host {
+                display: inline-block;
+                position: relative;
+                @apply(--appsco-applications);
+                @apply(--layout-vertical);
+                @apply(--layout-center);
+
+                --paper-progress-container-color: var(--body-background-color);
+                --paper-progress-height: 2px;
+            }
+
+            :host div[applications] {
+                @apply(--layout-horizontal);
+                @apply(--layout-wrap);
+                @apply(--layout-start);
+                margin-right: -10px;
+                @apply(--applications-container);
+            }
+            :host([company]) div[applications] {
+                @apply(--layout-vertical);
+                @apply(--layout-start);
+                margin-right: 0;
+            }
+            :host appsco-application-item {
+                margin: 0 10px 10px 0;
+                @apply(--appsco-applications-item);
+            }
+            :host([company]) appsco-application-item {
+                width: 100%;
+                margin: 0 0 10px 0;
+                @apply(--appsco-applications-item);
+            }
+
+            :host .applications-container {
+                width: 100%;
+                min-height: 160px;
+                padding-top: 10px;
+                position: relative;
+            }
+            :host appsco-loader {
+                background-color: rgba(255, 255, 255, 0.4);
+            }
+            :host .load-more-box {
+                margin-top: 10px;
+                padding-top: 4px;
+                position: relative;
+            }
+            :host .load-more-box paper-progress {
+                width: 100%;
+                position: absolute;
+                top: 4px;
+                left: 0;
+            }
+            :host .applications-progress-bar {
+                min-width: 100px;
+                width: 100%;
+                position: absolute;
+                top: 0;
+                left: 0;
+                @apply(--applications-progress-bar);
+            }
+            :host paper-button {
+                display: block;
+                width: 120px;
+                margin: 10px auto 0;
+                text-align: center;
+                @apply(--load-more-button);
+            }
+            :host .message {
+                color: var(--secondary-text-color);
+                font-style: italic;
+                @apply(--paper-font-body2);
+                @apply(--info-message);
+            }
+        </style>
+
+        <div class="applications-container">
+            <iron-ajax
+                    auto
+                    id="applicationsApiRequest"
+                    url="[[ _currentUrl ]]"
+                    on-error="_onError"
+                    on-response="_onResponse"
+                    headers="{{ _computedHeaders }}"
+                    debounce-duration="300"
+            ></iron-ajax>
+
+            <paper-progress id="paperProgress"
+                            class="applications-progress-bar"
+                            indeterminate></paper-progress>
+
+            <template is="dom-if" if="[[ _message ]]">
+                <p class="message">[[ _message ]]</p>
+            </template>
+
+            <template is="dom-if" if="[[ !_applicationsEmpty ]]">
+                <div applications company$="[[ company ]]">
+                    <template is="dom-repeat"
+                              items="{{ _applications }}"
+                              on-dom-change="_onItemsDomChange">
+
+                        <appsco-application-item id="appscoApplicationItem_[[ index ]]"
+                                                 class="application-item"
+                                                 application="{{ item }}"
+                                                 company="[[ company ]]"
+                                                 on-application="_onApplicationAction"></appsco-application-item>
+
+                    </template>
+                </div>
+            </template>
+        </div>
+
+        <template is="dom-if" if="[[ !_applicationsEmpty ]]">
+            <div class="load-more-box" hidden$="[[ !_loadMore ]]">
+                <paper-progress id="loadMoreProgress" indeterminate></paper-progress>
+                <paper-button on-tap="_loadMoreApps" id="loadMore">Load More</paper-button>
+            </div>
+        </template>
+    </template>
+
+    <script>
+        Polymer({
+
+            is: 'appsco-applications',
+
+            properties: {
+
+                /**
+                 * Indicates if user manages company applications or not.
+                 */
+                company: {
+                    type: Boolean,
+                    value: false,
+                    reflectToAttribute: true
+                },
+
+                /**
+                 * Authorization token.
+                 */
+                authorizationToken: {
+                    type: String,
+                    value: ''
+                },
+                /**
+                 * Route to retrieve applications for current user
+                 */
+                applicationsApi: {
+                    type: String,
+                    value: '',
+                    notify: true
+                },
+
+                _searchApplicationsApi: {
+                    type: String,
+                    computed: '_computeSearchApplicationsApi(applicationsApi, _filterTerm)'
+                },
+
+                /**
+                 * Number of application items to load and present
+                 */
+                size: {
+                    type: Number,
+                    value: 10
+                },
+                /**
+                 * Show load more button
+                 */
+                loadMore: {
+                    type: Boolean,
+                    value: false
+                },
+
+                _loadMore: {
+                    type: Boolean,
+                    value: false
+                },
+
+                _computedHeaders: {
+                    type: Object,
+                    computed: '_computeHeaders(authorizationToken)'
+                },
+
+                _applications: {
+                    type: Array,
+                    value: function () {
+                        return [];
+                    },
+                    notify: true
+                },
+
+                _allApplications: {
+                    type: Array,
+                    value: function () {
+                        return [];
+                    }
+                },
+
+                _searchedApplications: {
+                    type: Array,
+                    value: function () {
+                        return [];
+                    }
+                },
+
+                _applicationsEmpty: {
+                    type: Boolean,
+                    value: false
+                },
+
+                _message: {
+                    type: String,
+                    value: ''
+                },
+
+                _currentUrl: {
+                    type: String,
+                    notify: true
+                },
+
+                _next: {
+                    type: String
+                },
+
+                _totalApplications: {
+                    type: Number,
+                    value: 0
+                },
+
+                _renderedIndex: {
+                    type: Number,
+                    value: -1
+                },
+
+                /**
+                 * Search term.
+                 */
+                _filterTerm: {
+                    type: String,
+                    value: ''
+                },
+
+                /**
+                 * Search term.
+                 */
+                _filterOrgunit: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    }
+                },
+
+                /**
+                 * Animation for loader appearance.
+                 */
+                animationConfig: {
+                    value: function() {
+                        return {
+                            'entry': {
+                                name: 'transform-animation',
+                                transformOrigin: '1 1',
+                                transformFrom: 'scale(1)',
+                                transformTo: 'scale(1.08)',
+                                node: {},
+                                timing: {
+                                    delay: 200,
+                                    duration: 500
+                                }
+                            }
+                        }
+                    }
+                },
+
+                _iconsPushList: {
+                    type: Array,
+                    value: function() {
+                        return [];
+                    }
+                }
+            },
+
+            behaviors: [
+                Polymer.NeonAnimationRunnerBehavior
+            ],
+
+            listeners: {
+                'applications-api-changed': '_loadApplications'
+            },
+
+            ready: function () {
+
+                if (this.applicationsApi && this.applicationsApi != '') {
+                    this._currentUrl = this.applicationsApi + '?page=1&extended=1&limit=' + this.size;
+                }
+
+                if (this.company) {
+
+                    this.animationConfig.entry = {
+                        name: 'cascaded-animation',
+                        animation: 'slide-from-left-animation',
+                        nodes: [],
+                        nodeDelay: 50,
+                        timing: {
+                            duration: 300
+                        }
+                    };
+
+                }
+            },
+
+            _computeSearchApplicationsApi: function(applicationsApi, term) {
+                return applicationsApi + '?extended=1&limit=100&term=' + term;
+            },
+
+            _loadApplications: function() {
+                var iconsPushList = this._iconsPushList;
+
+                if (iconsPushList.length > 0) {
+                    for (var c in iconsPushList) {
+                        clearTimeout(iconsPushList[c]);
+                    }
+                }
+
+                this.$$('#paperProgress').hidden = false;
+                this._loadMore = false;
+                this._currentUrl = this.applicationsApi + '?page=1&extended=1&limit=' + this.size;
+                this.set('_applications', []);
+                this.set('_allApplications', []);
+            },
+
+            _loadMoreApps: function () {
+                this.$$('#loadMoreProgress').hidden = false;
+                this._currentUrl = this._next;
+            },
+
+            _onError: function() {
+                this._message = 'We couldn\'t load applications at the moment. Please try again in a minute.';
+                this._handleEmptyLoad();
+            },
+
+            _handleEmptyLoad: function() {
+                this._applicationsEmpty = true;
+
+                /**
+                 * Fired when there are no applications.
+                 *
+                 * @event empty-load
+                 */
+                this.fire('empty-load');
+
+                this._hideProgressBar();
+            },
+
+            _onResponse: function(e) {
+                var me = this,
+                    response = e.detail.response,
+                    icons = response.icons ? response.icons : response.applications,
+                    meta = response.meta,
+                    iconsCount = icons.length - 1;
+
+                this._totalApplications = meta.total;
+                this._next = meta.next + '&limit=' + this.size;
+
+                if (meta.total === 0) {
+                    this._message = 'There are no applications.';
+                    this._handleEmptyLoad();
+                    return false;
+                }
+
+                this._applicationsEmpty = false;
+                this._message = '';
+
+                icons.forEach(function(el, index) {
+
+                    var iconPushItem = setTimeout( function() {
+
+                        if (this.company) {
+                            el.selected = false;
+                        }
+
+                        this.push('_allApplications', el);
+                        this.push('_applications', el);
+
+                        if (index == iconsCount) {
+
+                            this._loadMore = me.loadMore;
+
+                            if (this._applications.length === meta.total) {
+                                this._loadMore = false;
+                            }
+
+                            this._hideProgressBar();
+                            this._hideLoadMoreProgressBar();
+
+                            /**
+                             * Fired when applications are loaded
+                             *
+                             * @event loaded
+                             * @param {Object} application[] [Application](https://developers.appsco.com/api/dashboard/id/icons/id)
+                             */
+                            this.fire('loaded', {
+                                applications: e.detail.response.icons
+                            });
+
+                            if (this._filterOrgunit.selected) {
+                                this._filterApplicationsByOrgunit();
+                            }
+
+                            this._iconsPushList = [];
+                        }
+
+                    }.bind(this), (index + 1) * 30 );
+
+                    this._iconsPushList.push(iconPushItem);
+
+                }.bind(this));
+            },
+
+            _computeHeaders: function (authorizationToken) {
+                return {
+                    'Authorization': 'token ' + authorizationToken
+                }
+            },
+
+            _onApplicationAction: function(event) {
+                var _applications = JSON.parse(JSON.stringify(this._applications)),
+                    _length = _applications.length,
+                    allApplications = JSON.parse(JSON.stringify(this._allApplications)),
+                    allLength = allApplications.length,
+                    selectedApplication = event.detail.application;
+
+                for (var j = 0; j < _length; j++) {
+                    if (selectedApplication.self === _applications[j].self) {
+                        _applications[j].selected = selectedApplication.selected;
+                        break;
+                    }
+                }
+
+                for (var k = 0; k < allLength; k++) {
+                    if (selectedApplication.self === allApplications[k].self) {
+                        allApplications[k].selected = selectedApplication.selected;
+                        break;
+                    }
+                }
+
+                this.set('_applications', []);
+                this.set('_applications', _applications);
+
+                this.set('_allApplications', []);
+                this.set('_allApplications', allApplications);
+            },
+
+            getFirstSelectedApplication: function() {
+                var _applications = JSON.parse(JSON.stringify(this._applications)),
+                    _length = _applications.length;
+
+                for (var j = 0; j < _length; j++) {
+                    if (_applications[j].selected) {
+                        return _applications[j];
+                    }
+                }
+
+                return false;
+            },
+
+            getSelectedApplications: function() {
+                var allApplications = this._allApplications,
+                    allLength = allApplications.length,
+                    selectedApplications = [];
+
+                for (var i = 0; i < allLength; i++) {
+                    if (allApplications[i].selected) {
+                        selectedApplications.push(allApplications[i]);
+                    }
+                }
+
+                return selectedApplications;
+            },
+
+            addApplications: function(applications) {
+                var length = applications.length,
+                    allApplications = this._allApplications,
+                    allLength = allApplications.length;
+
+                this._applicationsEmpty = false;
+                this._message = '';
+                this._renderedIndex = length - 1;
+
+                for (var i = 0; i < length; i++) {
+                    var application = applications[i];
+
+                    if (0 === allLength) {
+
+                        if (this.company) {
+                            application.selected = false;
+                        }
+
+                        this.push('_applications', application);
+                        this.push('_allApplications', application);
+
+                        this._totalApplications++;
+                    }
+                    else {
+
+                        for (var j = 0; j < allLength; j++) {
+
+                            if (allApplications[j].self === application.self) {
+                                break;
+                            }
+                            else if (j === allLength - 1) {
+
+                                if (this.company) {
+                                    application.selected = false;
+                                }
+
+                                this.unshift('_applications', application);
+                                this.unshift('_allApplications', application);
+
+                                this._totalApplications++;
+                            }
+
+                        }
+                    }
+                }
+            },
+
+            modifyApplications: function(applications) {
+                var _applications = JSON.parse(JSON.stringify(this._applications)),
+                    _length = _applications.length,
+                    allApplications = JSON.parse(JSON.stringify(this._allApplications)),
+                    allLength = allApplications.length,
+                    lengthModify = applications.length;
+
+                for (var i = 0; i < lengthModify; i++) {
+                    var application = applications[i];
+
+                    for (var j = 0; j < _length; j++) {
+                        if (application.self === _applications[j].self) {
+                            _applications[j] = application;
+                            break;
+                        }
+                    }
+
+                    for (var k = 0; k < allLength; k++) {
+                        if (application.self === allApplications[k].self) {
+                            application.selected = allApplications[k].selected;
+                            allApplications[k] = application;
+                            break;
+                        }
+                    }
+
+                }
+
+                this.set('_applications', []);
+                this.set('_applications', _applications);
+
+                this.set('_allApplications', []);
+                this.set('_allApplications', allApplications);
+            },
+
+            reloadApplications: function() {
+                this.set('_currentUrl', '');
+                this._loadApplications();
+            },
+
+            removeApplications: function(applications) {
+                var _applications = JSON.parse(JSON.stringify(this._applications)),
+                    _length = _applications.length,
+                    allApplications = JSON.parse(JSON.stringify(this._allApplications)),
+                    allLength = allApplications.length,
+                    lengthModify = applications.length;
+
+                for (var i = 0; i < lengthModify; i++) {
+                    var application = applications[i];
+
+                    for (var j = 0; j < _length; j++) {
+                        if (application.self === _applications[j].self) {
+                            _applications.splice(j, 1);
+                            break;
+                        }
+                    }
+
+                    for (var k = 0; k < allLength; k++) {
+                        if (application.self === allApplications[k].self) {
+                            allApplications.splice(k, 1);
+                            break;
+                        }
+                    }
+
+                    this._totalApplications--;
+
+                }
+
+
+                this.set('_applications', []);
+                this.set('_applications', _applications);
+
+                this.set('_allApplications', []);
+                this.set('_allApplications', allApplications);
+
+                this.fire('applications-removed', {
+                    applications: applications
+                });
+
+                if (0 === this._applications.length) {
+                    this._message = 'You have removed all applications. Please add new ones.';
+                    this._handleEmptyLoad();
+                }
+            },
+
+            getFirstApplication: function() {
+                return (this._applications.length > 0) ? this._applications[0] : {};
+            },
+
+            getAllApplications: function() {
+                return this._applications;
+            },
+
+            selectAllApplications: function(select) {
+                var allApplications = this._allApplications,
+                    allLength = allApplications.length;
+
+                for (var j = 0; j < allLength; j++) {
+                    var application = allApplications[j];
+
+                    application.selected = select;
+
+                    allApplications[j] = {};
+                    allApplications[j] = application;
+                }
+            },
+
+            setOrgunit: function(orgunit) {
+                var _applications = JSON.parse(JSON.stringify(this._applications)),
+                    _length = _applications.length,
+                    allApplications = JSON.parse(JSON.stringify(this._allApplications)),
+                    allLength = allApplications.length;
+
+                for (var i = 0; i < _length; i++) {
+                    var application = _applications[i],
+                        orgunits = application.org_units,
+                        length = orgunits.length;
+
+                    for (var j = 0; j < length; j++) {
+
+                        if (orgunit.alias === orgunits[j].alias) {
+                            _applications[i].org_units[j].name = orgunit.name;
+                            break;
+                        }
+                    }
+                }
+
+                for (var j = 0; j < allLength; j++) {
+                    var application = allApplications[j],
+                        orgunits = application.org_units,
+                        length = orgunits.length;
+
+                    for (var k = 0; k < length; k++) {
+                        if (orgunit.alias === orgunits[k].alias) {
+                            allApplications[j].org_units[k].name = orgunit.name;
+                            break;
+                        }
+                    }
+                }
+
+                this.set('_applications', []);
+                this.set('_applications', _applications);
+
+                this.set('_allApplications', []);
+                this.set('_allApplications', allApplications);
+            },
+
+            _setSearchApplicationsResult: function() {
+                this._applicationsEmpty = (0 === this._searchedApplications.length);
+
+                if (this._applicationsEmpty) {
+                    this._message = 'There are no applications with asked term.';
+                }
+                else {
+                    this.set('_applications', this._searchedApplications);
+                    this._hideLoadMoreAction();
+                    this._message = '';
+                }
+            },
+
+            filterByTerm: function(term) {
+                this._filterTerm = term;
+                this._filterByTerm();
+            },
+
+            filterByOrgunit: function(orgunitData) {
+                this._filterOrgunit = orgunitData;
+                this._filterByOrgunit();
+            },
+
+            _getApplicationsByTerm: function() {
+
+                return new Promise(function(resolve, reject) {
+                    var request = document.createElement('iron-request'),
+                        options = {
+                            url: this._searchApplicationsApi,
+                            method: 'GET',
+                            handleAs: 'json',
+                            headers: this._computedHeaders
+                        };
+
+                    request.send(options).then(function() {
+
+                        if (request.response) {
+                            resolve(this.company ? request.response.applications : request.response.icons);
+                        }
+
+                    }.bind(this), function() {
+                        reject(request.response.message);
+                    });
+                }.bind(this));
+            },
+
+            _filterByTerm: function() {
+                var term = this._filterTerm,
+                    length = this._allApplications.length,
+                    filterOrgunit = this._filterOrgunit;
+
+                if (term.length < 3) {
+                    this.set('_searchedApplications', []);
+
+                    if (filterOrgunit.selected) {
+                        this._filterByOrgunit();
+                    }
+                    else {
+                        this._message = '';
+                        this._applicationsEmpty = false;
+                        this.set('_applications', JSON.parse(JSON.stringify(this._allApplications)));
+                        this._setLoadMoreAction();
+                    }
+
+                    this.fire('filter-done');
+                    return false;
+                }
+
+                this._showProgressBar();
+                this._hideLoadMoreAction();
+
+                this._getApplicationsByTerm().then(function(applications) {
+                    var applicationsLength = applications.length;
+
+                    this.set('_searchedApplications', applications);
+                    this._setSearchApplicationsResult();
+
+                    if (this._applicationsEmpty) {
+                        this.set('_searchedApplications', []);
+                        this.fire('filter-done');
+                        return false;
+                    }
+
+                    if (filterOrgunit.selected) {
+                        this._filterByOrgunit();
+                    }
+                    else {
+                        this.set('_applications', []);
+
+                        applications.forEach(function(elem, index) {
+
+                            for (var i = 0; i < length; i++) {
+                                var application = this._allApplications[i];
+
+                                if (elem.self === application.self) {
+                                    this.push('_applications', application);
+                                    break;
+                                }
+                                else {
+
+                                    if (i === length - 1) {
+                                        this.push('_applications', elem);
+                                    }
+                                }
+                            }
+
+                            if (index === applicationsLength - 1) {
+                                this._hideProgressBar();
+                                this.fire('filter-done');
+                            }
+
+                        }.bind(this));
+                    }
+
+                }.bind(this));
+            },
+
+            _filterByOrgunit: function() {
+                var filterOrgunit = this._filterOrgunit,
+                    orgunit = filterOrgunit.orgUnit,
+                    selected = filterOrgunit.selected,
+                    filterTerm = this._filterTerm,
+                    allLength = this._allApplications.length;
+
+                this._showProgressBar();
+                this._applicationsEmpty = false;
+                this._message = '';
+
+                if (!selected) {
+                    this._setLoadMoreAction();
+                    !filterTerm.length ? this.set('_applications', JSON.parse(JSON.stringify(this._allApplications))) : this._setSearchApplicationsResult();
+                    this.set('_filterOrgunit', {});
+                }
+                else {
+                    this._hideLoadMoreAction();
+                    this.set('_applications', []);
+
+                    if (this._searchedApplications.length > 0) {
+                        var searchedApplications = this._searchedApplications,
+                            searchedApplicationsLength = searchedApplications.length,
+                            responseApplications = [],
+                            responseApplicationsLength;
+
+                        for (var i = 0; i < searchedApplicationsLength; i++) {
+                            var application = searchedApplications[i],
+                                orgunits = application.org_units,
+                                orgunitsLength = orgunits.length;
+
+                            for (var j = 0; j < allLength; j++) {
+                                var app = this._allApplications[j];
+
+                                if (application.self === app.self) {
+                                    responseApplications.push(app);
+                                    break;
+                                }
+                                else {
+
+                                    if (j === allLength - 1) {
+                                        responseApplications.push(application);
+                                    }
+                                }
+                            }
+                        }
+
+                        responseApplicationsLength = responseApplications.length;
+
+                        for (var k = 0; k < responseApplicationsLength; k++) {
+                            var application = responseApplications[k],
+                                orgunits = application.org_units,
+                                orgunitsLength = orgunits.length;
+
+                            for (var j = 0; j < orgunitsLength; j++) {
+
+                                if (orgunits[j].alias === orgunit.alias) {
+                                    this.push('_applications', application);
+                                    break;
+                                }
+
+                            }
+
+                            if (k === responseApplicationsLength -1) {
+                                this._hideProgressBar();
+                            }
+                        }
+                    }
+                    else {
+
+                        for (var i = 0; i < allLength; i++) {
+                            var application = this._allApplications[i],
+                                orgunits = application.org_units,
+                                orgunitsLength = orgunits.length;
+
+                            for (var j = 0; j < orgunitsLength; j++) {
+
+                                if (orgunits[j].alias === orgunit.alias) {
+                                    this.push('_applications', application);
+                                    break;
+                                }
+
+                            }
+
+                            if (i === allLength -1) {
+                                this._hideProgressBar();
+                            }
+                        }
+                    }
+
+                    if (this._applications.length === 0) {
+                        this._message = 'There are no applications within ' + orgunit.name +' organization unit.';
+                        this._handleEmptyLoad();
+                    }
+
+                }
+            },
+
+            _setLoadMoreAction: function() {
+
+                if (this._allApplications.length < this._totalApplications) {
+                    this._loadMore = true;
+                }
+                else {
+                    this._loadMore = false;
+                }
+
+            },
+
+            _hideLoadMoreAction: function() {
+                this._loadMore = false;
+            },
+
+            _showProgressBar: function() {
+                this.$$('#paperProgress').hidden = false;
+            },
+
+            _hideProgressBar: function() {
+
+                setTimeout(function() {
+                    this.$$('#paperProgress').hidden = true;
+                }.bind(this), 300);
+
+            },
+
+            _showLoadMoreProgressBar: function() {
+                this.$$('#loadMoreProgress').hidden = false;
+            },
+
+            _hideLoadMoreProgressBar: function() {
+
+                setTimeout(function() {
+                    this.$$('#loadMoreProgress').hidden = true;
+                }.bind(this), 300);
+
+            },
+
+            _onItemsDomChange: function() {
+                var index = this._renderedIndex;
+
+                if (-1 != index && this.company) {
+
+                    this.animationConfig.entry.nodes = [];
+
+                    for (var i = 0; i <= index; i++) {
+                        var addedItem = this.$$('#appscoApplicationItem_' + i);
+                        this.animationConfig.entry.nodes.push(addedItem);
+                    }
+
+                    this.playAnimation('entry');
+
+                    this._renderedIndex = -1;
+                }
+
+            },
+
+            initialize: function() {
+                this._applicationsEmpty = (0 === this._totalApplications);
+
+                if (this._applicationsEmpty) {
+                    this._message = 'There are no applications.';
+                }
+            },
+
+            reset: function() {
+                this._message = '';
+                this._applicationsEmpty = false;
+                this.set('_applications', this._allApplications);
+                this.set('_searchedApplications', []);
+                this._filterTerm = '';
+                this._filterOrgunit = {};
+
+                if (this.company) {
+                    this.selectAllApplications(false);
+                }
+            }
+        });
+    </script>
+</dom-module>

@@ -344,12 +344,17 @@ Custom property | Description | Default
                 }
             },
 
-            _loadAccounts: function () {
+            _executePreloadActions: function() {
                 this._showProgressBar();
                 this._loadMore = false;
                 this.set('_accounts', []);
                 this.set('_allAccounts', []);
                 this.set('_searchedAccounts', []);
+            },
+
+            _loadAccounts: function () {
+                this._executePreloadActions();
+                this.$.accountsApiRequest.url = this._accountsApiUrl;
                 this.$.accountsApiRequest.generateRequest();
             },
 
@@ -388,7 +393,7 @@ Custom property | Description | Default
                 this._next = meta.next + "&limit=" + this.size;
 
                 if (meta.total === 0) {
-                    this._message = 'Please add accounts to your company.';
+                    this._message = 'There are no asked accounts.';
                     this._handleEmptyLoad();
                     return false;
                 }
@@ -479,6 +484,12 @@ Custom property | Description | Default
 
                 this.set('_allAccounts', []);
                 this.set('_allAccounts', allAccounts);
+            },
+
+            loadCompanyRolesForLabel: function(label) {
+                this._executePreloadActions();
+                this.$.accountsApiRequest.url = label.meta.company_roles + '?extended=1';
+                this.$.accountsApiRequest.generateRequest();
             },
 
             getFirstSelectedAccount: function() {

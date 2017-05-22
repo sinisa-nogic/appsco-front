@@ -1,0 +1,537 @@
+<link rel="import" href="../../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../../bower_components/iron-flex-layout/iron-flex-layout.html">
+<link rel="import" href="../../../bower_components/paper-styles/typography.html">
+<link rel="import" href="../../../bower_components/paper-styles/shadow.html">
+<link rel="import" href="../../../bower_components/paper-button/paper-button.html">
+<link rel="import" href="../../../bower_components/iron-image/iron-image.html">
+<link rel="import" href="../../../bower_components/iron-ajax/iron-request.html">
+<link rel="import" href="../../../bower_components/paper-dialog/paper-dialog.html">
+<link rel="import" href="../../../bower_components/paper-dialog-scrollable/paper-dialog-scrollable.html">
+<link rel="import" href="../../../bower_components/neon-animation/animations/scale-up-animation.html">
+
+<link rel="import" href="appsco-loader.html">
+<link rel="import" href="appsco-form-error.html">
+<link rel="import" href="appsco-search.html">
+<link rel="import" href="appsco-label-card.html">
+
+<!--
+`appsco-resource-add-labels`
+Provides functionality of adding resource item to labels.
+
+    <appsco-resource-add-labels items="[]" 
+                                authorization-token="" 
+                                labels-api="" 
+                                size=""></appsco-resource-add-labels>
+
+-->
+
+<dom-module id="appsco-resource-add-labels">
+    <template>
+        <style>
+            :host {
+                display: block;
+                position: relative;
+            }
+            :host paper-dialog {
+                width: 670px;
+                top: 20vh;
+                @apply(--appsco-paper-dialog);
+            }
+            :host paper-dialog-scrollable > * {
+                @apply(--paper-dialog-scrollable-child);
+            }
+            :host .dialog-loader {
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+            appsco-search {
+                margin-bottom: 10px;
+            }
+            .dialog-container {
+                padding-bottom: 20px;
+            }
+            .label-list {
+                @apply(--layout-horizontal);
+                @apply(--layout-wrap);
+                padding: 2px;
+                margin-right: -8px;
+            }
+            appsco-label-card {
+                margin-right: 6px;
+                margin-bottom: 6px;
+            }
+            .selected-label {
+                --label-card: {
+                    padding-right: 10px;
+                    width: 136px;
+                };
+            }
+            :host .message {
+                margin: 0;
+                color: var(--secondary-text-color);
+                font-style: italic;
+                @apply(--paper-font-body2);
+                @apply(--info-message);
+            }
+            :host .buttons paper-button {
+                @apply(--paper-dialog-button);
+            }
+            :host .buttons paper-button[dialog-confirm] {
+                @apply(--paper-dialog-confirm-button);
+            }
+            :host .buttons paper-button[dialog-dismiss] {
+                @apply(--paper-dialog-dismiss-button);
+            }
+            .link-button {
+                padding: 0;
+                margin: 0;
+                min-width: initial;
+                @apply(--link-button);
+            }
+        </style>
+
+        <paper-dialog id="dialog"
+                      with-backdrop
+                      entry-animation="scale-up-animation"
+                      exit-animation="fade-out-animation"
+                      on-iron-overlay-opened="_onDialogOpened"
+                      on-iron-overlay-closed="_onDialogClosed">
+
+            <h2>Share to labels</h2>
+
+            <appsco-loader class="dialog-loader"
+                           active="[[ _dialogLoader ]]"
+                           loader-alt="Appsco is processing request"
+                           multi-color></appsco-loader>
+
+            <paper-dialog-scrollable>
+                <div class="dialog-container">
+
+                    <div class="label-list">
+
+                        <appsco-form-error message="[[ _error ]]"></appsco-form-error>
+
+                        <template is="dom-repeat" items="[[ _selectedLabels ]]">
+                            <appsco-label-card class="selected-label"
+                                               label="[[ item ]]"
+                                               remove-action
+                                               on-selected="_onRemoveSelectedLabel"></appsco-label-card>
+                        </template>
+                    </div>
+
+                    <appsco-search id="appscoSearch"
+                                   label="Search labels"
+                                   float-label
+                                   on-search="_onSearch"
+                                   on-search-clear="_onSearchClear"></appsco-search>
+
+                    <div class="label-list">
+
+                        <appsco-loader active="[[ _searchLoader ]]"
+                                       loader-alt="Appsco is processing request"
+                                       multi-color></appsco-loader>
+
+                        <template is="dom-repeat" items="[[ _searchList ]]">
+                            <appsco-label-card label="[[ item ]]"
+                                                 on-selected="_onLabelSelected"></appsco-label-card>
+                        </template>
+
+                        <template is="dom-if" if="[[ _message ]]">
+                            <p class="message">
+                                [[ _message ]]
+
+                                <template is="dom-if" if="[[ _showCreateNewLabelAction ]]">
+                                    <paper-button class="link-button"
+                                                  on-tap="_onCreateLabelAction">Create it</paper-button>
+                                </template>
+                            </p>
+                        </template>
+                    </div>
+                </div>
+            </paper-dialog-scrollable>
+
+            <div class="buttons">
+                <paper-button dialog-dismiss>Cancel</paper-button>
+                <paper-button autofocus on-tap="_onAddResourcesToLabelsAction">Share</paper-button>
+            </div>
+        </paper-dialog>
+
+    </template>
+    <script>
+        Polymer({
+
+            is: 'appsco-resource-add-labels',
+
+            properties: {
+
+                /**
+                 * Items to add to labels.
+                 */
+                items: {
+                    type: Array,
+                    value: function() {
+                        return [];
+                    }
+                },
+
+                /**
+                 * Authorization token.
+                 */
+                authorizationToken: {
+                    type: String,
+                    value: ''
+                },
+
+                /**
+                 * Labels API link
+                 */
+                labelsApi: {
+                    type: String,
+                    value: ''
+                },
+
+                /**
+                 * Number of labels to load show in search result.
+                 */
+                size: {
+                    type: Number,
+                    value: 8
+                },
+
+                resourceType: {
+                    type: String,
+                    value: ''
+                },
+
+                _headers: {
+                    type: Object,
+                    computed: '_computeHeaders(authorizationToken)'
+                },
+
+                /**
+                 * Applications which are shared.
+                 * This array is populated from sharing API response.
+                 */
+                _responseItems: {
+                    type: Array,
+                    value: function() {
+                        return [];
+                    }
+                },
+
+                /**
+                 * Label list from search.
+                 */
+                _searchList: {
+                    type: Array,
+                    value: function() {
+                        return [];
+                    }
+                },
+
+                /**
+                 * Message to display if there is no search result.
+                 */
+                _message: {
+                    type: String
+                },
+
+                /**
+                 * Indicates if Create New Label action should be displayed.
+                 */
+                _showCreateNewLabelAction: {
+                    type: Boolean,
+                    value: false
+                },
+
+                /**
+                 * Selected labels from search list.
+                 */
+                _selectedLabels: {
+                    type: Array,
+                    value: function() {
+                        return [];
+                    }
+                },
+
+                /**
+                 * Indicates if search loader should be displayed or not.
+                 */
+                _searchLoader: {
+                    type: Boolean,
+                    value: false
+                },
+
+                /**
+                 * Indicates if dialog loader should be displayed or not.
+                 */
+                _dialogLoader: {
+                    type: Boolean,
+                    value: false
+                }
+
+            },
+
+            _computeHeaders: function (authorizationToken) {
+                return {
+                    'Authorization': 'token ' + authorizationToken,
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                }
+            },
+
+            /**
+             * Toggles dialog.
+             */
+            toggle: function() {
+                this.$.dialog.toggle();
+            },
+
+            /**
+             * Opens dialog.
+             */
+            open: function() {
+                this.$.dialog.open();
+            },
+
+            /**
+             * Closes dialog.
+             */
+            close: function() {
+                this.$.dialog.close();
+            },
+
+            setItems: function(items) {
+                this.items = items;
+            },
+
+            setType: function(type) {
+                this.resourceType = type;
+            },
+
+            /**
+             * Called after dialog has been opened.
+             *
+             * @private
+             */
+            _onDialogOpened: function() {
+                this.$.appscoSearch.setup();
+            },
+
+            /**
+             * Called after dialog has been closed.
+             *
+             * @private
+             */
+            _onDialogClosed: function() {
+                this._reset();
+                this.set('_selectedLabels', []);
+            },
+            
+            _showDialogLoader: function() {
+                this._dialogLoader = true;
+            },
+            
+            _hideDialogLoader: function() {
+                this._dialogLoader = false;
+            },
+
+            _showSearchLoader: function() {
+                this._searchLoader = true;
+            },
+
+            _hideSearchLoader: function() {
+                this._searchLoader = false;
+            },
+
+            /**
+             * Gets labels by term.
+             *
+             * @param {Object} event
+             * @private
+             */
+            _onSearch: function(event) {
+                var searchValue = event.detail.term,
+                    searchLength = searchValue.length;
+
+                this._showSearchLoader();
+                this._message = '';
+                this._error = '';
+                this._showCreateNewLabelAction = false;
+
+                if (searchLength === 0) {
+                    this._message = '';
+                    this._showCreateNewLabelAction = false;
+                    this._hideSearchLoader();
+                    this.set('_searchList', []);
+                    return false;
+                }
+
+                if (searchLength < 3) {
+                    this._message = 'Please type three or more letters.';
+                    this._hideSearchLoader();
+                    this.set('_searchList', []);
+                    return false;
+                }
+
+                var request = document.createElement('iron-request'),
+                    url = this.labelsApi + '?extended=1&limit=' + this.size + '&term=' + searchValue;
+
+                this._message = '';
+
+                var options = {
+                    url: url,
+                    method: 'GET',
+                    handleAs: 'json',
+                    headers: this._headers
+                };
+
+                request.send(options).then(function() {
+                    var labels = request.response.company_labels;
+
+                    if (labels && labels.length > 0) {
+                        this.set('_searchList', labels);
+                    }
+                    else {
+                        this.set('_searchList', []);
+                        this._message = 'Label with name \'' + decodeURIComponent(searchValue) + '\' does not exist.';
+                        this._showCreateNewLabelAction = true;
+                    }
+
+                    this._hideSearchLoader();
+                }.bind(this));
+            },
+
+            _onSearchClear: function() {
+                this._reset();
+            },
+
+            _onCreateLabelAction: function() {
+                var name = this.$.appscoSearch.getValue(),
+                    request = document.createElement('iron-request'),
+                    url = this.labelsApi,
+                    options = {
+                        url: url,
+                        method: 'POST',
+                        handleAs: 'json',
+                        headers: this._headers,
+                        body: 'company_label[name]=' + encodeURIComponent(name)
+                    };
+                
+                this._showDialogLoader();
+
+                request.send(options).then(function() {
+                    var label = request.response;
+
+                    if (label && label.alias) {
+                        this.push('_selectedLabels', label);
+                        this._message = '';
+                    }
+
+                    this._showCreateNewLabelAction = false;
+                    this._hideDialogLoader();
+
+                    this.fire('label-added', {
+                        label: label
+                    });
+                    
+                }.bind(this), function() {
+                    this._hideDialogLoader();
+                    this._error = 'Label with name \'' + name + '\' could not be created.';
+                }.bind(this));
+            },
+
+            /**
+             * Called after label has been selected from search list.
+             *
+             * @param {Object} event
+             * @private
+             */
+            _onLabelSelected: function(event) {
+                this._error = '';
+                this.push('_selectedLabels', event.model.item);
+                this.splice('_searchList', this._searchList.indexOf(event.model.item), 1);
+            },
+
+            _onRemoveSelectedLabel: function(event) {
+                this.push('_searchList', event.model.item);
+                this.splice('_selectedLabels', this._selectedLabels.indexOf(event.model.item), 1);
+            },
+
+            _addItems: function(item, more) {
+                var labels = this._selectedLabels,
+                    length = labels.length - 1,
+                    request = document.createElement('iron-request'),
+                    options = {
+                        url: item.self + '/labels',
+                        method: 'POST',
+                        handleAs: 'json',
+                        headers: this._headers
+                    },
+                    body = '';
+
+                for (var i = 0; i <= length; i++) {
+                    var next = (i === length) ? '' : '&';
+                    body += 'labels[]=' + encodeURIComponent(labels[i].meta.self) + next;
+                }
+
+                options.body = body;
+
+                request.send(options).then(function() {
+
+                    this.push('_responseItems', request.response);
+
+                    if (more) {
+                        this.$.dialog.close();
+
+                        /**
+                         * Fired when items have been added to labels.
+                         *
+                         * @event items-added-to-labels
+                         */
+                        this.fire('items-added-to-labels', {
+                            items: this._responseItems,
+                            resourceType: this.resourceType
+                        });
+
+                        this.set('_selectedLabels', []);
+                        this.set('_responseItems', []);
+                        this._hideDialogLoader();
+                    }
+                }.bind(this));
+            },
+
+            _onAddResourcesToLabelsAction: function() {
+
+                if (0 === this._selectedLabels.length) {
+                    this._error = 'Please add at least one label to share ' + this.itemType + ' to.';
+                    return false;
+                }
+
+                var items = this.items,
+                    length = items.length - 1;
+
+                this._showDialogLoader();
+
+                for (var i = 0; i <= length; i++) {
+
+                    if (i === length) {
+                        this._addItems(items[i], true);
+                        return false;
+                    }
+
+                    this._addItems(items[i], false);
+
+                }
+            },
+
+            _reset: function() {
+                this.$.appscoSearch.reset();
+                this.set('_searchList', []);
+                this._hideSearchLoader();
+                this._hideDialogLoader();
+                this._error = '';
+                this._message = '';
+            }
+        });
+    </script>
+</dom-module>

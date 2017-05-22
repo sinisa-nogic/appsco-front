@@ -1,0 +1,171 @@
+<link rel="import" href="../polymer/polymer.html">
+
+<link rel="import" href="../paper-button/paper-button.html">
+<link rel="import" href="../iron-ajax/iron-request.html">
+
+<link rel="import" href="../paper-dialog/paper-dialog.html">
+<link rel="import" href="../neon-animation/animations/fade-out-animation.html">
+<link rel="import" href="../neon-animation/animations/scale-up-animation.html">
+
+<link rel="import" href="../appsco-components/appsco-loader.html">
+<link rel="import" href="../appsco-components/appsco-form-error.html">
+
+<!--
+`appsco-orgunit-remove`
+Shows dialog screen with confirmation for removal of orgunit.
+
+    <appsco-orgunit-remove>
+    </appsco-orgunit-remove>
+
+### Styling
+
+`<appsco-orgunit-remove>` provides the following custom properties and mixins for styling:
+
+Custom property | Description | Default
+----------------|-------------|----------
+`--appsco-orgunit-remove` | Mixin for the root element | `{}`
+
+@demo demo/appsco-orgunit-remove.html
+-->
+
+<dom-module id="appsco-orgunit-remove">
+    <template>
+        <style>
+            :host {
+                display: block;
+                position: relative;
+            @apply(--appsco-orgunit-remove);
+            }
+            :host paper-dialog {
+                width: 670px;
+            }
+            :host .buttons paper-button {
+            @apply(--paper-dialog-button);
+            }
+            :host .buttons paper-button[dialog-confirm] {
+            @apply(--paper-dialog-confirm-button);
+            }
+            :host .buttons paper-button[dialog-dismiss] {
+            @apply(--paper-dialog-dismiss-button);
+            }
+        </style>
+        <paper-dialog
+                with-backdrop
+                id="removeDialog"
+                entry-animation="scale-up-animation"
+                exit-animation="fade-out-animation"
+                on-iron-overlay-closed="_onDialogClosed">
+
+            <div class="remove-container">
+
+                <appsco-loader active="[[ _loader ]]" loader-alt="Appsco is removing organization unit" multi-color></appsco-loader>
+
+                <h2>Remove organization unit [[ orgUnit.name ]]</h2>
+
+                <template is="dom-if" if="[[ _error ]]">
+                    <appsco-form-error message="[[ _error ]]"></appsco-form-error>
+                </template>
+
+                <p>Your applications and users that are assigned to [[ orgUnit.name ]] will not be removed.</p>
+            </div>
+
+            <div class="buttons">
+                <paper-button dialog-dismiss>Cancel</paper-button>
+                <paper-button autofocus on-tap="_remove">Remove</paper-button>
+            </div>
+        </paper-dialog>
+
+    </template>
+    <script>
+        Polymer({
+
+            is: 'appsco-orgunit-remove',
+
+            properties: {
+                /**
+                 * Authorization token that is used to preform remove operation
+                 */
+                authorizationToken: {
+                    type: String,
+                    value: ''
+                },
+
+                /**
+                 * [OrgUnit]() that is to be removed
+                 */
+                orgUnit: {
+                    type: Object,
+                    value: function() { return {}; },
+                    notify: true
+                },
+
+                /**
+                 * Display loader icon
+                 *
+                 * @private
+                 */
+                _loader: {
+                    type: Boolean,
+                    value: false
+                },
+
+                _error: {
+                    type: String,
+                    value: ''
+                }
+            },
+
+            /**
+             * Open dialog
+             */
+            open: function () {
+                this.$.removeDialog.open();
+            },
+
+            /**
+             * Open dialog
+             */
+            _onDialogClosed: function () {
+                this._error = '';
+                this._loader = false;
+            },
+
+            /**
+             * Preform remove operation
+             *
+             * @private
+             */
+            _remove: function() {
+                var appRequest = document.createElement('iron-request');
+
+                this._loader = true;
+
+                appRequest.send({
+                    url: this.orgUnit.self,
+                    method: "DELETE",
+                    handleAs: 'json',
+                    headers: {
+                        "Authorization": "token " + this.authorizationToken
+                    }
+                }).then(function() {
+
+                    /**
+                     * Fired when organization unit is removed
+                     *
+                     * @event orgunit-removed
+                     * @param {Object} orgUnit [orgUnit]()
+                     *                              for which event is fired
+                     */
+                    this.fire('orgunit-removed', {
+                        orgUnit: this.orgUnit
+                    });
+
+                    this.$.removeDialog.close();
+                }.bind(this), function() {
+                    this._loader = false;
+                    this._error = 'It is not allowed to remove organization unit which have applications or accounts assigned to it.';
+                }.bind(this));
+            }
+        });
+    </script>
+</dom-module>

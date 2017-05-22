@@ -1,0 +1,557 @@
+<link rel="import" href="../polymer/polymer.html">
+<link rel="import" href="../iron-flex-layout/iron-flex-layout.html">
+<link rel="import" href="../paper-item/paper-item.html">
+<link rel="import" href="../paper-listbox/paper-listbox.html">
+<link rel="import" href="../iron-icons/iron-icons.html">
+<link rel="import" href="../paper-ripple/paper-ripple.html">
+<link rel="import" href="../paper-styles/shadow.html">
+<link rel="import" href="../neon-animation/neon-animation-runner-behavior.html">
+<link rel="import" href="../neon-animation/animations/scale-up-animation.html">
+<link rel="import" href="../neon-animation/animations/fade-out-animation.html">
+
+<!--
+`appsco-product`
+This component displays AppsCo product. If there is only one product it is displayed as text.
+Otherwise, it is displayed as dropdown from which user can choose AppsCo Product: AppsCo or AppsCo Partner.
+
+Example:
+
+    <body>
+      <appsco-product partner></appsco-product>
+
+
+### Styling
+
+`<appsco-product>` provides the following custom mixins for styling:
+
+Custom property | Description | Default
+----------------|-------------|----------
+`--appsco-light-background-color` | Background color used for SEE ALL action | `#f5f8fa`
+`--border-color` | Border for products. | Based on border-color from theme.
+`--appsco-product` | Mixin applied to root appsco-product element. | `{}`
+`--appsco-product-dropdown` | Mixin applied to inner appsco-dropdown element. | `{}`
+`--appsco-product-search-input` | Mixin applied to search input field. | `{}`
+
+@demo demo/appsco-product.html
+-->
+
+<dom-module id="appsco-product">
+    <template>
+        <style>
+            :host {
+                @apply(--layout-vertical);
+                @apply(--layout-start);
+                font-size: 16px;
+                position: relative;
+                color: var(--appsco-product-text-color, --primary-text-color);
+                @apply(--appsco-product);
+            }
+            paper-input {
+                width: 220px;
+                height: 30px;
+                line-height: 30px;
+
+                --paper-input-container: {
+                    padding: 0;
+                };
+                --paper-input-container-input: {
+                    font-size: 18px;
+                };
+                --paper-input-container-color: var(--appsco-product-text-color, --primary-text-color);
+                --paper-input-container-input-color: var(--appsco-product-text-color, --primary-text-color);
+                --paper-input-container-focus-color: var(--appsco-product-text-color, --primary-text-color);
+                --paper-input-container-underline-focus: {
+                    border-bottom: 1px solid var(--appsco-product-text-color, --primary-text-color);
+                };
+                --paper-input-prefix: {
+                    color: var(--secondary-text-color);
+                };
+
+                @apply(--appsco-product-search-input);
+            }
+            .input-icon {
+                width: 18px;
+                height: 18px;
+            }
+            paper-icon-button[suffix] {
+                width: 20px;
+                height: 20px;
+                padding: 0;
+                margin: 0;
+                --iron-icon-fill-color: var(--appsco-product-text-color);
+            }
+            .product-list-action {
+                cursor: pointer;
+            }
+            .filter {
+                width: 100%;
+                position: relative;
+                z-index: 5;
+                display: none;
+            }
+            .dropdown-content {
+                @apply(--shadow-elevation-2dp);
+                padding: 0;
+                position: absolute;
+                top: 4px;
+                left: 0;
+                width: 100%;
+                z-index: 5;
+                overflow-y: auto;
+                @apply(--appsco-product-dropdown);
+            }
+            .paper-item {
+                padding: 0 8px;
+                height: 36px;
+                line-height: 18px;
+                font-size: 14px;
+                cursor: pointer;
+            }
+            .paper-item:hover {
+                @apply(--paper-item-hover);
+            }
+            .product-active {
+                font-size: 18px;
+            }
+        </style>
+
+        <div hidden$="[[ !_multiProducts ]]">
+
+            <div id="activeProduct"
+                 class="product-active product-list-action"
+                 on-tap="_showPanelList"
+                 hidden$="[[ _active ]]">
+                [[ _selectedProduct.label ]]
+                <iron-icon icon="arrow-drop-down"></iron-icon>
+            </div>
+
+            <div id="searchPanel" hidden$="[[ !_active ]]">
+                <paper-input id="searchPanelInput"
+                             placeholder="[[ _selectedProduct.label ]]"
+                             no-label-float
+                             on-focus="_onFilterPanelFocus"
+                             on-keyup="_onFilterPanelKeyup">
+
+                    <template is="dom-if" if="[[ _clearPanelSearch ]]">
+                        <paper-icon-button icon="clear"
+                                           id="clearSearch"
+                                           class="input-icon"
+                                           suffix
+                                           on-tap="_clearFilterPanel"></paper-icon-button>
+                    </template>
+                </paper-input>
+            </div>
+
+            <div id="filterPanel" class="filter">
+
+                <paper-listbox id="productList"
+                               class="dropdown-content"
+                               selected="[[ _selectedProduct.value ]]"
+                               attr-for-selected="value"
+                               on-iron-activate="_onItemActivate">
+
+                    <template is="dom-repeat" items="[[ _productListDisplay ]]">
+                        <paper-item class="paper-item"
+                                    value="[[ item.value ]]"
+                                    name="[[ item.name ]]"
+                                    label="[[ item.label ]]"
+                                    company="[[ item.company ]]">
+                            [[ item.label ]]
+                            <paper-ripple></paper-ripple>
+                        </paper-item>
+                    </template>
+
+                </paper-listbox>
+
+            </div>
+
+        </div>
+
+        <div hidden$="[[ _multiProducts ]]">
+
+            <span class="product-active">
+                [[ _selectedProduct.label ]]
+            </span>
+
+        </div>
+
+    </template>
+
+    <script>
+        Polymer({
+
+            is: 'appsco-product',
+
+            properties: {
+
+                /** Indicates if user has access to Appsco Partner product. */
+                partner: {
+                    type: Boolean,
+                    value: false,
+                    notify: true,
+                    observer: '_onPartnerChanged'
+                },
+
+                /** Indicates if user has access to Appsco Business product. */
+                business: {
+                    type: Array,
+                    value: function() { return []; },
+                    notify: true,
+                    observer: '_onBusinessChanged'
+                },
+
+                /** Appsco products. */
+                _products: {
+                    type: Array,
+                    value: function() {
+                        return [];
+                    }
+                },
+
+                _productListDisplay: {
+                    type: Array,
+                    value: function() {
+                        return []
+                    }
+                },
+
+                _clearPanelSearch: {
+                    type: Boolean,
+                    value: false
+                },
+
+                _productToSelect: {
+                    type: String
+                },
+
+                _selectedProduct: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    }
+                },
+
+                _multiProducts: {
+                    type: Boolean,
+                    value: false
+                },
+
+                /**
+                 * Indicates if user clicked on element or not.
+                 */
+                _active: {
+                    type: Boolean,
+                    value: false,
+                    observer: '_onFilterActiveChanged'
+                },
+
+                animationConfig: {
+                    value: function() {
+                        return {
+                            'entry': {
+                                name: 'scale-up-animation',
+                                axis: 'y',
+                                transformOrigin: '0 0',
+                                node: this.$$('#filterPanel'),
+                                timing: {
+                                    delay: 50,
+                                    duration: 200
+                                }
+                            },
+                            'exit': {
+                                name: 'fade-out-animation',
+                                node: this.$$('#filterPanel'),
+                                timing: {
+                                    duration: 100
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+
+            behaviors: [
+                Polymer.NeonAnimationRunnerBehavior
+            ],
+
+            listeners: {
+                'neon-animation-finish': '_onNeonAnimationFinish'
+            },
+
+            attached: function() {
+
+                Polymer.Gestures.add(document, 'tap', this._handleDocumentClick.bind(this));
+
+                this.set('_selectedProduct', this._products[0]);
+
+                if (this.partner || this.business) {
+                    this._multiProducts = true;
+                }
+
+//                this._onPartnerChanged(this.partner);
+//                this._onBusinessChanged(this.business);
+            },
+
+            _isInPath: function(path, element) {
+                path = path || [];
+
+                for (var i = 0; i < path.length; i++) {
+
+                    if (path[i] == element) {
+                        return true;
+                    }
+                }
+
+                return false;
+            },
+
+            _handleDocumentClick: function(event) {
+                var path = Polymer.dom(event).path;
+
+                if (!this._isInPath(path, this.$$('#activeProduct')) &&
+                    !this._isInPath(path, this.$$('#searchPanel')) &&
+                    !this._isInPath(path, this.$$('#filterPanel'))) {
+                    this._clearFilterPanel();
+                }
+
+            },
+
+            setProduct: function(product) {
+                var products = this._products,
+                    length = products.length;
+
+                this.set('_productToSelect', product);
+
+                if (length > 0) {
+                    for (var i = 0; i < length; i++) {
+                        if (product === products[i].value) {
+                            this.set('_selectedProduct', products[i]);
+                            break;
+                        }
+                    }
+                }
+                else {
+                    this.push('_products', {
+                        label: 'Personal',
+                        value: 'appsco-product',
+                        name: 'appsco-product',
+                        company: null
+                    });
+
+                    this.set('_productListDisplay', this._products);
+                    this.set('_selectedProduct', products[length]);
+                }
+            },
+
+            _onPartnerChanged: function(partner) {
+
+                if (this._products && partner) {
+                    var products = this._products,
+                        productsLength = products.length;
+
+                    for (var i = 0; i < productsLength; i++) {
+
+                        if ('appsco-partner-product' === products[i].name) {
+                            break;
+                        }
+                        else if (i === productsLength - 1) {
+                            var newProduct = this._createNewPartnerProduct();
+
+                            this.push('_products', newProduct);
+                        }
+                    }
+
+                    this.set('_productListDisplay', []);
+                    this.set('_productListDisplay', this._products);
+
+                    // paper-item doesn't display product name inside paper-listbox list without click event.
+                    document.body.click();
+
+                    this._multiProducts = true;
+                    this.setProduct(this._productToSelect);
+                }
+
+            },
+
+            _createNewPartnerProduct: function() {
+                return {
+                    label: 'Partner',
+                    value: 'appsco-partner-product',
+                    name: 'appsco-partner-product',
+                    company: null
+                };
+            },
+
+            _onBusinessChanged: function(business) {
+
+                if (this._products && business && business.length > 0) {
+                    var products = this._products,
+                        productsLength = products.length,
+                        length = business.length;
+
+                    for (var i = 0; i < length; i++) {
+
+                        for (var j = 0; j < productsLength; j++) {
+
+                            if (products[j].company && (products[j].company.company.alias === business[i].company.alias)) {
+                                var modifiedProduct = this._createNewBusinessProduct(business[i]);
+                                products[j] = modifiedProduct;
+                                break;
+                            }
+                            else if (j === productsLength - 1) {
+                                var newProduct = this._createNewBusinessProduct(business[i]);
+
+                                this.push('_products', newProduct);
+                            }
+                        }
+                    }
+
+                    this.set('_productListDisplay', []);
+                    this.set('_productListDisplay', this._products);
+
+                    // paper-item doesn't display product name inside paper-listbox list without click event.
+                    document.body.click();
+
+                    this._multiProducts = true;
+                    this.setProduct(this._productToSelect);
+                }
+
+            },
+
+            _createNewBusinessProduct: function(company) {
+                return {
+                    label: company.company.name,
+                    value: 'appsco-business-product' + company.company.alias,
+                    name: 'appsco-business-product',
+                    company: company
+                };
+            },
+
+            /**
+             * Listens to iron-activate event of product list.
+             * It sets label of selected product to display.
+             * It fires event that product is changed: appsco-product-changed.
+             *
+             * @private
+             */
+            _onItemActivate: function(event) {
+                var item,
+                    productList = this.$$('#productList');
+
+                this._clearFilterPanel();
+
+                setTimeout(function() {
+                    productList.select(event.detail.selected);
+                    item = productList.selectedItem;
+                    this._selectedProduct = item;
+
+                    this.fire('appsco-product-changed', {
+                        product: item.name,
+                        company: item.company
+                    });
+                }.bind(this), 200);
+            },
+
+            _onFilterActiveChanged: function(active) {
+
+                if (active) {
+                    this.$$('#searchPanelInput').focus();
+                }
+            },
+
+            _onFilterPanelFocus: function() {
+                this._clearPanelSearch = true;
+            },
+
+            _onFilterPanelKeyup: function(event) {
+                var keyCode = event.keyCode,
+                    term = event.target.value ? event.target.value : '';
+
+                if (40 === keyCode) {
+                    event.target.blur();
+                    this._selectFirstPanel();
+                    return false;
+                }
+
+                this._filterPanelListByTerm(term);
+
+            },
+
+            _clearFilterPanel: function() {
+                var input = this.$$('#searchPanelInput');
+
+                this._hidePanelList();
+
+                setTimeout(function() {
+                    input.value = '';
+                    this._clearPanelSearch = false;
+                    this._filterPanelListByTerm('');
+                }.bind(this), 100);
+            },
+
+            _selectFirstPanel: function() {
+                var productList = this.$$('#productList');
+
+                if (!productList.selectedItem) {
+                    productList.selected = this._productListDisplay[0].value;
+                }
+
+                productList.selectedItem.focus();
+            },
+
+            _filterPanelListByTerm: function(term) {
+                var termLength = term.length,
+                    products = this._products,
+                    length = products.length;
+
+                this.set('_productListDisplay', []);
+                this.set('_clearPanelSearch', (termLength > 0));
+
+                if (3 > termLength) {
+                    term = '';
+                }
+
+                for (var i = 0; i < length; i++) {
+                    var product = products[i];
+
+                    if (product && product.label.toLowerCase().indexOf(term.toLowerCase()) >= 0) {
+                        this.push('_productListDisplay', product);
+                    }
+
+                }
+
+                if (0 === this._productListDisplay.length && 3 <= termLength) {
+                    this.push('_productListDisplay', {
+                        label: 'There is no panel with asked name.',
+                        value: 'no_result'
+                    });
+                }
+            },
+
+            _showPanelList: function() {
+                this._active = true;
+                this.animationConfig.entry.node.style.display = 'block';
+                this.playAnimation('entry');
+            },
+
+            _hidePanelList: function() {
+
+                if (this._active) {
+                    this.playAnimation('exit', {
+                        hidePanelSwitcher: true
+                    });
+                }
+            },
+
+            _onNeonAnimationFinish: function(event) {
+
+                if (event.detail.hidePanelSwitcher) {
+                    this.animationConfig.exit.node.style.display = 'none';
+                    this._active = false;
+                }
+
+            }
+
+        });
+    </script>
+</dom-module>

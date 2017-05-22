@@ -1,0 +1,143 @@
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../bower_components/iron-flex-layout/iron-flex-layout.html">
+<link rel="import" href="../../bower_components/paper-card/paper-card.html">
+
+<link rel="import" href="../../bower_components/appsco-header/appsco-dropdown.html">
+
+<!--
+`appsco-info-dropdown`
+Is used to present subscription info dropdown.
+
+Example:
+
+    <body>
+      <appsco-info-dropdown>
+     </appsco-info-dropdown>
+
+ Custom property | Description | Default
+----------------|-------------|----------
+`--appsco-info-dropdown` | Mixin applied to inner appsco-dropdown within root element | `{}`
+`--subscription-info-dropdown-action` | Mixin applied to dropdown action button | `{}`
+`--subscription-info-dropdown-header-text` | Mixin applied to paper-card header text | `{}`
+
+-->
+
+<dom-module id="appsco-info-dropdown">
+    <template>
+        <style include="iron-flex iron-flex-alignment">
+            :host {
+                display: inline-block;
+                position: relative;
+                color: var(--primary-text-color, #414042);
+
+                --paper-card-content: {
+                    @apply(--layout-flex-vertical);
+                    padding: 10px;
+                    font-size: 14px;
+                };
+                --paper-card-actions: {
+                    padding: 6px 0;
+                    border-color: #ffffff;
+                    font-size: 12px;
+                };
+            }
+            appsco-dropdown {
+                top: 12px;
+                right: 0;
+                @apply(--appsco-info-dropdown);
+
+                --dropdown-caret-background-color: var(--paper-orange-300);
+            }
+            :host paper-card {
+                @apply(--layout-flex-vertical);
+                width: 100%;
+                background-color: var(--paper-orange-300);
+                color: #ffffff;
+            }
+            :host .dropdown-action {
+                width: 100%;
+                padding: 0;
+                margin: 0;
+                border-radius: 0;
+                background-color: transparent;
+                font-size: 12px;
+                border: none;
+            }
+        </style>
+
+        <appsco-dropdown
+                id="dropdown"
+                trigger="[[ _triggerDropdown ]]">
+
+            <paper-card class="layout vertical">
+
+                <div class="card-content">
+
+                    <content select="[content]"></content>
+
+                </div>
+
+                <template is="dom-if" if="[[ actionLabel ]]">
+                    <div id="dropdownActions"
+                         class="card-actions">
+                        <paper-button class="dropdown-action"
+                                      on-tap="_onDropdownAction">[[ actionLabel ]]</paper-button>
+                    </div>
+                </template>
+
+            </paper-card>
+
+        </appsco-dropdown>
+
+    </template>
+
+    <script>
+        Polymer({
+
+            is: 'appsco-info-dropdown',
+
+            properties: {
+
+                actionLabel: {
+                    type: String,
+                    value: ''
+                },
+
+                /**
+                 * DOM element which triggers the dropdown.
+                 */
+                _triggerDropdown: {
+                    type: Object,
+                    notify: true
+                }
+            },
+
+            attached: function() {
+                this._triggerDropdown = this.$$('#dropdownActions');
+            },
+
+            toggle: function(target) {
+                this._triggerDropdown = target;
+                this.$.dropdown.toggle();
+            },
+
+            /**
+             * Fires event on dropdown Upgrade action.
+             *
+             * @private
+             */
+            _onDropdownAction: function() {
+
+                /**
+                 * Fired when user taps on Upgrade action.
+                 *
+                 * @event upgrade
+                 */
+                this.fire('info-action');
+
+                this.toggle();
+            }
+
+        });
+    </script>
+</dom-module>

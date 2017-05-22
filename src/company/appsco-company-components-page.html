@@ -1,0 +1,296 @@
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../bower_components/iron-flex-layout/iron-flex-layout.html">
+<link rel="import" href="../../bower_components/neon-animation/animations/hero-animation.html">
+<link rel="import" href="../../bower_components/neon-animation/animations/cascaded-animation.html">
+<link rel="import" href="../../bower_components/neon-animation/animations/fade-in-animation.html">
+<link rel="import" href="../../bower_components/neon-animation/animations/fade-out-animation.html">
+<link rel="import" href="../../bower_components/neon-animation/neon-shared-element-animatable-behavior.html">
+<link rel="import" href="../../bower_components/paper-card/paper-card.html">
+<link rel="import" href="../../bower_components/iron-media-query/iron-media-query.html">
+
+<link rel="import" href="appsco-company-details.html">
+<link rel="import" href="appsco-company-brand-details.html">
+<link rel="import" href="appsco-company-domains.html">
+
+<dom-module id="appsco-company-components-page">
+    <template>
+        <style>
+            :host {
+                display: block;
+                overflow-y: auto;
+                @apply(--layout-horizontal);
+                @apply(--layout-wrap);
+                font-size: 14px;
+                color: var(--primary-text-color);
+
+                --paper-button: {
+                     padding: 6px 0;
+                     margin: 0;
+                     border-radius: 0;
+                     width: 100%;
+                     color: var(--primary-text-color);
+                 };
+
+                --company-details-label: {
+                    font-size: 12px;
+                    line-height: 16px;
+                };
+                --company-details-value: {
+                    font-size: 14px;
+                    line-height: 22px;
+                };
+            }
+            :host > * {
+                width: calc(100% / 3 - 10px);
+                @apply(--layout-self-start);
+            }
+            paper-card {
+                min-height: 150px;
+                margin-bottom: 10px;
+                box-sizing: border-box;
+
+                --paper-card-content: {
+                     min-height: 70px;
+                     box-sizing: border-box;
+                 };
+                --paper-card-actions: {
+                     padding: 0;
+                     border-color: var(--divider-color);
+                 };
+                --paper-card-header-text: {
+                    padding: 8px 16px;
+                    color: var(--primary-text-color);
+                    font-size: 18px;
+                    border-bottom: 1px solid var(--divider-color);
+                 };
+            }
+            .details-branding, .domains-labels {
+                @apply(--layout-vertical);
+            }
+            .details-branding {
+                margin-right: 10px;
+            }
+            appsco-company-details {
+                --company-detail-container: {
+                     margin: 4px 0;
+                 };
+            }
+            appsco-company-brand-details {
+                --company-logo: {
+                    padding: 5px;
+                    background-color: var(--body-background-color);
+                };
+            }
+            :host([medium-screen]) > * {
+                width: calc(100% / 2 - 10px);
+            }
+            :host([tablet-screen]) > * {
+                width: 100%;
+            }
+            :host([tablet-screen]) .details-branding {
+                margin-right: 0;
+            }
+        </style>
+
+        <iron-media-query query="(max-width: 1200px)" query-matches="{{ mediumScreen }}"></iron-media-query>
+        <iron-media-query query="(max-width: 800px)" query-matches="{{ tabletScreen }}"></iron-media-query>
+
+        <div class="details-branding">
+            <paper-card heading="Settings"
+                        class="appsco-company-details">
+                <div class="card-content">
+                    <appsco-company-details company="[[ company ]]"></appsco-company-details>
+                </div>
+
+                <div class="card-actions">
+                    <paper-button on-tap="_onManageCompanySettings">Manage</paper-button>
+                </div>
+            </paper-card>
+
+            <paper-card heading="Branding"
+                        class="appsco-company-brand-details">
+                <div class="card-content">
+                    <appsco-company-brand-details company="[[ company ]]"></appsco-company-brand-details>
+                </div>
+
+                <div class="card-actions">
+                    <paper-button on-tap="_onManageCompanyBrandSettings">Manage</paper-button>
+                </div>
+            </paper-card>
+        </div>
+
+        <div class="domains-labels">
+            <paper-card heading="Domains"
+                        class="appsco-company-domains">
+                <div class="card-content">
+                    <appsco-company-domains id="appscoCompanyDomains"
+                                            domains-api="[[ domainsApi ]]"
+                                            authorization-token="[[ authorizationToken ]]"
+                                            size="5"
+                                            preview></appsco-company-domains>
+                </div>
+
+                <div class="card-actions">
+                    <paper-button on-tap="_onManageCompanyDomains">Manage</paper-button>
+                </div>
+            </paper-card>
+        </div>
+
+    </template>
+
+    <script>
+        Polymer({
+
+            is: 'appsco-company-components-page',
+
+            properties: {
+
+                company: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    }
+                },
+
+                authorizationToken: {
+                    type: String
+                },
+
+                domainsApi: {
+                    type: String,
+                    value: ''
+                },
+
+                /**
+                 * Indicates if it is medium screen size.
+                 * It uses iron-media-query.
+                 */
+                mediumScreen: {
+                    type: Boolean,
+                    value: false,
+                    reflectToAttribute: true
+                },
+
+                tabletScreen: {
+                    type: Boolean,
+                    value: false,
+                    reflectToAttribute: true
+                },
+
+                brandLogo: {
+                    type: String,
+                    value: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACYAAAAgCAYAAAB+ZAqzAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAVZJREFUeNrsmOENgjAQhcE4AG5QN2AERnCEjsAIdQJG6AiO0BEcATdwhLONxJR6V1u8Ij98ycXkrL3HR+8gVlWCAEDa0EjuaqP1csLGkPJ7FtlNR3hKIzknNeV0uC5YqzhNSc/AiORgKiyCnCbWSm5ar02DHEzFhyB3J9aCf/tL02qckSCvbHSAy60Va9BSSGFn1gAt1zjNlmj5Mr+gdYE0aXZahFmFdOgnSW5aEikivHmWo1NJWnoBLf8ItFujNWumErSwDs3V+xjJoNURtBTwSC6lZQrRmtXhoNXa6IFPIwctE3lYf3crv6TVER26Ki29RVpiNVoJkz+FlmGnlTD5Y7ROia82q9Iat0ALG5xyml3laUXMqkSKZWgRpiha4k+LMPYzWvuYsbquDxhFxn8fzmTt3DNnP9xVNgymbvbCj9SXu8zNeiZTUVocZ27pe/3HA/8QYABzJAP50CmRFwAAAABJRU5ErkJggg=='
+                },
+
+                /**
+                 * Animation config with hero animation.
+                 */
+                animationConfig: {
+                    value: function() {
+                        return {
+                            'entry': [{
+                                name: 'cascaded-animation',
+                                animation: 'fade-in-animation',
+                                nodes: Polymer.dom(this.root).querySelectorAll('paper-card'),
+                                nodeDelay: 50,
+                                timing: {
+                                    delay: 200,
+                                    duration: 100
+                                }
+                            }],
+                            'exit': [{
+                                name: 'hero-animation',
+                                id: 'hero',
+                                fromPage: this
+                            }, {
+                                name: 'fade-out-animation',
+                                node: this,
+                                timing: {
+                                    duration: 500
+                                }
+                            }]
+                        }
+                    }
+                }
+            },
+
+            behaviors: [
+                Polymer.NeonSharedElementAnimatableBehavior
+            ],
+
+            observers: [
+                '_updateScreen(tabletScreen, mediumScreen)'
+            ],
+
+            attached: function() {
+
+                if (this.tabletScreen || this.mediumScreen) {
+                    this.updateStyles();
+                }
+            },
+
+            _updateScreen: function(tablet, medium) {
+                this.updateStyles();
+            },
+
+            setSharedElement: function(target, callback) {
+
+                switch (target) {
+                    case 'domains':
+                        this.sharedElements = {
+                            'hero': this.$.appscoCompanyDomains
+                        };
+
+                        break;
+
+                    default:
+                        break;
+                }
+            },
+
+            _setSharedElement: function(target) {
+
+                while (target.tagName.toLowerCase() !== 'paper-card' && !target._templateInstance) {
+                    target = target.parentNode;
+                }
+
+                /**
+                 * Set hero animation element that is to be shared between pages.
+                 *
+                 * @type {{hero: *}}
+                 */
+                this.sharedElements = {
+                    'hero': target
+                };
+            },
+
+            addDomain: function(domain) {
+                this.$.appscoCompanyDomains.addDomain(domain, true);
+            },
+
+            modifyDomain: function(domain) {
+                this.$.appscoCompanyDomains.modifyDomain(domain);
+            },
+
+            removeDomain: function(domain) {
+                this.$.appscoCompanyDomains.removeDomain(domain);
+            },
+
+            _onManageCompanySettings: function(event) {
+                this._setSharedElement(event.target);
+                this.fire('manage-company-settings');
+            },
+
+            _onManageCompanyBrandSettings: function(event) {
+                this._setSharedElement(event.target);
+                this.fire('manage-company-brand-settings');
+            },
+
+            _onManageCompanyDomains: function(event) {
+                this._setSharedElement(event.target);
+                this.fire('manage-company-domains');
+            }
+        });
+    </script>
+</dom-module>
+

@@ -1,0 +1,159 @@
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../bower_components/iron-flex-layout/iron-flex-layout.html">
+<link rel="import" href="../../bower_components/paper-button/paper-button.html">
+<link rel="import" href="../../bower_components/neon-animation/neon-animation-runner-behavior.html">
+<link rel="import" href="../../bower_components/neon-animation/animations/fade-in-animation.html">
+<link rel="import" href="../../bower_components/neon-animation/animations/slide-right-animation.html">
+<link rel="import" href="../../bower_components/paper-styles/typography.html">
+
+<!--
+`active-integration-item`
+-->
+
+<dom-module id="active-integration-item">
+    <template>
+        <style>
+            :host {
+                display: none;
+                color: var(--primary-text-color);
+            }
+            :host .item {
+                @apply(--shadow-elevation-2dp);
+                @apply(--layout-horizontal);
+                @apply(--layout-center);
+                width: 100%;
+                height: 70px;
+                padding: 0 10px;
+                background-color: var(--background-color, #fff);
+                box-sizing: border-box;
+                border-radius: 3px;
+                overflow: hidden;
+                position: relative;
+            }
+            :host .item:hover {
+                @apply(--shadow-elevation-4dp);
+                transition: all 0.2s linear;
+            }
+            :host .item-image {
+                @apply(--layout-flex-none);
+                height: 52px;
+                margin-right: 10px;
+            }
+            :host .item-info {
+                @apply(--layout-vertical);
+            }
+            :host .item-title {
+                @apply(--paper-font-common-base);
+                @apply(--paper-font-common-nowrap);
+                font-size: 16px;
+            }
+            :host .item-domain {
+                font-size: 14px;
+            }
+            :host .actions {
+            @apply(--layout-horizontal);
+            @apply(--layout-center);
+                position: absolute;
+                right: 4px;
+                bottom: 4px;
+            }
+            :host paper-button {
+                @apply(--paper-font-common-base);
+                @apply(--paper-font-common-nowrap);
+                padding: 4px;
+                font-size: 12px;
+                font-weight: 400;
+                letter-spacing: 0.018em;
+                line-height: 18px;
+                text-transform: uppercase;
+            }
+        </style>
+
+        <div class="item">
+            <img class="item-image"
+                 src="[[ item.integration.image ]]"
+                 alt="[[ item.integration.title ]]">
+
+            <div class="item-info">
+                <span class="item-title">[[ item.integration.title ]]</span>
+                <span class="item-domain">Authorization for domain(s): [[ _itemDomain ]]</span>
+            </div>
+
+            <div class="actions">
+                <paper-button on-tap="_onManage">Manage</paper-button>
+            </div>
+        </div>
+
+    </template>
+
+    <script>
+        Polymer({
+
+            is: 'active-integration-item',
+
+            properties: {
+
+                item: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    }
+                },
+
+                _itemDomain: {
+                    type: String,
+                    computed: '_computeDomain(item)'
+                },
+
+                animationConfig: {
+                    value: function() {
+                        return {
+                            'entry': {
+                                name: 'fade-in-animation',
+                                node: this,
+                                timing: {
+                                    duration: 200
+                                }
+                            },
+                            'exit': {
+                                name: 'slide-right-animation',
+                                node: this,
+                                timing: {
+                                    duration: 1000
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+
+            behaviors: [
+                Polymer.NeonAnimationRunnerBehavior
+            ],
+
+            attached: function() {
+                this.style.display = 'block';
+                this.playAnimation('entry');
+            },
+
+            _computeDomain: function(item) {
+                var domain = '';
+
+                for (var property in item.domains) {
+                    if (item.domains.hasOwnProperty(property)) {
+                        domain += domain == '' ? property : ', ' + property;
+                    }
+                }
+
+                return domain;
+            },
+
+            _onManage: function() {
+                this.fire('active-integration', {
+                    integration: this.item
+                });
+            }
+
+        });
+    </script>
+</dom-module>

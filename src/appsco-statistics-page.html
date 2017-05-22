@@ -1,0 +1,1139 @@
+<link rel="import" href="../bower_components/polymer/polymer.html">
+<link rel="import" href="../bower_components/paper-icon-button/paper-icon-button.html">
+<link rel="import" href="../bower_components/iron-icons/iron-icons.html">
+<link rel="import" href="../bower_components/paper-material/paper-material.html">
+<link rel="import" href="../bower_components/iron-media-query/iron-media-query.html">
+<link rel="import" href="../bower_components/iron-ajax/iron-ajax.html">
+<link rel="import" href="../bower_components/iron-icon/iron-icon.html">
+<link rel="import" href="../bower_components/iron-image/iron-image.html">
+<link rel="import" href="../bower_components/google-chart/google-chart.html">
+
+<link rel="import" href="../bower_components/appsco-page/appsco-content.html">
+<link rel="import" href="../bower_components/appsco-components/appsco-loader.html">
+
+
+<link rel="import" href="../bower_components/paper-progress/paper-progress.html">
+
+<link rel="import" href="shared-styles.html">
+
+<dom-module id="appsco-statistics-page">
+    <template>
+        <style include="webkit-scrollbar-style">
+            :host {
+                --chart-background-color: #ffffff;
+                display: block;
+                color: var(--primary-text-color);
+                font-size: 14px;
+
+                --appsco-content-sections: {
+                    padding: 0;
+                };
+            }
+            :host div[content] {
+                padding: 10px;
+                color: var(--primary-text-color);
+            }
+            :host div[info] {
+                padding: 10px;
+                color: var(--primary-text-color);
+            }
+            .two-charts {
+                @apply(--layout-horizontal);
+            }
+            .chart-container {
+                @apply(--layout-flex);
+                position: relative;
+            }
+            google-chart {
+                height: 300px;
+                width: 100%;
+                padding: 0 10px;
+                margin-bottom: 20px;
+                box-sizing: border-box;
+            }
+            .chart-h-380 {
+                height: 380px;
+            }
+            .two-fa-chart {
+                max-width: 1000px;
+            }
+            .title-h2 {
+                margin: 10px 0 20px 0;
+                font-weight: 500;
+                text-align: center;
+            }
+            .title-h3 {
+                font-weight: 400;
+                text-align: center;
+            }
+            .no-data-info google-chart {
+                opacity: 0.2;
+            }
+            .chart-info {
+                padding: 20px 10px 0;
+                margin: 0 10px;
+                background-color: #ffffff;
+            }
+            .chart-info-no-chart {
+                padding-bottom: 20px;
+            }
+            .chart-info .info {
+                margin-top: 10px;
+                margin-bottom: 0;
+            }
+            .chart-info .info-tip {
+                color: var(--secondary-text-color);
+                font-style: italic;
+            }
+            .info {
+                @apply(--info-message);
+                text-align: center;
+            }
+            :host([medium-screen]) .two-charts {
+                @apply(--layout-vertical);
+            }
+            :host([medium-screen]) .chart-container {
+                @apply(--layout-flex-none);
+                width: 100%;
+            }
+        </style>
+
+        <!--<iron-ajax-->
+                <!--id="applicationUsageAjax"-->
+                <!--auto-->
+                <!--url="[[ _applicationUsageApi ]]"-->
+                <!--handle-as="json"-->
+                <!--headers="[[ _computedHeaders ]]"-->
+                <!--on-response="_handleApplicationUsageResponse"-->
+                <!--on-error="_handleApplicationUsageError"></iron-ajax>-->
+
+        <iron-ajax
+                id="applicationSecurityAjax"
+                auto
+                url="[[ _applicationSecurityApi ]]"
+                handle-as="json"
+                headers="[[ _computedHeaders ]]"
+                on-response="_handleApplicationSecurityResponse"
+                on-error="_handleApplicationSecurityError"
+        ></iron-ajax>
+
+        <iron-ajax
+                id="userSecurityAjax"
+                auto
+                url="[[ _userSecurityApi ]]"
+                handle-as="json"
+                headers="[[ _computedHeaders ]]"
+                on-response="_handleUserPasswordsScoresResponse"
+                on-error="_handleUserPasswordsScoresError"
+                ></iron-ajax>
+
+        <iron-ajax
+                id="loginAttemptsAjax"
+                auto
+                method="POST"
+                url="[[ _loginAttemptsApi ]]"
+                handle-as="json"
+                headers="[[ _computedHeaders ]]"
+                on-response="_handleLoginAttemptsResponse"
+                on-error="_handleLoginAttemptsError"
+        ></iron-ajax>
+
+        <iron-ajax
+                id="twoFaAjax"
+                auto
+                url="[[ _twoFaApi ]]"
+                handle-as="json"
+                headers="[[ _computedHeaders ]]"
+                on-response="_handleTwoFaResponse"
+                on-error="_handleTwoFaError"
+                ></iron-ajax>
+
+        <iron-ajax
+                id="licenceAjax"
+                auto
+                url="[[ _licenceApi ]]"
+                handle-as="json"
+                headers="[[ _computedHeaders ]]"
+                on-response="_handleLicencesResponse"
+                on-error="_handleLicencesError"
+                ></iron-ajax>
+
+        <iron-media-query query="(max-width: 1200px)" query-matches="{{ mediumScreen }}"></iron-media-query>
+
+        <appsco-content id="appscoContent">
+
+            <div content>
+
+                <div class="two-charts">
+
+                    <div class="chart-container">
+                        <template is="dom-if" if="[[ _loginAttemptsMessage ]]">
+                            <div class="no-data-info">
+                                <h2 class="title-h2">Application usage</h2>
+                                <p class="info">
+                                    [[ _loginAttemptsMessage ]]
+                                </p>
+
+                                <h3 class="title-h3">Example:</h3>
+                                <google-chart id="loginAttemptsChartExample"
+                                              class="chart-h-380"
+                                              type="line"></google-chart>
+                            </div>
+                        </template>
+
+                        <appsco-loader multi-color active="[[ _loginAttemptsChartLoader ]]"></appsco-loader>
+
+                        <template is="dom-if" if="[[ !_loginAttemptsMessage ]]">
+                            <h2 class="title-h2">Application usage</h2>
+                            <div class="chart-info">
+                                <p class="info">
+                                    Displays login attempts for top five most used applications in the past 30 days.
+                                </p>
+                                <p class="info info-tip">
+                                    * Hover over application's peak to see corresponding values.
+                                </p>
+                            </div>
+                            <google-chart id="loginAttemptsChart"
+                                          class="chart-h-380"
+                                          type="line"
+                                          on-google-chart-ready="_onLoginAttemptsChartReady"></google-chart>
+                        </template>
+                    </div>
+
+                    <!--<div class="chart-container">-->
+                        <!--<template is="dom-if" if="[[ _applicationUsageMessage ]]">-->
+                            <!--<div class="no-data-info">-->
+                                <!--<h2 class="title-h2">Application instances</h2>-->
+                                <!--<p class="info">-->
+                                    <!--[[ _applicationUsageMessage ]]-->
+                                <!--</p>-->
+
+                                <!--<h3 class="title-h3">Example:</h3>-->
+                                <!--<google-chart id="applicationsUsageChartExample"-->
+                                              <!--class="chart-h-380"-->
+                                              <!--type="column"></google-chart>-->
+                            <!--</div>-->
+                        <!--</template>-->
+
+                        <!--<template is="dom-if" if="[[ !_applicationUsageMessage ]]">-->
+                            <!--<appsco-loader multi-color active="[[ _applicationsUsageChartLoader ]]"></appsco-loader>-->
+
+                            <!--<h2 class="title-h2">Application instances</h2>-->
+                            <!--<google-chart id="applicationsUsageChart"-->
+                                          <!--class="chart-h-380"-->
+                                          <!--type="column"-->
+                                          <!--on-google-chart-ready="_onApplicationsUsageChartReady"></google-chart>-->
+                        <!--</template>-->
+                    <!--</div>-->
+                </div>
+
+                <div class="two-charts">
+                    <div class="chart-container">
+                        <template is="dom-if" if="[[ _applicationSecurityMessage ]]">
+                            <div class="no-data-info">
+                                <h2 class="title-h2">Application security</h2>
+                                <p class="info">
+                                    [[ _applicationSecurityMessage ]]
+                                </p>
+
+                                <h3 class="title-h3">Example:</h3>
+                                <google-chart id="applicationSecurityChartExample"
+                                              class="chart-h-380"
+                                              type="column"
+                                        ></google-chart>
+                            </div>
+                        </template>
+
+                        <template is="dom-if" if="[[ !_applicationSecurityMessage ]]">
+                            <appsco-loader multi-color active="[[ _applicationSecurityChartLoader ]]"></appsco-loader>
+
+                            <h2 class="title-h2">Application security</h2>
+                            <div class="chart-info">
+                                <p class="info">
+                                    Displays average security score for configured applications and number of configured instances for each application.
+                                </p>
+                                <p class="info info-tip">
+                                    * Hover over chart bar to see corresponding value.
+                                </p>
+                            </div>
+                            <google-chart id="applicationSecurityChart"
+                                          class="chart-h-380"
+                                          type="column"
+                                          on-google-chart-ready="_onApplicationSecurityChartReady"></google-chart>
+                        </template>
+                    </div>
+
+                    <div class="chart-container">
+                        <template is="dom-if" if="[[ _userSecurityMessage ]]">
+                            <div class="no-data-info">
+                                <h2 class="title-h2">User security</h2>
+                                <p class="info">
+                                    [[ _userSecurityMessage ]]
+                                </p>
+
+                                <h3 class="title-h3">Example:</h3>
+                                <google-chart id="userSecurityChartExample"
+                                              class="chart-h-380"
+                                              type="column"></google-chart>
+                            </div>
+                        </template>
+
+                        <appsco-loader multi-color active="[[ _userSecurityChartLoader ]]"></appsco-loader>
+
+                        <template is="dom-if" if="[[ !_userSecurityMessage ]]">
+                            <h2 class="title-h2">User security</h2>
+                            <div class="chart-info">
+                                <p class="info">
+                                    Displays average security score for users and number of configured applications for each user.
+                                </p>
+                                <p class="info info-tip">
+                                    * Hover over chart bar to see corresponding value.
+                                </p>
+                            </div>
+                            <google-chart id="userSecurityChart"
+                                          class="chart-h-380"
+                                          type="column"
+                                          on-google-chart-ready="_onUserSecurityChartReady"></google-chart>
+                        </template>
+                    </div>
+                </div>
+
+                <div class="two-charts">
+                    <div class="chart-container">
+                        <template is="dom-if" if="[[ _twoFaMessage ]]">
+                            <div class="no-data-info">
+                                <h2 class="title-h2">Two-factor authentication</h2>
+                                <p class="info">
+                                    [[ _twoFaMessage ]]
+                                </p>
+
+                                <h3 class="title-h3">Example:</h3>
+                                <google-chart id="twoFaChartExample"
+                                              class="chart-h-380 two-fa-chart"
+                                              type="pie"></google-chart>
+                            </div>
+                        </template>
+
+                        <appsco-loader multi-color active="[[ _twoFaChartLoader ]]"></appsco-loader>
+
+                        <template is="dom-if" if="[[ _twoFaInfo ]]">
+                            <h2 class="title-h2">Two-factor authentication</h2>
+                            <div class="chart-info chart-info-no-chart">
+                                <p class="info">[[ _twoFaInfo ]]</p>
+                                <p class="info">Total users: [[ _twoFaTotal ]].</p>
+                            </div>
+                        </template>
+
+                        <template is="dom-if" if="[[ !_twoFaInfo ]]">
+                            <template is="dom-if" if="[[ !_twoFaMessage ]]">
+                                <h2 class="title-h2">Two-factor authentication</h2>
+                                <div class="chart-info">
+                                    <p class="info">
+                                        Displays two-factor authentication statistics for users.
+                                    </p>
+                                    <p class="info info-tip">
+                                        * Hover over pie chart slice to see corresponding value.
+                                    </p>
+                                </div>
+
+                                <google-chart id="twoFaChart"
+                                              class="chart-h-380 two-fa-chart"
+                                              type="pie"
+                                              on-google-chart-ready="_onTwoFaChartReady"></google-chart>
+                            </template>
+                        </template>
+                    </div>
+
+                    <div class="chart-container">
+                        <template is="dom-if" if="[[ _licenceMessage ]]">
+                            <div class="no-data-info">
+                                <h2 class="title-h2">AppsCo licences</h2>
+                                <p class="info">
+                                    [[ _licenceMessage ]]
+                                </p>
+
+                                <h3 class="title-h3">Example:</h3>
+                                <google-chart id="licenceChartExample"
+                                              class="chart-h-380 two-fa-chart"
+                                              type="pie"></google-chart>
+                            </div>
+                        </template>
+
+                        <appsco-loader multi-color active="[[ _licenceChartLoader ]]"></appsco-loader>
+
+                        <template is="dom-if" if="[[ !_licenceMessage ]]">
+                            <h2 class="title-h2">AppsCo licences</h2>
+                            <div class="chart-info">
+                                <p class="info">
+                                    Displays used and unused AppsCo licences ratio.
+                                </p>
+                                <p class="info info-tip">
+                                    * Hover over pie chart slice to see corresponding value.
+                                </p>
+                            </div>
+                            <google-chart id="licenceChart"
+                                          class="chart-h-380 two-fa-chart"
+                                          type="pie"
+                                          on-google-chart-ready="_onLicenceChartReady"></google-chart>
+                        </template>
+                    </div>
+                </div>
+
+            </div>
+        </appsco-content>
+    </template>
+
+    <script>
+        Polymer({
+            is: 'appsco-statistics-page',
+
+            properties: {
+
+                companyApi: {
+                    type: String
+                },
+
+                authorizationToken: {
+                    type: String
+                },
+
+                /**
+                 * Computed headers.
+                 * It contains authorization token.
+                 */
+                _computedHeaders: {
+                    type: Object,
+                    computed: "_computeHeaders(authorizationToken)"
+                },
+
+                _applicationUsageApi: {
+                    type: String,
+                    computed: '_computeApplicationUsageApi(companyApi)'
+                },
+
+                _applicationsUsageChartLoader: {
+                    type: Boolean,
+                    value: true
+                },
+
+                _applicationUsageMessage: {
+                    type: String,
+                    value: ''
+                },
+
+                _applicationSecurityApi: {
+                    type: String,
+                    computed: '_computeApplicationSecurityApi(companyApi)'
+                },
+
+                _applicationSecurityChartLoader: {
+                    type: Boolean,
+                    value: true
+                },
+
+                _applicationSecurityMessage: {
+                    type: String,
+                    value: ''
+                },
+
+                _userSecurityApi: {
+                    type: String,
+                    computed: '_computeUserSecurityApi(companyApi)'
+                },
+
+                _userSecurityChartLoader: {
+                    type: Boolean,
+                    value: true
+                },
+
+                _userSecurityMessage: {
+                    type: String,
+                    value: ''
+                },
+
+                _loginAttemptsApi: {
+                    type: String,
+                    computed: '_computeLoginAttemptsApi(companyApi)'
+                },
+
+                _loginAttemptsChartLoader: {
+                    type: Boolean,
+                    value: true
+                },
+
+                _loginAttemptsMessage: {
+                    type: String,
+                    value: ''
+                },
+
+                _twoFaApi: {
+                    type: String,
+                    computed: '_computeTwoFaApi(companyApi)'
+                },
+
+                _twoFaChartLoader: {
+                    type: Boolean,
+                    value: true
+                },
+
+                _twoFaInfo: {
+                    type: String,
+                    value: ''
+                },
+
+                _twoFaTotal: {
+                    type: Number,
+                    value: 0
+                },
+
+                _twoFaMessage: {
+                    type: String,
+                    value: ''
+                },
+
+                _licenceApi: {
+                    type: String,
+                    computed: '_computeLicenceApi(companyApi)'
+                },
+
+                _licenceChartLoader: {
+                    type: Boolean,
+                    value: true
+                },
+
+                _licenceMessage: {
+                    type: String,
+                    value: ''
+                },
+
+                /**
+                 * Indicates if it is medium screen size.
+                 * It uses iron-media-query.
+                 */
+                mediumScreen: {
+                    type: Boolean,
+                    value: false,
+                    reflectToAttribute: true
+                },
+
+                pageLoaded: {
+                    type: Boolean,
+                    value: false
+                }
+            },
+
+            observers: [
+                '_updateScreen(mediumScreen)'
+            ],
+
+            attached: function() {
+
+                this.pageLoaded = false;
+
+                if (this.mediumScreen) {
+                    this.updateStyles();
+                }
+
+                this._pageLoaded();
+            },
+
+            _updateScreen: function(medium) {
+                this.updateStyles();
+            },
+
+            /**
+             * Computes authorization headers.
+             *
+             * @param {Object} authorizationToken
+             * @returns {{ Authorization: string }}
+             * @private
+             */
+            _computeHeaders: function (authorizationToken) {
+                return {
+                    'Authorization': 'token ' + authorizationToken
+                }
+            },
+
+            _computeApplicationUsageApi: function(companyApi) {
+                return companyApi ? companyApi + '/statistics/application-usage' : '';
+            },
+
+            _computeApplicationSecurityApi: function(companyApi) {
+                return companyApi ? companyApi + '/statistics/application-security' : '';
+            },
+
+            _computeUserSecurityApi: function(companyApi) {
+                return companyApi ? companyApi + '/statistics/user-password-scores' : '';
+            },
+
+            _computeLoginAttemptsApi: function(companyApi) {
+                return companyApi ? companyApi + '/statistics/login-attempts' : '';
+            },
+
+            _computeTwoFaApi: function(companyApi) {
+                return companyApi ? companyApi + '/statistics/twofa' : '';
+            },
+
+            _computeLicenceApi: function(companyApi) {
+                return companyApi ? companyApi + '/statistics/licences' : '';
+            },
+
+            _pageLoaded: function() {
+                this.pageLoaded = true;
+                this.fire('page-loaded');
+            },
+
+            _showLoader: function(loader) {
+                this.set(loader, true);
+            },
+
+            _hideLoader: function(loader) {
+                this.set(loader, false);
+            },
+
+            reloadStatistics: function() {
+//                this._showLoader('_applicationsUsageChartLoader');
+//                this.$.applicationUsageAjax.generateRequest();
+
+                this._showLoader('_applicationSecurityChartLoader');
+                this.$.applicationSecurityAjax.generateRequest();
+
+                this._showLoader('_userSecurityChartLoader');
+                this.$.userSecurityAjax.generateRequest();
+
+                this._showLoader('_loginAttemptsChartLoader');
+                this.$.loginAttemptsAjax.generateRequest();
+
+                this._showLoader('_twoFaChartLoader');
+                this.$.twoFaAjax.generateRequest();
+
+                this._showLoader('_licenceChartLoader');
+                this.$.licenceAjax.generateRequest();
+            },
+
+//            _handleApplicationUsageResponse: function(event) {
+//                var response = event.detail.response,
+//                    chartOptions= {
+//                        titlePosition: 'none',
+//                        backgroundColor: this.getComputedStyleValue('--chart-background-color'),
+//                        animation: {
+//                            startup: 'true',
+//                            duration: 600,
+//                            easing: 'in'
+//                        },
+//                        legend: 'none'
+//                    },
+//                    chart = this.$$('#applicationsUsageChart');
+//
+//                if (null == response || response.applications == 0) {
+//                    this._applicationUsageMessage = 'You don\'t have any applications added to the company. Please add some in order to create statistics.';
+//
+//                    setTimeout(function() {
+//                        var exampleChart = this.$$('#applicationsUsageChartExample');
+//
+//                        exampleChart.options = chartOptions;
+//                        exampleChart.data = [
+//                            ['Data type', 'Count', { role: 'style' }],
+//                            ['Total applications', 20, '#279FBC'],
+//                            ['Shared applications', 15, '#279FBC'],
+//                            ['Non-shared applications', 5, '#279FBC'],
+//                            ['Total shared application', 50, '#279FBC'],
+//                            ['Configured applications', 40, '#279FBC']
+//                        ];
+//                    }.bind(this), 1000);
+//
+//                    this._hideLoader('_applicationsUsageChartLoader');
+//
+//                    return false;
+//                }
+//
+//                for (key in response) {
+//                    this._applicationUsageMessage = '';
+//
+//                    chart.options = chartOptions;
+//                    chart.data = [
+//                        ['Data type', 'Count', { role: 'style' }],
+//                        ['Total applications', response.applications, '#279FBC'],
+//                        ['Shared applications', response.applications_with_instances, '#279FBC'],
+//                        ['Non-shared applications', response.applications_without_instances, '#279FBC'],
+//                        ['Total shared application', response.application_instances, '#279FBC'],
+//                        ['Configured applications', response.application_instances_configured, '#279FBC']
+//                    ];
+//                }
+//            },
+//
+//            _handleApplicationUsageError: function(event) {
+//                this._applicationUsageMessage = 'We couldn\'t load statistics at the moment. Please try again later.';
+//                this._hideLoader('_applicationsUsageChartLoader');
+//            },
+//
+//            _onApplicationsUsageChartReady: function() {
+//                this._hideLoader('_applicationsUsageChartLoader');
+//            },
+
+            _handleApplicationSecurityResponse: function(event) {
+                var response = event.detail.response,
+                    chartOptions = {
+                        titlePosition: 'none',
+                        backgroundColor: this.getComputedStyleValue('--chart-background-color'),
+                        hAxis: {
+                            title: 'Application',
+                            textStyle: {
+                                color: this.getComputedStyleValue('--primary-text-color')
+                            }
+                        },
+                        vAxis: {
+                            title: 'Security score (%)',
+                            textStyle: {
+                                color: this.getComputedStyleValue('--primary-text-color')
+                            },
+                            viewWindowMode: 'explicit',
+                            viewWindow: {
+                                min: 0,
+                                max: 100
+                            },
+                            gridlines: {
+                                count: 10
+                            }
+                        },
+                        animation: {
+                            startup: 'true',
+                            duration: 600,
+                            easing: 'in'
+                        }
+                    },
+                    chart = this.$$('#applicationSecurityChart'),
+                    dataApplications = ['Application', 'Application score', 'Configured instances'];
+
+                if (null == response || (response && !response.length)) {
+                    this._applicationSecurityMessage = 'There are no configured applications. Please configure some in order to create statistics.';
+
+                    setTimeout(function() {
+                        var exampleChart = this.$$('#applicationSecurityChartExample');
+
+                        exampleChart.options = chartOptions;
+                        exampleChart.data = [
+                            dataApplications,
+                            ['Facebook', 56, 5],
+                            ['Twitter', 89, 12]
+                        ];
+                    }.bind(this), 1000);
+
+                    this._hideLoader('_applicationSecurityChartLoader');
+                    return false;
+                }
+
+                if (response && response.length > 0) {
+                    this._applicationSecurityMessage = '';
+
+                    chart.options = chartOptions;
+                    chart.data = [dataApplications];
+
+                    if (response) {
+                        var length = response.length;
+
+                        response = response.reverse();
+
+                        for (var i = 0; i < length; i++) {
+                            var record = response[i],
+                                data = [];
+
+                            if ( chart.data.length < 11) {
+                                data.push(record.application.title);
+                                data.push(record.report.score);
+                                data.push(record.report.info.configured);
+                                chart.data.push(data);
+                            }
+                        }
+                    }
+                }
+            },
+
+            _handleApplicationSecurityError: function(event) {
+                this._applicationSecurityMessage = 'We couldn\'t load statistics at the moment. Please try again later.';
+                this._hideLoader('_applicationSecurityChartLoader');
+            },
+
+            _onApplicationSecurityChartReady: function() {
+                this._hideLoader('_applicationSecurityChartLoader');
+            },
+
+            _handleUserPasswordsScoresResponse: function(event) {
+                var response = event.detail.response,
+                    chartOptions = {
+                        titlePosition: 'none',
+                        backgroundColor: this.getComputedStyleValue('--chart-background-color'),
+                        hAxis: {
+                            title: 'User',
+                            textStyle: {
+                                color: this.getComputedStyleValue('--primary-text-color')
+                            }
+                        },
+                        vAxis: {
+                            title: 'Security score (%)',
+                            textStyle: {
+                                color: this.getComputedStyleValue('--primary-text-color')
+                            },
+                            viewWindowMode: 'explicit',
+                            viewWindow: {
+                                min: 0,
+                                max: 100
+                            },
+                            gridlines: {
+                                count: 10
+                            }
+                        },
+                        animation: {
+                            startup: 'true',
+                            duration: 600,
+                            easing: 'in'
+                        }
+                    },
+                    chart = this.$$('#userSecurityChart'),
+                    dataUsers = ['User', 'Overall score', 'Number of configured applications'];
+
+                if (null == response || (response && !response.length)) {
+                    this._userSecurityMessage = 'Applications which are shared to users are not configured. Please configure some yourself or invite users to configure it.';
+
+                    setTimeout(function() {
+                        var exampleChart = this.$$('#userSecurityChartExample');
+
+                        exampleChart.options = chartOptions;
+                        exampleChart.data = [
+                            dataUsers,
+                            ['John Doe', 56, 12],
+                            ['Jane Jonson', 93, 6]
+                        ];
+                    }.bind(this), 1000);
+
+                    this._hideLoader('_userSecurityChartLoader');
+                    return false;
+                }
+
+                if (response && response.length > 0) {
+                    var length = response.length,
+                        scoresExist = false;
+
+                    this._userSecurityMessage = '';
+                    chart.options = chartOptions;
+                    chart.data = [dataUsers];
+
+                    for (var i = 0; i < length; i++) {
+                        var record = response[i],
+                            applicationScores = record.application_scores,
+                            scoresLength = record.application_scores.length,
+                            score = 0,
+                            data = [];
+
+                        if (scoresLength > 0) {
+                            scoresExist = true;
+
+                            for (var j = 0; j < scoresLength; j++) {
+                                score += applicationScores[j].score;
+                            }
+
+                            if (0 != score && chart.data.length < 11) {
+                                data.push(record.user.name, (scoresLength > 0) ? (score / scoresLength) : 0, scoresLength);
+                                chart.data.push(data);
+                            }
+                        }
+                    }
+
+                    if (!scoresExist) {
+                        this._userSecurityMessage = 'No applications have been assigned to users. Please assign some applications to users.';
+
+                        setTimeout(function() {
+                            var exampleChart = this.$$('#userSecurityChartExample');
+
+                            exampleChart.options = chartOptions;
+                            exampleChart.data = [
+                                dataUsers,
+                                ['John Doe', 56, 12],
+                                ['Jane Jonson', 93, 6]
+                            ];
+                        }.bind(this), 1000);
+
+                        this._hideLoader('_userSecurityChartLoader');
+                        return false;
+                    }
+                }
+            },
+
+            _handleUserPasswordsScoresError: function(event) {
+                this._userSecurityMessage = 'We couldn\'t load statistics at the moment. Please try again later.';
+                this._hideLoader('_userSecurityChartLoader');
+            },
+
+            _onUserSecurityChartReady: function() {
+                this._hideLoader('_userSecurityChartLoader');
+            },
+
+            _handleLoginAttemptsResponse: function(event) {
+                var response = event.detail.response,
+                    chartOptions = {
+                        titlePosition: 'none',
+                        hAxis: {
+                            title: 'Last 30 days',
+                            textStyle: {
+                                color: this.getComputedStyleValue('--primary-text-color')
+                            },
+                            viewWindowMode: 'explicit',
+                            viewWindow: {
+                                min: 0,
+                                max: 30
+                            },
+                            gridlines: {
+                                count: 30
+                            }
+                        },
+                        vAxis: {
+                            title: 'Login attempts',
+                            textStyle: {
+                                color: this.getComputedStyleValue('--primary-text-color')
+                            },
+                            format: '0'
+                        },
+                        backgroundColor: this.getComputedStyleValue('--chart-background-color'),
+                        animation: {
+                            startup: 'true',
+                            duration: 600,
+                            easing: 'in'
+                        },
+                        focusTarget: 'category'
+                    },
+                    chart = this.$$('#loginAttemptsChart'),
+                    length = response.length,
+                    chartApplications = ['Day in month'],
+                    innerData = [];
+
+                if (response && !length) {
+                    this._loginAttemptsMessage = 'There are no login actions attempted by users. Please invite users to try some applications login.';
+
+                    setTimeout(function() {
+                        var exampleChart = this.$$('#loginAttemptsChartExample');
+
+                        exampleChart.options = chartOptions;
+                        exampleChart.data = [
+                            ['Day in month', 'Facebook', 'Twitter'],
+                            ['Jan 15', 6, 14],
+                            ['Jan 16', 10, 12],
+                            ['Jan 17', 7, 12],
+                            ['Jan 18', 6, 13],
+                            ['Jan 19', 9, 10],
+                            ['Jan 20', 10, 12]
+                        ];
+                    }.bind(this), 1000);
+
+                    this._hideLoader('_loginAttemptsChartLoader');
+                    return false;
+                }
+
+                if (response && length > 0) {
+                    this._loginAttemptsMessage = '';
+
+                    chart.options = chartOptions;
+
+                    for (var i = 0; i < length; i++) {
+                        var record = response[i],
+                                date = new Date(record.created_at.date),
+                                date = date.toLocaleDateString('en', { month: 'short', day: 'numeric' });
+
+                        if (chartApplications.indexOf(record.application.title) == -1) {
+                            chartApplications.push(record.application.title);
+                        }
+
+                        if (!innerData[date]) {
+                            innerData[date] = [];
+                        }
+
+                        innerData[date][record.application.title] = !innerData[date][record.application.title] ? 1 : innerData[date][record.application.title] + 1;
+                    }
+
+                    chart.data = [chartApplications];
+
+                    for (var i = 29; i >= 0; i--) {
+                        var date = new Date(),
+                                chartData = [];
+
+                        date.setDate(date.getDate() - i);
+                        date = date.toLocaleDateString('en', { month: 'short', day: 'numeric' });
+
+                        chartData.push(date);
+
+                        if (!innerData[date]) {
+                            innerData[date] = [];
+                        }
+
+                        for (var j = 1; j < chartApplications.length; j++) {
+                            innerData[date][chartApplications[j]] = !innerData[date][chartApplications[j]] ? 0 : innerData[date][chartApplications[j]];
+                            chartData.push(innerData[date][chartApplications[j]]);
+                        }
+
+                        chart.data.push(chartData);
+                    }
+                }
+            },
+
+            _handleLoginAttemptsError: function(event) {
+                this._loginAttemptsMessage = 'We couldn\'t load statistics at the moment. Please try again later.';
+                this._hideLoader('_loginAttemptsChartLoader');
+            },
+
+            _onLoginAttemptsChartReady: function() {
+                this._hideLoader('_loginAttemptsChartLoader');
+            },
+
+            _handleTwoFaResponse: function(event) {
+                var response = event.detail.response,
+                    chartOptions = {
+                        titleTextStyle: {
+                            color: this.getComputedStyleValue('--primary-text-color'),
+                            bold: false
+                        },
+                        backgroundColor: this.getComputedStyleValue('--chart-background-color'),
+                        animation: {
+                            startup: 'true',
+                            duration: 600,
+                            easing: 'in'
+                        },
+                        slices: {
+                            0: {
+                                color: this.getComputedStyleValue('--success-color')
+                            },
+                            1: {
+                                color: this.getComputedStyleValue('--app-danger-color')
+                            }
+                        }
+                    },
+                    chart = this.$$('#twoFaChart');
+
+                this._twoFaMessage = '';
+                this._twoFaInfo = '';
+
+                for (key in response) {
+
+                    if (response) {
+
+                        this._twoFaTotal = response.active + response.inactive;
+
+                        if (0 == response.active) {
+//                            chartOptions.pieSliceText = 'value';
+                            this._twoFaInfo = 'None of the users activated two-factor authentication.';
+                            this._hideLoader('_twoFaChartLoader');
+                            return false;
+                        }
+
+                        chartOptions.title = 'Total users: ' + this._twoFaTotal;
+                        chart.options = chartOptions;
+
+                        chart.data = [
+                            ['Data type', 'Count'],
+                            ['Two-factor authentication active', response.active],
+                            ['Two-factor authentication inactive', response.inactive]
+
+                        ];
+                    }
+
+                    return false;
+                }
+
+                this._twoFaMessage = 'There are no users added to the company. Please add some in order to create statistics.';
+
+                setTimeout(function() {
+                    var exampleChart = this.$$('#twoFaChartExample');
+
+                    chartOptions.title = 'Total users: 25';
+                    exampleChart.options = chartOptions;
+                    exampleChart.data = [
+                        ['Data type', 'Count'],
+                        ['Two-factor authentication active', 15],
+                        ['Two-factor authentication inactive', 10]
+                    ];
+                }.bind(this), 1000);
+
+                this._hideLoader('_twoFaChartLoader');
+            },
+
+            _handleTwoFaError: function(event) {
+                this._twoFaMessage = 'We couldn\'t load statistics at the moment. Please try again later.';
+                this._hideLoader('_twoFaChartLoader');
+            },
+
+            _onTwoFaChartReady: function() {
+                this._hideLoader('_twoFaChartLoader');
+            },
+
+            _handleLicencesResponse: function(event) {
+                var response = event.detail.response,
+                    chartOptions = {
+                        titleTextStyle: {
+                            color: this.getComputedStyleValue('--primary-text-color'),
+                            bold: false
+                        },
+                        backgroundColor: this.getComputedStyleValue('--chart-background-color'),
+                        animation: {
+                            startup: 'true',
+                            duration: 600,
+                            easing: 'in'
+                        },
+                        slices: {
+                            0: {
+                                color: this.getComputedStyleValue('--success-color')
+                            },
+                            1: {
+                                color: this.getComputedStyleValue('--app-danger-color')
+                            },
+                            2: {
+                                color: '#279FBC'
+                            }
+                        }
+                    },
+                    chart = this.$$('#licenceChart');
+
+                for (key in response) {
+                    this._licenceMessage = '';
+
+                    if (response) {
+
+                        chartOptions.title = 'Total licences: ' + response.appscoLicences + '\nActive users: ' + response.active_users;
+                        chart.options = chartOptions;
+
+                        chart.data = [
+                            ['Data type', 'Count'],
+                            ['Used licences', response.currentLicences],
+                            ['Unused licences', response.appscoLicences - response.currentLicences]
+                        ];
+                    }
+
+                    return false;
+                }
+
+                this._licenceMessage = 'There are no data related to AppsCo licences. Statistics will be created when you create subscription plan.';
+
+                setTimeout(function() {
+                    var exampleChart = this.$$('#licenceChartExample');
+
+                    chartOptions.title = 'Total licences: ' + 10 + '\nActive users: ' + 5;
+                    exampleChart.options = chartOptions;
+
+                    exampleChart.data = [
+                        ['Data type', 'Count'],
+                        ['Used licences', 8],
+                        ['Unused licences', 2]
+                    ];
+                }.bind(this), 1000);
+
+                this._hideLoader('_licenceChartLoader');
+            },
+
+            _handleLicencesError: function(event) {
+                this._licenceMessage = 'We couldn\'t load statistics at the moment. Please try again later.';
+                this._hideLoader('_licenceChartLoader');
+            },
+
+            _onLicenceChartReady: function() {
+                this._hideLoader('_licenceChartLoader');
+            }
+        });
+    </script>
+</dom-module>

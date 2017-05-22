@@ -1,0 +1,572 @@
+<link rel="import" href="../bower_components/polymer/polymer.html">
+<link rel="import" href="../bower_components/paper-tabs/paper-tabs.html">
+<link rel="import" href="../bower_components/neon-animation/neon-animated-pages.html">
+<link rel="import" href="../bower_components/neon-animation/animations/fade-in-animation.html">
+<link rel="import" href="../bower_components/neon-animation/animations/fade-out-animation.html">
+<link rel="import" href="../bower_components/iron-flex-layout/iron-flex-layout.html">
+<link rel="import" href="../bower_components/iron-media-query/iron-media-query.html">
+
+<link rel="import" href="../bower_components/appsco-page/appsco-content.html">
+<link rel="import" href="../bower_components/appsco-application/appsco-applications.html">
+<link rel="import" href="../bower_components/appsco-application/appsco-application-info.html">
+<link rel="import" href="../bower_components/appsco-application/appsco-application-analytics-security.html">
+<link rel="import" href="../bower_components/appsco-application/appsco-application-analytics-info.html">
+<link rel="import" href="../bower_components/appsco-application/appsco-application-log.html">
+<link rel="import" href="../bower_components/appsco-orgunit/appsco-orgunit-tree.html">
+<link rel="import" href="../bower_components/appsco-application/company/appsco-application-assignees.html">
+
+<dom-module id="appsco-applications-page">
+    <template>
+        <style include="shared-styles webkit-scrollbar-style">
+            :host {
+                display: block;
+
+                --resource-width: 318px;
+                --info-width: 318px;
+
+                --appsco-application-item: {
+                     color: var(--primary-text-color);
+                 };
+
+                --appsco-list-item-message: {
+                    font-size: 14px;
+                };
+
+                --application-log-item: {
+                     padding-bottom: 6px;
+                };
+
+                --application-details-label: {
+                    font-size: 12px;
+                };
+                --application-details-value: {
+                    font-size: 14px;
+                };
+
+                --applications-container: {
+                     margin-right: -30px;
+                 };
+
+                --subscriber-initials: {
+                     background-color: var(--divider-color);
+                 };
+            }
+            :host .resource-header {
+                border-bottom: 1px solid var(--divider-color);
+            }
+            :host div[resource] {
+                height: 100%;
+                overflow: auto;
+            }
+            :host div[content] > * {
+                padding: 0 10px 10px 10px;
+            }
+            :host div[resource] > *, :host div[info] > * {
+                padding: 10px;
+                box-sizing: border-box;
+            }
+            :host div[info] {
+                height: 100%;
+            }
+            :host div[info] .application-info {
+                border-bottom: 1px solid var(--divider-color);
+                height: 50px;
+                @apply(--layout-flex-none);
+            }
+            appsco-application-analytics-security {
+                --security-score: {
+                     width: 32px;
+                     height: 32px;
+                     font-size: 14px;
+                 };
+            }
+            :host div[info] appsco-application-assignees {
+                height: 90px;
+                padding-top: 14px;
+                color: var(--primary-text-color);
+                @apply(--layout-flex-none);
+            }
+            :host div[info] .details-log {
+                height: calc(100% - 50px - 90px - 34px);
+            }
+            :host .details-log paper-tabs {
+                height: 38px;
+                color: var(--primary-text-color);
+            }
+            :host div[info] .info-details-section {
+                margin-top: 10px;
+                height: 100%;
+            }
+            .tab-content {
+                margin-right: -10px;
+                padding-right: 10px;
+                overflow: auto;
+            }
+            :host div[info] .info-actions {
+                padding: 0;
+                position: absolute;
+                bottom: 0;
+                left: 0;
+                right: 0;
+            }
+            :host .view-button, :host .share-button {
+                @apply(--primary-button);
+                border-radius: 0;
+            }
+            :host .view-button {
+                margin-right: 1px;
+            }
+            :host .share-button {
+                @apply(--secondary-button);
+            }
+            appsco-application-share {
+                --appsco-application-share-button: {
+                     border-radius: 0;
+                     margin: 0;
+                     padding: 6px 12px;
+                     background-color: var(--app-secondary-color);
+                     color: #ffffff;
+                     font-size: 14px;
+                     height: 34px;
+                 };
+            }
+            appsco-application-details {
+                --appsco-application-icons-color: var(--primary-text-color);
+            }
+            :host .flex-horizontal {
+                @apply(--layout-horizontal);
+                @apply(--layout-center);
+            }
+            :host .flex-vertical {
+                @apply(--layout-vertical);
+            }
+            :host .flex {
+                @apply(--layout-flex);
+            }
+            :host([tablet-screen]) {
+                --resource-width: 250px;
+                --info-width: 250px;
+            }
+            :host([mobile-screen]) {
+                --resource-width: 100%;
+                --info-width: 100%;
+            }
+        </style>
+
+        <iron-media-query query="(max-width: 800px)" query-matches="{{ tabletScreen }}"></iron-media-query>
+        <iron-media-query query="(max-width: 600px)" query-matches="{{ mobileScreen }}"></iron-media-query>
+
+        <iron-ajax id="getOrgunitsLink"
+                   auto
+                   url="[[ companyOrgunitsApi ]]"
+                   on-response="_onOrgunitsResponse"
+                   headers="[[ computedHeaders ]]"></iron-ajax>
+
+        <appsco-content id="appscoContent" resource-active>
+
+            <div class="flex-vertical" resource>
+
+                <div class="resource-header">
+                    Filters
+                </div>
+
+                <appsco-orgunit-tree id="appscoOrgunitTree"
+                                     org-units='[[ _orgUnits ]]'
+                                     on-selected="_onOrgunitSelected"></appsco-orgunit-tree>
+
+            </div>
+
+            <div content>
+                <appsco-applications
+                        id="appscoApplications"
+                        size="100"
+                        load-more
+                        company
+                        authorization-token="[[ authorizationToken ]]"
+                        applications-api="[[ companyApplicationsApi ]]"
+                        on-info="_onViewApplicationInfo"
+                        on-edit="_onApplicationEdit"
+                        on-application="_onApplication"
+                        on-applications-removed="_onApplicationsRemoved"
+                        on-loaded="_pageLoaded"
+                        on-empty-load="_onApplicationsEmptyLoad"></appsco-applications>
+            </div>
+
+            <div class="flex-vertical" info>
+
+                <div class="application-info flex-horizontal">
+                    <appsco-application-info class="flex"
+                                             application="[[ application ]]"
+                                             company>
+                    </appsco-application-info>
+
+                    <appsco-application-analytics-security
+                            application="[[ application ]]"></appsco-application-analytics-security>
+                </div>
+
+                <appsco-application-assignees application="[[ application ]]"
+                                              authorization-token="[[ authorizationToken ]]"
+                                              size="5"
+                                              preview></appsco-application-assignees>
+
+                <div class="details-log flex-vertical">
+
+                    <paper-tabs id="paperTabs" selected="{{ _selectedTab }}">
+                        <paper-tab name="info">Info</paper-tab>
+                        <paper-tab name="log">Log</paper-tab>
+                    </paper-tabs>
+
+                    <neon-animated-pages
+                            selected="{{ _selectedTab }}"
+                            entry-animation="fade-in-animation"
+                            exit-animation="fade-out-animation"
+                            class="info-details-section">
+
+                        <div name="info" class="tab-content details">
+                            <appsco-application-analytics-info
+                                    application="[[ application ]]"></appsco-application-analytics-info>
+                        </div>
+
+                        <div name="log" class="tab-content log">
+                            <appsco-application-log
+                                    application="[[ application ]]"
+                                    authorization-token="[[ authorizationToken ]]"
+                                    company>
+                            </appsco-application-log>
+                        </div>
+
+                    </neon-animated-pages>
+
+                </div>
+
+                <div class="info-actions flex-horizontal">
+                    <paper-button
+                            class="view-button flex"
+                            on-tap="_onApplicationInfoEdit">
+                        Edit
+                    </paper-button>
+
+                    <paper-button
+                            class="share-button flex"
+                            on-tap="_onShareApplication">
+                        Share
+                    </paper-button>
+                </div>
+
+            </div>
+
+        </appsco-content>
+
+    </template>
+
+    <script>
+        Polymer({
+            is: 'appsco-applications-page',
+
+            properties: {
+
+                application: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    },
+                    notify: true
+                },
+
+                _orgUnits: {
+                    type: Array,
+                    value: function() {
+                        return [];
+                    }
+                },
+
+                _bulkActions: {
+                    type: Boolean,
+                    value: false,
+                    notify: true
+                },
+
+                _infoShown: {
+                    type: Boolean,
+                    value: false
+                },
+
+                _selectedTab: {
+                    type: Number
+                },
+
+                authorizationToken: {
+                    type: String,
+                    value: ''
+                },
+
+                /**
+                 * Computed headers.
+                 * It contains authorization token.
+                 */
+                computedHeaders: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    }
+                },
+
+                /**
+                 * Get company applications.
+                 */
+                companyApplicationsApi: {
+                    type: String,
+                    value: ''
+                },
+
+                /**
+                 * Get company organization units.
+                 */
+                companyOrgunitsApi: {
+                    type: String,
+                    value: ''
+                },
+
+                _applicationAction: {
+                    type: Number,
+                    value: 0
+                },
+
+                mobileScreen: {
+                    type: Boolean,
+                    value: false,
+                    reflectToAttribute: true
+                },
+
+                tabletScreen: {
+                    type: Boolean,
+                    value: false,
+                    reflectToAttribute: true
+                },
+
+                /**
+                 * Animation config.
+                 */
+                animationConfig: {
+                    value: function() {
+                        return {
+                            'entry': {
+                                name: 'fade-in-animation',
+                                node: this,
+                                timing: {
+                                    duration: 300
+                                }
+                            },
+                            'exit': {
+                                name: 'fade-out-animation',
+                                node: this,
+                                timing: {
+                                    duration: 200
+                                }
+                            }
+                        }
+                    }
+                },
+
+                pageLoaded: {
+                    type: Boolean,
+                    value: false
+                }
+            },
+
+            behaviors: [
+                Polymer.NeonAnimatableBehavior
+            ],
+
+            observers: [
+                '_updateScreen(mobileScreen, tabletScreen)'
+            ],
+
+            attached: function() {
+
+                this.pageLoaded = false;
+
+                if (this.mobileScreen || this.tabletScreen) {
+                    this.updateStyles();
+                }
+
+            },
+
+            _updateScreen: function(mobile, tablet) {
+                this.updateStyles();
+            },
+
+            _pageLoaded: function() {
+                this.pageLoaded = true;
+                this.fire('page-loaded');
+            },
+
+            initializePage: function() {
+                this.$.appscoApplications.initialize();
+                this.setDefaultApplication();
+            },
+
+            resetPage: function() {
+                this.$.appscoApplications.reset();
+
+                this.set('_orgUnits', []);
+                this.$.getOrgunitsLink.generateRequest();
+                this.hideInfo();
+            },
+
+            _onApplicationsEmptyLoad: function() {
+                this.hideInfo();
+                this._pageLoaded();
+            },
+
+            _showInfo: function() {
+                this.$.appscoContent.showSection('info');
+                this._infoShown = true;
+                this._selectedTab = 0;
+            },
+
+            hideInfo: function() {
+                this.$.appscoContent.hideSection('info');
+                this._infoShown = false;
+            },
+
+            toggleInfo: function() {
+
+                if (this.$.appscoApplications.getAllApplications().length > 0) {
+                    this.$.appscoContent.toggleSection('info');
+                    this._infoShown = !this._infoShown;
+
+                    if (this._infoShown) {
+                        this._selectedTab = 0;
+                    }
+                }
+
+            },
+
+            toggleResource: function() {
+                this.$.appscoContent.toggleSection('resource');
+            },
+
+            _onOrgunitsResponse: function(event) {
+                var response = event.detail.response;
+
+                if (response && response.orgunits) {
+                    this.set('_orgUnits', event.detail.response.orgunits);
+                }
+            },
+
+            addOrgunit: function(orgunit) {
+                this.$.appscoOrgunitTree.addOrgunit(orgunit);
+            },
+
+            modifyOrgunit: function(orgunit) {
+                this.$.appscoOrgunitTree.setOrgunit(orgunit);
+                this.$.appscoApplications.setOrgunit(orgunit);
+            },
+
+            removeOrgunit: function(orgunit) {
+                this.$.appscoOrgunitTree.removeOrgunit(orgunit);
+            },
+
+            _handleApplicationInfo: function(application) {
+                this.set('application', application);
+
+                if (!this._infoShown) {
+                    this._showInfo();
+                }
+            },
+
+            _onViewApplicationInfo: function(event) {
+                this._handleApplicationInfo(event.detail.application);
+            },
+
+            _onApplicationEdit: function(event) {
+                this.set('application', event.detail.application);
+                this.fire('edit-application');
+            },
+
+            _onApplicationInfoEdit: function() {
+                this.fire('info-edit-application');
+            },
+
+            _onApplication: function(event) {
+                var application = event.detail.application;
+
+                clearTimeout(this._applicationAction);
+
+                this._applicationAction = setTimeout(function() {
+
+                    if (application.selected) {
+                        this._onViewApplicationInfo(event);
+                        this.fire('show-bulk-actions');
+                    }
+                    else {
+                        var selectedApplication = this.$.appscoApplications.getFirstSelectedApplication();
+
+                        if (!selectedApplication) {
+                            this.hideInfo();
+                            this.setDefaultApplication();
+                            this.fire('hide-bulk-actions');
+                        }
+                        else if (application.self === this.application.self && this.application.selected) {
+                            this._handleApplicationInfo(selectedApplication);
+                        }
+                    }
+
+                }.bind(this), 10);
+            },
+
+            _onShareApplication: function() {
+                this.fire('share-company-application', {
+                    application: this.application
+                });
+            },
+
+            reloadApplications: function() {
+                this.$.appscoApplications.reloadApplications();
+            },
+
+            addApplications: function(applications) {
+                this.$.appscoApplications.addApplications(applications);
+
+                if (!this.application) {
+                    this.set('application', applications[applications.length - 1]);
+                }
+            },
+
+            modifyApplications: function(applications) {
+                this.$.appscoApplications.modifyApplications(applications);
+            },
+
+            removeApplications: function(applications) {
+                this.$.appscoApplications.removeApplications(applications);
+                this.setDefaultApplication();
+            },
+
+            removeApplication: function(application) {
+                this.$.appscoApplications.removeApplications(application);
+            },
+
+            getSelectedApplications: function() {
+                return this.$.appscoApplications.getSelectedApplications();
+            },
+
+            _onApplicationsRemoved: function() {
+                this.fire('hide-bulk-actions');
+                this.setDefaultApplication();
+            },
+
+            setDefaultApplication: function() {
+                this.set('application', this.$.appscoApplications.getFirstApplication());
+            },
+
+            filterApplicationsByTerm: function(term) {
+                this.$.appscoApplications.filterByTerm(term);
+            },
+
+            _onOrgunitSelected: function(event) {
+                this.$.appscoApplications.filterByOrgunit(event.detail);
+            }
+        });
+    </script>
+</dom-module>

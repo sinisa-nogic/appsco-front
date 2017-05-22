@@ -1,0 +1,289 @@
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../bower_components/iron-flex-layout/iron-flex-layout.html">
+<link rel="import" href="../../bower_components/paper-styles/typography.html">
+<link rel="import" href="../../bower_components/paper-styles/shadow.html">
+<link rel="import" href="../../bower_components/paper-button/paper-button.html">
+<link rel="import" href="../../bower_components/iron-icon/iron-icon.html">
+<link rel="import" href="../../bower_components/iron-icons/iron-icons.html">
+<link rel="import" href="../../bower_components/paper-input/paper-input.html">
+<link rel="import" href="../../bower_components/iron-image/iron-image.html">
+<link rel="import" href="../../bower_components/iron-form/iron-form.html">
+<link rel="import" href="../../bower_components/paper-dialog/paper-dialog.html">
+<link rel="import" href="../../bower_components/paper-dialog-scrollable/paper-dialog-scrollable.html">
+<link rel="import" href="../../bower_components/paper-toggle-button/paper-toggle-button.html">
+<link rel="import" href="../../bower_components/neon-animation/animations/scale-up-animation.html">
+<link rel="import" href="../../bower_components/gold-email-input/gold-email-input.html">
+<link rel="import" href="../../bower_components/iron-a11y-keys/iron-a11y-keys.html">
+
+<link rel="import" href="../../bower_components/appsco-components/appsco-loader.html">
+<link rel="import" href="../../bower_components/appsco-components/appsco-form-error.html">
+
+<dom-module id="appsco-directory-add-account">
+    <template>
+        <style>
+            :host {
+                display: block;
+                position: relative;
+                @apply(--appsco-directory-add-account);
+            }
+            :host paper-dialog {
+                width: 670px;
+                top: 10vh;
+                @apply(--appsco-paper-dialog);
+            }
+            :host paper-dialog-scrollable > * {
+                @apply(--paper-dialog-scrollable-child);
+            }
+            :host paper-input {
+                --paper-input-container-label: {
+                    left: 4px;
+                };
+            }
+            :host appsco-loader {
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+            :host .message {
+                margin: 0;
+                color: var(--secondary-text-color);
+                font-style: italic;
+                @apply(--paper-font-body2);
+            }
+            :host .buttons paper-button {
+                @apply(--paper-dialog-button);
+            }
+            :host .buttons paper-button[dialog-confirm] {
+                @apply(--paper-dialog-confirm-button);
+            }
+            :host .buttons paper-button[dialog-dismiss] {
+                @apply(--paper-dialog-dismiss-button);
+            }
+            :host .info {
+                margin: 0;
+            }
+            :host .mt {
+                margin-top: 15px;
+            }
+            :host .flex-horizontal {
+                @apply(--layout-horizontal);
+            }
+            :host .flex-horizontal > div {
+                padding-right: 10px;
+            }
+            :host .flex{
+                @apply(--layout-flex);
+            }
+            :host .baseline {
+                @apply(--layout-self-end);
+                padding-bottom: 10px;
+                text-align: center;
+            }
+            paper-toggle-button {
+                cursor: pointer;
+            }
+        </style>
+
+        <paper-dialog id="dialog"
+                      with-backdrop
+                      entry-animation="scale-up-animation"
+                      exit-animation="fade-out-animation"
+                      on-iron-overlay-opened="_onDialogOpened"
+                      on-iron-overlay-closed="_onDialogClosed">
+
+            <h2>Add account to Directory</h2>
+
+            <appsco-loader active="[[ _loader ]]"
+                           loader-alt="Appsco is processing request"
+                           multi-color></appsco-loader>
+
+            <paper-dialog-scrollable>
+                <div class="dialog-container">
+
+                    <appsco-form-error message="[[ _error ]]"></appsco-form-error>
+
+                    <form is="iron-form"
+                          id="createInvitationForm"
+                          method="POST"
+                          action="[[ directoryInvitationsApi ]]"
+                          headers="[[ _headers ]]"
+                          on-iron-form-error="_onFormError"
+                          on-iron-form-response="_onFormResponse">
+                        <div>
+                            <p class="info">
+                                First name and last name are important since they associate degree of confidence.
+                                They will be used for log purposes, statistics and other reporting activities.
+                                Beside usage in AppsCo they can also be used for integration with other tools.
+                            </p>
+                            <div class="flex-horizontal">
+                                <div class="flex">
+                                    <paper-input
+                                            id="accountFirstName"
+                                            label="First name"
+                                            name="invitation[first_name]"
+                                            required
+                                            auto-validate
+                                            error-message="Please provide first name."
+                                    ></paper-input>
+                                </div>
+                                <div class="flex">
+                                    <paper-input
+                                            id="accountLastName"
+                                            label="Last name"
+                                            name="invitation[last_name]"
+                                            required
+                                            auto-validate
+                                            error-message="Please provide last name."
+                                    ></paper-input>
+                                </div>
+                            </div>
+                            <p class="info mt">
+                                Email is used as part of credentials for accessing the system.
+                                Email can be used for log purposes, statistics and other reporting activities.
+                            </p>
+                            <div class="flex-horizontal">
+                                <div class="flex">
+                                    <gold-email-input id="accountEmail"
+                                                      label="Email"
+                                                      value=""
+                                                      name="invitation[email]"
+                                                      required
+                                                      auto-validate
+                                                      error-message="Please provide valid email."></gold-email-input>
+                                </div>
+                                <div class="baseline">
+                                    <paper-toggle-button id="sendActivationEmail"
+                                                         name="invitation[notify]">Send Activation Email</paper-toggle-button>
+                                </div>
+                            </div>
+
+                            <!--<paper-input name="register_account[companyRoles][COMPANY_ROLE_EMPLOYEE]"-->
+                                         <!--value="COMPANY_ROLE_EMPLOYEE"-->
+                                         <!--hidden></paper-input>-->
+                        </div>
+                    </form>
+                </div>
+            </paper-dialog-scrollable>
+
+            <div class="buttons">
+                <paper-button dialog-dismiss>Cancel</paper-button>
+                <paper-button autofocus on-tap="_submitForm">Add</paper-button>
+            </div>
+        </paper-dialog>
+
+        <iron-a11y-keys keys="enter"
+                        on-keys-pressed="_onEnter"></iron-a11y-keys>
+
+    </template>
+    <script>
+        Polymer({
+
+            is: 'appsco-directory-add-account',
+
+            properties: {
+
+                /**
+                 * Authorization token.
+                 */
+                authorizationToken: {
+                    type: String
+                },
+
+                directoryInvitationsApi: {
+                    type: String
+                },
+
+                _headers: {
+                    type: Object,
+                    computed: '_computeHeaders(authorizationToken)'
+                },
+
+                /**
+                 * Indicates if add application loader should be displayed or not.
+                 */
+                _loader: {
+                    type: Boolean,
+                    value: false
+                }
+
+            },
+
+            _computeHeaders: function(authorizationToken) {
+                return {
+                    'Authorization': 'token ' + authorizationToken,
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                };
+            },
+
+            /**
+             * Toggles add applications dialog.
+             */
+            toggle: function() {
+                this.$.dialog.toggle();
+            },
+
+            /**
+             * Called after dialog has been opened.
+             *
+             * @private
+             */
+            _onDialogOpened: function() {
+                this.$.accountFirstName.focus();
+            },
+
+            /**
+             * Called after dialog has been closed.
+             *
+             * @private
+             */
+            _onDialogClosed: function() {
+                this._loader = false;
+                this._error = '';
+                this.$.createInvitationForm.reset();
+            },
+
+            _onEnter: function() {
+                this._submitForm();
+            },
+
+            _submitForm: function() {
+                var form = this.$.createInvitationForm;
+
+                if (form.validate()) {
+                    this._loader = true;
+                    form.submit();
+                }
+            },
+
+            _onFormError: function(event) {
+                this._error = event.detail.request.response.message;
+                this._loader = false;
+            },
+
+            _onFormResponse: function(event) {
+                var response = event.detail.response,
+                    item = response && response.length > 0 ? response[0] : null;
+
+                this.$.dialog.close();
+
+                if (item.invitation.self) {
+
+                    /**
+                     * @event invitation-created
+                     */
+                    this.fire('invitation-created', {
+                        invitation: item.invitation
+                    });
+                }
+                else if (item.role.self) {
+
+                    /**
+                     * @event account-added
+                     */
+                    this.fire('account-added', {
+                        role: item.role
+                    });
+                }
+            }
+        });
+    </script>
+</dom-module>

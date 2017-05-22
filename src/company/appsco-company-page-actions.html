@@ -1,0 +1,136 @@
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../bower_components/iron-flex-layout/iron-flex-layout.html">
+<link rel="import" href="../../bower_components/neon-animation/neon-animatable-behavior.html">
+<link rel="import" href="../../bower_components/neon-animation/animations/fade-in-animation.html">
+<link rel="import" href="../../bower_components/neon-animation/animations/fade-out-animation.html">
+<link rel="import" href="../../bower_components/paper-icon-button/paper-icon-button.html">
+<link rel="import" href="../../bower_components/iron-icons/iron-icons.html">
+<link rel="import" href="../../bower_components/iron-media-query/iron-media-query.html">
+<link rel="import" href="../../bower_components/paper-button/paper-button.html">
+
+<dom-module id="appsco-company-page-actions">
+    <template>
+        <style include="shared-styles">
+            :host {
+                @apply(--layout-horizontal);
+                @apply(--layout-center);
+                @apply(--layout-end-justified);
+
+                --application-action-icon-color: var(--app-primary-color);
+            }
+            :host > * {
+                height: 100%;
+            }
+            :host paper-icon-button::shadow paper-ripple {
+                width: 150%;
+                height: 150%;
+                top: -25%;
+                left: -25%;
+            }
+            .domains-actions {
+                @apply(--layout-horizontal);
+                @apply(--layout-center);
+                @apply(--layout-end-justified);
+            }
+            .global-page-actions {
+                border-left: 1px solid var(--divider-color);
+                margin-left: 16px;
+                padding-left: 10px;
+                display: none;
+            }
+            .add-domain-action {
+                @apply(--primary-button);
+            }
+            :host([tablet-screen]) .global-page-actions {
+                display: block;
+                @apply(--layout-horizontal);
+                @apply(--layout-center);
+                @apply(--layout-end-justified);
+            }
+        </style>
+
+        <iron-media-query query="(max-width: 800px)" query-matches="{{ tabletScreen }}"></iron-media-query>
+
+        <template is="dom-if" if="[[ _domainsActions ]]">
+            <div class="domains-actions">
+                <paper-button class="add-domain-action"
+                              on-tap="_onAddDomainAction">Add domain</paper-button>
+            </div>
+        </template>
+
+        <div class="global-page-actions">
+            <paper-icon-button
+                    class="info-action"
+                    icon="info-outline"
+                    title="Application Resource"
+                    on-tap="_onResourceAction"></paper-icon-button>
+        </div>
+    </template>
+
+    <script>
+        Polymer({
+
+            is: 'appsco-company-page-actions',
+
+            properties: {
+
+                _domainsActions: {
+                    type: Boolean,
+                    value: false
+                },
+
+                tabletScreen: {
+                    type: Boolean,
+                    value: false,
+                    reflectToAttribute: true
+                },
+
+                /**
+                 * Animation config with hero animation.
+                 */
+                animationConfig: {
+                    value: function() {
+                        return {
+                            'entry': {
+                                name: 'fade-in-animation',
+                                node: this,
+                                timing: {
+                                    delay: 300,
+                                    duration: 300
+                                }
+                            },
+                            'exit': {
+                                name: 'fade-out-animation',
+                                node: this,
+                                timing: {
+                                    duration: 200
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+
+            behaviors: [
+                Polymer.NeonAnimatableBehavior
+            ],
+
+            showDomainsPageActions: function() {
+                this._domainsActions = true;
+            },
+
+            hideDomainsPageActions: function() {
+                this._domainsActions = false;
+            },
+
+            _onResourceAction: function() {
+                this.fire('resource-section');
+            },
+
+            _onAddDomainAction: function() {
+                this.fire('add-domain');
+            }
+        });
+    </script>
+</dom-module>
+

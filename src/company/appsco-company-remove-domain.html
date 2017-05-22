@@ -1,0 +1,216 @@
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../bower_components/paper-button/paper-button.html">
+<link rel="import" href="../../bower_components/iron-ajax/iron-request.html">
+<link rel="import" href="../../bower_components/paper-dialog/paper-dialog.html">
+<link rel="import" href="../../bower_components/paper-dialog-scrollable/paper-dialog-scrollable.html">
+<link rel="import" href="../../bower_components/neon-animation/animations/fade-out-animation.html">
+<link rel="import" href="../../bower_components/neon-animation/animations/scale-up-animation.html">
+
+<link rel="import" href="../../bower_components/appsco-components/appsco-loader.html">
+<link rel="import" href="../../bower_components/appsco-components/appsco-form-error.html">
+
+<!--
+`appsco-company-remove-domain`
+Shows dialog screen with confirmation for account removal from organization unit.
+
+    <appsco-company-remove-domain domain="{}" authorization-token="">
+    </appsco-company-remove-domain>
+
+### Styling
+
+`<appsco-company-remove-domain>` provides the following custom properties and mixins for styling:
+
+-->
+
+<dom-module id="appsco-company-remove-domain">
+    <template>
+        <style>
+            :host {
+                display: block;
+                position: relative;
+                @apply(--appsco-domain-remove);
+
+                --form-error-box: {
+                     margin-top: 0;
+                 };
+            }
+            :host paper-dialog {
+                width: 670px;
+                top: 20vh;
+                @apply(--appsco-paper-dialog);
+            }
+            :host paper-dialog-scrollable > * {
+                @apply(--paper-dialog-scrollable-child);
+            }
+            :host .buttons paper-button {
+                @apply(--paper-dialog-button);
+            }
+            :host .buttons paper-button[dialog-dismiss] {
+                @apply(--paper-dialog-dismiss-button);
+            }
+            :host appsco-loader {
+                @apply(--paper-dialog-appsco-loader);
+            }
+        </style>
+        <paper-dialog
+                with-backdrop
+                id="dialog"
+                entry-animation="scale-up-animation"
+                exit-animation="fade-out-animation"
+                on-iron-overlay-closed="_onDialogClosed">
+
+            <h2>Remove [[ domain.domain ]]</h2>
+
+            <appsco-loader active="[[ _loader ]]" loader-alt="Appsco is processing request" multi-color></appsco-loader>
+
+            <paper-dialog-scrollable>
+                <div class="remove-container">
+                    <appsco-form-error message="[[ _error ]]"></appsco-form-error>
+                    <p>Please confirm removal of [[ domain.domain ]] from company.</p>
+                </div>
+            </paper-dialog-scrollable>
+
+            <div class="buttons">
+                <paper-button dialog-dismiss>Cancel</paper-button>
+                <paper-button autofocus on-tap="_remove">Remove</paper-button>
+            </div>
+        </paper-dialog>
+
+    </template>
+    <script>
+        Polymer({
+
+            is: 'appsco-company-remove-domain',
+
+            properties: {
+
+                /**
+                 * Account to remove from organization unit.
+                 */
+                domain: {
+                    type: Array,
+                    value: function() {
+                        return {};
+                    }
+                },
+
+                domainsApi: {
+                    type: String,
+                    value: ''
+                },
+
+                _removeDomainApi: {
+                    type: String,
+                    computed: '_computeRemoveDomainApi(domain, domainsApi)'
+                },
+
+                /**
+                 * Authorization token.
+                 */
+                authorizationToken: {
+                    type: String,
+                    value: ''
+                },
+
+                _headers: {
+                    type: String,
+                    computed: '_computeHeaders(authorizationToken)'
+                },
+
+                _loader: {
+                    type: Boolean,
+                    value: false
+                },
+
+                /**
+                 * Error message.
+                 */
+                _error: {
+                    type: String
+                }
+            },
+
+            setDomain: function(domain) {
+                this.domain = domain;
+            },
+
+            open: function () {
+                this.$.dialog.open();
+            },
+
+            close: function () {
+                this.$.dialog.close();
+            },
+
+            toggle: function () {
+                this.$.dialog.toggle();
+            },
+
+            _computeHeaders: function(authorizationToken) {
+                return {
+                    'Authorization': 'token ' + authorizationToken,
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                };
+            },
+
+            _computeRemoveDomainApi: function(domain, domainsApi) {
+                return (domain.alias && domainsApi) ? (domainsApi + '/' + domain.alias) : '';
+            },
+
+            _showLoader: function() {
+                this._loader = true;
+            },
+
+            _hideLoader: function() {
+                this._loader = false;
+            },
+
+            _showError: function(message) {
+                this._error = message;
+            },
+
+            _hideError: function() {
+                this._error = '';
+            },
+
+            _onDialogClosed: function() {
+                this._hideError();
+                this._hideLoader();
+            },
+
+            _remove: function() {
+                var request = document.createElement('iron-request'),
+                        options = {
+                            url: this._removeDomainApi,
+                            method: 'DELETE',
+                            handleAs: 'json',
+                            headers: this._headers
+                        };
+
+                this._showLoader();
+
+                request.send(options).then(function() {
+                    this.close();
+
+                    /**
+                     * Fired when domain is deleted.
+                     *
+                     * @event domain-removed
+                     * @param [Object] domain
+                     */
+                    this.fire('domain-removed', {
+                        domain: this.domain
+                    });
+
+                }.bind(this), function() {
+
+                    if (request.status === 404) {
+                        this._showError('We couldn\'t remove domain from company. Please try again in a minute.');
+                    }
+
+                    this._hideLoader();
+                }.bind(this));
+            }
+        });
+    </script>
+</dom-module>

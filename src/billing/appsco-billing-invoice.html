@@ -1,0 +1,116 @@
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../bower_components/iron-flex-layout/iron-flex-layout.html">
+<link rel="import" href="../../bower_components/neon-animation/neon-animation-runner-behavior.html">
+<link rel="import" href="../../bower_components/neon-animation/animations/fade-in-animation.html">
+<link rel="import" href="../../bower_components/neon-animation/animations/fade-out-animation.html">
+<link rel="import" href="../../bower_components/paper-material/paper-material.html">
+<link rel="import" href="../../bower_components/paper-styles/shadow.html">
+
+<link rel="import" href="../../bower_components/appsco-components/appsco-date-format.html">
+<link rel="import" href="../../bower_components/appsco-components/appsco-price.html">
+
+<dom-module id="appsco-billing-invoice">
+    <template>
+        <style>
+            :host {
+                display: none;
+            }
+            :host .invoice {
+                @apply(--layout-horizontal);
+                @apply(--layout-center);
+                width: 100%;
+                height: 50px;
+                padding: 10px;
+                margin: 0;
+                background-color: #ffffff;
+                cursor: pointer;
+                border-radius: 3px;
+                box-sizing: border-box;
+                transition: all 0.1s ease-out;
+            }
+            :host .invoice:hover {
+                @apply(--shadow-elevation-3dp);
+            }
+            :host([active]) .invoice {
+                background: var(--brand-color);
+                color: var(--brand-text-color);
+                transition: all 0.2s ease-in;
+            }
+            :host appsco-date-format {
+                @apply(--layout-flex);
+            }
+        </style>
+
+        <paper-material elavation="1" class="invoice flex-horizontal">
+            <appsco-date-format date="[[ invoice.date.date ]]"
+                                options='{"year": "numeric", "month": "long", "day": "numeric"}'></appsco-date-format>
+
+            <appsco-price price="[[ invoice.total ]]"
+                          currency="[[ invoice.currency ]]"></appsco-price>
+        </paper-material>
+
+    </template>
+    <script>
+        Polymer({
+
+            is: 'appsco-billing-invoice',
+
+            properties: {
+
+                invoice: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    }
+                },
+
+                active: {
+                    type: Boolean,
+                    value: false,
+                    reflectToAttribute: true
+                },
+
+                /**
+                 * Animation for loader appearance.
+                 */
+                animationConfig: {
+                    value: function() {
+                        return {
+                            'entry': {
+                                name: 'fade-in-animation',
+                                node: this,
+                                timing: {
+                                    duration: 200
+                                }
+                            },
+                            'exit': {
+                                name: 'fade-out-animation',
+                                node: this,
+                                timing: {
+                                    duration: 100
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+
+            behaviors: [
+                Polymer.NeonAnimationRunnerBehavior
+            ],
+
+            attached: function() {
+                this.style.display = 'block';
+                this.playAnimation('entry');
+            },
+
+            select: function() {
+                this.active = true;
+            },
+
+            deselect: function() {
+                this.active = false;
+            }
+        });
+    </script>
+</dom-module>

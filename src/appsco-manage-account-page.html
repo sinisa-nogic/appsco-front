@@ -1,0 +1,697 @@
+<link rel="import" href="../bower_components/polymer/polymer.html">
+<link rel="import" href="../bower_components/neon-animation/neon-animated-pages.html">
+<link rel="import" href="../bower_components/neon-animation/animations/fade-in-animation.html">
+<link rel="import" href="../bower_components/neon-animation/animations/fade-out-animation.html">
+<link rel="import" href="../bower_components/paper-icon-button/paper-icon-button.html">
+<link rel="import" href="../bower_components/iron-image/iron-image.html">
+<link rel="import" href="../bower_components/iron-media-query/iron-media-query.html">
+<link rel="import" href="../bower_components/iron-ajax/iron-ajax.html">
+<link rel="import" href="../bower_components/iron-ajax/iron-request.html">
+
+<link rel="import" href="../bower_components/appsco-page/appsco-content.html">
+<link rel="import" href="../bower_components/appsco-account/appsco-account-image-settings.html">
+<link rel="import" href="directory/appsco-manage-account-components-page.html">
+<link rel="import" href="account/appsco-account-settings-page.html">
+<link rel="import" href="account/appsco-account-notifications-page.html">
+<link rel="import" href="account/appsco-account-log-page.html">
+<link rel="import" href="directory/appsco-account-orgunits-page.html">
+<link rel="import" href="directory/appsco-manage-account-change-password-page.html">
+<link rel="import" href="directory/appsco-directory-role-applications-page.html">
+
+<dom-module id="appsco-manage-account-page">
+    <template>
+        <style include="webkit-scrollbar-style">
+            :host {
+                display: block;
+                color: #000;
+
+                --appsco-content-sections: {
+                     padding: 0;
+                 };
+
+                --resource-width: 300px;
+            }
+            :host paper-icon-button::shadow paper-ripple {
+                width: 150%;
+                height: 150%;
+                top: -25%;
+                left: -25%;
+            }
+            :host div[resource] {
+                padding: 10px;
+                height: calc(100% - 32px - 20px - 10px);
+                overflow: auto;
+            }
+            :host div[content] {
+                height: 100%;
+            }
+            :host .account-components, :host .account-components neon-animated-pages {
+                height: 100%;
+            }
+            appsco-manage-account-components-page {
+                padding: 10px;
+            }
+            appsco-account-image-settings {
+                display: block;
+            }
+            .resource-header {
+                padding: 20px 10px 30px;
+                border-bottom: 1px solid var(--divider-color);
+                position: relative;
+            }
+            .account-initials {
+                width: 96px;
+                height: 96px;
+                margin-left: auto;
+                margin-right: auto;
+                position: relative;
+                background-color: var(--divider-color);
+                border-radius: 50%;
+            }
+            .account-initials .initials {
+                position: absolute;
+                top: 0;
+                right: 0;
+                bottom: 0;
+                left: 0;
+                margin: auto;
+                line-height: 96px;
+                text-align: center;
+                text-transform: uppercase;
+                font-size: 24px;
+            }
+            .account-info {
+                margin-top: 10px;
+                font-size: 14px;
+            }
+            .account-info p {
+                margin: 4px 0;
+            }
+            .account-managed-by {
+                margin-top: 10px;
+            }
+            div[resource] .resource-actions {
+                position: absolute;
+                bottom: 0;
+                left: 0;
+                right: 0;
+            }
+            :host .change-password-button {
+                @apply(--primary-button);
+                @apply(--secondary-button);
+                border-radius: 0;
+            }
+            :host .flex-horizontal {
+                @apply(--layout-horizontal);
+                @apply(--layout-center);
+            }
+            :host .flex-vertical {
+                @apply(--layout-vertical);
+            }
+            :host .flex {
+                @apply(--layout-flex);
+            }
+            :host([medium-screen]) {
+                --resource-width: 240px;
+            }
+            :host([mobile-screen]) {
+                --resource-width: 180px;
+            }
+            .change-password-hero {
+                position: fixed;
+                top: 0;
+                right: 0;
+                bottom: 0;
+                left: 0;
+                margin: auto;
+                width: 100px;
+                height: 100px;
+                opacity: 0;
+                visibility: hidden;
+            }
+            hr {
+                height: 1px;
+                margin: 4px 0;
+                border: none;
+                background-color: var(--divider-color);
+            }
+        </style>
+
+        <iron-media-query query="(max-width: 1200px)" query-matches="{{ mediumScreen }}"></iron-media-query>
+        <iron-media-query query="(max-width: 800px)" query-matches="{{ tabletScreen }}"></iron-media-query>
+        <iron-media-query query="(max-width: 600px)" query-matches="{{ mobileScreen }}"></iron-media-query>
+
+        <appsco-content id="appscoContent" resource-active>
+
+            <div class="flex-vertical" resource>
+
+                <div class="resource-header">
+                    <template is="dom-if" if="[[ account.picture_url ]]">
+                        <appsco-account-image-settings
+                                id="appscoAccountImageSettings"
+                                account="{{ account }}"
+                                authorization-token="[[ authorizationToken ]]"
+                                image-settings-api="[[ imageSettingsApi ]]"
+                                preview-only>
+                        </appsco-account-image-settings>
+                    </template>
+
+                    <template is="dom-if" if="[[ !account.picture_url ]]">
+                        <div class="account-icon account-initials">
+                            <span class="initials">[[ _accountInitials ]]</span>
+                        </div>
+                    </template>
+                </div>
+
+                <div class="account-info">
+                    <div class="account-name">[[ account.name ]]</div>
+
+                    <div class="account-email">[[ account.email ]]</div>
+
+                    <template is="dom-if" if="[[ account.company ]]">
+                        <hr>
+                        <div class="account-managed-by">
+                            <p>Managed by: [[ account.company.name ]]</p>
+                        </div>
+                    </template>
+                </div>
+
+                <div class="resource-actions flex-horizontal">
+                    <paper-button
+                            class="change-password-button flex"
+                            on-tap="_onChangePassword"
+                            disabled$="[[ !_canManage ]]"
+                    >
+                        Change password
+                    </paper-button>
+                </div>
+
+            </div>
+
+            <div content>
+
+                <div class="account-components">
+                    <neon-animated-pages class="flex"
+                                         selected="{{ _selected }}"
+                                         attr-for-selected="name"
+                                         on-neon-animation-finish="_onPageAnimationFinish">
+
+                        <appsco-manage-account-components-page
+                                id="appscoManageAccountComponentsPage"
+                                name="appsco-account-components-page"
+                                can-manage="[[ _canManage ]]"
+                                role="[[ role ]]"
+                                administrator="[[ administrator ]]"
+                                authorization-token="[[ authorizationToken ]]"
+                                notifications-api="[[ _notificationsApi ]]"
+                                log-api="[[ _logApi ]]"
+                                two-fa-api="[[ _twoFaApi ]]"
+                                on-account-settings="_onAccountSettings"
+                                on-all-notifications="_onAllNotifications"
+                                on-whole-log="_onWholeLog"
+                                on-manage-orgunits="_onManageOrgunits"
+                                on-manage-applications="_onManageApplications"
+                                on-log-loaded="_pageLoaded"
+                                on-log-empty="_pageLoaded">
+                        </appsco-manage-account-components-page>
+
+                        <appsco-account-settings-page
+                                name="appsco-account-settings-page"
+                                account="{{ account }}"
+                                authorization-token="[[ authorizationToken ]]"
+                                settings-api="[[ settingsApi ]]"
+                                on-settings-saved="_onSettingsSaved"
+                                on-back="_onResourceBack">
+                        </appsco-account-settings-page>
+
+                        <appsco-account-notifications-page
+                                name="appsco-account-notifications-page"
+                                authorization-token="[[ authorizationToken ]]"
+                                notifications-api="[[ _notificationsApi ]]"
+                                on-back="_onResourceBack">
+                        </appsco-account-notifications-page>
+
+                        <appsco-account-log-page
+                                id="appscoAccountLogPage"
+                                name="appsco-account-log-page"
+                                authorization-token="[[ authorizationToken ]]"
+                                log-api="[[ _logApi ]]"
+                                on-back="_onResourceBack">
+                        </appsco-account-log-page>
+
+                        <appsco-account-orgunits-page
+                                name="appsco-account-orgunits-page"
+                                role="[[ role ]]"
+                                authorization-token="[[ authorizationToken ]]"
+                                on-back="_onResourceBack">
+                        </appsco-account-orgunits-page>
+
+                        <appsco-manage-account-change-password-page
+                                name="appsco-manage-account-change-password-page"
+                                authorization-token="[[ authorizationToken ]]"
+                                change-password-api="[[ changePasswordApi ]]"
+                                on-password-changed="_onPasswordChanged"
+                                on-back="_onResourceBack">
+                        </appsco-manage-account-change-password-page>
+
+                        <appsco-directory-role-applications-page
+                                id="appscoDirectoryRoleApplicationsPage"
+                                name="appsco-directory-role-applications-page"
+                                role="[[ role ]]"
+                                authorization-token="[[ authorizationToken ]]"
+                                on-back="_onResourceBack">
+                        </appsco-directory-role-applications-page>
+
+                    </neon-animated-pages>
+                </div>
+
+            </div>
+        </appsco-content>
+
+        <div id="changePasswordHero" class="change-password-hero"></div>
+
+        <iron-ajax id="ironAjaxGetAccount"
+                   on-error="_onAccountError"
+                   on-response="_onAccountResponse"
+                   headers="{{ _computedHeaders }}">
+        </iron-ajax>
+        <iron-ajax id="ironAjaxCanBeManaged"
+                   on-error="_onCanBeManagedError"
+                   on-response="_onCanBeManagedResponse"
+                   headers="[[ _computedHeaders ]]"
+                   >
+        </iron-ajax>
+
+    </template>
+
+    <script>
+        Polymer({
+            is: 'appsco-manage-account-page',
+
+            properties: {
+
+                route: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    }
+                },
+
+                _canManage: {
+                    type: Boolean,
+                    value: false
+                },
+
+                role: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    },
+                    observer: '_onRoleChanged'
+                },
+
+                account: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    },
+                    notify: true
+                },
+
+                administrator: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    }
+                },
+
+                authorizationToken: {
+                    type: String
+                },
+
+                _accountInitials: {
+                    type: String,
+                    computed: '_computeAccountInitials(account)'
+                },
+
+                companyApi: {
+                    type: String,
+                    value: '',
+                    observer: '_onCompanyApiChanged'
+                },
+
+                /**
+                 * Get notifications link.
+                 */
+                _notificationsApi: {
+                    type: String,
+                    computed: '_computeNotificationsApi(role)'
+                },
+
+                /**
+                 * Get account log link.
+                 */
+                _logApi: {
+                    type: String,
+                    computed: '_computeLogApi(role)'
+                },
+
+                /**
+                 * Get 2fa status link.
+                 */
+                _twoFaApi: {
+                    type: String,
+                    computed: '_computeTwoFaApi(role)'
+                },
+
+                /**
+                 * Save account settings link.
+                 */
+                settingsApi: {
+                    type: String,
+                    computed: '_computeSettingsApi(role)'
+                },
+
+                /**
+                 * Save account image link.
+                 */
+                imageSettingsApi: {
+                    type: String
+                },
+
+
+                /**
+                 * Change account password link.
+                 */
+                changePasswordApi: {
+                    type: String,
+                    computed: '_computeChangePasswordApi(role)'
+                },
+
+                /**
+                 * Computed headers.
+                 * It contains authorization token.
+                 */
+                _computedHeaders: {
+                    type: Object,
+                    computed: "_computeHeaders(authorizationToken)"
+                },
+
+                /**
+                 * Selected page.
+                 * It has value of component's 'name' attribute.
+                 */
+                _selected: {
+                    type: String,
+                    value: 'appsco-account-components-page',
+                    notify: true
+                },
+
+                /**
+                 * Indicates if it is medium screen size.
+                 * It uses iron-media-query.
+                 */
+                mediumScreen: {
+                    type: Boolean,
+                    value: false,
+                    reflectToAttribute: true
+                },
+
+                tabletScreen: {
+                    type: Boolean,
+                    value: false,
+                    reflectToAttribute: true
+                },
+
+                mobileScreen: {
+                    type: Boolean,
+                    value: false,
+                    reflectToAttribute: true
+                },
+
+                /**
+                 * Animation config.
+                 */
+                animationConfig: {
+                    value: function() {
+                        return {
+                            'entry': {
+                                name: 'fade-in-animation',
+                                node: this,
+                                timing: {
+                                    duration: 300
+                                }
+                            },
+                            'exit': {
+                                name: 'fade-out-animation',
+                                node: this,
+                                timing: {
+                                    duration: 200
+                                }
+                            }
+                        }
+                    }
+                },
+
+                pageLoaded: {
+                    type: Boolean,
+                    value: false
+                }
+            },
+
+            behaviors: [
+                Polymer.NeonAnimatableBehavior
+            ],
+
+            observers: [
+                '_updateScreen(mediumScreen, tabletScreen, mobileScreen)'
+            ],
+
+            attached: function() {
+
+                this.pageLoaded = false;
+
+                if (this.mobileScreen || this.tabletScreen || this.mediumScreen) {
+                    this.updateStyles();
+                }
+
+                this._getAccount();
+
+            },
+
+            _onCompanyApiChanged: function() {
+                this._getAccount();
+            },
+
+            _updateScreen: function(medium, tablet, mobile) {
+                this.updateStyles();
+
+                if (mobile) {
+                    this.$.appscoContent.hideSection('resource');
+                }
+                else if(!this.$.appscoContent.resourceActive) {
+                    this.$.appscoContent.showSection('resource');
+                }
+            },
+
+            _computeAccountInitials: function(account) {
+                var initials = '';
+
+                if (account.self && account.first_name.length > 0 && account.last_name.length > 0) {
+                    initials = account.first_name.substring(0, 1) + account.last_name.substring(0, 1);
+                }
+                else if (account.self && account.name) {
+                    initials = account.name.substring(0, 2);
+                }
+
+                return initials;
+            },
+
+            /**
+             * Computes authorization headers.
+             *
+             * @param {Object} authorizationToken
+             * @returns {{ Authorization: string }}
+             * @private
+             */
+            _computeHeaders: function (authorizationToken) {
+                return {
+                    'Authorization': 'token ' + authorizationToken
+                }
+            },
+
+            _computeSettingsApi: function(role) {
+                return role.self;
+            },
+
+            _computeNotificationsApi: function(role) {
+                return role.self + '/notifications';
+            },
+
+            _computeLogApi: function(role) {
+                return role.meta ? role.meta.log : '';
+            },
+
+            _computeTwoFaApi: function(role) {
+                return role.self + '/2fa';
+            },
+
+            _computeChangePasswordApi: function(role) {
+                return role.self + '/change-password';
+            },
+
+            _pageLoaded: function() {
+                this.pageLoaded = true;
+                this.fire('page-loaded');
+            },
+
+            _getAccount: function() {
+
+                if (!this.role.self && this.companyApi && this._computedHeaders) {
+                    var accountApi = this.companyApi + '/directory/roles' + this.route.path;
+
+                    this.$.ironAjaxGetAccount.url = accountApi;
+                    this.$.ironAjaxGetAccount.generateRequest();
+                }
+
+            },
+
+            _onAccountResponse: function(event) {
+                this.set('role', event.detail.response);
+            },
+
+            _onAccountError: function() {
+                this.fire('page-error');
+            },
+
+            _onRoleChanged: function(role) {
+
+                if (role.self) {
+                    this.$.appscoManageAccountComponentsPage.load();
+                    this.account = role.account;
+                    this._getCanManage(this._computeCanBeManagedUrl(role));
+                }
+            },
+
+            _getCanManage: function(url) {
+                this.$.ironAjaxCanBeManaged.url = url;
+                this.$.ironAjaxCanBeManaged.generateRequest();
+            },
+
+            /**
+             * Returns display name for account.
+             * @param {Object} account.
+             *
+             * @private
+             */
+            _onResourceBack: function() {
+                this._showAccountComponentsPage();
+            },
+
+            refreshLog: function() {
+                this.$.appscoManageAccountComponentsPage.loadLog();
+                this.$.appscoAccountLogPage.loadLog();
+            },
+
+            _onSettingsSaved: function(event) {
+                this._showAccountComponentsPage();
+                this.refreshLog();
+                this.set('role.account', event.detail.account);
+            },
+
+            _onPasswordChanged: function(event) {
+                this._showAccountComponentsPage();
+                this.refreshLog();
+
+                event.stopPropagation();
+                this.fire(event.type, {
+                    account: this.account
+                });
+            },
+
+            _showAccountComponentsPage: function() {
+                this._selected = 'appsco-account-components-page';
+            },
+
+            resetPage: function() {
+                this._showAccountComponentsPage();
+            },
+
+            toggleResource: function() {
+                this.$.appscoContent.toggleSection('resource');
+            },
+
+            _onAccountSettings: function() {
+                this._selected = 'appsco-account-settings-page';
+            },
+
+            _onAllNotifications: function() {
+                this._selected = 'appsco-account-notifications-page';
+            },
+
+            _onWholeLog: function() {
+                this._selected = 'appsco-account-log-page';
+            },
+
+            _onManageOrgunits: function() {
+                this._selected = 'appsco-account-orgunits-page';
+            },
+
+            _onManageApplications: function() {
+                this._selected = 'appsco-directory-role-applications-page';
+            },
+
+            _onChangePassword: function() {
+
+                this.$.appscoManageAccountComponentsPage.sharedElements = {
+                    'hero': this.$.changePasswordHero
+                };
+
+                this._selected = 'appsco-manage-account-change-password-page';
+            },
+
+            _onPageAnimationFinish: function(event) {
+                var fromPage = event.detail.fromPage,
+                    toPage = event.detail.toPage;
+
+                switch(fromPage.getAttribute('name')) {
+                    case 'appsco-account-settings-page':
+                    case 'appsco-manage-account-change-password-page':
+                        fromPage.resetPage();
+                        break;
+
+                    default:
+                        break;
+                }
+
+                switch(toPage.getAttribute('name')) {
+                    case 'appsco-account-settings-page':
+                    case 'appsco-manage-account-change-password-page':
+                        toPage.setPage();
+                        break;
+
+                    default:
+                        break;
+                }
+
+            },
+
+            _onCanBeManagedResponse: function(event) {
+                this._canManage = (200 === event.detail.status);
+            },
+
+            _onCanBeManagedError: function(event) {
+                this._canManage = false;
+            },
+
+            _computeCanBeManagedUrl: function(role) {
+                return role.self ? role.self + '/can-be-managed' : '';
+            },
+
+            reloadApplications: function() {
+                this.$.appscoManageAccountComponentsPage.reloadApplications();
+                this.$.appscoDirectoryRoleApplicationsPage.reloadApplications();
+            }
+        });
+    </script>
+</dom-module>

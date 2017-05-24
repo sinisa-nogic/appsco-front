@@ -421,8 +421,10 @@ Custom property | Description | Default
 
             _onLabelSelected: function(event) {
                 var label = event.detail.label,
-                    labels = JSON.parse(JSON.stringify(this._allLabels)),
-                    length = labels.length;
+                    labels = JSON.parse(JSON.stringify(this._labels)),
+                    length = labels.length,
+                    allLabels = JSON.parse(JSON.stringify(this._allLabels)),
+                    allLength = allLabels.length;
 
                 for (var i = 0; i < length; i++) {
                     var currentLabel = labels[i];
@@ -435,8 +437,100 @@ Custom property | Description | Default
                     }
                 }
 
+                for (var j = 0; j < allLength; j++) {
+                    var currentLabel = allLabels[j];
+
+                    if (currentLabel.alias === label.alias) {
+                        allLabels[j].selected = label.selected;
+                    }
+                    else {
+                        allLabels[j].selected = false;
+                    }
+                }
+
                 this.set('_labels', []);
                 this.set('_labels', labels);
+
+                this.set('_allLabels', []);
+                this.set('_allLabels', allLabels);
+            },
+
+            reset: function() {
+                this.selectAllLabels(false);
+            },
+
+            _increaseLabelRoleCount: function(label, count) {
+                var labels = JSON.parse(JSON.stringify(this._labels)),
+                    length = labels.length;
+
+                for (var i = 0; i < length; i++) {
+
+                    if (label.alias === labels[i].alias) {
+                        this.$$('#appscoLabelItem_' + i).increaseLabelRolesCount(count);
+                        break;
+                    }
+                }
+            },
+
+            _decreaseLabelRoleCount: function(label, count) {
+                var labels = JSON.parse(JSON.stringify(this._labels)),
+                    length = labels.length;
+
+                for (var i = 0; i < length; i++) {
+
+                    if (label.alias === labels[i].alias) {
+                        this.$$('#appscoLabelItem_' + i).decreaseLabelRolesCount(count);
+                        break;
+                    }
+                }
+            },
+
+            addLabelsCompanyRoles: function(labels, roles) {
+                var length = labels.length;
+
+                for (var i = 0; i < length; i++) {
+                    this.modifyLabel(labels[i]);
+                    this._increaseLabelRoleCount(labels[i], roles.length);
+                }
+            },
+
+            removeLabelCompanyRoles: function(label, roles) {
+                this._decreaseLabelRoleCount(label, roles.length);
+            },
+
+            getSelectedLabels: function() {
+                var allLabels = JSON.parse(JSON.stringify(this._allLabels)),
+                    allLength = allLabels.length,
+                    selectedLabels = [];
+
+                for (var i = 0; i < allLength; i++) {
+                    if (allLabels[i].selected) {
+                        selectedLabels.push(allLabels[i]);
+                    }
+                }
+
+                return selectedLabels;
+            },
+
+            selectAllLabels: function(select) {
+                var labels = JSON.parse(JSON.stringify(this._labels)),
+                    length = labels.length,
+                    allLabels = JSON.parse(JSON.stringify(this._allLabels)),
+                    allLength = allLabels.length;
+
+                for (var i = 0; i < length; i++) {
+                    labels[i].selected = select;
+                }
+
+                for (var j = 0; j < allLength; j++) {
+                    allLabels[j].selected = select;
+                }
+
+                this.set('_labels', []);
+                this.set('_labels', labels);
+
+                this.set('_allLabels', []);
+                this.set('_allLabels', allLabels);
             },
 
             addLabel: function(label, respectLimit) {

@@ -77,7 +77,7 @@ Custom property | Description | Default
                 <div id="nodeChildren" class="children">
                     <template is="dom-if" if="[[ _hasChildren(node) ]]">
                         <template is="dom-repeat" items="[[ node.children ]]" as="child">
-                            <appsco-orgunit-tree-node node="[[ child ]]"></appsco-orgunit-tree-node>
+                            <appsco-orgunit-tree-node id="treeNode" node="[[ child ]]"></appsco-orgunit-tree-node>
                         </template>
                     </template>
                 </div>
@@ -150,6 +150,17 @@ Custom property | Description | Default
                 'neon-animation-finish': '_onAnimationFinish'
             },
 
+            collapseNode: function() {
+                var childNode = this.$$('#treeNode');
+
+                this.expanded = false;
+                this._collapse();
+
+                if (childNode) {
+                    childNode.collapseNode();
+                }
+            },
+
             _computeRemoveAction: function(node) {
                 return !this._hasChildren(node);
             },
@@ -159,17 +170,23 @@ Custom property | Description | Default
             },
 
             _onToggleNode: function() {
+                this.expanded = !this.expanded;
+                this.expanded ? this._expand() : this._collapse();
+            },
+
+            _expand: function() {
                 var expandIcon = this.$$('#expandIcon');
 
-                this.expanded = !this.expanded;
+                expandIcon.className = expandIcon.className + ' toggle-icon-expanded';
 
-                if (this.expanded) {
-                    expandIcon.className = expandIcon.className + ' toggle-icon-expanded';
+                this.animationConfig.exit.node.style.display = 'block';
+                this.playAnimation('entry');
+            },
 
-                    this.animationConfig.exit.node.style.display = 'block';
-                    this.playAnimation('entry');
-                }
-                else {
+            _collapse: function() {
+                var expandIcon = this.$$('#expandIcon');
+
+                if (expandIcon) {
                     expandIcon.className = expandIcon.className.replace(' toggle-icon-expanded', '');
 
                     this.playAnimation('exit', {

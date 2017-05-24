@@ -458,7 +458,8 @@
 
                 _selectedFilter: {
                     type: Number,
-                    value: 0
+                    value: 0,
+                    observer: '_onSelectedFilterChanged'
                 },
 
                 mobileScreen: {
@@ -543,6 +544,28 @@
                 }
             },
 
+            _onSelectedFilterChanged: function(filter) {
+                this._resetFilters(filter);
+            },
+
+            _resetFilters: function(filter) {
+
+                this.resetPage();
+
+                switch (filter) {
+                    case 0:
+                        this.$.appscoCompanyLabels.reset();
+                        this._onSearchLabelsClear();
+
+                        break;
+
+                    case 1:
+                        this.$.appscoOrgunitTree.reset();
+
+                        break;
+                }
+            },
+
             _onSubscriptionLimitInfoHandled: function(handled) {
 
                 if (handled) {
@@ -593,6 +616,9 @@
             resetPage: function() {
                 this.set('selectedAccounts', []);
                 this.$.appscoAccounts.selectAllAccounts(false);
+                this.$.appscoCompanyLabels.selectAllLabels(false);
+                this._hideRemoveRoleFromLabelAction();
+                this._hideBulkActions();
                 this.hideInfo();
             },
 
@@ -653,6 +679,14 @@
                 this.set('role', this.$.appscoAccounts.getFirstAccount());
             },
 
+            _showBulkActions: function() {
+                this.fire('show-bulk-actions');
+            },
+
+            _hideBulkActions: function() {
+                this.fire('hide-bulk-actions');
+            },
+
             _onAccountEdit: function(event) {
                 var role = event.detail.role;
 
@@ -671,7 +705,7 @@
 
                     if (role.selected) {
                         this._onViewInfo(event);
-                        this.fire('show-bulk-actions');
+                        this._showBulkActions();
                     }
                     else {
                         var selectedAccount = this.$.appscoAccounts.getFirstSelectedAccount();
@@ -679,7 +713,7 @@
                         if (!selectedAccount) {
                             this.hideInfo();
                             this.setDefaultAccount();
-                            this.fire('hide-bulk-actions');
+                            this._hideBulkActions();
                         }
                         else if (role.self === this.role.self && this.role.selected) {
                             this._handleAccountInfo(selectedAccount);
@@ -687,6 +721,8 @@
                     }
 
                 }.bind(this), 10);
+
+                this._handleRemoveRoleFromLabelAction();
             },
 
             _onAccountInfoEdit: function() {
@@ -835,6 +871,16 @@
                 this.$.appscoAccounts.filterByTerm(term);
             },
 
+            getSelectedRolesAndLabels: function() {
+                var labels = this.$.appscoCompanyLabels.getSelectedLabels(),
+                    roles = this.$.appscoAccounts.getSelectedRolesWithLabels(labels);
+
+                return {
+                    labels: labels,
+                    roles: roles
+                };
+            },
+
             _onOrgunitSelected: function(event) {
                 this.$.appscoAccounts.filterByOrgunit(event.detail);
             },
@@ -860,6 +906,21 @@
                 var label = event.detail.label;
 
                 label.selected ? this._loadCompanyRolesForLabel(label) : this.reloadAccounts();
+                this._handleRemoveRoleFromLabelAction();
+            },
+
+            _showRemoveRoleFromLabelAction: function() {
+                this.fire('show-remove-role-from-label-action');
+            },
+
+            _hideRemoveRoleFromLabelAction: function() {
+                this.fire('hide-remove-role-from-label-action');
+            },
+
+            _handleRemoveRoleFromLabelAction: function() {
+                !this.getSelectedRolesAndLabels().roles.length ?
+                    this._hideRemoveRoleFromLabelAction() :
+                    this._showRemoveRoleFromLabelAction();
             }
         });
     </script>

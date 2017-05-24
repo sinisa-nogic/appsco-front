@@ -46,7 +46,7 @@
                         list-api="[[ _labelRolesApi ]]"
                         size="10"
                         load-more
-                        on-detach="_onDetachFromLabel"></appsco-company-label-roles>
+                        on-remove-label-from-company-role="_onRemoveLabelFromCompanyRole"></appsco-company-label-roles>
             </div>
         </paper-card>
 
@@ -102,7 +102,7 @@
             ],
 
             _computeLabelRolesApi: function(label) {
-                return label.meta ? label.meta.company_roles : '';
+                return label.meta ? label.meta.company_roles + '?extended=1' : '';
             },
 
             _onBack: function() {
@@ -129,6 +129,27 @@
                 this.$.appscoCompanyLabel.removeLabel(label);
             },
 
+            addLabelsCompanyRoles: function(labels, items) {
+
+                if (this.$.appscoCompanyLabelRoles.$) {
+                    var length = labels.length;
+
+                    for (var i = 0; i < length; i++) {
+
+                        if (labels[i].alias === this.label.alias) {
+                            this.$.appscoCompanyLabelRoles.addLabelRoles(items);
+                        }
+                    }
+                }
+            },
+
+            removeLabelCompanyRoles: function(label, items) {
+
+                if (this.$.appscoCompanyLabelRoles.$ && (label.alias === this.label.alias)) {
+                    this.$.appscoCompanyLabelRoles.removeLabelRoles(items);
+                }
+            },
+
             setupPage: function() {
                 this.fire('show-labels-page-actions');
             },
@@ -137,11 +158,12 @@
                 this.fire('hide-labels-page-actions');
             },
 
-            _onRemoveLabel: function(event) {
+            _onRemoveLabelFromCompanyRole: function(event) {
                 event.stopPropagation();
 
-                this.fire('remove-label', {
-                    label: event.detail.label
+                this.fire('remove-label-from-company-role', {
+                    label: this.label,
+                    role: event.detail.role
                 })
             }
         });

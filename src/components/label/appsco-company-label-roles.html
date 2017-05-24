@@ -106,7 +106,6 @@ Custom property | Description | Default
                     id="getLabelRolesApiRequest"
                     url="[[ listApi ]]"
                     headers="[[ _computedHeaders ]]"
-                    auto
                     debounce-duration="300"
                     on-error="_onError"
                     on-response="_onResponse"></iron-ajax>
@@ -169,7 +168,8 @@ Custom property | Description | Default
                  */
                 listApi: {
                     type: String,
-                    value: ''
+                    value: '',
+                    observer: '_onListApiChanged'
                 },
 
                 /**
@@ -231,11 +231,6 @@ Custom property | Description | Default
                     value: ''
                 },
 
-                listApi: {
-                    type: String,
-                    value: ''
-                },
-
                 _nextPageApiUrl: {
                     type: String
                 },
@@ -280,6 +275,13 @@ Custom property | Description | Default
                 }
             },
 
+            _onListApiChanged: function(url) {
+
+                if (url && url.length > 0) {
+                    this._loadRoles();
+                }
+            },
+
             _setLoadMoreAction: function() {
                 this._loadMore = (this.loadMore && this._allRoles.length < this._totalRoles);
             },
@@ -288,14 +290,7 @@ Custom property | Description | Default
                 this._loadMore = false;
             },
 
-            _onLabelsApiUrlChanged: function(url) {
-
-                if (url && url.length > 0) {
-                    this._loadLabels();
-                }
-            },
-
-            _loadLabels: function() {
+            _loadRoles: function() {
                 this._showProgressBar();
                 this._loadMore = false;
                 this.set('_roles', []);
@@ -303,8 +298,8 @@ Custom property | Description | Default
                 this.$.getLabelRolesApiRequest.generateRequest();
             },
 
-            reloadLabels: function() {
-                this._loadLabels();
+            reloadRoles: function() {
+                this._loadRoles();
             },
 
             _loadMoreRoles: function() {
@@ -314,13 +309,13 @@ Custom property | Description | Default
             },
 
             _onError: function() {
-                this._message = 'We couldn\'t load listApi at the moment. Please try again in a minute.';
+                this._message = 'We couldn\'t load accounts at the moment. Please try again in a minute.';
                 this._handleEmptyLoad();
             },
 
             _handleEmptyLoad: function() {
                 this._rolesEmpty = true;
-                this._message = 'There are no roles attached to this label.';
+                this._message = 'There are no accounts attached to this label.';
 
                 /**
                  * Fired when there are no roles.
@@ -388,21 +383,41 @@ Custom property | Description | Default
                 }
             },
 
-//            addLabel: function(label, respectLimit) {
-//                this._rolesEmpty = false;
-//                this._message = '';
-//                this._renderedIndex = 0;
-//
-//                this.unshift('_roles', label);
-//                this.unshift('_allRoles', label);
-//
-//                if (respectLimit && this._allRoles.length >= this.size) {
-//                    this.pop('_roles');
-//                    this.pop('_allRoles');
-//                }
-//                
-//                this._totalRoles++;
-//            },
+            addLabelRoles: function(roles) {
+                var length = roles.length,
+                    allRoles = this._allRoles,
+                    allLength = allRoles.length;
+
+                this._rolesEmpty = false;
+                this._message = '';
+                this._renderedIndex = length - 1;
+
+                for (var i = 0; i < length; i++) {
+
+                    if (0 === allLength) {
+                        this.push('_roles', roles[i]);
+                        this.push('_allRoles', roles[i]);
+
+                        this._totalRoles++;
+                    }
+                    else {
+
+                        for (var j = 0; j < allLength; j++) {
+
+                            if (allRoles[j].alias === roles[i].alias) {
+                                break;
+                            }
+                            else if (j === allLength - 1) {
+                                this.unshift('_roles', roles[i]);
+                                this.unshift('_allRoles', roles[i]);
+
+                                this._totalRoles++;
+                            }
+
+                        }
+                    }
+                }
+            },
 //
 //            modifyLabel: function(label) {
 //                var _roles = JSON.parse(JSON.stringify(this._roles)),
@@ -431,34 +446,40 @@ Custom property | Description | Default
 //                this.set('_allRoles', allRoles);
 //            },
 //
-//            removeLabel: function(label) {
-//                var _roles = this._roles,
-//                    _length = _roles.length,
-//                    allRoles = this._allRoles,
-//                    allLength = allRoles.length;
-//
-//                for (var j = 0; j < _length; j++) {
-//
-//                    if (label.alias === _roles[j].alias) {
-//                        this.splice('_roles', j, 1);
-//                        break;
-//                    }
-//                }
-//
-//                for (var k = 0; k < allLength; k++) {
-//
-//                    if (label.alias === allRoles[k].alias) {
-//                        this.splice('_allRoles', k, 1);
-//                        break;
-//                    }
-//                }
-//
-//                this._totalRoles--;
-//
-//                if (0 === this._roles.length) {
-//                    this._handleEmptyLoad();
-//                }
-//            },
+            removeLabelRoles: function(roles) {
+                var length = roles.length,
+                    _roles = this._roles,
+                    _length = _roles.length,
+                    allRoles = this._allRoles,
+                    allLength = allRoles.length;
+
+                for (var i = 0; i < length; i++) {
+                    var role = roles[i];
+
+                    for (var j = 0; j < _length; j++) {
+
+                        if (role.self === _roles[j].self) {
+                            this.splice('_roles', j, 1);
+                            break;
+                        }
+                    }
+
+                    for (var k = 0; k < allLength; k++) {
+
+                        if (role.self === allRoles[k].self) {
+                            this.splice('_allRoles', k, 1);
+                            break;
+                        }
+                    }
+
+                    this._totalRoles--;
+
+                }
+
+                if (0 === this._roles.length) {
+                    this._handleEmptyLoad();
+                }
+            },
 
             _showProgressBar: function() {
                 this.$$('#paperProgress').hidden = false;

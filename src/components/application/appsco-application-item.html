@@ -1,5 +1,4 @@
 <link rel="import" href="../../../bower_components/polymer/polymer.html">
-
 <link rel="import" href="../../../bower_components/iron-image/iron-image.html">
 <link rel="import" href="../../../bower_components/iron-flex-layout/iron-flex-layout.html">
 <link rel="import" href="../../../bower_components/paper-button/paper-button.html">
@@ -119,8 +118,20 @@ Custom property | Description | Default
                 width: 226px;
             @apply(--paper-font-common-nowrap);
             }
-            :host([company]) .application-info-auth-type {
+            :host([company]) .application-additional-info {
                 border-left: 1px solid var(--divider-color);
+            }
+            :host([company]) .application-additional-info .info {
+                @apply(--layout-horizontal);
+                @apply(--layout-center);
+            }
+            :host([company]) .application-additional-info .info-label {
+                color: var(--secondary-text-color);
+            }
+            :host([company]) .application-additional-info .info-label, :host([company]) .application-additional-info .info-value {
+                font-size: 13px;
+                line-height: 18px;
+                @apply(--paper-font-common-nowrap);
             }
             :host([company]) .info-label {
                 font-size: 16px;
@@ -146,13 +157,24 @@ Custom property | Description | Default
             <div class="application-info application-basic-info">
                 <span class="info-label application-title">[[ application.title ]]</span>
                 <span class="info-value"
-                      hidden$="[[ !company ]]">[[ _orgUnits ]]</span>
+                      hidden$="[[ !company ]]">[[ _applicationType ]]</span>
             </div>
 
-            <div class="application-info application-info-auth-type"
-                 hidden$="[[ !company ]]">
-                <span class="info-label">Auth type</span>
-                <span class="info-value">[[ application.auth_type ]]</span>
+            <div class="application-info application-additional-info">
+                <template is="dom-if" if="[[ _orgUnits ]]">
+                    <div class="info">
+                        <span class="info-label">Organization units:&nbsp;</span>
+                        <span class="info-value"
+                              hidden$="[[ !company ]]">[[ _orgUnits ]]</span>
+                    </div>
+                </template>
+
+                <template is="dom-if" if="[[ _labels ]]">
+                    <div class="info">
+                        <span class="info-label">Labels:&nbsp;</span>
+                        <span class="info-value">[[ _labels ]]</span>
+                    </div>
+                </template>
             </div>
 
             <div class="actions">
@@ -192,9 +214,19 @@ Custom property | Description | Default
                     observer: '_onApplicationChanged'
                 },
 
+                _applicationType: {
+                    type: String,
+                    computed: '_computeApplicationType(application)'
+                },
+
                 _orgUnits: {
                     type: String,
                     computed: '_computeOrganizationUnits(company, application)'
+                },
+
+                _labels: {
+                    type: String,
+                    computed: '_computeLabels(company, application)'
                 },
 
                 active: {
@@ -255,15 +287,60 @@ Custom property | Description | Default
 
             },
 
+            _computeApplicationType: function(application) {
+
+                switch (application.auth_type) {
+                    case 'login':
+                        return 'Login';
+
+                    case 'cc':
+                        return 'Credit Card';
+
+                    case 'softwarelicence':
+                        return 'Software Licence';
+
+                    case 'passport':
+                        return 'Passport';
+
+                    case 'securenote':
+                        return 'Secure Note';
+
+                    case 'none':
+                        return 'Link';
+
+                    default:
+                        return 'Application';
+                }
+            },
+
             _computeOrganizationUnits: function(company, application) {
 
-                if (company && application.org_units) {
+                if (company && application.org_units && application.org_units.length > 0) {
                     var result = '',
                             orgUnits = application.org_units,
                             length = orgUnits.length;
 
                     for (var i = 0; i < length; i++) {
                         result += orgUnits[i].name;
+                        result += (i === length -1) ? '' : ', ';
+                    }
+
+                    return result;
+                }
+
+                return '';
+
+            },
+
+            _computeLabels: function(company, application) {
+
+                if (company && application.labels && application.labels.length > 0) {
+                    var result = '',
+                        labels = application.labels,
+                        length = labels.length;
+
+                    for (var i = 0; i < length; i++) {
+                        result += labels[i].name;
                         result += (i === length -1) ? '' : ', ';
                     }
 

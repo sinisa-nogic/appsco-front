@@ -8,6 +8,8 @@
 <link rel="import" href="../../bower_components/iron-media-query/iron-media-query.html">
 <link rel="import" href="../../bower_components/paper-button/paper-button.html">
 
+<link rel="import" href="../components/components/appsco-search.html">
+
 <dom-module id="appsco-company-page-actions">
     <template>
         <style include="shared-styles">
@@ -27,10 +29,20 @@
                 top: -25%;
                 left: -25%;
             }
-            .domains-actions {
+            .actions {
                 @apply(--layout-horizontal);
                 @apply(--layout-center);
                 @apply(--layout-end-justified);
+            }
+            .action {
+                margin-right: 10px;
+                position: relative;
+                @apply(--layout-vertical);
+                @apply(--layout-center);
+                @apply(--company-action);
+            }
+            appsco-search {
+                max-width: 200px;
             }
             .global-page-actions {
                 border-left: 1px solid var(--divider-color);
@@ -38,7 +50,7 @@
                 padding-left: 10px;
                 display: none;
             }
-            .add-domain-action {
+            .add-action {
                 @apply(--primary-button);
             }
             :host([tablet-screen]) .global-page-actions {
@@ -51,10 +63,21 @@
 
         <iron-media-query query="(max-width: 800px)" query-matches="{{ tabletScreen }}"></iron-media-query>
 
-        <template is="dom-if" if="[[ _domainsActions ]]">
-            <div class="domains-actions">
-                <paper-button class="add-domain-action"
+        <template is="dom-if" if="[[ _domainsActionsActive ]]">
+            <div class="actions">
+                <paper-button class="add-action"
                               on-tap="_onAddDomainAction">Add domain</paper-button>
+            </div>
+        </template>
+
+        <template is="dom-if" if="[[ _labelsActionsActive ]]">
+            <div class="actions">
+                <div class="action">
+                    <appsco-search id="appscoSearch"
+                                   label="Search labels"
+                                   on-search="_onSearch"
+                                   on-search-clear="_onSearchClear"></appsco-search>
+                </div>
             </div>
         </template>
 
@@ -74,9 +97,16 @@
 
             properties: {
 
-                _domainsActions: {
+                _domainsActionsActive: {
                     type: Boolean,
-                    value: false
+                    value: false,
+                    observer: '_onDomainsActionsActiveChanged'
+                },
+
+                _labelsActionsActive: {
+                    type: Boolean,
+                    value: false,
+                    observer: '_onLabelsActionsActiveChanged'
                 },
 
                 tabletScreen: {
@@ -116,11 +146,34 @@
             ],
 
             showDomainsPageActions: function() {
-                this._domainsActions = true;
+                this._domainsActionsActive = true;
             },
 
             hideDomainsPageActions: function() {
-                this._domainsActions = false;
+                this._domainsActionsActive = false;
+            },
+
+            showLabelsPageActions: function() {
+                this._labelsActionsActive = true;
+            },
+
+            hideLabelsPageActions: function() {
+                this._onSearchClear();
+                this._labelsActionsActive = false;
+            },
+
+            _onDomainsActionsActiveChanged: function(active) {
+
+                if (active) {
+                    this.hideLabelsPageActions();
+                }
+            },
+
+            _onLabelsActionsActiveChanged: function(active) {
+
+                if (active) {
+                    this.hideDomainsPageActions();
+                }
             },
 
             _onResourceAction: function() {
@@ -129,6 +182,28 @@
 
             _onAddDomainAction: function() {
                 this.fire('add-domain');
+            },
+
+            _onSearch: function(event) {
+
+                this.fire('search-labels', {
+                    term: event.detail.term
+                });
+            },
+
+            _onSearchClear: function() {
+                this._resetSearch();
+
+                this.fire('search-labels-clear', {
+                    term: ''
+                });
+            },
+
+            _resetSearch: function() {
+
+                if (this._labelsActionsActive) {
+                    this.$$('#appscoSearch').reset();
+                }
             }
         });
     </script>

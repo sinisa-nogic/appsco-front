@@ -1,0 +1,328 @@
+<link rel="import" href="../../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../../bower_components/paper-button/paper-button.html">
+<link rel="import" href="../../../bower_components/iron-ajax/iron-request.html">
+<link rel="import" href="../../../bower_components/paper-dialog/paper-dialog.html">
+<link rel="import" href="../../../bower_components/paper-dialog-scrollable/paper-dialog-scrollable.html">
+<link rel="import" href="../../../bower_components/neon-animation/animations/fade-out-animation.html">
+<link rel="import" href="../../../bower_components/neon-animation/animations/scale-up-animation.html">
+
+<link rel="import" href="../components/appsco-loader.html">
+<link rel="import" href="../components/appsco-form-error.html">
+
+<!--
+`appsco-resource-remove-labels`
+Shows dialog screen with confirmation for removal company resource from label.
+
+    <appsco-resource-remove-labels labels="[]" items="[]" authorization-token="">
+    </appsco-resource-remove-labels>
+
+-->
+
+<dom-module id="appsco-resource-remove-labels">
+    <template>
+        <style>
+            :host {
+                display: block;
+                position: relative;
+                @apply(--appsco-resource-remove-labels);
+
+                --form-error-box: {
+                     margin-top: 0;
+                 };
+            }
+            :host paper-dialog {
+                width: 670px;
+                top: 20vh;
+                @apply(--appsco-paper-dialog);
+            }
+            :host paper-dialog-scrollable > * {
+                @apply(--paper-dialog-scrollable-child);
+            }
+            :host .buttons paper-button {
+                @apply(--paper-dialog-button);
+            }
+            :host .buttons paper-button[dialog-dismiss] {
+                @apply(--paper-dialog-dismiss-button);
+            }
+            :host appsco-loader {
+                @apply(--paper-dialog-appsco-loader);
+            }
+        </style>
+        <paper-dialog
+                with-backdrop
+                id="dialog"
+                entry-animation="scale-up-animation"
+                exit-animation="fade-out-animation"
+                on-iron-overlay-closed="_onDialogClosed">
+
+            <h2>Detach label</h2>
+
+            <appsco-loader active="[[ _loader ]]"
+                           loader-alt="Appsco is processing request"
+                           multi-color></appsco-loader>
+
+            <paper-dialog-scrollable>
+                <div class="remove-container">
+                    <appsco-form-error message="[[ _error ]]"></appsco-form-error>
+
+                    <template is="dom-if" if="[[ _applicationsType ]]">
+                        <p>Detaching label from resource also removes access for accounts that label is attached to.</p>
+                    </template>
+
+                    <template is="dom-if" if="[[ _accountsType ]]">
+                        <p>Detaching label from account also removes access to applications that label is attached to.</p>
+                    </template>
+
+                    <p>Please confirm detach action.</p>
+                </div>
+            </paper-dialog-scrollable>
+
+            <div class="buttons">
+                <paper-button dialog-dismiss>Cancel</paper-button>
+                <paper-button autofocus on-tap="_onRemoveAction">Remove</paper-button>
+            </div>
+        </paper-dialog>
+
+    </template>
+    <script>
+        Polymer({
+
+            is: 'appsco-resource-remove-labels',
+
+            properties: {
+
+                label: {
+                    type: Array,
+                    value: function() {
+                        return {};
+                    }
+                },
+
+                /**
+                 * Items to remove labels from.
+                 */
+                items: {
+                    type: Array,
+                    value: function() {
+                        return [];
+                    }
+                },
+
+                /**
+                 * Authorization token.
+                 */
+                authorizationToken: {
+                    type: String,
+                    value: ''
+                },
+
+                resourceType: {
+                    type: String,
+                    value: ''
+                },
+
+                _headers: {
+                    type: String,
+                    computed: '_computeHeaders(authorizationToken)'
+                },
+
+                _removeLabelsApi: {
+                    type: String,
+                    computed: '_computeRemoveLabelsApi(label, resourceType)'
+                },
+
+                _responseItems: {
+                    type: Array,
+                    value: function() {
+                        return [];
+                    }
+                },
+
+                _applicationsType: {
+                    type: Boolean,
+                    computed: '_computeApplicationsType(resourceType)'
+                },
+
+                _accountsType: {
+                    type: Boolean,
+                    computed: '_computeAccountsType(resourceType)'
+                },
+
+                _loader: {
+                    type: Boolean,
+                    value: false
+                },
+
+                /**
+                 * Error message.
+                 */
+                _error: {
+                    type: String
+                },
+
+                _requests: {
+                    type: Number,
+                    value: 0
+                }
+            },
+
+            setLabel: function(label) {
+                this.label = label;
+            },
+
+            setItems: function(items) {
+                this.items = items;
+            },
+
+            setType: function(type) {
+                this.resourceType = type;
+            },
+
+            open: function () {
+                this.$.dialog.open();
+            },
+
+            close: function () {
+                this.$.dialog.close();
+            },
+
+            toggle: function () {
+                this.$.dialog.toggle();
+            },
+
+            _computeHeaders: function(authorizationToken) {
+                return {
+                    'Authorization': 'token ' + authorizationToken,
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                };
+            },
+
+            _computeRemoveLabelsApi: function(label, resourceType) {
+                return ('applications' === resourceType) ?
+                    this.label.meta.applications :
+                    ('accounts' === resourceType) ?
+                        this.label.meta.company_roles :
+                        '';
+            },
+
+            _computeApplicationsType: function(resourceType) {
+                return 'applications' === resourceType;
+            },
+
+            _computeAccountsType: function(resourceType) {
+                return 'accounts' === resourceType;
+            },
+
+            _showLoader: function() {
+                this._loader = true;
+            },
+
+            _hideLoader: function() {
+                this._loader = false;
+            },
+
+            _showError: function(message) {
+                this._error = message;
+            },
+
+            _hideError: function() {
+                this._error = '';
+            },
+
+            _onDialogClosed: function() {
+                this._hideError();
+                this._hideLoader();
+            },
+
+            _removeAction: function(item) {
+
+                return new Promise(function(resolve, reject) {
+                    var request = document.createElement('iron-request'),
+                        options = {
+                            url: this._removeLabelsApi + '/' + item.alias,
+                            method: 'DELETE',
+                            handleAs: 'json',
+                            headers: this._headers
+                        };
+
+                    request.send(options).then(function() {
+
+                        if (200 === request.status) {
+                            resolve(request.response);
+                        }
+                    }, function() {
+
+                        if (404 === request.status) {
+                            reject('There was an error while removing label. Label was not removed from all ' + this.resourceType + '.');
+                        }
+                    }.bind(this));
+                }.bind(this));
+            },
+
+            _onRemoveActionFinished: function() {
+
+                if (this._responseItems.length > 0) {
+                    /**
+                     * Fired when label have been removed from items.
+                     *
+                     * @event label-removed-from-resources
+                     */
+                    this.fire('label-removed-from-resources', {
+                        label: this.label,
+                        items: this._responseItems,
+                        resourceType: this.resourceType
+                    });
+
+                    this.close();
+
+                }
+                else {
+                    this._showError('There was an error while removing selected ' + this.resourceType + ' from label. Please close the dialog and try again.');
+                }
+
+                this._hideLoader();
+                this.set('_responseItems', []);
+            },
+
+            _onRemoveAction: function() {
+                var length = this.items.length;
+
+                if (0 > length) {
+                    this._showError('You have not selected ' + this.resourceType + ' to remove label from.');
+                    return false;
+                }
+
+                this._hideError();
+                this._showLoader();
+
+                this._requests = length;
+
+                for (var i = 0; i < length; i++) {
+                    var item = this.items[i];
+
+                    (function(me) {
+
+                        me._removeAction(item).then(function(item) {
+                            me.push('_responseItems', item);
+
+                            me._requests--;
+
+                            if (me._requests === 0) {
+                                me._onRemoveActionFinished();
+                            }
+                        }.bind(me), function(message) {
+                            me._showError(message);
+
+                            me._requests--;
+
+                            if (me._requests === 0) {
+                                me._onRemoveActionFinished();
+                            }
+                        }.bind(me));
+
+                    })(this);
+                }
+            }
+        });
+    </script>
+</dom-module>

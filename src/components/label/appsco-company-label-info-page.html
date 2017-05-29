@@ -1,0 +1,172 @@
+<link rel="import" href="../../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../../bower_components/iron-flex-layout/iron-flex-layout.html">
+<link rel="import" href="../../../bower_components/neon-animation/neon-animated-pages.html">
+<link rel="import" href="../../../bower_components/neon-animation/animations/slide-down-animation.html">
+<link rel="import" href="../../../bower_components/neon-animation/animations/slide-from-bottom-animation.html">
+<link rel="import" href="../../../bower_components/paper-card/paper-card.html">
+<link rel="import" href="../../../bower_components/paper-icon-button/paper-icon-button.html">
+
+<link rel="import" href="appsco-company-label-roles.html">
+
+<dom-module id="appsco-company-label-info-page">
+    <template>
+        <style include="webkit-scrollbar-style">
+            :host {
+                @apply(--full-page);
+
+                --paper-card-header: {
+                     border-bottom: 1px solid var(--divider-color);
+                 };
+
+                --background-color: var(--body-background-color);
+            }
+            paper-card {
+                @apply(--full-page-paper-card);
+
+                --paper-card-header-text: {
+                    color: var(--primary-text-color);
+                };
+            }
+            .page-close-action {
+                @apply(--page-close-action);
+            }
+        </style>
+
+        <paper-card heading="[[ label.name ]]" id="card">
+            <paper-icon-button
+                    icon="close"
+                    title="Close"
+                    class="page-close-action"
+                    on-tap="_onBack"></paper-icon-button>
+
+            <div class="card-content">
+                <appsco-company-label-roles
+                        id="appscoCompanyLabelRoles"
+                        authorization-token="[[ authorizationToken ]]"
+                        list-api="[[ _labelRolesApi ]]"
+                        size="10"
+                        load-more
+                        on-remove-label-from-company-role="_onRemoveLabelFromCompanyRole"></appsco-company-label-roles>
+            </div>
+        </paper-card>
+
+    </template>
+
+    <script>
+        Polymer({
+
+            is: 'appsco-company-label-info-page',
+
+            properties: {
+
+                label: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    }
+                },
+
+                authorizationToken: {
+                    type: String
+                },
+
+                _labelRolesApi: {
+                    type: String,
+                    computed: '_computeLabelRolesApi(label)'
+                },
+
+                animationConfig: {
+                    value: function() {
+                        return {
+                            'entry': {
+                                name: 'slide-from-bottom-animation',
+                                node: this,
+                                timing: {
+                                    duration: 300
+                                }
+                            },
+                            'exit': {
+                                name: 'slide-down-animation',
+                                node: this,
+                                timing: {
+                                    duration: 200
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+
+            behaviors: [
+                Polymer.NeonAnimatableBehavior
+            ],
+
+            _computeLabelRolesApi: function(label) {
+                return label.meta ? label.meta.company_roles + '?extended=1' : '';
+            },
+
+            _onBack: function() {
+                this.fire('back');
+            },
+
+            setLabel: function(label) {
+                this.label = label;
+            },
+
+            searchLabels: function(term) {
+                this.$.appscoCompanyLabels.search(term);
+            },
+
+            addLabel: function(label) {
+                this.$.appscoCompanyLabels.addLabel(label);
+            },
+
+            modifyLabel: function(label) {
+                this.$.appscoCompanyLabel.modifyLabel(label);
+            },
+
+            removeLabel: function(label) {
+                this.$.appscoCompanyLabel.removeLabel(label);
+            },
+
+            addLabelsCompanyRoles: function(labels, items) {
+
+                if (this.$.appscoCompanyLabelRoles.$) {
+                    var length = labels.length;
+
+                    for (var i = 0; i < length; i++) {
+
+                        if (labels[i].alias === this.label.alias) {
+                            this.$.appscoCompanyLabelRoles.addLabelRoles(items);
+                        }
+                    }
+                }
+            },
+
+            removeLabelCompanyRoles: function(label, items) {
+
+                if (this.$.appscoCompanyLabelRoles.$ && (label.alias === this.label.alias)) {
+                    this.$.appscoCompanyLabelRoles.removeLabelRoles(items);
+                }
+            },
+
+            setupPage: function() {
+                this.fire('show-labels-page-actions');
+            },
+
+            resetPage: function() {
+                this.fire('hide-labels-page-actions');
+            },
+
+            _onRemoveLabelFromCompanyRole: function(event) {
+                event.stopPropagation();
+
+                this.fire('remove-label-from-company-role', {
+                    label: this.label,
+                    role: event.detail.role
+                })
+            }
+        });
+    </script>
+</dom-module>
+

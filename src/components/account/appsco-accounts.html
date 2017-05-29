@@ -344,12 +344,17 @@ Custom property | Description | Default
                 }
             },
 
-            _loadAccounts: function () {
+            _executePreloadActions: function() {
                 this._showProgressBar();
                 this._loadMore = false;
                 this.set('_accounts', []);
-                this.set('_allAccounts', []);
+//                this.set('_allAccounts', []);
                 this.set('_searchedAccounts', []);
+            },
+
+            _loadAccounts: function () {
+                this._executePreloadActions();
+                this.$.accountsApiRequest.url = this._accountsApiUrl;
                 this.$.accountsApiRequest.generateRequest();
             },
 
@@ -382,13 +387,14 @@ Custom property | Description | Default
                 var response = event.detail.response,
                     companyRoles = response.company_roles.reverse(),
                     meta = response.meta,
-                    accountsCount = companyRoles.length - 1;
+                    accountsCount = companyRoles.length - 1,
+                    allLength = this._allAccounts.length;
 
                 this._totalAccounts = meta.total;
                 this._next = meta.next + "&limit=" + this.size;
 
                 if (meta.total === 0) {
-                    this._message = 'Please add accounts to your company.';
+                    this._message = 'There are no asked accounts.';
                     this._handleEmptyLoad();
                     return false;
                 }
@@ -398,15 +404,27 @@ Custom property | Description | Default
 
                 companyRoles.forEach(function (el, index) {
 
-                    setTimeout( function() {
-                        el.selected = false;
+                    for (var i = 0; i < allLength; i++) {
+
+                        if (el.self === this._allAccounts[i].self) {
+                            el.selected = this._allAccounts[i].selected;
+                            break;
+                        }
+                        else if (i === allLength - 1) {
+                            el.selected = false;
+                        }
+                    }
+
+                    setTimeout(function() {
+
 
                         this.push('_accounts', el);
-                        this.push('_allAccounts', el);
 
                         if (index == accountsCount) {
 
-                            this._loadMore = this.loadMore;
+                            if (!this._allAccounts.length) {
+                                this.set('_allAccounts', this._accounts);
+                            }
 
                             if (this._accounts.length === meta.total) {
                                 this._loadMore = false;
@@ -427,7 +445,7 @@ Custom property | Description | Default
                             });
                         }
 
-                    }.bind(this), (index + 1) * 30 );
+                    }.bind(this), (index + 1) * 30);
 
                 }.bind(this));
             },
@@ -481,8 +499,26 @@ Custom property | Description | Default
                 this.set('_allAccounts', allAccounts);
             },
 
+            loadCompanyRolesForLabel: function(label) {
+                this._executePreloadActions();
+                this.$.accountsApiRequest.url = label.meta.company_roles + '?extended=1';
+                this.$.accountsApiRequest.generateRequest();
+            },
+
+            showAll: function() {
+                var _accounts = JSON.parse(JSON.stringify(this._allAccounts)),
+                    _length = _accounts.length;
+
+                for (var i = 0; i < _length; i++) {
+                    _accounts[i].selected = false;
+                }
+
+                this.set('_accounts', _accounts);
+                this.set('_allAccounts', _accounts);
+            },
+
             getFirstSelectedAccount: function() {
-                var _accounts = JSON.parse(JSON.stringify(this._accounts)),
+                var _accounts = JSON.parse(JSON.stringify(this._allAccounts)),
                     _length = _accounts.length;
 
                 for (var i = 0; i < _length; i++) {
@@ -506,6 +542,33 @@ Custom property | Description | Default
                 }
 
                 return selectedAccounts;
+            },
+
+            getSelectedRolesWithLabels: function(labels) {
+                var selectedRoles = this.getSelectedAccounts(),
+                    rolesLength = selectedRoles.length,
+                    labelsLength = labels.length,
+                    result = [];
+
+                for (var i = 0; i < labelsLength; i++) {
+                    var label = labels[i];
+
+                    for (var j = 0; j < rolesLength; j++) {
+                        var roleLabels = selectedRoles[j].labels,
+                            length = roleLabels.length;
+
+                        for (var k = 0; k < length; k++) {
+
+                            if (label.alias === roleLabels[k].alias) {
+                                result.push(selectedRoles[j]);
+                                break;
+                            }
+                        }
+
+                    }
+                }
+
+                return result;
             },
 
             addAccounts: function(accounts) {

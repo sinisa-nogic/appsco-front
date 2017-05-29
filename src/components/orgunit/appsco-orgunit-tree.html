@@ -30,7 +30,7 @@ Custom property | Description | Default
             }
         </style>
 
-        <appsco-orgunit-tree-node node="[[ _rootNode ]]"></appsco-orgunit-tree-node>
+        <appsco-orgunit-tree-node id="treeNode" node="[[ _rootNode ]]"></appsco-orgunit-tree-node>
 
     </template>
 
@@ -163,11 +163,32 @@ Custom property | Description | Default
 
             },
 
+            reset: function() {
+                this._deselectAll();
+                this._collapseAll();
+            },
+
+            _deselectAll: function() {
+                var orgunits = JSON.parse(JSON.stringify(this.orgUnits)),
+                    length = orgunits.length;
+
+                for (var i = 0; i < length; i++) {
+                    orgunits[i].selected = false;
+                }
+
+                this.set('orgUnits', []);
+                this.set('orgUnits', orgunits);
+            },
+
+            _collapseAll: function() {
+                this.$.treeNode.collapseNode();
+            },
+
             _onNodeSelected: function(event) {
                 var orgunit = event.detail.orgUnit,
-                        selected = event.detail.selected,
-                        orgunits = JSON.parse(JSON.stringify(this.orgUnits)),
-                        length = orgunits.length;
+                    selected = event.detail.selected,
+                    orgunits = JSON.parse(JSON.stringify(this.orgUnits)),
+                    length = orgunits.length;
 
                 for (var i = 0; i < length; i++) {
                     var currentOrgunit = orgunits[i];

@@ -8,6 +8,8 @@
 <link rel="import" href="../../../../bower_components/paper-styles/shadow.html">
 <link rel="import" href="../../../../bower_components/iron-image/iron-image.html">
 
+<link rel="import" href="../../account/appsco-account-image.html">
+
 <!--
 `appsco-application-assignee`
 Is used to represent assignee for application.
@@ -21,8 +23,6 @@ Example:
  Custom property | Description | Default
 ----------------|-------------|----------
 `--appsco-application-assignee` | Mixin applied to root element | `{}`
-`--appsco-application-assignee-image` | Mixin applied to inner image element | `{}`
-`--appsco-application-assignee-image-contain` | Mixin applied to iron-image #sizedImgDiv | `{}`
 
 @demo demo/company/appsco-application-assignee.html
 -->
@@ -35,38 +35,13 @@ Example:
                 color: var(--primary-text-color);
             @apply(--appsco-application-assignee);
             }
-            :host .iron-image {
-                border-radius: 50%;
-            }
-            :host .iron-image::shadow #sizedImgDiv, :host .iron-image::shadow #placeholder {
-                border-radius: 50%;
-            }
-            :host .assignee-image-preview {
-                width: 28px;
-                height: 28px;
-            @apply(--appsco-application-assignee-image);
-            }
-            :host .assignee-image-preview::shadow #sizedImgDiv, :host .assignee-image-preview::shadow #placeholder {
-            @apply(--appsco-application-assignee-image-contain);
-            }
-            :host .account-initials {
-                position: relative;
-                background-color: var(--body-background-color, #f5f8fa);
-                color: var(--primary-text-color);
-                cursor: default;
-            @apply(--subscriber-initials);
-            }
-            :host .account-initials .initials {
-                position: absolute;
-                top: 0;
-                right: 0;
-                bottom: 0;
-                left: 0;
-                margin: auto;
-                line-height: 28px;
-                text-align: center;
-                text-transform: uppercase;
-                font-size: 12px;
+            appsco-account-image.preview-account-image {
+                --account-image: {
+                    width: 28px;
+                    height: 28px;
+                };
+                --account-initials-background-color: var(--subscriber-initials-background-color);
+                --account-initials-font-size: 12px;
             }
             paper-tooltip {
             --paper-tooltip: {
@@ -92,16 +67,11 @@ Example:
             :host .assignee:hover {
             @apply(--shadow-elevation-4dp);
             }
-            :host .assignee .assignee-image-preview {
-                width: 52px;
-                height: 52px;
-                margin: 0;
-                border-radius: 50%;
-            @apply(--layout-flex-none);
-            }
-            :host .assignee .initials {
-                line-height: 52px;
-                font-size: 18px;
+            appsco-account-image.full-account-image {
+                --account-image: {
+                    width: 52px;
+                    height: 52px;
+                };
             }
             :host .assignee-info {
             @apply(--layout-vertical);
@@ -157,40 +127,15 @@ Example:
         </style>
 
         <template is="dom-if" if="[[ preview ]]">
-
-            <template is="dom-if" if="[[ assignee.picture_url ]]">
-                <iron-image class="iron-image assignee-image-preview"
-                            sizing="cover"
-                            preload fade
-                            src="[[ assignee.picture_url ]]"
-                            alt="[[ assignee.name ]]"></iron-image>
-            </template>
-
-            <template is="dom-if" if="[[ !assignee.picture_url ]]">
-                <div class="iron-image assignee-image-preview account-initials">
-                    <span class="initials">[[ _initials ]]</span>
-                </div>
-            </template>
-
+            <appsco-account-image account="[[ assignee ]]"
+                                  class="preview-account-image"></appsco-account-image>
             <paper-tooltip position="right">[[ assignee.display_name ]]<br/>[[ assignee.email ]]</paper-tooltip>
         </template>
 
         <template is="dom-if" if="[[ !preview ]]">
             <div class="assignee" on-tap="_onAssigneeAction">
-
-                <template is="dom-if" if="[[ assignee.picture_url ]]">
-                    <iron-image class="iron-image assignee-image-preview"
-                                sizing="cover"
-                                preload fade
-                                src="[[ assignee.picture_url ]]"
-                                alt="[[ assignee.name ]]"></iron-image>
-                </template>
-
-                <template is="dom-if" if="[[ !assignee.picture_url ]]">
-                    <div class="iron-image assignee-image-preview account-initials">
-                        <span class="initials">[[ _initials ]]</span>
-                    </div>
-                </template>
+                <appsco-account-image account="[[ assignee ]]"
+                                      class="full-account-image"></appsco-account-image>
 
                 <div class="assignee-info assignee-basic-info">
                     <span class="info-label assignee-name">[[ assignee.display_name ]]</span>
@@ -250,11 +195,6 @@ Example:
                     value: false
                 },
 
-                _initials: {
-                    type: String,
-                    computed: '_computeInitials(assignee)'
-                },
-
                 _individualClaims: {
                     type: Boolean,
                     computed: '_computeIndividualClaims(application)'
@@ -292,19 +232,6 @@ Example:
             attached: function() {
                 this.style.display = 'inline-block';
                 this.playAnimation('entry');
-            },
-
-            _computeInitials: function(account) {
-                var initials = '';
-
-                if (account.self && account.first_name && account.last_name) {
-                    initials = account.first_name.substring(0, 1) + account.last_name.substring(0, 1);
-                }
-                else if (account.self && account.name) {
-                    initials = account.name.substring(0, 2);
-                }
-
-                return initials;
             },
 
             _computeIndividualClaims: function(application) {

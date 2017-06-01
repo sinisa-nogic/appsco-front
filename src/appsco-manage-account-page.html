@@ -18,6 +18,8 @@
 <link rel="import" href="directory/appsco-manage-account-change-password-page.html">
 <link rel="import" href="directory/appsco-directory-role-applications-page.html">
 
+<link rel="import" href="components/account/appsco-account-image.html">
+
 <dom-module id="appsco-manage-account-page">
     <template>
         <style include="webkit-scrollbar-style">
@@ -59,26 +61,16 @@
                 border-bottom: 1px solid var(--divider-color);
                 position: relative;
             }
-            .account-initials {
-                width: 96px;
-                height: 96px;
-                margin-left: auto;
-                margin-right: auto;
-                position: relative;
-                background-color: var(--divider-color);
-                border-radius: 50%;
-            }
-            .account-initials .initials {
-                position: absolute;
-                top: 0;
-                right: 0;
-                bottom: 0;
-                left: 0;
-                margin: auto;
-                line-height: 96px;
-                text-align: center;
-                text-transform: uppercase;
-                font-size: 24px;
+            appsco-account-image {
+                --account-image: {
+                    width: 96px;
+                    height: 96px;
+                    margin-left: auto;
+                    margin-right: auto;
+                };
+
+                --account-initials-background-color: var(--body-background-color-darker);
+                --account-initials-font-size: 24px;
             }
             .account-info {
                 margin-top: 10px;
@@ -157,9 +149,7 @@
                     </template>
 
                     <template is="dom-if" if="[[ !account.picture_url ]]">
-                        <div class="account-icon account-initials">
-                            <span class="initials">[[ _accountInitials ]]</span>
-                        </div>
+                        <appsco-account-image account="[[ account ]]"></appsco-account-image>
                     </template>
                 </div>
 
@@ -329,11 +319,6 @@
                     type: String
                 },
 
-                _accountInitials: {
-                    type: String,
-                    computed: '_computeAccountInitials(account)'
-                },
-
                 companyApi: {
                     type: String,
                     value: '',
@@ -492,19 +477,6 @@
                 else if(!this.$.appscoContent.resourceActive) {
                     this.$.appscoContent.showSection('resource');
                 }
-            },
-
-            _computeAccountInitials: function(account) {
-                var initials = '';
-
-                if (account.self && account.first_name.length > 0 && account.last_name.length > 0) {
-                    initials = account.first_name.substring(0, 1) + account.last_name.substring(0, 1);
-                }
-                else if (account.self && account.name) {
-                    initials = account.name.substring(0, 2);
-                }
-
-                return initials;
             },
 
             /**

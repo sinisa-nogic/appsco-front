@@ -317,7 +317,9 @@ Contains info about application assignees (accounts to whom app is shared).
                 this.set('_allAssignees', []);
                 this._message = '';
                 this._nextPage = 1;
+                this._totalAssignees = 0;
 
+                this._abortPreviousRequest();
                 this.$.getAssigneesCall.generateRequest();
             },
 
@@ -328,7 +330,21 @@ Contains info about application assignees (accounts to whom app is shared).
             _loadMoreAssignees: function() {
                 this._showLoadMoreProgressBar();
                 this._computeAction();
+
+                this._abortPreviousRequest();
                 this.$.getAssigneesCall.generateRequest();
+            },
+
+            /**
+             * Aborts previous request in order to get only one and valid response (from next request)
+             * 
+             * @private
+             */
+            _abortPreviousRequest: function() {
+                var assigneesCall = this.$.getAssigneesCall;
+                if (assigneesCall.lastRequest) {
+                    assigneesCall.lastRequest.abort();
+                }
             },
 
             /**
@@ -338,7 +354,9 @@ Contains info about application assignees (accounts to whom app is shared).
              * @private
              */
             _handleError: function(event) {
-                this._message = 'We couldn\'t load assignees at the moment. Please try again in a minute. If error continues contact us.';
+                if (!event.detail.request.aborted) {
+                    this._message = 'We couldn\'t load assignees at the moment. Please try again in a minute. If error continues contact us.';
+                }
                 this._totalAssignees = 0;
                 this._handleEmpty();
             },

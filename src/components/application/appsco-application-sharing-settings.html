@@ -77,10 +77,13 @@ Custom property | Description | Default
 
         <appsco-form-error message="[[ _error ]]"></appsco-form-error>
 
-        <paper-toggle-button id="setByUser"
-                             checked$="[[ _setByUser ]]"
-                             disabled$="[[ !_computedAuthTypes ]]"
-                             on-change="_onChangeSetByUser">Set individually</paper-toggle-button>
+        <template is="dom-if" if="[[ !_hideToggle ]]">
+            <paper-toggle-button id="setByUser"
+                                 checked$="[[ _setByUser ]]"
+                                 disabled$="[[ !_computedAuthTypes ]]"
+                                 on-change="_onChangeSetByUser">Set individually
+            </paper-toggle-button>
+        </template>
 
         <div class="info">
             <template is="dom-if" if="[[ _setByUser ]]">
@@ -255,6 +258,15 @@ Custom property | Description | Default
                 },
 
                 /**
+                 * Returns true if app has auth type: cc, login, passport, securenote or softwarelicence
+                 */
+                _hideToggle: {
+                    type: Boolean,
+                    computed: "_shouldToggleBeHidden(application)"
+                },
+
+
+                /**
                  * Target for iron-a11y-keys component.
                  * Submit form on enter.
                  */
@@ -355,6 +367,17 @@ Custom property | Description | Default
 
             _computeAuthType: function(application, authType) {
                 return application.auth_type === authType;
+            },
+
+            /**
+             * Sharing settings toggle should always be hidden for auth types listed in this method.
+             *
+             * @returns Boolean
+             * @private
+             */
+            _shouldToggleBeHidden: function(application) {
+                return (application.auth_type == 'cc' || application.auth_type == 'login' || application.auth_type == 'passport'
+                || application.auth_type == 'securenote' || application.auth_type == 'softwarelicence');
             },
 
             _onApplicationChanged: function(application) {

@@ -259,7 +259,7 @@
         </style>
 
         <iron-ajax
-                auto
+                id="billingCCRequest"
                 url="[[ companyApi ]]/billing/cc"
                 handle-as="json"
                 headers="[[ _computedHeaders ]]"
@@ -267,7 +267,7 @@
         ></iron-ajax>
 
         <iron-ajax
-                auto
+                id="billingSubscriptionRequest"
                 url="[[ _subscriptionApi ]]"
                 handle-as="json"
                 headers="[[ _computedHeaders ]]"
@@ -678,7 +678,9 @@
                 },
 
                 companyApi: {
-                    type: String
+                    type: String,
+                    value: function() { return ''; },
+                    observer: '_onCompanyApiChanged'
                 },
 
                 _subscriptionApi: {
@@ -779,6 +781,13 @@
                 }
                 else if(!this.$.appscoContent.resourceActive) {
                     this.$.appscoContent.showSection('resource');
+                }
+            },
+
+            _onCompanyApiChanged: function() {
+                if(this.companyApi) {
+                    this.$.billingSubscriptionRequest.generateRequest();
+                    this.$.billingCCRequest.generateRequest();
                 }
             },
 

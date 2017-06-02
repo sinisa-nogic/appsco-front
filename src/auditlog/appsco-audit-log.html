@@ -1,5 +1,4 @@
 <link rel="import" href="../../bower_components/polymer/polymer.html">
-<link rel="import" href="../../bower_components/iron-image/iron-image.html">
 <link rel="import" href="../../bower_components/iron-flex-layout/iron-flex-layout.html">
 <link rel="import" href="../../bower_components/paper-styles/typography.html">
 <link rel="import" href="../../bower_components/paper-styles/shadow.html">
@@ -9,6 +8,7 @@
 <link rel="import" href="../../bower_components/app-localize-behavior/app-localize-behavior.html">
 
 <link rel="import" href="../components/components/appsco-date-format.html">
+<link rel="import" href="../components/account/appsco-account-image.html">
 
 <dom-module id="appsco-audit-log">
     <template>
@@ -56,30 +56,12 @@
             .log-record .date {
                 width: 20%;
             }
-            :host .account-icon, :host .account-icon::shadow #sizedImgDiv, :host .account-icon::shadow #placeholder {
-                border-radius: 50%;
-            }
-            :host .account-icon {
-                width: 32px;
-                height: 32px;
-                margin-right: 5px;
-            }
-            :host .account-initials {
-                position: relative;
-                background-color: var(--body-background-color, #f5f8fa);
-                color: var(--primary-text-color);
-            }
-            :host .account-initials .initials {
-                position: absolute;
-                top: 0;
-                right: 0;
-                bottom: 0;
-                left: 0;
-                margin: auto;
-                line-height: 32px;
-                text-align: center;
-                text-transform: uppercase;
-                font-size: 14px;
+            appsco-account-image {
+                --account-image: {
+                    width: 32px;
+                    height: 32px;
+                    margin-right: 5px;
+                };
             }
             :host .message {
                 color: var(--secondary-text-color);
@@ -134,19 +116,7 @@
                       items="[[ _logList ]]">
                 <div class="log-record">
                     <div class="account-info">
-                        <template is="dom-if" if="[[ item.account.picture_url ]]">
-                            <iron-image class="account-icon"
-                                        sizing="cover"
-                                        preload fade
-                                        src="[[ item.account.picture_url ]]"></iron-image>
-                        </template>
-
-                        <template is="dom-if" if="[[ !item.account.picture_url ]]">
-                            <div class="account-icon account-initials">
-                                <span class="initials">[[ _accountInitials(item.account) ]]</span>
-                            </div>
-                        </template>
-
+                        <appsco-account-image account="[[ item.account ]]"></appsco-account-image>
                         <div class="account">[[ item.account.name ]]</div>
                     </div>
                     <div class="event">[[ item.event ]]</div>
@@ -325,19 +295,7 @@
 
                 if (auditLogApi && auditLogApi != '') {
                     this.loadLog();
-//                    this.$.ironAjaxLog.auto = true;
                 }
-
-            },
-
-            _accountInitials: function(account) {
-                var name = account.name.split(' ');
-
-                if (name.length > 1) {
-                    return name[0].substring(0, 1) + name[1].substring(0, 1);
-                }
-
-                return account.name.substring(0, 2);
             },
 
             _onCountryListResponse: function(event, ironRequest) {

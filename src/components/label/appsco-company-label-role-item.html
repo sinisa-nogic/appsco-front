@@ -1,5 +1,4 @@
 <link rel="import" href="../../../bower_components/polymer/polymer.html">
-<link rel="import" href="../../../bower_components/iron-image/iron-image.html">
 <link rel="import" href="../../../bower_components/iron-icon/iron-icon.html">
 <link rel="import" href="../../../bower_components/iron-flex-layout/iron-flex-layout.html">
 <link rel="import" href="../../../bower_components/paper-button/paper-button.html">
@@ -7,6 +6,8 @@
 <link rel="import" href="../../../bower_components/neon-animation/animations/fade-in-animation.html">
 <link rel="import" href="../../../bower_components/neon-animation/animations/fade-out-animation.html">
 <link rel="import" href="../../../bower_components/paper-styles/typography.html">
+
+<link rel="import" href="../../components/account/appsco-account-image.html">
 
 <!--
 `appsco-company-label-role-item`
@@ -51,33 +52,6 @@ Custom property | Description | Default
             }
             .item:hover {
                 @apply(--shadow-elevation-4dp);
-            }
-            .account-icon {
-                width: 52px;
-                height: 52px;
-                @apply(--layout-flex-none);
-                border-radius: 50%;
-                position: relative;
-            }
-            .account-icon::shadow #sizedImgDiv, .account-icon::shadow #placeholder {
-                border-radius: 50%;
-            }
-            :host .account-initials {
-                position: relative;
-                background-color: var(--body-background-color, #f5f8fa);
-                color: var(--primary-text-color);
-            }
-            .account-initials .initials {
-                position: absolute;
-                top: 0;
-                right: 0;
-                bottom: 0;
-                left: 0;
-                margin: auto;
-                line-height: 52px;
-                text-align: center;
-                text-transform: uppercase;
-                font-size: 18px;
             }
             .account-title {
                 display: block;
@@ -153,18 +127,7 @@ Custom property | Description | Default
 
         <div class="item">
 
-            <template is="dom-if" if="[[ role.account.picture_url ]]">
-                <iron-image class="account-icon"
-                            sizing="cover"
-                            preload fade
-                            src="[[ role.account.picture_url ]]"></iron-image>
-            </template>
-
-            <template is="dom-if" if="[[ !role.account.picture_url ]]">
-                <div class="account-icon account-initials">
-                    <span class="initials">[[ _accountInitials ]]</span>
-                </div>
-            </template>
+            <appsco-account-image account="[[ role.account ]]"></appsco-account-image>
 
             <div class="account-info account-basic-info">
                 <span class="info-label account-title">[[ role.account.display_name ]]</span>
@@ -205,11 +168,6 @@ Custom property | Description | Default
                 _orgUnits: {
                     type: String,
                     computed: '_computeOrganizationUnits(role)'
-                },
-
-                _accountInitials: {
-                    type: String,
-                    computed: '_computeAccountInitials(role)'
                 },
 
                 /**
@@ -263,20 +221,6 @@ Custom property | Description | Default
 
                 return '';
 
-            },
-
-            _computeAccountInitials: function(role) {
-                var account = role.account,
-                    initials = '';
-
-                if (account.self && account.first_name.length > 0 && account.last_name.length > 0) {
-                    initials = account.first_name.substring(0, 1) + account.last_name.substring(0, 1);
-                }
-                else if (account.self && account.name) {
-                    initials = account.name.substring(0, 2);
-                }
-
-                return initials;
             },
 
             _onRemoveLabel: function (event) {

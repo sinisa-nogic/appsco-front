@@ -8,6 +8,7 @@
 
 <link rel="import" href="appsco-dropdown.html">
 <link rel="import" href="appsco-account-info-account.html">
+<link rel="import" href="../account/appsco-account-image.html">
 
 <!--
 `appsco-account-info`
@@ -81,32 +82,20 @@ Custom property | Description | Default
 
             @apply(--appsco-account-info-user-holder);
             }
-            :host .account-img {
-                width: 32px;
-                height: 32px;
-                border-radius: 50%;
-
-            @apply(--appsco-account-info-account-img);
+            appsco-account-image {
+                --account-image: {
+                    width: 32px;
+                    height: 32px;
+                    @apply(--appsco-account-info-account-img);
+                };
+                --account-initials-font-size: 14px;
             }
-            :host .account-img::shadow #sizedImgDiv, :host .account-img::shadow #placeholder {
-                border-radius: 50%;
-            }
-            :host .account-initials {
-                position: relative;
-                background-color: var(--body-background-color, #f5f8fa);
-                color: var(--primary-text-color);
-            }
-            :host .account-initials .initials {
-                position: absolute;
-                top: 0;
-                right: 0;
-                bottom: 0;
-                left: 0;
-                margin: auto;
-                line-height: 32px;
-                text-align: center;
-                text-transform: uppercase;
-                font-size: 14px;
+            appsco-account-image.active-account-image {
+                --account-image: {
+                    width: 64px;
+                    height: 64px;
+                };
+                --account-initials-font-size: 18px;
             }
             :host .account-info {
                 margin: 0 0 0 10px;
@@ -170,14 +159,6 @@ Custom property | Description | Default
                 border-top-left-radius: 4px;
                 border-top-right-radius: 4px;
             }
-            :host appsco-dropdown .active-account .account-img {
-                width: 64px;
-                height: 64px;
-            }
-            :host appsco-dropdown .active-account .initials {
-                line-height: 64px;
-                font-size: 18px;
-            }
             :host .active-account .account-info {
                 margin-top: 2px;
             }
@@ -199,19 +180,7 @@ Custom property | Description | Default
 
             <div id="triggerDropdown" class="user-holder layout horizontal center" on-tap="_toggleDropdown">
 
-                <template is="dom-if" if="[[ account.picture_url ]]">
-                    <iron-image class="account-img flex-none"
-                                sizing="cover"
-                                placeholder="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAABGdBTUEAALGPC/xhBQAAAI5JREFUeAHt1YEJwCAQBEFN/60KYgMRbGMnHXjs5Ofa5x/h7wu//T3dAAqIL4BAPIChAAXEF0AgHoCfIAIIxBdAIB6AK4AAAvEFEIgH4AoggEB8AQTiAbgCCCAQXwCBeACuAAIIxBdAIB6AK4AAAvEFEIgH4AoggEB8AQTiAbgCCCAQXwCBeACuAAIIxBe4yV0EThqVC64AAAAASUVORK5CYII="
-                                preload fade
-                                src="[[ account.picture_url ]]"></iron-image>
-                </template>
-
-                <template is="dom-if" if="[[ !account.picture_url ]]">
-                    <div class="account-img account-initials">
-                        <span class="initials">[[ _accountInitials ]]</span>
-                    </div>
-                </template>
+                <appsco-account-image account="[[ account ]]"></appsco-account-image>
 
                 <template is="dom-if" if="{{ displayName }}">
                     <span class="account-info truncate hidden-xs">[[ account.name ]]</span>
@@ -233,18 +202,8 @@ Custom property | Description | Default
 
                 <div class="account-holder layout vertical">
                     <div class="active-account account layout horizontal">
-                        <template is="dom-if" if="[[ account.picture_url ]]">
-                            <iron-image class="account-img"
-                                        sizing="cover"
-                                        preload fade
-                                        src="[[ account.picture_url ]]"></iron-image>
-                        </template>
-
-                        <template is="dom-if" if="[[ !account.picture_url ]]">
-                            <div class="account-img account-initials">
-                                <span class="initials">[[ _accountInitials ]]</span>
-                            </div>
-                        </template>
+                        <appsco-account-image account="[[ account ]]"
+                                              class="active-account-image"></appsco-account-image>
 
                         <div class="account-info layout vertical">
 
@@ -334,11 +293,6 @@ Custom property | Description | Default
                     notify: true
                 },
 
-                _accountInitials: {
-                    type: String,
-                    computed: '_computeAccountInitials(account)'
-                },
-
                 /**
                  * Indicates if account exists or not.
                  */
@@ -412,19 +366,6 @@ Custom property | Description | Default
                 else {
                     this._accountExists = false;
                 }
-            },
-
-            _computeAccountInitials: function(account) {
-                var initials = '';
-
-                if (account.self && account.first_name.length > 0 && account.last_name.length > 0) {
-                    initials = account.first_name.substring(0, 1) + account.last_name.substring(0, 1);
-                }
-                else if (account.self && account.name) {
-                    initials = account.name.substring(0, 2);
-                }
-
-                return initials;
             },
 
             /**

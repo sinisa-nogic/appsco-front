@@ -6,6 +6,8 @@
 <link rel="import" href="../bower_components/iron-media-query/iron-media-query.html">
 
 <link rel="import" href="components/page/appsco-content.html">
+<link rel="import" href="components/account/appsco-contacts.html">>
+<link rel="import" href="components/account/appsco-invitations.html">
 
 <dom-module id="appsco-contacts-page">
     <template>
@@ -50,7 +52,26 @@
             </div>
 
             <div content>
-                <div class="contacts-container">Content</div>
+                <div class="contacts-container">
+                    <appsco-invitations
+                            id="appscoInvitations"
+                            size="100"
+                            authorization-token="[[ authorizationToken ]]"
+                            invitations-api="[[ companyInvitationsApi ]]"
+                            type="contact"
+                            on-remove="_onRemoveInvitation"
+                            on-loaded="_onInvitationsLoaded"
+                            on-empty-load="_onInvitationsEmptyLoad"></appsco-invitations>
+
+                    <appsco-contacts
+                            id="appscoContacts"
+                            size="100"
+                            load-more
+                            authorization-token="[[ authorizationToken ]]"
+                            contacts-api="[[ companyContactsApi ]]"
+                            on-loaded="_onContactsLoaded"
+                            on-empty-load="_onContactsEmptyLoad"></appsco-contacts>
+                </div>
             </div>
 
         </appsco-content>
@@ -92,6 +113,37 @@
                     }
                 },
 
+                /**
+                 * Get company invitations.
+                 */
+                companyInvitationsApi: {
+                    type: String,
+                    value: function() { return ''; }
+                },
+
+                /**
+                 * Get company accounts.
+                 */
+                companyContactsApi: {
+                    type: String,
+                    value: function() { return ''; }
+                },
+
+                _contactsLoaded: {
+                    type: Boolean,
+                    value: false
+                },
+
+                _invitationsLoaded: {
+                    type: Boolean,
+                    value: false
+                },
+
+                _pageReady: {
+                    type: Boolean,
+                    computed: '_computePageReadyState(_contactsLoaded, _invitationsLoaded)'
+                },
+
                 pageLoaded: {
                     type: Boolean,
                     value: false
@@ -105,6 +157,26 @@
             observers: [
                 '_updateScreen(mobileScreen)'
             ],
+
+            _computePageReadyState: function(contacts, invitations) {
+                return contacts && invitations;
+            },
+
+            _onInvitationsLoaded: function() {
+                this._invitationsLoaded = true;
+            },
+
+            _onInvitationsEmptyLoad: function() {
+                this._invitationsLoaded = true;
+            },
+
+            _onContactsLoaded: function() {
+                this._contactsLoaded = true;
+            },
+
+            _onContactsEmptyLoad: function() {
+                this._contactsLoaded = true;
+            },
 
             attached: function() {
                 this.pageLoaded = false;

@@ -6,32 +6,9 @@
 <link rel="import" href="../../../bower_components/neon-animation/neon-animation-runner-behavior.html">
 <link rel="import" href="../../../bower_components/neon-animation/animations/transform-animation.html">
 
-<link rel="import" href="appsco-invitation-item.html">
+<link rel="import" href="appsco-contact-item.html">
 
-<!--
-`appsco-invitations`
-Contains invitation list and Load More action.
-Invitations are loaded inside component through iron-ajax.
-Component listens for events which have influence on result and changes query in order to retrieve appropriate invitations.
-
-
-    <appsco-invitations>
-    </appsco-invitations>
-
-### Styling
-
-`<appsco-invitations>` provides the following custom properties and mixins for styling:
-
-Custom property | Description | Default
-----------------|-------------|----------
-`--appsco-invitations` | Mixin for the root element | `{}`
-`--appsco-invitation-item` | Mixin for item style | `{}`
-`--invitations-container` | Mixin for the invitations container | `{}`
-`--invitations-progress-bar` | Mixin applied to paper-progress for invitation list | `{}`
-
--->
-
-<dom-module id="appsco-invitations">
+<dom-module id="appsco-contacts">
     <template>
         <style>
             :host {
@@ -39,20 +16,20 @@ Custom property | Description | Default
                 position: relative;
                 @apply(--layout-vertical);
                 @apply(--layout-center);
-                @apply(--appsco-invitations);
+                @apply(--appsco-contacts);
             }
 
-            :host .invitations {
+            :host .contacts {
                 @apply(--layout-vertical);
                 @apply(--layout-start);
-                @apply(--appsco-invitations);
+                @apply(--appsco-contacts);
             }
-            :host appsco-invitation-item {
+            :host appsco-contact-item {
                 width: 100%;
                 margin: 0 0 10px 0;
-                @apply(--appsco-invitation-item);
+                @apply(--appsco-contact-item);
             }
-            :host .invitations-container {
+            :host .contacts-container {
                 width: 100%;
                 position: relative;
             }
@@ -70,13 +47,13 @@ Custom property | Description | Default
                 top: 4px;
                 left: 0;
             }
-            :host .invitations-progress-bar {
+            :host .contacts-progress-bar {
                 min-width: 100px;
                 width: 100%;
                 position: absolute;
                 top: 0;
                 left: 0;
-                @apply(--invitations-progress-bar);
+                @apply(--contacts-progress-bar);
             }
             :host paper-button {
                 display: block;
@@ -93,43 +70,45 @@ Custom property | Description | Default
             }
         </style>
 
-        <div class="invitations-container">
+        <div class="contacts-container">
 
             <iron-ajax
-                    id="getInvitationsApiRequest"
-                    url="[[ _invitationsApiUrl ]]"
+                    id="_getContactsApiRequest"
+                    url="[[ _contactsApiUrl ]]"
                     on-error="_onError"
                     on-response="_onResponse"
                     headers="[[ _computedHeaders ]]"
                     debounce-duration="300"></iron-ajax>
 
             <paper-progress id="paperProgress"
-                            class="invitations-progress-bar"
+                            class="contacts-progress-bar"
                             indeterminate></paper-progress>
 
             <template is="dom-if" if="[[ _message ]]">
                 <p class="message">[[ _message ]]</p>
             </template>
 
-            <template is="dom-if" if="[[ !_invitationsEmpty ]]">
-                <div class="invitations">
+            <template is="dom-if" if="[[ !_contactsEmpty ]]">
+                <div class="contacts">
                     <template is="dom-repeat"
-                              items="{{ _invitations }}"
+                              items="{{ _contacts }}"
                               on-dom-change="_onItemsDomChange">
 
-                        <appsco-invitation-item id="appscoInvitationItem_[[ index ]]"
-                                                invitation="{{ item }}"
-                                                authorization-token="[[ authorizationToken ]]"></appsco-invitation-item>
+                        <appsco-contact-item
+                                id="appscoContactItem_[[ index ]]"
+                                contact="{{ item }}"
+                                authorization-token="[[ authorizationToken ]]"
+                        ></appsco-contact-item>
 
                     </template>
                 </div>
             </template>
         </div>
 
-        <template is="dom-if" if="[[ !_invitationsEmpty ]]">
+        <template is="dom-if" if="[[ !_contactsEmpty ]]">
             <div class="load-more-box" hidden$="[[ !_loadMore ]]">
                 <paper-progress id="loadMoreProgress" indeterminate></paper-progress>
-                <paper-button on-tap="_loadMoreInvitations" id="loadMore">Load More</paper-button>
+                <paper-button on-tap="_loadMoreContacts" id="loadMore">Load More</paper-button>
             </div>
         </template>
     </template>
@@ -137,7 +116,7 @@ Custom property | Description | Default
     <script>
         Polymer({
 
-            is: 'appsco-invitations',
+            is: 'appsco-contacts',
 
             properties: {
 
@@ -152,7 +131,7 @@ Custom property | Description | Default
                 /**
                  * Route to retrieve accounts for current user
                  */
-                invitationsApi: {
+                contactsApi: {
                     type: String,
                     value: ''
                 },
@@ -163,14 +142,6 @@ Custom property | Description | Default
                 size: {
                     type: Number,
                     value: 10
-                },
-
-                /**
-                 * Type of invitation
-                 */
-                type: {
-                    type: String,
-                    value: function() { return 'user'; }
                 },
 
                 /**
@@ -191,7 +162,7 @@ Custom property | Description | Default
                     computed: '_computeHeaders(authorizationToken)'
                 },
 
-                _invitations: {
+                _contacts: {
                     type: Array,
                     value: function () {
                         return [];
@@ -199,14 +170,14 @@ Custom property | Description | Default
                     notify: true
                 },
 
-                _allInvitations: {
+                _allContacts: {
                     type: Array,
                     value: function () {
                         return [];
                     }
                 },
 
-                _invitationsEmpty: {
+                _contactsEmpty: {
                     type: Boolean,
                     value: false
                 },
@@ -216,17 +187,17 @@ Custom property | Description | Default
                     value: ''
                 },
 
-                _invitationsApiUrl: {
+                _contactsApiUrl: {
                     type: String,
-                    computed: '_computeInvitationsApiUrl(invitationsApi, size, type)',
-                    observer: '_onInvitationsApiUrlChanged'
+                    computed: '_computeContactsApiUrl(contactsApi, size)',
+                    observer: '_onContactsApiUrlChanged'
                 },
 
                 _next: {
                     type: String
                 },
 
-                _totalInvitations: {
+                _totalContacts: {
                     type: Number,
                     value: 0
                 },
@@ -260,41 +231,41 @@ Custom property | Description | Default
                 Polymer.NeonAnimationRunnerBehavior
             ],
 
-            _computeInvitationsApiUrl: function(invitationsApi, size, type) {
-                return (invitationsApi && size) ? (invitationsApi + '?page=1&extended=1&limit=' + size + '&type=' + type) : '';
+            _computeContactsApiUrl: function(contactsApi, size) {
+                return (contactsApi && size) ? (contactsApi + '?page=1&extended=1&limit=' + size) : '';
             },
 
-            _onInvitationsApiUrlChanged: function(url) {
+            _onContactsApiUrlChanged: function(url) {
 
                 if (url && url.length > 0) {
-                    this._loadInvitations();
+                    this._loadContacts();
                 }
             },
 
-            _loadInvitations: function () {
+            _loadContacts: function () {
                 this._showProgressBar();
                 this._loadMore = false;
-                this.set('_invitations', []);
-                this.set('_allInvitations', []);
-                this.$.getInvitationsApiRequest.generateRequest();
+                this.set('_contacts', []);
+                this.set('_allContacts', []);
+                this.$._getContactsApiRequest.generateRequest();
             },
 
-            _loadMoreInvitations: function () {
+            _loadMoreContacts: function () {
                 this._showLoadMoreProgressBar();
-                this.$.getInvitationsApiRequest.url = this._next;
-                this.$.getInvitationsApiRequest.generateRequest();
+                this.$._getContactsApiRequest.url = this._next;
+                this.$._getContactsApiRequest.generateRequest();
             },
 
             _onError: function() {
-                this._message = 'We couldn\'t load invitations at the moment. Please try again in a minute.';
+                this._message = 'We couldn\'t load contacts at the moment. Please try again in a minute.';
                 this._handleEmptyLoad();
             },
 
             _handleEmptyLoad: function() {
-                this._invitationsEmpty = true;
+                this._contactsEmpty = true;
 
                 /**
-                 * Fired when there are no invitations.
+                 * Fired when there are no contacts.
                  *
                  * @event empty-load
                  */
@@ -306,11 +277,11 @@ Custom property | Description | Default
 
             _onResponse: function(event) {
                 var response = event.detail.response,
-                    invitations = response.invitations,
+                    contacts = response.contacts,
                     meta = response.meta,
-                    invitationsCount = invitations.length - 1;
+                    contactsCount = contacts.length - 1;
 
-                this._totalInvitations = meta.total;
+                this._totalContacts = meta.total;
                 this._next = meta.next + "&limit=" + this.size;
 
                 if (meta.total === 0) {
@@ -318,22 +289,22 @@ Custom property | Description | Default
                     return false;
                 }
 
-                this._invitationsEmpty = false;
+                this._contactsEmpty = false;
                 this._message = '';
 
-                invitations.forEach(function(el, index) {
+                contacts.forEach(function(el, index) {
 
                     setTimeout( function() {
                         el.selected = false;
 
-                        this.push('_invitations', el);
-                        this.push('_allInvitations', el);
+                        this.push('_contacts', el);
+                        this.push('_allContacts', el);
 
-                        if (index == invitationsCount) {
+                        if (index === contactsCount) {
 
                             this._loadMore = this.loadMore;
 
-                            if (this._invitations.length === meta.total) {
+                            if (this._contacts.length === meta.total) {
                                 this._loadMore = false;
                             }
 
@@ -342,13 +313,13 @@ Custom property | Description | Default
                             this._setLoadMoreAction();
 
                             /**
-                             * Fired when invitations are loaded
+                             * Fired when contacts are loaded
                              *
                              * @event loaded
-                             * @param {Object} invitations[]
+                             * @param {Object} contacts[]
                              */
                             this.fire('loaded', {
-                                invitations: invitations
+                                contacts: contacts
                             });
                         }
 
@@ -365,7 +336,7 @@ Custom property | Description | Default
 
             _setLoadMoreAction: function() {
 
-                if (this.loadMore && this._allInvitations.length < this._totalInvitations) {
+                if (this.loadMore && this._allContacts.length < this._totalContacts) {
                     this._loadMore = true;
                 }
                 else {
@@ -378,98 +349,98 @@ Custom property | Description | Default
                 this._loadMore = false;
             },
 
-            addInvitations: function(invitations) {
-                var length = invitations.length;
+            addContacts: function(contacts) {
+                var length = contacts.length;
 
-                this._invitationsEmpty = false;
+                this._contactsEmpty = false;
                 this._message = '';
                 this._renderedIndex = length - 1;
 
                 for (var i = 0; i < length; i++) {
-                    invitations[i].selected = false;
-                    this.unshift('_invitations', invitations[i]);
-                    this.unshift('_allInvitations', invitations[i]);
+                    contacts[i].selected = false;
+                    this.unshift('_contacts', contacts[i]);
+                    this.unshift('_allContacts', contacts[i]);
 
-                    this._totalInvitations++;
+                    this._totalContacts++;
                 }
             },
 
-            modifyInvitations: function(invitations) {
-                var _invitations = JSON.parse(JSON.stringify(this._invitations)),
-                    _length = _invitations.length,
-                    allInvitations = JSON.parse(JSON.stringify(this._allInvitations)),
-                    allLength = allInvitations.length,
-                    lengthModify = invitations.length;
+            modifyContacts: function(contacts) {
+                var _contacts = JSON.parse(JSON.stringify(this._contacts)),
+                    _length = _contacts.length,
+                    allContacts = JSON.parse(JSON.stringify(this._allContacts)),
+                    allLength = allContacts.length,
+                    lengthModify = contacts.length;
 
                 for (var i = 0; i < lengthModify; i++) {
-                    var invitation = invitations[i];
+                    var contact = contacts[i];
 
                     for (var j = 0; j < _length; j++) {
-                        if (invitation.self === _invitations[j].self) {
-                            invitation.selected = _invitations[j].selected;
-                            _invitations[j] = invitation;
+                        if (contact.self === _contacts[j].self) {
+                            contact.selected = _contacts[j].selected;
+                            _contacts[j] = contact;
                             break;
                         }
                     }
 
                     for (var k = 0; k < allLength; k++) {
-                        if (invitation.self === allInvitations[k].self) {
-                            invitation.selected = allInvitations[k].selected;
-                            allInvitations[k] = invitation;
+                        if (contact.self === allContacts[k].self) {
+                            contact.selected = allContacts[k].selected;
+                            allContacts[k] = contact;
                             break;
                         }
                     }
 
                 }
 
-                this.set('_invitations', []);
-                this.set('_invitations', _invitations);
+                this.set('_contacts', []);
+                this.set('_contacts', _contacts);
 
-                this.set('_allInvitations', []);
-                this.set('_allInvitations', allInvitations);
+                this.set('_allContacts', []);
+                this.set('_allContacts', allContacts);
             },
 
-            reloadInvitations: function() {
-                this._loadInvitations();
+            reloadContacts: function() {
+                this._loadContacts();
             },
 
-            removeInvitations: function(invitations) {
-                var length = invitations.length,
-                    _invitations = this._invitations,
-                    _length = _invitations.length,
-                    allInvitations = this._allInvitations,
-                    allLength = allInvitations.length;
+            removeContacts: function(contacts) {
+                var length = contacts.length,
+                    _contacts = this._contacts,
+                    _length = _contacts.length,
+                    allContacts = this._allContacts,
+                    allLength = allContacts.length;
 
                 for (var i = 0; i < length; i++) {
-                    var invitation = invitations[i];
+                    var contact = contacts[i];
 
                     for (var j = 0; j < _length; j++) {
 
-                        if (invitation.self === _invitations[j].self) {
-                            this.splice('_invitations', j, 1);
+                        if (contact.self === _contacts[j].self) {
+                            this.splice('_contacts', j, 1);
                             break;
                         }
                     }
 
                     for (var k = 0; k < allLength; k++) {
 
-                        if (invitation.self === allInvitations[k].self) {
-                            this.splice('_allInvitations', k, 1);
+                        if (contact.self === allContacts[k].self) {
+                            this.splice('_allContacts', k, 1);
                             break;
                         }
                     }
 
-                    this._totalInvitations--;
+                    this._totalContacts--;
 
                 }
 
-                if (0 === this._invitations.length) {
+                if (0 === this._contacts.length) {
                     this._handleEmptyLoad();
                 }
             },
 
             getTotalCount: function() {
-                return this._totalInvitations;
+                return this._totalContacts;
             },
 
             _showProgressBar: function() {
@@ -504,7 +475,7 @@ Custom property | Description | Default
                     this.animationConfig.entry.nodes = [];
 
                     for (var i = 0; i <= index; i++) {
-                        var addedItem = this.$$('#appscoInvitationItem_' + i);
+                        var addedItem = this.$$('#appscoContactItem_' + i);
                         this.animationConfig.entry.nodes.push(addedItem);
                     }
 

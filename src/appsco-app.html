@@ -97,9 +97,10 @@
 <link rel="import" href="company/appsco-company-remove-domain.html">
 <link rel="import" href="company/appsco-company-domain-token.html">
 
-
 <link rel="import" href="application/appsco-dialog-application-add.html">
 <link rel="import" href="applications/appsco-dialog-application-company-add.html">
+
+<link rel="import" href="components/contact/appsco-manage-contact-page-actions.html">
 
 <link rel="import" href="shared-styles.html">
 <link rel="import" href="webkit-scrollbar-style.html">
@@ -527,6 +528,11 @@
                                     on-back="_showCompanyDirectoryPage"
                                     on-resource-section="_onResourceActionManageAccountPage"></appsco-manage-account-page-actions>
 
+                            <appsco-manage-contact-page-actions
+                                    name="manage-contact"
+                                    on-back="_showCompanyContactsPage"
+                                    on-resource-section="_onResourceActionManageContactPage"></appsco-manage-contact-page-actions>
+
                             <appsco-audit-log-page-actions
                                     name="audit-log"
                                     on-resource-section="_onResourceActionAuditLogPage"></appsco-audit-log-page-actions>
@@ -720,6 +726,14 @@
                             on-modify-orgunit="_onModifyOrgunit"
                             on-remove-orgunit="_onRemoveOrgunit"></appsco-directory-page>
 
+                    <appsco-contacts-page
+                            id="appscoContactsPage"
+                            name="contacts"
+                            authorization-token="[[ authorizationToken ]]"
+                            company-invitations-api="[[ companyDirectoryInvitationsApi ]]"
+                            company-contacts-api="[[ companyContactsApi ]]"
+                    ></appsco-contacts-page>
+
                     <appsco-manage-account-page
                             id="appscoManageAccountPage"
                             name="manage-account"
@@ -743,6 +757,16 @@
                             on-assignee-claims="_onChangeAssigneeClaims"
                             on-revoke-assignee="_onRevokeAssigneeAccess"
                     ></appsco-manage-account-page>
+
+                    <appsco-manage-contact-page
+                            id="appscoManageContactPage"
+                            name="manage-contact"
+                            route="[[ subroute ]]"
+                            authorization-token="[[ authorizationToken ]]"
+                            contacts-api="[[ _contactsApi ]]"
+                            on-convert-contact-to-user="_onConvertContactToUserAction"
+                            on-remove-contact="_onRemoveContactAction"
+                            on-page-error="_onError"></appsco-manage-contact-page>
 
                     <appsco-provisioning-page
                             id="appscoProvisioningPage"
@@ -1295,6 +1319,11 @@
                     value: ''
                 },
 
+                companyContactsInvitationsApi: {
+                    type: String,
+                    value: ''
+                },
+
                 companyDirectoryRolesApi: {
                     type: String,
                     value: ''
@@ -1328,6 +1357,11 @@
                 _labelsApi: {
                     type: String,
                     computed: '_computeLabelsApi(companyApi)'
+                },
+
+                _contactsApi: {
+                    type: String,
+                    computed: '_computeContactsApi(companyApi)'
                 },
 
                 _subscription: {
@@ -1506,6 +1540,9 @@
                     case 'manage-account':
                         return 'Manage Account';
 
+                    case 'manage-contact':
+                        return 'Manage Contact';
+
                     case 'company-home':
                         return 'Dashboard';
 
@@ -1561,6 +1598,10 @@
                 this.set('routeData.page', 'directory');
             },
 
+            _showCompanyContactsPage: function() {
+                this.set('routeData.page', 'contacts');
+            },
+
             _showCompanyProvisioningPage: function() {
                 this.set('routeData.page', 'provisioning');
             },
@@ -1603,6 +1644,10 @@
 
             _computeLabelsApi: function(companyApi) {
                 return companyApi ? companyApi + '/labels' : '';
+            },
+
+            _computeContactsApi: function(companyApi) {
+                return companyApi ? companyApi + '/contacts' : '';
             },
 
             _onGetAccountResponse: function(event) {
@@ -1711,6 +1756,7 @@
                 this.companyApi = company;
                 this.companyApplicationsApi = company + '/applications';
                 this.companyDirectoryInvitationsApi = company + '/invitation';
+                this.companyContactsApi = company + '/contacts';
                 this.companyDirectoryRolesApi = company + '/directory/roles';
                 this.companyDirectoryImportAccounts = company + '/directory/roles/import';
                 this.companyOrgunitsApi = company + '/org-units?extended=1';
@@ -3014,6 +3060,26 @@
              */
 
             /**
+             * Manage Contact page START
+             */
+            _onResourceActionManageContactPage: function() {
+                this.$.appscoManageContactPage.toggleResource();
+            },
+
+            // TODO - convert contact to user action
+            _onConvertContactToUserAction: function(event) {
+                var contact = event.detail.contact;
+            },
+
+            // TODO - remove contact action (confirm dialog)
+            _onRemoveContactAction: function(event) {
+                var contact = event.detail.contact;
+            },
+            /**
+             * Manage Contact page END
+             */
+
+            /**
              * Audit Log page START
              */
             _onResourceActionAuditLogPage: function() {
@@ -3357,6 +3423,10 @@
                         this.$.appscoManageAccountPage.pageLoaded ? this._hideProgressBar() : this._showProgressBar();
                         break;
 
+                    case 'manage-contact':
+                        this.$.appscoManageContactPage.pageLoaded ? this._hideProgressBar() : this._showProgressBar();
+                        break;
+
                     case 'audit-log':
                         this.$.appscoAuditLogPage.pageLoaded ? this._hideProgressBar() : this._showProgressBar();
                         break;
@@ -3407,6 +3477,7 @@
                         page === 'directory' ||
                         page === 'contacts' ||
                         page === 'manage-account' ||
+                        page === 'manage-contact' ||
                         page === 'statistics' ||
                         page === 'provisioning' ||
                         page === 'provisioning-settings' ||
@@ -3478,6 +3549,7 @@
                     case 'directory':
                     case 'contacts':
                     case 'manage-account':
+                    case 'manage-contact':
                     case 'audit-log':
                     case 'provisioning-settings':
                     case 'company':

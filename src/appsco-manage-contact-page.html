@@ -1,0 +1,365 @@
+<link rel="import" href="../bower_components/polymer/polymer.html">
+<link rel="import" href="../bower_components/neon-animation/neon-animated-pages.html">
+<link rel="import" href="../bower_components/neon-animation/animations/fade-in-animation.html">
+<link rel="import" href="../bower_components/neon-animation/animations/fade-out-animation.html">
+<link rel="import" href="../bower_components/iron-media-query/iron-media-query.html">
+<link rel="import" href="../bower_components/iron-ajax/iron-ajax.html">
+
+<link rel="import" href="components/page/appsco-content.html">
+<link rel="import" href="components/account/appsco-account-image.html">
+
+<dom-module id="appsco-manage-contact-page">
+    <template>
+        <style include="webkit-scrollbar-style">
+            :host {
+                display: block;
+                color: var(--app-primary-color);
+
+                --resource-width: 300px;
+            }
+            div[resource] {
+                padding: 10px;
+                height: calc(100% - 32px - 20px - 10px);
+                overflow: auto;
+            }
+            div[content] {
+                height: 100%;
+            }
+            .resource-header {
+                padding: 20px 10px 30px;
+                border-bottom: 1px solid var(--divider-color);
+                position: relative;
+            }
+            appsco-account-image {
+                --account-image: {
+                    width: 96px;
+                    height: 96px;
+                    margin-left: auto;
+                    margin-right: auto;
+                };
+
+                --account-initials-background-color: var(--body-background-color-darker);
+                --account-initials-font-size: 24px;
+            }
+            .account-info {
+                margin-top: 10px;
+                font-size: 14px;
+            }
+            .account-info p {
+                margin: 4px 0;
+            }
+            div[resource] .resource-actions {
+                position: absolute;
+                bottom: 0;
+                left: 0;
+                right: 0;
+            }
+            .convert-to-user-button {
+                @apply(--primary-button);
+                @apply(--secondary-button);
+                border-radius: 0;
+            }
+            .remove-button {
+                @apply(--primary-button);
+                @apply(--danger-button);
+                border-radius: 0;
+            }
+            .flex-horizontal {
+                @apply(--layout-horizontal);
+                @apply(--layout-center);
+            }
+            .flex-vertical {
+                @apply(--layout-vertical);
+            }
+            .flex {
+                @apply(--layout-flex);
+            }
+            :host([medium-screen]) {
+                --resource-width: 240px;
+            }
+            :host([mobile-screen]) {
+                --resource-width: 180px;
+            }
+        </style>
+
+        <iron-media-query query="(max-width: 1200px)" query-matches="{{ mediumScreen }}"></iron-media-query>
+        <iron-media-query query="(max-width: 800px)" query-matches="{{ tabletScreen }}"></iron-media-query>
+        <iron-media-query query="(max-width: 600px)" query-matches="{{ mobileScreen }}"></iron-media-query>
+
+        <iron-ajax id="ironAjaxGetContact"
+                   on-error="_onGetContactError"
+                   on-response="_onGetContactResponse"
+                   headers="[[ _headers ]]"></iron-ajax>
+
+        <iron-ajax id="ironAjaxGetAccount"
+                   on-error="_onGetAccountError"
+                   on-response="_onGetAccountResponse"
+                   headers="[[ _headers ]]"></iron-ajax>
+
+        <appsco-content id="appscoContent" resource-active>
+
+            <div class="flex-vertical" resource>
+
+                <div class="resource-header">
+                    <appsco-account-image account="[[ _account ]]"></appsco-account-image>
+                </div>
+
+                <div class="account-info">
+                    <div class="account-name">[[ contact.display_name ]]</div>
+                    <div class="account-email">[[ contact.email ]]</div>
+                </div>
+
+                <div class="resource-actions flex-horizontal">
+                    <paper-button class="convert-to-user-button flex"
+                                  on-tap="_onConvertContactToUserAction">
+                        Convert to user
+                    </paper-button>
+
+                    <paper-button class="remove-button flex"
+                                  on-tap="_onRemoveContactAction">
+                        Remove
+                    </paper-button>
+                </div>
+
+            </div>
+
+            <div content>
+
+                Page content.
+
+            </div>
+        </appsco-content>
+
+    </template>
+
+    <script>
+        Polymer({
+            is: 'appsco-manage-contact-page',
+
+            properties: {
+
+                route: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    }
+                },
+
+                contact: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    },
+                    observer: '_onContactChanged'
+                },
+
+                _account: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    }
+                },
+
+                authorizationToken: {
+                    type: String,
+                    value: ''
+                },
+
+                contactsApi: {
+                    type: String,
+                    value: '',
+                    observer: '_onContactsApiChanged'
+                },
+
+                /**
+                 * Computed headers.
+                 * It contains authorization token.
+                 */
+                _headers: {
+                    type: Object,
+                    computed: '_computeHeaders(authorizationToken)'
+                },
+
+                /**
+                 * Indicates if it is medium screen size.
+                 * It uses iron-media-query.
+                 */
+                mediumScreen: {
+                    type: Boolean,
+                    value: false,
+                    reflectToAttribute: true
+                },
+
+                tabletScreen: {
+                    type: Boolean,
+                    value: false,
+                    reflectToAttribute: true
+                },
+
+                mobileScreen: {
+                    type: Boolean,
+                    value: false,
+                    reflectToAttribute: true
+                },
+
+                /**
+                 * Animation config.
+                 */
+                animationConfig: {
+                    value: function() {
+                        return {
+                            'entry': {
+                                name: 'fade-in-animation',
+                                node: this,
+                                timing: {
+                                    duration: 300
+                                }
+                            },
+                            'exit': {
+                                name: 'fade-out-animation',
+                                node: this,
+                                timing: {
+                                    duration: 200
+                                }
+                            }
+                        }
+                    }
+                },
+
+                pageLoaded: {
+                    type: Boolean,
+                    value: false
+                }
+            },
+
+            behaviors: [
+                Polymer.NeonAnimatableBehavior
+            ],
+
+            observers: [
+                '_updateScreen(mediumScreen, tabletScreen, mobileScreen)'
+            ],
+
+            attached: function() {
+
+                this.pageLoaded = false;
+
+                if (this.mobileScreen || this.tabletScreen || this.mediumScreen) {
+                    this.updateStyles();
+                }
+
+                this._getContact();
+
+            },
+
+            toggleResource: function() {
+                this.$.appscoContent.toggleSection('resource');
+            },
+
+            resetPage: function() {},
+
+            _updateScreen: function(medium, tablet, mobile) {
+                this.updateStyles();
+
+                if (mobile) {
+                    this.$.appscoContent.hideSection('resource');
+                }
+                else if (!this.$.appscoContent.resourceActive) {
+                    this.$.appscoContent.showSection('resource');
+                }
+            },
+
+            /**
+             * Computes authorization headers.
+             *
+             * @param {Object} authorizationToken
+             * @returns {{ Authorization: string }}
+             * @private
+             */
+            _computeHeaders: function (authorizationToken) {
+                return {
+                    'Authorization': 'token ' + authorizationToken
+                }
+            },
+
+            _onPageLoaded: function() {
+                this.pageLoaded = true;
+                this.fire('page-loaded');
+            },
+
+            _onContactsApiChanged: function() {
+                this._getContact();
+            },
+
+            _onContactChanged: function(contact) {
+
+                if (contact && contact.self) {
+                    this._getContactAccount(contact);
+                }
+            },
+
+            _getContact: function() {
+
+                if (!this.contact.self && this.contactsApi && this._headers) {
+                    var contactApi = this.contactsApi + this.route.path,
+                        getContactRequest = this.$.ironAjaxGetContact;
+
+                    if (getContactRequest.lastRequest) {
+                        getContactRequest.lastRequest.abort();
+                    }
+
+                    getContactRequest.url = contactApi;
+                    getContactRequest.generateRequest();
+                }
+            },
+
+            _onGetContactResponse: function(event) {
+
+                if (200 === event.detail.status && event.detail.response) {
+                    this.set('contact', event.detail.response);
+                }
+            },
+
+            _onGetContactError: function(event) {
+
+                if (!event.detail.request.aborted) {
+                    this.fire('page-error');
+                }
+            },
+
+            _onGetAccountResponse: function(event) {
+
+                if (200 === event.detail.status && event.detail.response && event.detail.response.account) {
+                    this.set('_account', event.detail.response.account);
+                }
+
+                this._onPageLoaded();
+            },
+
+            _onGetAccountError: function() {
+                this._onPageLoaded();
+            },
+
+            _getContactAccount: function(contact) {
+                var getAccountRequest = this.$.ironAjaxGetAccount;
+
+                getAccountRequest.url = contact.account;
+                getAccountRequest.generateRequest();
+            },
+
+            _onConvertContactToUserAction: function() {
+
+                this.fire('convert-contact-to-user', {
+                    contact: this.contact
+                });
+            },
+
+            _onRemoveContactAction: function() {
+
+                this.fire('remove-contact', {
+                    contact: this.contact
+                });
+            }
+        });
+    </script>
+</dom-module>

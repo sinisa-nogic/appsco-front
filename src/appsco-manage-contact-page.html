@@ -7,6 +7,8 @@
 
 <link rel="import" href="components/page/appsco-content.html">
 <link rel="import" href="components/account/appsco-account-image.html">
+<link rel="import" href="components/contact/appsco-manage-contact-components-page.html">
+<link rel="import" href="components/contact/appsco-contact-applications-page.html">
 
 <dom-module id="appsco-manage-contact-page">
     <template>
@@ -80,6 +82,9 @@
             :host([mobile-screen]) {
                 --resource-width: 180px;
             }
+            :host .contact-components, :host .contact-components neon-animated-pages {
+                height: 100%;
+            }
         </style>
 
         <iron-media-query query="(max-width: 1200px)" query-matches="{{ mediumScreen }}"></iron-media-query>
@@ -120,7 +125,32 @@
 
             <div content>
 
-                Page content.
+                <div class="contact-components">
+                    <neon-animated-pages class="flex"
+                                         selected="{{ _selected }}"
+                                         attr-for-selected="name">
+
+                        <appsco-manage-contact-components-page
+                                id="appscoManageContactComponentsPage"
+                                name="appsco-contact-components-page"
+                                contact="[[ contact ]]"
+                                administrator="[[ administrator ]]"
+                                authorization-token="[[ authorizationToken ]]"
+                                on-manage-applications="_onManageApplications"
+                                on-log-loaded="_pageLoaded"
+                                on-log-empty="_pageLoaded">
+                        </appsco-manage-contact-components-page>
+
+                        <appsco-contact-applications-page
+                                id="appscoContactApplicationsPage"
+                                name="appsco-contact-applications-page"
+                                contact="[[ contact ]]"
+                                authorization-token="[[ authorizationToken ]]"
+                                on-back="_onResourceBack">
+                        </appsco-contact-applications-page>
+
+                    </neon-animated-pages>
+                </div>
 
             </div>
         </appsco-content>
@@ -190,6 +220,16 @@
                 },
 
                 /**
+                 * Selected page.
+                 * It has value of component's 'name' attribute.
+                 */
+                _selected: {
+                    type: String,
+                    value: 'appsco-contact-components-page',
+                    notify: true
+                },
+
+                /**
                  * Animation config.
                  */
                 animationConfig: {
@@ -247,7 +287,9 @@
                 this.set('contact', contact);
             },
 
-            resetPage: function() {},
+            resetPage: function() {
+                this._showContactComponentsPage();
+            },
 
             _updateScreen: function(medium, tablet, mobile) {
                 this.updateStyles();
@@ -325,7 +367,30 @@
                 this.fire('delete-contact', {
                     contact: this.contact
                 });
+            },
+
+            _onManageApplications: function() {
+                this._selected = 'appsco-contact-applications-page';
+            },
+
+            /**
+             * Returns display name for contact.
+             * @param {Object} contact.
+             *
+             * @private
+             */
+            _onResourceBack: function() {
+                this._showContactComponentsPage();
+            },
+
+            _showContactComponentsPage: function() {
+                this._selected = 'appsco-contact-components-page';
+            },
+
+            reloadApplications: function() {
+                this.$.appscoContactApplicationsPage.reloadApplications()
             }
+
         });
     </script>
 </dom-module>

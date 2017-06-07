@@ -1,4 +1,5 @@
 <link rel="import" href="../bower_components/polymer/polymer.html">
+<link rel="import" href="../bower_components/neon-animation/neon-animated-pages.html">
 <link rel="import" href="../bower_components/neon-animation/animations/fade-in-animation.html">
 <link rel="import" href="../bower_components/neon-animation/animations/fade-out-animation.html">
 <link rel="import" href="../bower_components/neon-animation/neon-animatable-behavior.html">
@@ -87,25 +88,35 @@
 
             <div content>
                 <div class="contacts-container">
-                    <appsco-invitations
-                            id="appscoInvitations"
-                            size="100"
-                            authorization-token="[[ authorizationToken ]]"
-                            invitations-api="[[ companyInvitationsApi ]]"
-                            type="contact"
-                            on-remove="_onRemoveInvitation"
-                            on-loaded="_onInvitationsLoaded"
-                            on-empty-load="_onInvitationsEmptyLoad"></appsco-invitations>
 
-                    <appsco-contacts
-                            id="appscoContacts"
-                            size="100"
-                            load-more
-                            authorization-token="[[ authorizationToken ]]"
-                            contacts-api="[[ companyContactsApi ]]"
-                            on-loaded="_onContactsLoaded"
-                            on-empty-load="_onContactsEmptyLoad"
-                            on-edit="_onEditContactAction"></appsco-contacts>
+                    <neon-animated-pages selected="[[ _page ]]"
+                                         attr-for-selected="name"
+                                         entry-animation="fade-in-animation"
+                                         exit-animation="fade-out-animation"
+                                         on-neon-animation-finish="_onPageAnimationFinished">
+
+                        <appsco-invitations
+                                id="appscoInvitations"
+                                name="invitations"
+                                size="100"
+                                authorization-token="[[ authorizationToken ]]"
+                                invitations-api="[[ companyInvitationsApi ]]"
+                                type="contact"
+                                on-remove="_onRemoveInvitation"
+                                on-loaded="_onInvitationsLoaded"
+                                on-empty-load="_onInvitationsEmptyLoad"></appsco-invitations>
+
+                        <appsco-contacts
+                                id="appscoContacts"
+                                name="contacts"
+                                size="100"
+                                load-more
+                                authorization-token="[[ authorizationToken ]]"
+                                contacts-api="[[ companyContactsApi ]]"
+                                on-loaded="_onContactsLoaded"
+                                on-empty-load="_onContactsEmptyLoad"
+                                on-edit="_onEditContactAction"></appsco-contacts>
+                    </neon-animated-pages>
                 </div>
             </div>
 
@@ -197,6 +208,11 @@
                 pageLoaded: {
                     type: Boolean,
                     value: false
+                },
+
+                _page: {
+                    type: String,
+                    value: 'contacts'
                 }
             },
 
@@ -216,7 +232,20 @@
                 }
             },
 
-            resetPage: function() {},
+            showPage: function(page) {
+                this._page = page;
+            },
+
+            resetPage: function() {
+                this._resetPageActions();
+                this._showContacts();
+            },
+
+            _resetPageActions: function() {
+                this._onSearchLabelsClear();
+                this.$.appscoCompanyLabels.selectAllLabels(false);
+                this.fire('reset-page-actions');
+            },
 
             _computePageReadyState: function(contacts, invitations) {
                 return contacts && invitations;
@@ -254,6 +283,10 @@
                 this.fire('page-loaded');
             },
 
+            _showContacts: function() {
+                this._page = 'contacts';
+            },
+
             _searchLabels: function(term) {
                 this.$.appscoCompanyLabels.search(term);
             },
@@ -277,6 +310,10 @@
                 this.fire('edit-contact', {
                     contact: event.detail.contact
                 });
+            },
+
+            _onPageAnimationFinished: function() {
+                this._resetPageActions();
             }
         });
     </script>

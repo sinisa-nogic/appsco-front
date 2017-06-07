@@ -6,15 +6,22 @@
 <link rel="import" href="../bower_components/iron-media-query/iron-media-query.html">
 
 <link rel="import" href="components/page/appsco-content.html">
-<link rel="import" href="components/account/appsco-contacts.html">>
+<link rel="import" href="components/account/appsco-contacts.html">
 <link rel="import" href="components/account/appsco-invitations.html">
+<link rel="import" href="components/components/appsco-search.html">
+<link rel="import" href="components/label/appsco-company-labels.html">
 
 <dom-module id="appsco-contacts-page">
     <template>
         <style include="shared-styles webkit-scrollbar-style">
             :host {
                 display: block;
+
                 --resource-width: 318px;
+
+                --contacts-progress-bar: {
+                    display: none;
+                };
             }
             :host .resource-header {
                 border-bottom: 1px solid var(--divider-color);
@@ -23,15 +30,26 @@
                 height: 100%;
                 overflow: auto;
             }
-            :host div[content] > * {
-                padding: 0 10px 10px 10px;
-            }
-            .contacts-container {
-                margin-top: 10px;
-            }
             :host div[resource] > * {
                 padding: 10px;
                 box-sizing: border-box;
+            }
+            :host div[content] > * {
+                padding: 0 10px 10px 10px;
+            }
+            div[resource] > .resource-content {
+                padding-top: 20px;
+            }
+            appsco-company-labels {
+                margin-top: 20px;
+
+                --appsco-company-label-item: {
+                    padding: 4px;
+                    margin-bottom: 5px;
+                };
+            }
+            .contacts-container {
+                margin-top: 10px;
             }
             :host .flex-vertical {
                 @apply(--layout-vertical);
@@ -43,11 +61,27 @@
 
         <iron-media-query query="(max-width: 600px)" query-matches="{{ mobileScreen }}"></iron-media-query>
 
-        <appsco-content id="appscoContent">
+        <appsco-content id="appscoContent" resource-active>
 
             <div class="flex-vertical" resource>
                 <div class="resource-header">
-                    Resource Header
+                    Labels
+                </div>
+
+                <div class="resource-content">
+                    <appsco-search id="appscoSearch"
+                                   label="Search labels"
+                                   on-search="_onSearchLabels"
+                                   on-search-clear="_onSearchLabelsClear"></appsco-search>
+
+                    <appsco-company-labels id="appscoCompanyLabels"
+                                           labels-api="[[ labelsApi ]]"
+                                           authorization-token="[[ authorizationToken ]]"
+                                           size="100"
+                                           preview
+                                           hide-total
+                                           selectable
+                                           on-label-selected="_onLabelSelected"></appsco-company-labels>
                 </div>
             </div>
 
@@ -70,7 +104,7 @@
                             authorization-token="[[ authorizationToken ]]"
                             contacts-api="[[ companyContactsApi ]]"
                             on-loaded="_onContactsLoaded"
-                            on-empty-load="_onContactsEmptyLoad" 
+                            on-empty-load="_onContactsEmptyLoad"
                             on-edit="_onEditContactAction"></appsco-contacts>
                 </div>
             </div>
@@ -84,6 +118,7 @@
             is: 'appsco-contacts-page',
 
             properties: {
+
                 mobileScreen: {
                     type: Boolean,
                     value: false,
@@ -114,6 +149,11 @@
                     }
                 },
 
+                authorizationToken: {
+                    type: String,
+                    value: ''
+                },
+
                 /**
                  * Get company invitations.
                  */
@@ -130,6 +170,14 @@
                     value: function() { return ''; }
                 },
 
+                /**
+                 * Get labels.
+                 */
+                labelsApi: {
+                    type: String,
+                    value: ''
+                },
+
                 _contactsLoaded: {
                     type: Boolean,
                     value: false
@@ -142,7 +190,8 @@
 
                 _pageReady: {
                     type: Boolean,
-                    computed: '_computePageReadyState(_contactsLoaded, _invitationsLoaded)'
+                    computed: '_computePageReadyState(_contactsLoaded, _invitationsLoaded)',
+                    observer: '_onPageReadyChanged'
                 },
 
                 pageLoaded: {
@@ -159,8 +208,22 @@
                 '_updateScreen(mobileScreen)'
             ],
 
+            attached: function() {
+                this.pageLoaded = false;
+
+                if (this.mobileScreen) {
+                    this.updateStyles();
+                }
+            },
+
+            resetPage: function() {},
+
             _computePageReadyState: function(contacts, invitations) {
                 return contacts && invitations;
+            },
+
+            _updateScreen: function() {
+                this.updateStyles();
             },
 
             _onInvitationsLoaded: function() {
@@ -179,15 +242,34 @@
                 this._contactsLoaded = true;
             },
 
-            attached: function() {
-                this.pageLoaded = false;
-                if (this.mobileScreen) {
-                    this.updateStyles();
+            _onPageReadyChanged: function(pageReady) {
+
+                if (pageReady) {
+                    this._onPageLoaded();
                 }
             },
 
-            _updateScreen: function() {
-                this.updateStyles();
+            _onPageLoaded: function() {
+                this.pageLoaded = true;
+                this.fire('page-loaded');
+            },
+
+            _searchLabels: function(term) {
+                this.$.appscoCompanyLabels.search(term);
+            },
+
+            _onSearchLabels: function(event) {
+                this._searchLabels(event.detail.term);
+            },
+
+            _onSearchLabelsClear: function() {
+                this.$.appscoSearch.reset();
+                this._searchLabels('');
+            },
+
+            // TODO
+            _onLabelSelected: function(event) {
+                var label = event.detail.label;
             },
 
             _onEditContactAction: function(event) {

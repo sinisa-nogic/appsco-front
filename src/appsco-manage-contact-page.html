@@ -91,17 +91,12 @@
                    on-response="_onGetContactResponse"
                    headers="[[ _headers ]]"></iron-ajax>
 
-        <iron-ajax id="ironAjaxGetAccount"
-                   on-error="_onGetAccountError"
-                   on-response="_onGetAccountResponse"
-                   headers="[[ _headers ]]"></iron-ajax>
-
         <appsco-content id="appscoContent" resource-active>
 
             <div class="flex-vertical" resource>
 
                 <div class="resource-header">
-                    <appsco-account-image account="[[ _account ]]"></appsco-account-image>
+                    <appsco-account-image account="[[ contact.account ]]"></appsco-account-image>
                 </div>
 
                 <div class="account-info">
@@ -146,14 +141,6 @@
                 },
 
                 contact: {
-                    type: Object,
-                    value: function() {
-                        return {};
-                    },
-                    observer: '_onContactChanged'
-                },
-
-                _account: {
                     type: Object,
                     value: function() {
                         return {};
@@ -291,13 +278,6 @@
                 this._getContact();
             },
 
-            _onContactChanged: function(contact) {
-
-                if (contact && contact.self) {
-                    this._getContactAccount(contact);
-                }
-            },
-
             _getContact: function() {
 
                 if (!this.contact.self && this.contactsApi && this._headers) {
@@ -318,6 +298,8 @@
                 if (200 === event.detail.status && event.detail.response) {
                     this.set('contact', event.detail.response);
                 }
+
+                this._onPageLoaded();
             },
 
             _onGetContactError: function(event) {
@@ -325,26 +307,6 @@
                 if (!event.detail.request.aborted) {
                     this.fire('page-error');
                 }
-            },
-
-            _onGetAccountResponse: function(event) {
-
-                if (200 === event.detail.status && event.detail.response && event.detail.response.account) {
-                    this.set('_account', event.detail.response.account);
-                }
-
-                this._onPageLoaded();
-            },
-
-            _onGetAccountError: function() {
-                this._onPageLoaded();
-            },
-
-            _getContactAccount: function(contact) {
-                var getAccountRequest = this.$.ironAjaxGetAccount;
-
-                getAccountRequest.url = contact.account;
-                getAccountRequest.generateRequest();
             },
 
             _onConvertContactToUserAction: function() {

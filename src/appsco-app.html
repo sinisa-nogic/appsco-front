@@ -104,6 +104,7 @@
 
 <link rel="import" href="components/contact/appsco-contacts-page-actions.html">
 <link rel="import" href="components/contact/appsco-manage-contact-page-actions.html">
+<link rel="import" href="components/contact/appsco-add-contact.html">
 
 <link rel="import" href="shared-styles.html">
 <link rel="import" href="webkit-scrollbar-style.html">
@@ -727,7 +728,6 @@
                             domains-api="[[ _domainsApi ]]"
                             labels-api="[[ _labelsApi ]]"
                             on-invitation-resent="_onInvitationResent"
-                            on-remove-invitation="_onRemoveInvitation"
                             on-hide-subscription-limit-reached-info="_onHideSubscriptionLimitReachedInfo"
                             on-show-domain-not-verified-info="_onShowDomainNotVerifiedInfo"
                             on-hide-domain-not-verified-info="_onHideDomainNotVerifiedInfo"
@@ -1147,6 +1147,15 @@
                 authorization-token="[[ authorizationToken ]]"
                 on-label-removed-from-resources="_onLabelRemovedFromResources"></appsco-resource-remove-labels>
 
+        <appsco-add-contact
+                id="appscoAddContact"
+                authorization-token="[[ authorizationToken ]]"
+                add-contact-api="[[ _contactsApi ]]"
+                add-invitation-api="[[ companyDirectoryInvitationsApi ]]"
+                api-errors="[[ _apiErrors ]]"
+                on-contact-created="_onContactCreated"
+                on-invitation-created="_onInvitationCreated"></appsco-add-contact>
+
         <template is="dom-if" if="[[ api.me ]]">
             <iron-ajax auto
                        url="[[ api.me ]]"
@@ -1483,7 +1492,8 @@
                 'show-subscription-limit-reached-info': '_onShowSubscriptionLimitReachedInfo',
                 'copied-application-attribute': '_onCopiedApplicationAttribute',
                 'claim-type-changed': '_onApplicationClaimTypeChanged',
-                'label-added': '_onLabelAdded'
+                'label-added': '_onLabelAdded',
+                'remove-invitation': '_onRemoveInvitationAction'
             },
 
             attached: function() {
@@ -2813,7 +2823,7 @@
                 this._notify('Invitation for account ' + event.detail.invitation.email + ' has been sent.');
             },
 
-            _onRemoveInvitation: function(event) {
+            _onRemoveInvitationAction: function(event) {
                 var invitationDeleteComponent = this.$.appscoInvitationRemove;
 
                 invitationDeleteComponent.setInvitation(event.detail.invitation);
@@ -2823,7 +2833,19 @@
             _onInvitationRemoved: function(event) {
                 var invitation = event.detail.invitation;
 
-                this.$.appscoDirectoryPage.removeInvitations([invitation]);
+                switch (invitation.type) {
+                    case 'user':
+                        this.$.appscoDirectoryPage.removeInvitations([invitation]);
+                        break;
+
+                    case 'contact':
+                        this.$.appscoContactsPage.removeInvitations([invitation]);
+                        break;
+
+                    default:
+                        return false;
+                }
+
                 this._notify('Invitation for account ' + invitation.email + ' has been removed.');
 
             },
@@ -2864,8 +2886,22 @@
             },
 
             _onInvitationCreated: function(event) {
-                this.$.appscoDirectoryPage.addInvitations([event.detail.invitation]);
-                this._notify('Invitation for account ' + event.detail.invitation.email + ' was successfully created.');
+                var invitation = event.detail.invitation;
+
+                switch (invitation.type) {
+                    case 'user':
+                        this.$.appscoDirectoryPage.addInvitations([invitation]);
+                        break;
+
+                    case 'contact':
+                        this.$.appscoContactsPage.addInvitations([invitation]);
+                        break;
+
+                    default:
+                        return false;
+                }
+
+                this._notify('Invitation for account ' + invitation.email + ' was successfully created.');
             },
 
             _onAccountAdded: function(event) {
@@ -3105,8 +3141,16 @@
             /**
              * Contacts page START
              */
-            // TODO
-            _onAddContactAction: function() {},
+            _onAddContactAction: function() {
+                this.$.appscoAddContact.toggle();
+            },
+
+            _onContactCreated: function(event) {
+                var contact = event.detail.contact;
+
+                this.$.appscoContactsPage.addContacts([contact]);
+                this._notify('Contact ' + contact.email + ' was successfully added.');
+            },
 
             // TODO
             _onImportContactsAction: function() {},

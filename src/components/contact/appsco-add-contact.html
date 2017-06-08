@@ -1,0 +1,336 @@
+<link rel="import" href="../../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../../bower_components/iron-flex-layout/iron-flex-layout.html">
+<link rel="import" href="../../../bower_components/paper-button/paper-button.html">
+<link rel="import" href="../../../bower_components/paper-input/paper-input.html">
+<link rel="import" href="../../../bower_components/iron-form/iron-form.html">
+<link rel="import" href="../../../bower_components/iron-ajax/iron-request.html">
+<link rel="import" href="../../../bower_components/paper-dialog/paper-dialog.html">
+<link rel="import" href="../../../bower_components/paper-dialog-scrollable/paper-dialog-scrollable.html">
+<link rel="import" href="../../../bower_components/neon-animation/animations/scale-up-animation.html">
+<link rel="import" href="../../../bower_components/neon-animation/animations/fade-out-animation.html">
+<link rel="import" href="../../../bower_components/gold-email-input/gold-email-input.html">
+<link rel="import" href="../../../bower_components/iron-a11y-keys/iron-a11y-keys.html">
+
+<link rel="import" href="../components/appsco-loader.html">
+<link rel="import" href="../components/appsco-form-error.html">
+
+<dom-module id="appsco-add-contact">
+    <template>
+        <style>
+            :host {
+                display: block;
+                position: relative;
+                @apply(--appsco-add-contact);
+            }
+            :host paper-dialog {
+                width: 670px;
+                top: 10vh;
+                @apply(--appsco-paper-dialog);
+            }
+            :host paper-dialog-scrollable > * {
+                @apply(--paper-dialog-scrollable-child);
+            }
+            :host paper-input {
+                --paper-input-container-label: {
+                    left: 4px;
+                };
+            }
+            :host appsco-loader {
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+            :host .buttons paper-button {
+                @apply(--paper-dialog-button);
+            }
+            :host .buttons paper-button[dialog-confirm] {
+                @apply(--paper-dialog-confirm-button);
+            }
+            :host .buttons paper-button[dialog-dismiss] {
+                @apply(--paper-dialog-dismiss-button);
+            }
+            :host .info {
+                margin: 0;
+            }
+            :host .mt {
+                margin-top: 15px;
+            }
+            :host .flex-horizontal {
+                @apply(--layout-horizontal);
+            }
+            :host .flex-horizontal > div {
+                padding-right: 10px;
+            }
+            :host .flex{
+                @apply(--layout-flex);
+            }
+        </style>
+
+        <paper-dialog id="dialog"
+                      with-backdrop
+                      entry-animation="scale-up-animation"
+                      exit-animation="fade-out-animation"
+                      on-iron-overlay-opened="_onDialogOpened"
+                      on-iron-overlay-closed="_onDialogClosed">
+
+            <h2>Add contact</h2>
+
+            <appsco-loader active="[[ _loader ]]"
+                           loader-alt="Appsco is processing request"
+                           multi-color></appsco-loader>
+
+            <paper-dialog-scrollable>
+                <div class="dialog-container">
+
+                    <appsco-form-error message="[[ _error ]]"></appsco-form-error>
+
+                    <form is="iron-form"
+                          id="form"
+                          method="POST"
+                          action="[[ addContactApi ]]"
+                          headers="[[ _headers ]]"
+                          on-iron-form-error="_onFormError"
+                          on-iron-form-response="_onFormResponse">
+                        <div>
+                            <p class="info">
+                                First name and last name are required and displayed on the contact card.
+                            </p>
+                            <div class="flex-horizontal">
+                                <div class="flex">
+                                    <paper-input
+                                            id="firstName"
+                                            label="First name"
+                                            name="contact[first_name]"
+                                            required
+                                            auto-validate
+                                            error-message="Please provide first name."
+                                    ></paper-input>
+                                </div>
+                                <div class="flex">
+                                    <paper-input
+                                            id="lastName"
+                                            label="Last name"
+                                            name="contact[last_name]"
+                                            required
+                                            auto-validate
+                                            error-message="Please provide last name."
+                                    ></paper-input>
+                                </div>
+                            </div>
+                            <p class="info mt">
+                                Email is used as part of the credentials for accessing the system.
+                                Email will also be used for log purposes, statistics and other reporting activities.
+                            </p>
+                            <div class="flex-horizontal">
+                                <div class="flex">
+                                    <gold-email-input id="email"
+                                                      label="Email"
+                                                      value=""
+                                                      name="contact[email]"
+                                                      required
+                                                      auto-validate
+                                                      error-message="Please provide valid email."></gold-email-input>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </paper-dialog-scrollable>
+
+            <div class="buttons">
+                <paper-button dialog-dismiss>Cancel</paper-button>
+                <paper-button autofocus on-tap="_onAddAction">Add</paper-button>
+            </div>
+        </paper-dialog>
+
+        <iron-a11y-keys keys="enter"
+                        on-keys-pressed="_onEnter"></iron-a11y-keys>
+
+    </template>
+    <script>
+        Polymer({
+
+            is: 'appsco-add-contact',
+
+            properties: {
+
+                /**
+                 * Authorization token.
+                 */
+                authorizationToken: {
+                    type: String
+                },
+
+                addContactApi: {
+                    type: String,
+                    value: ''
+                },
+
+                addInvitationApi: {
+                    type: String,
+                    value: ''
+                },
+
+                apiErrors: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    }
+                },
+
+                _headers: {
+                    type: Object,
+                    computed: '_computeHeaders(authorizationToken)'
+                },
+
+                /**
+                 * Indicates if add application loader should be displayed or not.
+                 */
+                _loader: {
+                    type: Boolean,
+                    value: false
+                },
+
+                _error: {
+                    type: String
+                }
+
+            },
+
+            /**
+             * Toggles add applications dialog.
+             */
+            toggle: function() {
+                this.$.dialog.toggle();
+            },
+
+            _computeHeaders: function(authorizationToken) {
+                return {
+                    'Authorization': 'token ' + authorizationToken,
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                };
+            },
+
+            _showLoader: function() {
+                this._loader = true;
+            },
+
+            _hideLoader: function() {
+                this._loader = false;
+            },
+
+            _showError: function(message) {
+                this._error = message;
+            },
+
+            _hideError: function() {
+                this._error = '';
+            },
+
+            /**
+             * Called after dialog has been opened.
+             *
+             * @private
+             */
+            _onDialogOpened: function() {
+                this.$.firstName.focus();
+            },
+
+            /**
+             * Called after dialog has been closed.
+             *
+             * @private
+             */
+            _onDialogClosed: function() {
+                this._hideLoader();
+                this._hideError();
+                this.$.form.reset();
+            },
+
+            _onEnter: function() {
+                this._onAddAction();
+            },
+
+            _onAddAction: function() {
+                var form = this.$.form;
+
+                if (form.validate()) {
+                    this._showLoader();
+                    form.submit();
+                }
+            },
+
+            _onFormError: function(event) {
+                var code = event.detail.request.response.code;
+
+                if (1497007483 == code) {
+                    this._createInvitation();
+                    return false;
+                }
+
+                this._showError(this.apiErrors.getError(code));
+                this._hideLoader();
+            },
+
+            _onFormResponse: function(event) {
+                var response = event.detail.response;
+
+                if (200 === event.detail.status && response) {
+                    this.$.dialog.close();
+
+                    /**
+                     * Fired when new contact is created.
+                     *
+                     * @event contact-created
+                     * @param {object} contact Created contact.
+                     */
+                    this.fire('contact-created', {
+                        contact: response
+                    });
+                }
+            },
+
+            _createInvitation: function() {
+                var formData = this.$.form.serialize(),
+                    request = document.createElement('iron-request'),
+                    options = {
+                        url: this.addInvitationApi,
+                        method: 'POST',
+                        handleAs: 'json',
+                        headers: this._headers
+                    },
+                    body = '';
+
+                body += 'invitation[type]=contact';
+
+                for (var key in formData) {
+                    body += '&' + key.replace('contact', 'invitation') + '=' + encodeURIComponent(formData[key]);
+                }
+
+                options.body = body;
+
+                request.send(options).then(function() {
+
+                    if (200 == request.status) {
+
+                        this.$.dialog.close();
+
+                        /**
+                         * Fired when new invitation of type 'contact' is created.
+                         *
+                         * @event invitation-created
+                         * @param {object} invitation Created invitation.
+                         */
+                        this.fire('invitation-created', {
+                            invitation: request.response
+                        });
+
+                    }
+
+                }.bind(this), function() {
+                    this._showError(this.apiErrors.getError(request.response.code));
+                    this._hideLoader();
+                }.bind(this));
+            }
+        });
+    </script>
+</dom-module>

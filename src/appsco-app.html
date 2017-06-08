@@ -71,7 +71,7 @@
 <link rel="import" href="directory/appsco-manage-account-page-actions.html">
 <link rel="import" href="components/account/appsco-invitation-remove.html">
 <link rel="import" href="directory/appsco-directory-add-account.html">
-<link rel="import" href="directory/appsco-directory-import-accounts.html">
+<link rel="import" href="directory/appsco-import-accounts.html">
 
 <link rel="import" href="upgrade/appsco-upgrade-action.html">
 <link rel="import" href="billing/appsco-subscription-cancel.html">
@@ -104,6 +104,7 @@
 
 <link rel="import" href="components/contact/appsco-contacts-page-actions.html">
 <link rel="import" href="components/contact/appsco-manage-contact-page-actions.html">
+<link rel="import" href="components/contact/appsco-import-contacts.html">
 <link rel="import" href="components/contact/appsco-add-contact.html">
 
 <link rel="import" href="shared-styles.html">
@@ -537,8 +538,8 @@
                                     id="appscoContactsPageActions"
                                     name="contacts"
                                     on-add-contact="_onAddContactAction"
-                                    on-import-contact="_onImportContactsAction"
-                                    on-delete-contact="_onDeleteContactsAction"
+                                    on-import-contacts="_onImportContactsAction"
+                                    on-delete-contacts="_onDeleteContactsAction"
                                     on-add-labels-to-contacts="_onAddLabelsToContactsAction"
                                     on-select-all-contacts="_onSelectAllContactsAction"
                                     on-page-selected="_onContactsPageSelected"
@@ -1037,13 +1038,13 @@
                 on-account-added="_onAccountAdded">
         </appsco-directory-add-account>
 
-        <appsco-directory-import-accounts
+        <appsco-import-accounts
                 id="appscoDirectoryImportAccounts"
                 authorization-token="[[ authorizationToken ]]"
-                directory-import-api="[[ companyDirectoryImportAccounts ]]"
+                import-api="[[ companyDirectoryImportAccounts ]]"
                 domain="[[ domain ]]"
-                on-account-import-finished="_onAccountImportFinished">
-        </appsco-directory-import-accounts>
+                on-import-finished="_onAccountImportFinished">
+        </appsco-import-accounts>
 
         <appsco-account-orgunit
                 id="appscoAccountOrgunit"
@@ -1155,6 +1156,13 @@
                 api-errors="[[ _apiErrors ]]"
                 on-contact-created="_onContactCreated"
                 on-invitation-created="_onInvitationCreated"></appsco-add-contact>
+
+        <appsco-import-contacts
+                id="appscoImportContacts"
+                authorization-token="[[ authorizationToken ]]"
+                import-api="[[ _importContactsApi ]]"
+                domain="[[ domain ]]"
+                on-import-finished="_onImportContactsFinished"></appsco-import-contacts>
 
         <template is="dom-if" if="[[ api.me ]]">
             <iron-ajax auto
@@ -1411,6 +1419,11 @@
                 _contactsApi: {
                     type: String,
                     computed: '_computeContactsApi(companyApi)'
+                },
+
+                _importContactsApi: {
+                    type: String,
+                    computed: '_computeImportContactsApi(_contactsApi)'
                 },
 
                 _subscription: {
@@ -1698,6 +1711,10 @@
 
             _computeContactsApi: function(companyApi) {
                 return companyApi ? companyApi + '/contacts' : '';
+            },
+
+            _computeImportContactsApi: function(contactsApi) {
+                return contactsApi ? contactsApi + '/import' : '';
             },
 
             _onGetAccountResponse: function(event) {
@@ -3152,8 +3169,41 @@
                 this._notify('Contact ' + contact.email + ' was successfully added.');
             },
 
-            // TODO
-            _onImportContactsAction: function() {},
+            _onImportContactsAction: function() {
+                this.$.appscoImportContacts.toggle();
+            },
+
+            _onImportContactsFinished: function(event) {
+                var response = event.detail.response,
+                    message;
+
+                message = response.numberOfContacts + ' contacts imported out of ' + response.total + '.'
+                    + ' Number of invitations created: ' + response.numberOfInvitations + '.'
+                    + ' Number of failed imports: ' + response.numberOfFailed + '.';
+
+                if (0 < response.numberOfContacts) {
+                    this._reloadContacts();
+                }
+
+                if (0 < response.numberOfInvitations) {
+                    this._reloadContactsInvitations();
+                }
+
+                this._notify(message, true);
+                this._notifyAccountLog();
+            },
+
+            _reloadContacts: function() {
+                if (this.$.appscoContactsPage.$) {
+                    this.$.appscoContactsPage.reloadContacts();
+                }
+            },
+
+            _reloadContactsInvitations: function() {
+                if (this.$.appscoContactsPage.$) {
+                    this.$.appscoContactsPage.reloadInvitations();
+                }
+            },
 
             // TODO
             _onDeleteContactsAction: function() {},

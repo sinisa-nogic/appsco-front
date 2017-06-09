@@ -115,6 +115,7 @@
                                 contacts-api="[[ companyContactsApi ]]"
                                 on-loaded="_onContactsLoaded"
                                 on-empty-load="_onContactsEmptyLoad"
+                                on-contact="_onContactAction"
                                 on-edit="_onEditContactAction"></appsco-contacts>
                     </neon-animated-pages>
                 </div>
@@ -289,6 +290,7 @@
             },
 
             _resetPageLists: function(page) {
+                this.$.appscoContacts.selectAll(false);
                 this.filterByTerm('', page);
             },
 
@@ -357,11 +359,33 @@
                 var label = event.detail.label;
             },
 
+            _onContactAction: function(event) {
+                var contact = event.detail.contact;
+
+                if (contact.selected) {
+                    this._showBulkActions();
+                }
+                else {
+
+                    if (!this.$.appscoContacts.getSelectedContacts().length) {
+                        this._hideBulkActions();
+                    }
+                }
+            },
+
             _onEditContactAction: function(event) {
 
                 this.fire('edit-contact', {
                     contact: event.detail.contact
                 });
+            },
+
+            _showBulkActions: function() {
+                this.fire('show-bulk-actions');
+            },
+
+            _hideBulkActions: function() {
+                this.fire('hide-bulk-actions');
             },
 
             _onPageAnimationFinished: function(event) {

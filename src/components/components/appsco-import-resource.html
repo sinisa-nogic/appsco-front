@@ -1,0 +1,213 @@
+<link rel="import" href="../../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../../bower_components/paper-button/paper-button.html">
+<link rel="import" href="../../../bower_components/iron-icon/iron-icon.html">
+<link rel="import" href="../../../bower_components/iron-icons/iron-icons.html">
+<link rel="import" href="../../../bower_components/paper-dialog/paper-dialog.html">
+<link rel="import" href="../../../bower_components/paper-dialog-scrollable/paper-dialog-scrollable.html">
+<link rel="import" href="../../../bower_components/neon-animation/animations/scale-up-animation.html">
+<link rel="import" href="../../../bower_components/neon-animation/animations/fade-out-animation.html">
+<link rel="import" href="../../../bower_components/vaadin-upload/vaadin-upload.html">
+
+<link rel="import" href="../components/appsco-loader.html">
+<link rel="import" href="../components/appsco-form-error.html">
+
+
+<dom-module id="appsco-import-resource">
+    <template>
+        <style>
+            :host {
+                display: block;
+                position: relative;
+                @apply(--appsco-import-resource);
+            }
+            :host paper-dialog {
+                width: 670px;
+                top: 10vh;
+                @apply(--appsco-paper-dialog);
+            }
+            :host paper-dialog-scrollable > * {
+                @apply(--paper-dialog-scrollable-child);
+            }
+            :host appsco-loader {
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+            :host .buttons paper-button {
+                @apply(--paper-dialog-button);
+            }
+            :host .buttons paper-button[dialog-confirm] {
+                @apply(--paper-dialog-confirm-button);
+            }
+            :host .buttons paper-button[dialog-dismiss] {
+                @apply(--paper-dialog-dismiss-button);
+            }
+            vaadin-upload {
+                --vaadin-upload-button-add: {
+                    @apply(--primary-button);
+                }
+            }
+        </style>
+
+        <paper-dialog id="dialog"
+                      with-backdrop
+                      entry-animation="scale-up-animation"
+                      exit-animation="fade-out-animation"
+                      on-iron-overlay-opened="_onDialogOpened"
+                      on-iron-overlay-closed="_onDialogClosed">
+
+            <content select="[title]"></content>
+
+            <appsco-loader active="[[ _loader ]]"
+                           loader-alt="Appsco is processing request"
+                           multi-color></appsco-loader>
+
+            <paper-dialog-scrollable>
+                <div class="dialog-container">
+
+                    <content select="[info]"></content>
+
+                    <appsco-form-error message="[[ _error ]]"></appsco-form-error>
+
+                    <div>
+                        <vaadin-upload id="uploadCsv"
+                                       max-file-size="1000000"
+                                       accept=".csv, text/csv, application/csv, application/excel, application/vnd.ms-excel"
+                                       target="[[ importApi ]]"
+                                       on-upload-start="_uploadStarted"
+                                       on-file-reject="_fileRejected"
+                                       on-upload-error="_uploadErrorResponse"
+                                       on-upload-success="_uploadSuccess"
+                                       headers="[[ _headers ]]">
+                            <div class="drop-label">
+                                <iron-icon icon="file-upload"></iron-icon>
+                                Upload resource
+                            </div>
+                        </vaadin-upload>
+                    </div>
+                </div>
+            </paper-dialog-scrollable>
+
+            <div class="buttons">
+                <paper-button dialog-dismiss>Cancel</paper-button>
+            </div>
+        </paper-dialog>
+
+    </template>
+    <script>
+        Polymer({
+
+            is: 'appsco-import-resource',
+
+            properties: {
+
+                /**
+                 * Authorization token.
+                 */
+                authorizationToken: {
+                    type: String
+                },
+
+                /**
+                 * API for resource import.
+                 */
+                importApi: {
+                    type: String,
+                    value: ''
+                },
+
+                /**
+                 * Indicates if loader should be displayed or not.
+                 */
+                _loader: {
+                    type: Boolean,
+                    value: false
+                },
+
+                /**
+                 * Error message to display.
+                 */
+                _error: {
+                    type: String
+                },
+
+                /**
+                 * Computed headers.
+                 * It contains authorization token.
+                 */
+                _headers: {
+                    type: Object,
+                    computed: '_computeHeaders(authorizationToken)'
+                }
+            },
+
+            /**
+             * Toggles dialog.
+             */
+            toggle: function() {
+                this.$.dialog.toggle();
+            },
+
+            /**
+             * Closes dialog.
+             */
+            close: function() {
+                this.$.dialog.close();
+            },
+
+            /**
+             * Computes authorization headers.
+             *
+             * @param {Object} authorizationToken
+             * @returns {{Authorization: string}}
+             * @private
+             */
+            _computeHeaders: function (authorizationToken) {
+                return {
+                    'Authorization': 'token ' + authorizationToken
+                }
+            },
+
+            /**
+             * Called after dialog has been opened.
+             *
+             * @private
+             */
+            _onDialogOpened: function() {
+                this._loader = false;
+                this._error = '';
+                this.$.uploadCsv.files = [];
+            },
+
+            /**
+             * Called after dialog has been closed.
+             *
+             * @private
+             */
+            _onDialogClosed: function() {
+                this._loader = false;
+                this._error = '';
+                this.$.uploadCsv.files = [];
+            },
+
+            _uploadStarted: function(e) {},
+
+            _fileRejected: function(e) {
+                this._error = e.detail.error;
+            },
+
+            _uploadErrorResponse: function(e) {
+                if (e.detail.xhr.status == 402) {
+                    e.detail.file.error = "Maximum subscription reached. Please upgrade before import.";
+                }
+            },
+
+            _uploadSuccess: function(event) {
+                this.close();
+
+                this.fire('import-finished', {
+                    response: JSON.parse(event.detail.xhr.response)
+                });
+            }
+        });
+    </script>
+</dom-module>

@@ -193,6 +193,11 @@
                     observer: '_onContactsApiUrlChanged'
                 },
 
+                _searchContactsApiUrl: {
+                    type: String,
+                    computed: '_computeSearchContactsApiUrl(contactsApi, _filterTerm)'
+                },
+
                 _next: {
                     type: String
                 },
@@ -205,6 +210,11 @@
                 _renderedIndex: {
                     type: Number,
                     value: -1
+                },
+
+                _filterTerm: {
+                    type: String,
+                    value: ''
                 },
 
                 /**
@@ -233,6 +243,10 @@
 
             _computeContactsApiUrl: function(contactsApi, size) {
                 return (contactsApi && size) ? (contactsApi + '?page=1&extended=1&limit=' + size) : '';
+            },
+
+            _computeSearchContactsApiUrl: function(contactsApi, term) {
+                return (contactsApi && term) ? (contactsApi + '?page=1&extended=1&limit=100&term=' + term) : '';
             },
 
             _onContactsApiUrlChanged: function(url) {
@@ -442,6 +456,78 @@
 
             getTotalCount: function() {
                 return this._totalContacts;
+            },
+
+            filterByTerm: function(term) {
+                this._filterTerm = term;
+
+                if (term.length < 3) {
+                    this._message = '';
+                    this.set('_contacts', JSON.parse(JSON.stringify(this._allContacts)));
+                    this.fire('filter-done');
+                    this._setLoadMoreAction();
+                    return false;
+                }
+
+                this._searchContacts().then(function(contacts) {
+                    this._hideLoadMoreAction();
+                    this.set('_contacts', []);
+
+                    if (contacts.length > 0) {
+                        this._message = '';
+
+                        contacts.forEach(function(contact, index) {
+                            this.push('_contacts', contact);
+
+                            if (index === (contacts.length - 1)) {
+
+                                this._hideProgressBar();
+                                this.fire('filter-done');
+                            }
+
+                        }.bind(this));
+
+                    }
+                    else {
+                        this._message = 'There are no contacts with asked term.';
+                        this.fire('filter-done');
+                    }
+
+                }.bind(this), function(message) {
+                    this.set('_contacts', []);
+                    this._hideLoadMoreAction();
+                    this._message = message;
+                    this.fire('filter-done');
+                }.bind(this));
+            },
+
+            _searchContacts: function() {
+
+                return new Promise(function(resolve, reject) {
+                    var request = document.createElement('iron-request'),
+                        options = {
+                            url: this._searchContactsApiUrl,
+                            method: 'GET',
+                            handleAs: 'json',
+                            headers: this._computedHeaders
+                        };
+
+                    request.send(options).then(function() {
+
+                        if (request.response) {
+                            resolve(request.response.contacts);
+                        }
+
+                    }, function() {
+
+                        if (request.response) {
+                            reject(request.response.message);
+                        }
+                        else {
+                            reject('There was an error in searching contacts with given term. Please contact AppsCo support.');
+                        }
+                    });
+                }.bind(this));
             },
 
             _showProgressBar: function() {

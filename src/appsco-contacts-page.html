@@ -258,15 +258,38 @@
                 this.$.appscoInvitations.reloadInvitations();
             },
 
+            filterByTerm: function(term, page) {
+                page = page ? page : this._page;
+
+                switch (page) {
+                    case 'contacts':
+                        this.$.appscoContacts.filterByTerm(term);
+                        break;
+
+                    case 'invitations':
+                        this.$.appscoInvitations.filterByTerm(term);
+                        break;
+
+                    default:
+                        this.$.appscoContacts.filterByTerm(term);
+                        this.$.appscoInvitations.filterByTerm(term);
+                }
+            },
+
             resetPage: function() {
                 this._resetPageActions();
                 this._showContacts();
+                this._resetPageLists('all');
             },
 
             _resetPageActions: function() {
                 this._onSearchLabelsClear();
                 this.$.appscoCompanyLabels.selectAllLabels(false);
                 this.fire('reset-page-actions');
+            },
+
+            _resetPageLists: function(page) {
+                this.filterByTerm('', page);
             },
 
             _computePageReadyState: function(contacts, invitations) {
@@ -341,8 +364,9 @@
                 });
             },
 
-            _onPageAnimationFinished: function() {
+            _onPageAnimationFinished: function(event) {
                 this._resetPageActions();
+                this._resetPageLists(event.detail.fromPage.getAttribute('name'));
             }
         });
     </script>

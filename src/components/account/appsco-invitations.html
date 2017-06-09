@@ -230,6 +230,11 @@ Custom property | Description | Default
                     observer: '_onInvitationsApiUrlChanged'
                 },
 
+                _searchInvitationsApiUrl: {
+                    type: String,
+                    computed: '_computeSearchInvitationsApiUrl(invitationsApi, type, _filterTerm)'
+                },
+
                 _next: {
                     type: String
                 },
@@ -242,6 +247,11 @@ Custom property | Description | Default
                 _renderedIndex: {
                     type: Number,
                     value: -1
+                },
+
+                _filterTerm: {
+                    type: String,
+                    value: ''
                 },
 
                 /**
@@ -270,6 +280,10 @@ Custom property | Description | Default
 
             _computeInvitationsApiUrl: function(invitationsApi, size, type) {
                 return (invitationsApi && size) ? (invitationsApi + '?page=1&extended=1&limit=' + size + '&type=' + type) : '';
+            },
+
+            _computeSearchInvitationsApiUrl: function(invitationsApi, type, term) {
+                return (invitationsApi && term) ? (invitationsApi + '?page=1&extended=1&limit=100&type=' + type + '&term=' + term) : '';
             },
 
             _onInvitationsApiUrlChanged: function(url) {
@@ -473,6 +487,78 @@ Custom property | Description | Default
 
             getTotalCount: function() {
                 return this._totalInvitations;
+            },
+
+            filterByTerm: function(term) {
+                this._filterTerm = term;
+
+                if (term.length < 3) {
+                    this._message = '';
+                    this.set('_invitations', JSON.parse(JSON.stringify(this._allInvitations)));
+                    this.fire('filter-done');
+                    this._setLoadMoreAction();
+                    return false;
+                }
+
+                this._searchInvitations().then(function(invitations) {
+                    this._hideLoadMoreAction();
+                    this.set('_invitations', []);
+
+                    if (invitations.length > 0) {
+                        this._message = '';
+
+                        invitations.forEach(function(invitation, index) {
+                            this.push('_invitations', invitation);
+
+                            if (index === (invitations.length - 1)) {
+
+                                this._hideProgressBar();
+                                this.fire('filter-done');
+                            }
+
+                        }.bind(this));
+
+                    }
+                    else {
+                        this._message = 'There are no invitations with asked term.';
+                        this.fire('filter-done');
+                    }
+
+                }.bind(this), function(message) {
+                    this.set('_invitations', []);
+                    this._hideLoadMoreAction();
+                    this._message = message;
+                    this.fire('filter-done');
+                }.bind(this));
+            },
+
+            _searchInvitations: function() {
+
+                return new Promise(function(resolve, reject) {
+                    var request = document.createElement('iron-request'),
+                        options = {
+                            url: this._searchInvitationsApiUrl,
+                            method: 'GET',
+                            handleAs: 'json',
+                            headers: this._computedHeaders
+                        };
+
+                    request.send(options).then(function() {
+
+                        if (request.response) {
+                            resolve(request.response.invitations);
+                        }
+
+                    }, function() {
+
+                        if (request.response) {
+                            reject(request.response.message);
+                        }
+                        else {
+                            reject('There was an error in searching invitations with given term. Please contact AppsCo support.');
+                        }
+                    });
+                }.bind(this));
             },
 
             _showProgressBar: function() {

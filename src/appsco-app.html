@@ -106,6 +106,7 @@
 <link rel="import" href="components/contact/appsco-manage-contact-page-actions.html">
 <link rel="import" href="components/contact/appsco-import-contacts.html">
 <link rel="import" href="components/contact/appsco-add-contact.html">
+<link rel="import" href="components/contact/appsco-delete-contact.html">
 
 <link rel="import" href="shared-styles.html">
 <link rel="import" href="webkit-scrollbar-style.html">
@@ -549,7 +550,7 @@
 
                             <appsco-manage-contact-page-actions
                                     name="manage-contact"
-                                    on-back="_showCompanyContactsPage"
+                                    on-back="_showContactsPage"
                                     on-resource-section="_onResourceActionManageContactPage"></appsco-manage-contact-page-actions>
 
                             <appsco-audit-log-page-actions
@@ -788,7 +789,7 @@
                             authorization-token="[[ authorizationToken ]]"
                             contacts-api="[[ _contactsApi ]]"
                             on-convert-contact-to-user="_onConvertContactToUserAction"
-                            on-remove-contact="_onRemoveContactAction"
+                            on-delete-contact="_onDeleteContactAction"
                             on-page-error="_onError"></appsco-manage-contact-page>
 
                     <appsco-provisioning-page
@@ -1167,6 +1168,12 @@
                 import-api="[[ _importContactsApi ]]"
                 domain="[[ domain ]]"
                 on-import-finished="_onImportContactsFinished"></appsco-import-contacts>
+
+        <appsco-delete-contact
+                id="appscoDeleteContact"
+                authorization-token="[[ authorizationToken ]]"
+                api-errors="[[ _apiErrors ]]"
+                on-contact-deleted="_onContactDeleted"></appsco-delete-contact>
 
         <template is="dom-if" if="[[ api.me ]]">
             <iron-ajax auto
@@ -1665,7 +1672,7 @@
                 this.set('routeData.page', 'directory');
             },
 
-            _showCompanyContactsPage: function() {
+            _showContactsPage: function() {
                 this.set('routeData.page', 'contacts');
             },
 
@@ -3280,9 +3287,23 @@
                 var contact = event.detail.contact;
             },
 
-            // TODO - remove contact action (confirm dialog)
-            _onRemoveContactAction: function(event) {
+            _onDeleteContactAction: function(event) {
+                var contact = event.detail.contact,
+                    deleteContact = this.$.appscoDeleteContact;
+
+                deleteContact.setContact(contact);
+                deleteContact.toggle();
+            },
+
+            _onContactDeleted: function(event) {
                 var contact = event.detail.contact;
+
+                if (this.$.appscoContactsPage.$) {
+                    this.$.appscoContactsPage.removeContacts([contact]);
+                }
+
+                this._showContactsPage();
+                this._notify('Contact ' + contact.display_name + ' has been deleted from company.');
             },
             /**
              * Manage Contact page END

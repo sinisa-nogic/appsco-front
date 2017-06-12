@@ -254,7 +254,24 @@ Custom property | Description | Default
                  */
                 _error: {
                     type: String
+                },
+
+                /**
+                 * Number of successfully shared
+                 */
+                numberOfSuccess: {
+                    type: Number,
+                    value: 0
+                },
+
+                /**
+                 * Number of unsuccessfully shared
+                 */
+                numberOfFailed: {
+                    type: Number,
+                    value: 0
                 }
+
             },
 
             behaviors: [
@@ -280,43 +297,70 @@ Custom property | Description | Default
                 this.splice('_searchList', this._searchList.indexOf(account), 1);
             },
 
+            /**
+             * Shares application to one account
+             *
+             * @returns Promise
+             * @private
+             */
             _shareToUser: function(account) {
                 var appRequest = document.createElement('iron-request'),
                     me = this;
 
-                appRequest.send({
+                return appRequest.send({
                     url: account.self+"/share",
                     method: "POST",
                     handleAs: 'json',
                     body: "icon="+encodeURIComponent(this.application.self),
                     headers: this._computedHeaders
                 });
-
-                return appRequest;
             },
 
+            /**
+             * Shares application to all selected accounts
+             *
+             * @private
+             */
             _shareApplication: function() {
                 var me = this,
-                    length = this._accounts.length - 1;
-
-                this._accounts.forEach(function(item, index){
-                    me._shareToUser(item);
-
-                    if (index === length) {
-                        this.$.shareDialog.close();
-                        this.set('_accounts', []);
-                        this._shareLoader = false;
-
-                        /**
-                         * Fired when application has been shared.
-                         *
-                         * @event application-shared
-                         */
-                        this.fire('application-shared', {
-                            application: this.application
-                        });
-                    }
+                    length = this._accounts.length;
+                this._accounts.forEach(function(item) {
+                    me._shareToUser(item).then(function() {
+                        length--;
+                        this.numberOfSuccess++;
+                        if (0 === length) {
+                            this._sharingFinished();
+                        }
+                    }.bind(this), function() {
+                        length--;
+                        this.numberOfFailed++;
+                        if (0 === length) {
+                            this._sharingFinished();
+                        }
+                    }.bind(this));
                 }.bind(this));
+            },
+
+            /**
+             * Called when all share requests (for all selected accounts) has been finished
+             *
+             * @private
+             */
+            _sharingFinished: function() {
+                this.$.shareDialog.close();
+                this.set('_accounts', []);
+                this._shareLoader = false;
+
+                /**
+                 * Fired when application has been shared.
+                 *
+                 * @event application-shared
+                 */
+                this.fire('application-shared', {
+                    application: this.application,
+                    success: this.numberOfSuccess,
+                    failed: this.numberOfFailed
+                });
             },
 
             _shareApplicationAction: function() {
@@ -325,6 +369,8 @@ Custom property | Description | Default
                     this._shareLoader = true;
 
                     setTimeout(function() {
+                        this.numberOfSuccess = 0;
+                        this.numberOfFailed = 0;
                         this._shareApplication();
                     }.bind(this), 500);
                 }

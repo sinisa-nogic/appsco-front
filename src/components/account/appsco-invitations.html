@@ -255,6 +255,26 @@ Custom property | Description | Default
                 },
 
                 /**
+                 * Search term.
+                 */
+                _filterTerm: {
+                    type: String,
+                    value: ''
+                },
+
+                _searchedInvitations: {
+                    type: Array,
+                    value: function () {
+                        return [];
+                    }
+                },
+
+                _searchInvitationsApiUrl: {
+                    type: String,
+                    computed: '_computeSearchInvitationsApiUrl(invitationsApi, _filterTerm)'
+                },
+
+                /**
                  * Animation for loader appearance.
                  */
                 animationConfig: {
@@ -284,6 +304,10 @@ Custom property | Description | Default
 
             _computeSearchInvitationsApiUrl: function(invitationsApi, type, term) {
                 return (invitationsApi && term) ? (invitationsApi + '?page=1&extended=1&limit=100&type=' + type + '&term=' + term) : '';
+            },
+
+            _computeSearchInvitationsApiUrl: function(invitationsApi, term) {
+                return invitationsApi + '?extended=1&limit=100&term=' + term;
             },
 
             _onInvitationsApiUrlChanged: function(url) {
@@ -602,7 +626,103 @@ Custom property | Description | Default
                     this._renderedIndex = -1;
                 }
 
-            }
+            },
+
+            filterByTerm: function(term) {
+                this._filterTerm = term;
+                this._filterByTerm();
+            },
+
+            _filterByTerm: function() {
+                var term = this._filterTerm,
+                        length = this._allInvitations.length;
+
+                if (term.length < 3) {
+                    this.set('_searchedInvitations', []);
+
+                    this._invitationsEmpty = false;
+                    this._message = '';
+                    this.set('_invitations', JSON.parse(JSON.stringify(this._allInvitations)));
+                    this._setLoadMoreAction();
+
+
+                    this.fire('filter-done');
+                    return false;
+                }
+
+                this._showProgressBar();
+                this._hideLoadMoreAction();
+
+                this._getInvitationsByTerm().then(function(invitations) {
+                    var invitationsLength = invitations.length;
+
+                    this.set('_searchedInvitations', invitations);
+                    this._setSearchInvitationsResult();
+
+                    if (this._invitationsEmpty) {
+                        this.set('_searchedInvitations', []);
+                        this.fire('filter-done');
+                        return false;
+                    }
+
+                    this.set('_invitations', []);
+                    invitations.forEach(function(elem, index) {
+                        for (var i = 0; i < length; i++) {
+                            var invitation = this._allInvitations[i];
+                            if (elem.self === invitation.self) {
+                                this.push('_invitations', invitation);
+                                break;
+                            }
+                            else {
+                                if (i === length - 1) {
+                                    this.push('_invitations', elem);
+                                }
+                            }
+                        }
+
+                        if (index === invitationsLength - 1) {
+                            this._hideProgressBar();
+                            this.fire('filter-done');
+                        }
+                    }.bind(this));
+                }.bind(this));
+            },
+
+            _getInvitationsByTerm: function() {
+
+                return new Promise(function(resolve, reject) {
+                    var request = document.createElement('iron-request'),
+                            options = {
+                                url: this._searchInvitationsApiUrl,
+                                method: 'GET',
+                                handleAs: 'json',
+                                headers: this._computedHeaders
+                            };
+
+                    request.send(options).then(function() {
+                        if (request.response) {
+                            resolve(request.response.invitations.reverse());
+                        }
+
+                    }, function() {
+                        reject(request.response.message);
+                    });
+                }.bind(this));
+            },
+
+            _setSearchInvitationsResult: function() {
+                this._invitationsEmpty = (0 === this._searchedInvitations.length);
+
+                if (this._invitationsEmpty) {
+                    this._message = 'There are no invitations with asked term.';
+                }
+                else {
+                    this.set('_invitations', this._searchedInvitations);
+                    this._hideLoadMoreAction();
+                    this._message = '';
+                }
+            },
+
         });
     </script>
 </dom-module>

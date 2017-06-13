@@ -107,6 +107,7 @@
 <link rel="import" href="components/contact/appsco-import-contacts.html">
 <link rel="import" href="components/contact/appsco-add-contact.html">
 <link rel="import" href="components/contact/appsco-delete-contact.html">
+<link rel="import" href="components/contact/appsco-convert-contact.html">
 
 <link rel="import" href="shared-styles.html">
 <link rel="import" href="webkit-scrollbar-style.html">
@@ -1168,6 +1169,12 @@
                 import-api="[[ _importContactsApi ]]"
                 domain="[[ domain ]]"
                 on-import-finished="_onImportContactsFinished"></appsco-import-contacts>
+
+        <appsco-convert-contact
+                id="appscoConvertContact"
+                authorization-token="[[ authorizationToken ]]"
+                api-errors="[[ _apiErrors ]]"
+                on-contact-converted="_onContactConverted"></appsco-convert-contact>
 
         <appsco-delete-contact
                 id="appscoDeleteContact"
@@ -3282,9 +3289,27 @@
                 this.$.appscoManageContactPage.toggleResource();
             },
 
-            // TODO - convert contact to user action
             _onConvertContactToUserAction: function(event) {
+                var contact = event.detail.contact,
+                    convertContact = this.$.appscoConvertContact;
+
+                convertContact.setContact(contact);
+                convertContact.toggle();
+            },
+
+            _onContactConverted: function(event) {
                 var contact = event.detail.contact;
+
+                if (this.$.appscoContactsPage.$) {
+                    this.$.appscoContactsPage.removeContacts([contact]);
+                }
+
+                if (this.$.appscoDirectoryPage.$) {
+                    this.$.appscoDirectoryPage.reloadAccounts();
+                }
+
+                this._showContactsPage();
+                this._notify('Contact ' + contact.display_name + ' has been successfully converted to company user.');
             },
 
             _onDeleteContactAction: function(event) {

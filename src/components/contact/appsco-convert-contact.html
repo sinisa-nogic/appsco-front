@@ -10,27 +10,27 @@
 <link rel="import" href="../components/appsco-form-error.html">
 
 <!--
-`appsco-delete-contact`
-Shows dialog screen with confirmation for contact deleting.
+`appsco-convert-contact`
+Shows dialog screen with confirmation for contact converting.
 
-    <appsco-delete-contact contact="{}"
+    <appsco-convert-contact contact="{}"
                            authorization-token=""
                            api-errors="{}">
-    </appsco-delete-contact>
+    </appsco-convert-contact>
 
 -->
 
-<dom-module id="appsco-delete-contact">
+<dom-module id="appsco-convert-contact">
     <template>
         <style>
             :host {
                 display: block;
                 position: relative;
-                @apply(--appsco-delete-contact);
+                @apply(--appsco-convert-contact);
 
                 --form-error-box: {
-                     margin-top: 0;
-                 };
+                    margin-top: 0;
+                };
             }
             :host paper-dialog {
                 width: 670px;
@@ -57,20 +57,20 @@ Shows dialog screen with confirmation for contact deleting.
                 exit-animation="fade-out-animation"
                 on-iron-overlay-closed="_onDialogClosed">
 
-            <h2>Delete [[ contact.display_name ]]</h2>
+            <h2>Convert [[ contact.display_name ]] to company user</h2>
 
             <appsco-loader active="[[ _loader ]]" loader-alt="Appsco is processing request" multi-color></appsco-loader>
 
             <paper-dialog-scrollable>
-                <div class="delete-container">
+                <div class="convert-container">
                     <appsco-form-error message="[[ _error ]]"></appsco-form-error>
-                    <p>Please confirm deleting of this contact.</p>
+                    <p>Please confirm contact to company user conversion.</p>
                 </div>
             </paper-dialog-scrollable>
 
             <div class="buttons">
                 <paper-button dialog-dismiss>Cancel</paper-button>
-                <paper-button autofocus on-tap="_onDeleteAction">Delete</paper-button>
+                <paper-button autofocus on-tap="_onConvertAction">Convert</paper-button>
             </div>
         </paper-dialog>
 
@@ -78,12 +78,12 @@ Shows dialog screen with confirmation for contact deleting.
     <script>
         Polymer({
 
-            is: 'appsco-delete-contact',
+            is: 'appsco-convert-contact',
 
             properties: {
 
                 /**
-                 * Contact to delete.
+                 * Contact to convert.
                  */
                 contact: {
                     type: Array,
@@ -107,9 +107,9 @@ Shows dialog screen with confirmation for contact deleting.
                     }
                 },
 
-                _deleteContactApi: {
+                _convertContactApi: {
                     type: String,
-                    computed: '_computeDeleteContactApi(contact)'
+                    computed: '_computeConvertContactApi(contact)'
                 },
 
                 _headers: {
@@ -153,8 +153,8 @@ Shows dialog screen with confirmation for contact deleting.
                 };
             },
 
-            _computeDeleteContactApi: function(contact) {
-                return contact.self ? contact.self : '';
+            _computeConvertContactApi: function(contact) {
+                return contact.meta ? contact.meta.promote_to_user : '';
             },
 
             _showLoader: function() {
@@ -178,11 +178,11 @@ Shows dialog screen with confirmation for contact deleting.
                 this._hideLoader();
             },
 
-            _onDeleteAction: function() {
+            _onConvertAction: function() {
                 var request = document.createElement('iron-request'),
                     options = {
-                        url: this._deleteContactApi,
-                        method: 'DELETE',
+                        url: this._convertContactApi,
+                        method: 'POST',
                         handleAs: 'json',
                         headers: this._headers
                     };
@@ -195,12 +195,12 @@ Shows dialog screen with confirmation for contact deleting.
                     if (200 === request.status) {
 
                         /**
-                         * Fired when contact is deleted.
+                         * Fired when contact is converted.
                          *
-                         * @event contact-deleted
+                         * @event contact-converted
                          * @param [Object] contact
                          */
-                        this.fire('contact-deleted', {
+                        this.fire('contact-converted', {
                             contact: request.response
                         });
                     }

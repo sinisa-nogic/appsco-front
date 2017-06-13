@@ -97,7 +97,9 @@
                         <appsco-contact-item
                                 id="appscoContactItem_[[ index ]]"
                                 contact="{{ item }}"
+                                active="{{ item.selected }}"
                                 authorization-token="[[ authorizationToken ]]"
+                                on-contact="_onContactAction"
                         ></appsco-contact-item>
 
                     </template>
@@ -454,6 +456,26 @@
                 }
             },
 
+            selectAll: function(selected) {
+                var _allContacts = JSON.parse(JSON.stringify(this._allContacts)),
+                        _contacts = JSON.parse(JSON.stringify(this._contacts)),
+                        _length = _contacts.length,
+                        _allLength = _allContacts.length;
+
+                for (var i = 0; i < _length; i++) {
+                    _contacts[i].selected = selected;
+                }
+
+                for (var j = 0; j < _allLength; j++) {
+                    _allContacts[j].selected = selected;
+                }
+                this.set('_contacts', []);
+                this.set('_contacts', _contacts);
+
+                this.set('_allContacts', []);
+                this.set('_allContacts', _allContacts);
+            },
+
             getTotalCount: function() {
                 return this._totalContacts;
             },
@@ -472,20 +494,31 @@
                 return selectedContacts;
             },
 
-            selectAll: function(select) {
-                var allContacts = this._allContacts,
-                    allLength = allContacts.length;
+            getSelectedContactsWithLabels: function(labels) {
+                var selectedContacts = this.getSelectedContacts(),
+                        contactsLength = selectedContacts.length,
+                        labelsLength = labels.length,
+                        result = [];
 
-                for (var i = 0; i < allLength; i++) {
-                    var contact = allContacts[i];
+                for (var i = 0; i < labelsLength; i++) {
+                    var label = labels[i];
 
-                    contact.selected = select;
+                    for (var j = 0; j < contactsLength; j++) {
+                        var roleLabels = selectedContacts[j].labels,
+                                length = roleLabels.length;
 
-                    allContacts[i] = {};
-                    allContacts[i] = contact;
+                        for (var k = 0; k < length; k++) {
+
+                            if (label.alias === roleLabels[k].alias) {
+                                result.push(selectedContacts[j]);
+                                break;
+                            }
+                        }
+
+                    }
                 }
 
-                this.set('_contacts', allContacts);
+                return result;
             },
 
             filterByTerm: function(term) {
@@ -604,6 +637,26 @@
                     this._renderedIndex = -1;
                 }
 
+            },
+
+            _onContactAction: function(event) {
+                var contact = event.detail.contact,
+                _allContacts = this._allContacts,
+                        _contacts = this._contacts,
+                        _length = _contacts.length,
+                        _allLength = _allContacts.length;
+
+                for (var i = 0; i < _length; i++) {
+                    if (contact.self === _contacts[i].self) {
+                        _contacts[i].selected = contact.selected;
+                    }
+                }
+
+                for (var j = 0; j < _allLength; j++) {
+                    if (contact.self === _allContacts[j].self) {
+                        _allContacts[j].selected = contact.selected;
+                    }
+                }
             }
         });
     </script>

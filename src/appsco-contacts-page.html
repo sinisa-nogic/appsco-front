@@ -214,6 +214,11 @@
                 _page: {
                     type: String,
                     value: 'contacts'
+                },
+
+                _selectAll: {
+                    type: Boolean,
+                    value: false
                 }
             },
 
@@ -239,6 +244,10 @@
 
             addContacts: function(contacts) {
                 this.$.appscoContacts.addContacts(contacts);
+            },
+
+            modifyContacts: function(contacts) {
+                this.$.appscoContacts.modifyContacts(contacts);
             },
 
             removeContacts: function(contacts) {
@@ -294,7 +303,8 @@
             },
 
             _resetPageLists: function(page) {
-                this.$.appscoContacts.selectAll(false);
+                this._selectAll = false;
+                this.$.appscoContacts.selectAll(this._selectAll);
                 this.filterByTerm('', page);
             },
 
@@ -361,6 +371,7 @@
             // TODO
             _onLabelSelected: function(event) {
                 var label = event.detail.label;
+                this._handleRemoveLabelFromContactAction();
             },
 
             _onContactAction: function(event) {
@@ -375,6 +386,8 @@
                         this._hideBulkActions();
                     }
                 }
+
+                this._handleRemoveLabelFromContactAction();
             },
 
             _onEditContactAction: function(event) {
@@ -392,10 +405,47 @@
                 this.fire('hide-bulk-actions');
             },
 
+            _handleRemoveLabelFromContactAction: function() {
+                !this.getSelectedContactsAndLabels().contacts.length ?
+                        this._hideRemoveLabelFromContactAction() :
+                        this._showRemoveLabelFromContactAction();
+            },
+
+            _showRemoveLabelFromContactAction: function() {
+                this.fire('show-remove-label-from-contact-action');
+            },
+
+            _hideRemoveLabelFromContactAction: function() {
+                this.fire('hide-remove-label-from-contact-action');
+            },
+
             _onPageAnimationFinished: function(event) {
                 this._resetPageActions();
                 this._resetPageLists(event.detail.fromPage.getAttribute('name'));
+            },
+
+            selectAllContacts: function() {
+                this._selectAll = !this._selectAll;
+                this.$.appscoContacts.selectAll(this._selectAll);
+                if (!this._selectAll) {
+                    this._hideBulkActions();
+                }
+            },
+
+            getSelectedContacts: function() {
+                return this.$.appscoContacts.getSelectedContacts();
+            },
+
+            getSelectedContactsAndLabels: function() {
+                var labels = this.$.appscoCompanyLabels.getSelectedLabels(),
+                        contacts = this.$.appscoContacts.getSelectedContactsWithLabels(labels);
+
+                return {
+                    labels: labels,
+                    contacts: contacts
+                };
             }
+
         });
     </script>
 </dom-module>

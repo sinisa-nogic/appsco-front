@@ -108,6 +108,7 @@
 <link rel="import" href="components/contact/appsco-add-contact.html">
 <link rel="import" href="components/contact/appsco-delete-contact.html">
 <link rel="import" href="components/contact/appsco-convert-contact.html">
+<link rel="import" href="components/contact/appsco-delete-contacts.html">
 
 <link rel="import" href="shared-styles.html">
 <link rel="import" href="webkit-scrollbar-style.html">
@@ -543,6 +544,7 @@
                                     on-import-contacts="_onImportContactsAction"
                                     on-delete-contacts="_onDeleteContactsAction"
                                     on-add-labels-to-contacts="_onAddLabelsToContactsAction"
+                                    on-remove-labels-from-contacts="_onRemoveLabelFromContactsAction"
                                     on-select-all-contacts="_onSelectAllContactsAction"
                                     on-page-selected="_onContactsPageSelected"
                                     on-search="_onSearchContacts"
@@ -757,7 +759,10 @@
                             on-reset-page-actions="_onResetPageActions"
                             on-show-bulk-actions="_onShowBulkActions"
                             on-hide-bulk-actions="_onHideContactsBulkActions"
+                            on-show-remove-label-from-contact-action="_onShowRemoveLabelFromContactAction"
+                            on-hide-remove-label-from-contact-action="_onHideRemoveLabelFromContactAction"
                             on-invitation-resent="_onContactInvitationResent"
+
                     ></appsco-contacts-page>
 
                     <appsco-manage-account-page
@@ -1183,6 +1188,15 @@
                 api-errors="[[ _apiErrors ]]"
                 on-contact-deleted="_onContactDeleted"></appsco-delete-contact>
 
+        <appsco-delete-contacts
+                id="appscoContactsRemove"
+                contacts="[[ _selectedContacts ]]"
+                company-api="[[ companyApi ]]"
+                authorization-token="[[ authorizationToken ]]"
+                on-contacts-removed="_onDeletedContacts"
+                on-contacts-remove-failed="_onDeleteContactsFailed">
+        </appsco-delete-contacts>
+
         <template is="dom-if" if="[[ api.me ]]">
             <iron-ajax auto
                        url="[[ api.me ]]"
@@ -1353,6 +1367,16 @@
                  * Selected accounts (company).
                  */
                 _selectedAccounts: {
+                    type: Array,
+                    value: function() {
+                        return [];
+                    }
+                },
+
+                /**
+                 * Selected contacts.
+                 */
+                _selectedContacts: {
                     type: Array,
                     value: function() {
                         return [];
@@ -1973,6 +1997,10 @@
 
             _onHideApplicationsBulkActions: function() {
                 this.$.appscoApplicationsPageActions.hideBulkActions();
+            },
+
+            _onHideContactBulkActions: function() {
+                this.$.appscoContactsPageActions.hideBulkActions();
             },
 
             _onHideDirectoryBulkActions: function() {
@@ -3236,16 +3264,43 @@
                 }
             },
 
-            // TODO
-            _onDeleteContactsAction: function() {},
+            _onDeleteContactsAction: function() {
+                var selectedContacts = this.$.appscoContactsPage.getSelectedContacts();
 
-            // TODO
-            _onAddLabelsToContactsAction: function() {},
+                if (selectedContacts.length > 0) {
+                    this.set('_selectedContacts', selectedContacts);
+                    this.$.appscoContactsRemove.toggle();
+                }
+                else {
+                    this._onHideContactBulkActions()
+                }
+            },
 
-            // TODO
-            _onSelectAllContactsAction: function() {},
+            _onDeletedContacts: function() {
+                this.$.appscoContactsPage.removeContacts(this._selectedContacts);
+                this._notify('Selected contacts were successfully removed from company.');
+            },
 
-            // TODO
+            _onDeleteContactsFailed: function() {
+                this.set('_selectedContacts', []);
+                this._notify('An error occurred. Selected contacts were not removed from company. Please try again.');
+            },
+
+            _onAddLabelsToContactsAction: function() {
+                var selectedContacts = this.$.appscoContactsPage.getSelectedContacts();
+                this._addLabelsToResources(selectedContacts, 'contacts');
+            },
+
+            _onRemoveLabelFromContactsAction: function() {
+                var selectedContactsAndLabels = this.$.appscoContactsPage.getSelectedContactsAndLabels();
+
+                this._removeLabelFromResources(selectedContactsAndLabels.labels[0], selectedContactsAndLabels.contacts, 'contacts');
+            },
+
+            _onSelectAllContactsAction: function() {
+                this.$.appscoContactsPage.selectAllContacts();
+            },
+
             _onContactsPageSelected: function(event) {
                 var page = event.detail.page.toLowerCase();
 
@@ -3288,6 +3343,14 @@
 
             _onHideContactsBulkActions: function() {
                 this.$.appscoContactsPageActions.hideBulkActions();
+            },
+
+            _onShowRemoveLabelFromContactAction: function() {
+                this.$.appscoContactsPageActions.showRemoveLabelFromContactAction();
+            },
+
+            _onHideRemoveLabelFromContactAction: function() {
+                this.$.appscoContactsPageActions.hideRemoveLabelFromContactAction();
             },
 
             _onResourceActionManageContactPage: function() {
@@ -4087,6 +4150,17 @@
                         this._notifyReloadAccounts();
 
                         break;
+
+                    case 'contacts':
+
+                        if (this.$.appscoContactsPage.$) {
+                            this.$.appscoContactsPage.modifyContacts(items);
+                        }
+
+                        break;
+
+                    default:
+                        return false;
                 }
             },
 
@@ -4156,6 +4230,19 @@
                         this._notifyReloadAccounts();
 
                         break;
+
+                    case 'contacts':
+
+                        if (this.$.appscoContactsPage.$) {
+                            this.$.appscoContactsPage.modifyContacts(items);
+                        }
+
+                        this._onHideRemoveLabelFromContactAction();
+
+                        break;
+
+                    default:
+                        return false;
                 }
             },
 

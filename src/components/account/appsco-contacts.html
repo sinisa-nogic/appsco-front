@@ -73,7 +73,7 @@
         <div class="contacts-container">
 
             <iron-ajax
-                    id="_getContactsApiRequest"
+                    id="getContactsApiRequest"
                     url="[[ _contactsApiUrl ]]"
                     on-error="_onError"
                     on-response="_onResponse"
@@ -258,18 +258,23 @@
                 }
             },
 
-            _loadContacts: function () {
+            _executePreloadActions: function() {
                 this._showProgressBar();
                 this._loadMore = false;
                 this.set('_contacts', []);
-                this.set('_allContacts', []);
-                this.$._getContactsApiRequest.generateRequest();
+//                this.set('_allContacts', []);
+            },
+
+            _loadContacts: function () {
+                this._executePreloadActions();
+                this.$.getContactsApiRequest.url = this._contactsApiUrl;
+                this.$.getContactsApiRequest.generateRequest();
             },
 
             _loadMoreContacts: function () {
                 this._showLoadMoreProgressBar();
-                this.$._getContactsApiRequest.url = this._next;
-                this.$._getContactsApiRequest.generateRequest();
+                this.$.getContactsApiRequest.url = this._next;
+                this.$.getContactsApiRequest.generateRequest();
             },
 
             _onError: function() {
@@ -296,7 +301,8 @@
                 var response = event.detail.response,
                     contacts = response.contacts,
                     meta = response.meta,
-                    contactsCount = contacts.length - 1;
+                    contactsCount = contacts.length - 1,
+                    allLength = this._allContacts.length;
 
                 this._totalContacts = meta.total;
                 this._next = meta.next + "&limit=" + this.size;
@@ -311,15 +317,26 @@
 
                 contacts.forEach(function(el, index) {
 
-                    setTimeout( function() {
-                        el.selected = false;
+                    for (var i = 0; i < allLength; i++) {
 
+                        if (el.self === this._allContacts[i].self) {
+                            el.selected = this._allContacts[i].selected;
+                            break;
+                        }
+                        else if (i === allLength - 1) {
+                            el.selected = false;
+                            this.push('_allContacts', el);
+                        }
+                    }
+
+                    setTimeout( function() {
                         this.push('_contacts', el);
-                        this.push('_allContacts', el);
 
                         if (index === contactsCount) {
 
-                            this._loadMore = this.loadMore;
+                            if (!this._allContacts.length) {
+                                this.set('_allContacts', this._contacts);
+                            }
 
                             if (this._contacts.length === meta.total) {
                                 this._loadMore = false;
@@ -456,6 +473,28 @@
                 }
             },
 
+            removeSelectedContacts: function(contacts) {
+                var length = contacts.length,
+                    _contacts = this._contacts,
+                    _length = _contacts.length;
+
+                for (var i = 0; i < length; i++) {
+
+                    for (var j = 0; j < _length; j++) {
+
+                        if (contacts[i].self === _contacts[j].self && contacts[i].selected) {
+                            this.splice('_contacts', j, 1);
+                            break;
+                        }
+                    }
+
+                }
+
+                if (0 === this._contacts.length) {
+                    this._handleEmptyLoad();
+                }
+            },
+
             selectAll: function(selected) {
                 var _allContacts = JSON.parse(JSON.stringify(this._allContacts)),
                         _contacts = JSON.parse(JSON.stringify(this._contacts)),
@@ -521,8 +560,19 @@
                 return result;
             },
 
+            loadContactsForLabel: function(label) {
+                this._executePreloadActions();
+                this.$.getContactsApiRequest.url = label.meta.contacts + '?extended=1';
+                this.$.getContactsApiRequest.generateRequest();
+            },
+
             filterByTerm: function(term) {
                 this._filterTerm = term;
+
+                if (0 === this._allContacts.length) {
+                    this._handleEmptyLoad();
+                    return false;
+                }
 
                 if (term.length < 3) {
                     this._message = '';

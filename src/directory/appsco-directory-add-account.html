@@ -102,10 +102,11 @@
                     <appsco-form-error message="[[ _error ]]"></appsco-form-error>
 
                     <form is="iron-form"
-                          id="createInvitationForm"
+                          id="form"
                           method="POST"
-                          action="[[ directoryInvitationsApi ]]"
+                          action="[[ addCompanyRoleApi ]]"
                           headers="[[ _headers ]]"
+                          on-iron-form-presubmit="_onFormPresubmit"
                           on-iron-form-error="_onFormError"
                           on-iron-form-response="_onFormResponse">
                         <div>
@@ -119,7 +120,7 @@
                                     <paper-input
                                             id="accountFirstName"
                                             label="First name"
-                                            name="invitation[first_name]"
+                                            name="register_account[firstName]"
                                             required
                                             auto-validate
                                             error-message="Please provide first name."
@@ -129,7 +130,7 @@
                                     <paper-input
                                             id="accountLastName"
                                             label="Last name"
-                                            name="invitation[last_name]"
+                                            name="register_account[lastName]"
                                             required
                                             auto-validate
                                             error-message="Please provide last name."
@@ -145,7 +146,7 @@
                                     <gold-email-input id="accountEmail"
                                                       label="Email"
                                                       value=""
-                                                      name="invitation[email]"
+                                                      name="register_account[email]"
                                                       required
                                                       auto-validate
                                                       error-message="Please provide valid email."></gold-email-input>
@@ -155,10 +156,6 @@
                                                          name="invitation[notify]">Send Activation Email</paper-toggle-button>
                                 </div>
                             </div>
-
-                            <!--<paper-input name="register_account[companyRoles][COMPANY_ROLE_EMPLOYEE]"-->
-                                         <!--value="COMPANY_ROLE_EMPLOYEE"-->
-                                         <!--hidden></paper-input>-->
                         </div>
                     </form>
                 </div>
@@ -188,8 +185,21 @@
                     type: String
                 },
 
-                directoryInvitationsApi: {
-                    type: String
+                addCompanyRoleApi: {
+                    type: String,
+                    value: ''
+                },
+
+                addInvitationApi: {
+                    type: String,
+                    value: ''
+                },
+
+                apiErrors: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    }
                 },
 
                 _headers: {
@@ -203,8 +213,19 @@
                 _loader: {
                     type: Boolean,
                     value: false
+                },
+
+                _error: {
+                    type: String
                 }
 
+            },
+
+            /**
+             * Toggles the dialog.
+             */
+            toggle: function() {
+                this.$.dialog.toggle();
             },
 
             _computeHeaders: function(authorizationToken) {
@@ -214,11 +235,20 @@
                 };
             },
 
-            /**
-             * Toggles add applications dialog.
-             */
-            toggle: function() {
-                this.$.dialog.toggle();
+            _showLoader: function() {
+                this._loader = true;
+            },
+
+            _hideLoader: function() {
+                this._loader = false;
+            },
+
+            _showError: function(message) {
+                this._error = message;
+            },
+
+            _hideError: function() {
+                this._error = '';
             },
 
             /**
@@ -236,9 +266,9 @@
              * @private
              */
             _onDialogClosed: function() {
-                this._loader = false;
-                this._error = '';
-                this.$.createInvitationForm.reset();
+                this._hideLoader();
+                this._hideError();
+                this.$.form.reset();
             },
 
             _onEnter: function() {
@@ -246,43 +276,89 @@
             },
 
             _submitForm: function() {
-                var form = this.$.createInvitationForm;
+                var form = this.$.form;
 
                 if (form.validate()) {
-                    this._loader = true;
+                    this._showLoader();
                     form.submit();
                 }
             },
 
+            _onFormPresubmit: function(event) {
+                event.target.request.body['register_account[companyRoles][COMPANY_ROLE_EMPLOYEE]'] = 'COMPANY_ROLE_EMPLOYEE';
+            },
+
             _onFormError: function(event) {
-                this._error = event.detail.request.response.message;
-                this._loader = false;
+                var code = event.detail.request.response.code;
+
+                if (1497007483 == code) {
+                    this._createInvitation(event.target);
+                    return false;
+                }
+
+
+                this._showError(this.apiErrors.getError(code));
+                this._hideLoader();
             },
 
             _onFormResponse: function(event) {
-                var response = event.detail.response,
-                    item = response && response.length > 0 ? response[0] : null;
+                var response = event.detail.response;
 
-                this.$.dialog.close();
-
-                if (item.invitation.self) {
+                if (200 === event.detail.status && response) {
+                    this.$.dialog.close();
 
                     /**
-                     * @event invitation-created
+                     * Fired when company role is created.
+                     *
+                     * @event company-role-created
+                     * @param {object} companyRole Created company role.
                      */
-                    this.fire('invitation-created', {
-                        invitation: item.invitation
+                    this.fire('company-role-created', {
+                        role: response
                     });
                 }
-                else if (item.role.self) {
+            },
 
-                    /**
-                     * @event account-added
-                     */
-                    this.fire('account-added', {
-                        role: item.role
-                    });
+            _createInvitation: function(form) {
+                var formData = form.serialize(),
+                    request = document.createElement('iron-request'),
+                    options = {
+                        url: this.addInvitationApi,
+                        method: 'POST',
+                        handleAs: 'json',
+                        headers: this._headers
+                    },
+                    body = '';
+
+                body += 'invitation[type]=user';
+
+                for (var key in formData) {
+                    body += '&' + key.replace('register_account', 'invitation') + '=' + encodeURIComponent(formData[key]);
                 }
+
+                options.body = body;
+
+                request.send(options).then(function() {
+
+                    if (200 == request.status) {
+                        this.$.dialog.close();
+
+                        /**
+                         * Fired when new invitation of type 'user' is created.
+                         *
+                         * @event invitation-created
+                         * @param {object} invitation Created invitation.
+                         */
+                        this.fire('invitation-created', {
+                            invitation: request.response
+                        });
+
+                    }
+
+                }.bind(this), function() {
+                    this._showError(this.apiErrors.getError(request.response.code));
+                    this._hideLoader();
+                }.bind(this));
             }
         });
     </script>

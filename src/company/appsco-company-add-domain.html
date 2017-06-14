@@ -40,6 +40,9 @@
             .emphasized {
                 font-weight: 500;
             }
+            .support-link {
+                color: var(--app-primary-color-dark);
+            }
         </style>
 
         <paper-dialog id="dialog"
@@ -59,6 +62,12 @@
                 <div class="dialog-container">
 
                     <appsco-form-error message="[[ _error ]]"></appsco-form-error>
+
+                    <template is="dom-if" if="[[ _supportLink ]]">
+                        <a href="https://support.appsco.com/hc/en-gb"
+                           target="_blank"
+                           class="support-link">https://support.appsco.com/hc/en-gb</a>
+                    </template>
 
                     <p>
                         Enter domain below.
@@ -141,6 +150,11 @@
                     type: String
                 },
 
+                _supportLink: {
+                    type: Boolean,
+                    value: false
+                },
+
                 /**
                  * Target for iron-a11y-keys component.
                  * Submit form on enter.
@@ -202,6 +216,15 @@
 
             _hideError: function() {
                 this._error = '';
+                this._hideAppscoSupportLink();
+            },
+
+            _showAppscoSupportLink: function() {
+                this._supportLink = true;
+            },
+
+            _hideAppscoSupportLink: function() {
+                this._supportLink = false;
             },
 
             /**
@@ -251,7 +274,13 @@
              * @private
              */
             _onFormError: function(event) {
-                this._showError(this.apiErrors.getError(event.detail.request.response.code));
+                var code = event.detail.request.response.code;
+                
+                if (1497441483 == code) {
+                    this._showAppscoSupportLink();
+                }
+                
+                this._showError(this.apiErrors.getError(code));
                 this._hideLoader();
             },
 

@@ -39,6 +39,10 @@ Provides functionality of sharing resources to users.
             :host paper-dialog-scrollable > * {
                 @apply(--paper-dialog-scrollable-child);
             }
+            :host appsco-loader {
+                margin: 0 !important;
+                padding: 0 !important;
+            }
             appsco-search {
                 margin-bottom: 10px;
             }
@@ -88,12 +92,13 @@ Provides functionality of sharing resources to users.
 
             <h2>Share resources</h2>
 
+            <appsco-loader active="[[ _shareLoader ]]"
+                           loader-alt="Appsco is processing request"
+                           multi-color></appsco-loader>
+
             <paper-dialog-scrollable>
                 <div class="dialog-container">
 
-                    <appsco-loader active="[[ _shareLoader ]]"
-                                   loader-alt="Appsco is processing request"
-                                   multi-color></appsco-loader>
 
                     <div class="account-list">
 
@@ -177,6 +182,13 @@ Provides functionality of sharing resources to users.
                     value: 8
                 },
 
+                apiErrors: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    }
+                },
+
                 _computedHeaders: {
                     type: Object,
                     computed: '_computeHeaders(authorizationToken)'
@@ -250,6 +262,22 @@ Provides functionality of sharing resources to users.
              */
             toggle: function() {
                 this.$.dialog.toggle();
+            },
+
+            _showLoader: function() {
+                this._shareLoader = true;
+            },
+
+            _hideLoader: function() {
+                this._shareLoader = false;
+            },
+
+            _showError: function(message) {
+                this._error = message;
+            },
+
+            _hideError: function() {
+                this._error = '';
             },
 
             /**
@@ -333,8 +361,8 @@ Provides functionality of sharing resources to users.
                 this.$.appscoSearch.reset();
                 this.set('_searchList', []);
                 this._searchLoader = false;
-                this._shareLoader = false;
-                this._error = '';
+                this._hideLoader();
+                this._hideError();
                 this._message = '';
             },
 
@@ -345,7 +373,7 @@ Provides functionality of sharing resources to users.
              * @private
              */
             _onAccountSelect: function(event) {
-                this._error = '';
+                this._hideError();
                 this.push('_selectedAccounts', event.model.item);
                 this.splice('_searchList', this._searchList.indexOf(event.model.item), 1);
             },
@@ -355,10 +383,27 @@ Provides functionality of sharing resources to users.
                 this.splice('_selectedAccounts', this._selectedAccounts.indexOf(event.model.item), 1);
             },
 
-            _shareAccounts: function(application, more) {
+            _applicationsShareFinished: function() {
+                this.$.dialog.close();
+
+                /**
+                 * Fired when applications have been shared.
+                 *
+                 * @event applications-shared
+                 */
+                this.fire('applications-shared', {
+                    applications: this._responseApplications
+                });
+
+                this.set('_selectedAccounts', []);
+                this.set('_responseApplications', []);
+                this._hideLoader();
+            },
+
+            _shareToAccounts: function(application, last) {
                 var accounts = this._selectedAccounts,
                     length = accounts.length - 1,
-                    appRequest = document.createElement('iron-request'),
+                    request = document.createElement('iron-request'),
                     options = {
                         url: application.self + '/share',
                         method: 'POST',
@@ -377,49 +422,39 @@ Provides functionality of sharing resources to users.
 
                 options.body = body;
 
-                appRequest.send(options).then(function() {
+                request.send(options).then(function() {
 
-                    this.push('_responseApplications', appRequest.response);
+                    this.push('_responseApplications', request.response);
 
-                    if (more) {
-                        this.$.dialog.close();
-
-                        /**
-                         * Fired when applications have been shared.
-                         *
-                         * @event applications-shared
-                         */
-                        this.fire('applications-shared', {
-                            applications: this._responseApplications
-                        });
-
-                        this.set('_selectedAccounts', []);
-                        this.set('_responseApplications', []);
-                        this._shareLoader = false;
+                    if (last) {
+                        this._applicationsShareFinished();
                     }
+                }.bind(this), function() {
+                    this._showError(this.apiErrors.getError(request.response.code));
+                    this._hideLoader();
                 }.bind(this));
             },
 
             _onShareApplicationsAction: function() {
 
                 if (0 === this._selectedAccounts.length) {
-                    this._error = 'Please add at least one user to share resources to.';
+                    this._showError('Please add at least one user to share resources to.');
                     return false;
                 }
 
                 var applications = this.applications,
                     length = applications.length - 1;
 
-                this._shareLoader = true;
+                this._showLoader();
 
                 for (var i = 0; i <= length; i++) {
 
                     if (i === length) {
-                        this._shareAccounts(applications[i], true);
+                        this._shareToAccounts(applications[i], true);
                         return false;
                     }
 
-                    this._shareAccounts(applications[i], false);
+                    this._shareToAccounts(applications[i], false);
 
 
                 }

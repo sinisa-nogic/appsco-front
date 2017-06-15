@@ -260,9 +260,10 @@
 
         <iron-ajax
                 id="billingCCRequest"
-                url="[[ companyApi ]]/billing/cc"
+                url="[[ _creditCardApi ]]"
                 handle-as="json"
                 headers="[[ _computedHeaders ]]"
+                auto
                 on-response="_handleCCResponse"
         ></iron-ajax>
 
@@ -271,18 +272,19 @@
                 url="[[ _subscriptionApi ]]"
                 handle-as="json"
                 headers="[[ _computedHeaders ]]"
+                auto
                 on-response="_handleSubscriptionResponse"
         ></iron-ajax>
 
         <iron-ajax id="upcomingInvoiceCall"
-                url="[[ companyApi ]]/billing/invoice/upcoming"
-                handle-as="json"
-                headers="[[ _computedHeaders ]]"
-                on-response="_handleUpcomingInvoiceResponse"
+                   url="[[ _upcomingInvoiceApi ]]"
+                   handle-as="json"
+                   headers="[[ _computedHeaders ]]"
+                   on-response="_handleUpcomingInvoiceResponse"
         ></iron-ajax>
 
         <iron-ajax id="invoiceListCall"
-                url="[[ companyApi ]]/billing/invoice/list"
+                url="[[ _invoiceListApi ]]"
                 handle-as="json"
                 headers="[[ _computedHeaders ]]"
                 on-response="_handleInvoicesResponse"
@@ -605,6 +607,40 @@
                     notify: true
                 },
 
+                authorizationToken: {
+                    type: String
+                },
+
+                companyApi: {
+                    type: String,
+                    value: function() { return ''; }
+                },
+
+                _computedHeaders: {
+                    type: Object,
+                    computed: '_computeHeaders(authorizationToken)'
+                },
+
+                _subscriptionApi: {
+                    type: String,
+                    computed: '_computeSubscriptionApi(companyApi)'
+                },
+
+                _creditCardApi: {
+                    type: String,
+                    computed: '_computeCreditCardApi(companyApi)'
+                },
+
+                _upcomingInvoiceApi: {
+                    type: String,
+                    computed: '_computeUpcomingInvoiceApi(companyApi)'
+                },
+
+                _invoiceListApi: {
+                    type: String,
+                    computed: '_computeInvoiceListApi(companyApi)'
+                },
+
                 _trialPeriod: {
                     type: Boolean,
                     computed: '_computeTrialPeriod(account, _subscription)'
@@ -653,7 +689,7 @@
                     type: Boolean,
                     value: false
                 },
-                
+
                 _selectedInvoice: {
                     type: Object,
                     value: function() {
@@ -677,18 +713,6 @@
                     value: false
                 },
 
-                companyApi: {
-                    type: String,
-                    value: function() { return ''; },
-                    observer: '_onCompanyApiChanged'
-                },
-
-                _subscriptionApi: {
-                    type: String,
-                    computed: '_computeSubscriptionApi(companyApi)'
-
-                },
-
                 _ccLoader: {
                     type: Boolean,
                     value: true
@@ -707,19 +731,6 @@
                 _invoiceListLoader: {
                     type: Boolean,
                     value: true
-                },
-
-                authorizationToken: {
-                    type: String
-                },
-
-                /**
-                 * Computed headers.
-                 * It contains authorization token.
-                 */
-                _computedHeaders: {
-                    type: Object,
-                    computed: "_computeHeaders(authorizationToken)"
                 },
 
                 /**
@@ -760,11 +771,7 @@
             ],
 
             attached: function() {
-
                 this.pageLoaded = false;
-//                this._ccLoader = true;
-//                this._subscriptionLoader = true;
-//                this._upcomingInvoiceLoader = true;
 
                 if (this.mobileScreen || this.tabletScreen || this.mediumScreen) {
                     this.updateStyles();
@@ -784,13 +791,6 @@
                 }
             },
 
-            _onCompanyApiChanged: function() {
-                if(this.companyApi) {
-                    this.$.billingSubscriptionRequest.generateRequest();
-                    this.$.billingCCRequest.generateRequest();
-                }
-            },
-
             /**
              * Computes authorization headers.
              *
@@ -805,7 +805,19 @@
             },
 
             _computeSubscriptionApi: function(companyApi) {
-                return companyApi + '/billing/subscription';
+                return companyApi ? companyApi + '/billing/subscription' : '';
+            },
+
+            _computeCreditCardApi: function(companyApi) {
+                return companyApi ? companyApi + '/billing/cc' : '';
+            },
+
+            _computeUpcomingInvoiceApi: function(companyApi) {
+                return companyApi ? companyApi + '/billing/invoice/upcoming' : '';
+            },
+
+            _computeInvoiceListApi: function(companyApi) {
+                return companyApi ? companyApi + '/billing/invoice/list' : '';
             },
 
             _computeTrialPeriod: function(account, subscription) {
@@ -835,13 +847,9 @@
                 }.bind(this), 1000);
             },
 
-            setSubscription: function(subscription) {
+            reloadSubscription: function() {
                 this._subscriptionLoader = true;
-                this._subscription = subscription;
-
-                setTimeout(function() {
-                    this._subscriptionLoader = false;
-                }.bind(this), 1000);
+                this.$.billingSubscriptionRequest.generateRequest();
             },
 
             toggleResource: function() {
@@ -932,7 +940,6 @@
             },
 
             _loadInvoiceList: function() {
-                this.set('_invoices', []);
                 this._invoicesExists = false;
                 this._invoiceListLoader = true;
                 this.$.invoiceListCall.generateRequest();
@@ -940,6 +947,8 @@
 
             _handleInvoicesResponse: function(event) {
                 var response = event.detail.response;
+
+                this.set('_invoices', []);
 
                 if (null == response) {
                     this._invoiceListLoader = false;

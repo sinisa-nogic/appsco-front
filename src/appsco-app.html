@@ -1011,6 +1011,7 @@
                 applications="[[ _applicationsToShare ]]"
                 authorization-token="[[ authorizationToken ]]"
                 accounts-api="[[ api.accounts ]]"
+                api-errors="[[ _apiErrors ]]"
                 on-applications-shared="_onCompanyApplicationsShared"
                 ></appsco-company-application-share>
 
@@ -2182,17 +2183,27 @@
 
             _onApplicationShared: function(event) {
                 var application = event.detail.application,
-                    success = event.detail.success,
+                    succeded = event.detail.succeded,
                     failed = event.detail.failed,
                     applicationLogApi = application.meta.log,
-                    message = 'Application ' + this.application.title + ' successfully shared to ' + success + ', unsuccessfully to ' + failed;
+                    message = '';
+
+                if (parseInt(succeded) != 0) {
+                    message = 'Application ' + this.application.title + ' was successfully shared to ' + succeded + ' accounts.';
+                }
+
+                if (parseInt(failed) != 0) {
+                    message = (0 != message.length) ?
+                        message + ' It was already shared to ' + failed + ' selected accounts. ' :
+                        'Application ' + this.application.title + ' was already shared to ' + failed + ' selected accounts.';
+                }
 
                 // In order to notify.
                 this.set('application', {});
                 this.set('application', application);
 
                 this._notifyAboutApplicationLogChange(applicationLogApi);
-                this._notify(message);
+                this._notify(message, true);
             },
 
             _onApplicationCredentialsChanged: function(event) {
@@ -2723,7 +2734,16 @@
 
             _onCompanyApplicationsShared: function(event) {
                 var applications = event.detail.applications,
-                    application = applications[applications.length - 1];
+                    length = applications.length,
+                    application = applications[length - 1];
+
+                for (var i = 0; i < length; i++) {
+
+                    if (this._companyApplication.self === applications[i].self) {
+                        application = applications[i];
+                        break;
+                    }
+                }
 
                 this.set('_companyApplication', {});
                 this.set('_companyApplication', application);

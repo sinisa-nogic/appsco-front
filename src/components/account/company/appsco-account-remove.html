@@ -47,6 +47,9 @@ Shows dialog screen with confirmation for account removal.
             :host .buttons paper-button[dialog-dismiss] {
                 @apply(--paper-dialog-dismiss-button);
             }
+            .link {
+                color: var(--app-primary-color-dark);
+            }
         </style>
         <paper-dialog
                 with-backdrop
@@ -67,6 +70,12 @@ Shows dialog screen with confirmation for account removal.
                 <div class="remove-container">
 
                     <appsco-form-error message="[[ _error ]]"></appsco-form-error>
+
+                    <template is="dom-if" if="[[ _supportLink ]]">
+                        <a href="http://support.appsco.com/hc/en-gb"
+                           target="_blank"
+                           class="link">AppsCo support</a>
+                    </template>
                     
                     <p>Once account is removed from company all data related to it will be lost.</p>
                     <p>Please confirm account removing.</p>
@@ -135,6 +144,11 @@ Shows dialog screen with confirmation for account removal.
                 _error: {
                     type: String,
                     value: ''
+                },
+
+                _supportLink: {
+                    type: Boolean,
+                    value: false
                 }
             },
 
@@ -160,6 +174,15 @@ Shows dialog screen with confirmation for account removal.
 
             _hideError: function() {
                 this._error = '';
+                this._hideSupportLink();
+            },
+
+            _showSupportLink: function() {
+                this._supportLink = true;
+            },
+
+            _hideSupportLink: function() {
+                this._supportLink = false;
             },
 
             _onDialogClosed: function() {
@@ -209,7 +232,10 @@ Shows dialog screen with confirmation for account removal.
                     }
 
                 }.bind(this), function() {
-                    this._showError(this.apiErrors.getError(request.response.code));
+                    var code = request.response.code;
+
+                    1494335470 == code ? this._showSupportLink() : this._hideSupportLink();
+                    this._showError(this.apiErrors.getError(code));
                     this._hideLoader();
                 }.bind(this));
             }

@@ -7,6 +7,7 @@
 <link rel="import" href="../../../../bower_components/neon-animation/animations/scale-up-animation.html">
 
 <link rel="import" href="../../components/appsco-loader.html">
+<link rel="import" href="../../components/appsco-form-error.html">
 
 <!--
 `appsco-account-remove`
@@ -28,36 +29,45 @@ Shows dialog screen with confirmation for account removal.
             :host paper-dialog {
                 width: 670px;
                 top: 20vh;
-            @apply(--appsco-paper-dialog);
+                @apply(--appsco-paper-dialog);
             }
             :host paper-dialog-scrollable > * {
                 @apply(--paper-dialog-scrollable-child);
             }
+            :host appsco-loader {
+                margin: 0 !important;
+                padding: 0 !important;
+            }
             :host .buttons paper-button {
-            @apply(--paper-dialog-button);
+                @apply(--paper-dialog-button);
             }
             :host .buttons paper-button[dialog-confirm] {
-            @apply(--paper-dialog-confirm-button);
+                @apply(--paper-dialog-confirm-button);
             }
             :host .buttons paper-button[dialog-dismiss] {
-            @apply(--paper-dialog-dismiss-button);
+                @apply(--paper-dialog-dismiss-button);
             }
         </style>
         <paper-dialog
                 with-backdrop
                 id="dialog"
                 entry-animation="scale-up-animation"
-                exit-animation="fade-out-animation">
+                exit-animation="fade-out-animation"
+                on-iron-overlay-closed="_onDialogClosed">
 
             <div class="header">
                 <h2>Account remove</h2>
             </div>
 
+            <appsco-loader active="[[ _loader ]]"
+                           loader-alt="Appsco is removing account"
+                           multi-color></appsco-loader>
+
             <paper-dialog-scrollable>
                 <div class="remove-container">
 
-                    <appsco-loader active="[[ _loader ]]" loader-alt="Appsco is removing account" multi-color></appsco-loader>
-
+                    <appsco-form-error message="[[ _error ]]"></appsco-form-error>
+                    
                     <p>Once account is removed from company all data related to it will be lost.</p>
                     <p>Please confirm account removing.</p>
 
@@ -66,7 +76,7 @@ Shows dialog screen with confirmation for account removal.
 
             <div class="buttons">
                 <paper-button dialog-dismiss>Cancel</paper-button>
-                <paper-button dialog-confirm autofocus on-tap="_remove">Remove</paper-button>
+                <paper-button autofocus on-tap="_onRemoveAction">Remove</paper-button>
             </div>
         </paper-dialog>
 
@@ -88,18 +98,25 @@ Shows dialog screen with confirmation for account removal.
                     }
                 },
 
-                _account: {
+                /**
+                 * Authorization token.
+                 */
+                authorizationToken: {
+                    type: String
+                },
+                
+                apiErrors: {
                     type: Object,
                     value: function() {
                         return {};
                     }
                 },
 
-                /**
-                 * Authorization token.
-                 */
-                authorizationToken: {
-                    type: String
+                _account: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    }
                 },
 
                 /**
@@ -113,6 +130,11 @@ Shows dialog screen with confirmation for account removal.
                 _loader: {
                     type: Boolean,
                     value: false
+                },
+
+                _error: {
+                    type: String,
+                    value: ''
                 }
             },
 
@@ -120,22 +142,48 @@ Shows dialog screen with confirmation for account removal.
                 this.$.dialog.open();
             },
 
-            _remove: function() {
-                var roles = this.accounts,
-                        length = roles.length - 1,
-                        appRequest = document.createElement('iron-request'),
-                        options = {
-                            url: this.companyApi + '/directory/roles',
-                            method: 'DELETE',
-                            handleAs: 'json',
-                            headers: {
-                                'Authorization': 'token ' + this.authorizationToken,
-                                'Content-Type': 'application/x-www-form-urlencoded'
-                            }
-                        },
-                        body = '';
+            _close: function () {
+                this.$.dialog.close();
+            },
 
+            _showLoader: function() {
                 this._loader = true;
+            },
+
+            _hideLoader: function() {
+                this._loader = false;
+            },
+
+            _showError: function(message) {
+                this._error = message;
+            },
+
+            _hideError: function() {
+                this._error = '';
+            },
+
+            _onDialogClosed: function() {
+                this._hideLoader();
+                this._hideError();
+                this.set('accounts', []);
+            },
+
+            _onRemoveAction: function() {
+                var roles = this.accounts,
+                    length = roles.length - 1,
+                    request = document.createElement('iron-request'),
+                    options = {
+                        url: this.companyApi + '/directory/roles',
+                        method: 'DELETE',
+                        handleAs: 'json',
+                        headers: {
+                            'Authorization': 'token ' + this.authorizationToken,
+                            'Content-Type': 'application/x-www-form-urlencoded'
+                        }
+                    },
+                    body = '';
+
+                this._showLoader();
 
                 for (var i = 0; i <= length; i++) {
                     var next = (i === length) ? '' : '&';
@@ -144,8 +192,7 @@ Shows dialog screen with confirmation for account removal.
 
                 options.body = body;
 
-                appRequest.send(options).then(function(request) {
-                    this.$.dialog.close();
+                request.send(options).then(function(request) {
 
                     if (200 == request.status) {
 
@@ -157,19 +204,13 @@ Shows dialog screen with confirmation for account removal.
                         this.fire('accounts-removed', {
                             accounts: request.response.company_roles
                         });
-                    }
-                    else {
-                        /**
-                         * Fired when accounts were not deleted.
-                         *
-                         * @event accounts-remove-failed
-                         */
-                        this.fire('accounts-remove-failed');
+
+                        this._close();
                     }
 
-                    this.set('accounts', []);
-                    this._loader = false;
-
+                }.bind(this), function() {
+                    this._showError(this.apiErrors.getError(request.response.code));
+                    this._hideLoader();
                 }.bind(this));
             }
         });

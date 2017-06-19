@@ -17,6 +17,7 @@
 <link rel="import" href="appsco-application-add-search.html">
 <link rel="import" href="appsco-application-add-settings.html">
 <link rel="import" href="appsco-application-add-link.html">
+<link rel="import" href="../components/appsco-loader.html">
 
 <!--
 `appsco-application-add`
@@ -61,6 +62,10 @@ Custom property | Description | Default
             :host neon-animated-pages > .iron-selected {
                 position: relative;
             }
+            appsco-loader {
+                margin: 0 !important;
+                padding: 0 !important;
+            }
             :host .buttons {
                 padding-right: 24px;
             }
@@ -99,6 +104,8 @@ Custom property | Description | Default
 
             <h2>[[ _dialogTitle ]]</h2>
 
+            <appsco-loader active="[[ _loader ]]" loader-alt="Appsco is processing request" multi-color></appsco-loader>
+
             <paper-dialog-scrollable>
                 <neon-animated-pages class="flex"
                                      selected="{{ _selected }}"
@@ -122,6 +129,7 @@ Custom property | Description | Default
                             application-template="[[ _selectedApplication ]]"
                             authorization-token="[[ authorizationToken ]]"
                             dashboard-api="[[ dashboardApi ]]"
+                            on-form-error="_onFormError"
                             on-application-added="_onApplicationAdded">
                     </appsco-application-add-settings>
 
@@ -265,6 +273,11 @@ Custom property | Description | Default
                     value: false
                 },
 
+                _loader: {
+                    type: Boolean,
+                    value: false
+                },
+
                 /**
                  * Animation config for add application action button (_addAction).
                  */
@@ -310,6 +323,14 @@ Custom property | Description | Default
                 return {
                     'Authorization': 'token ' + authorizationToken
                 }
+            },
+
+            _showLoader: function() {
+                this._loader = true;
+            },
+
+            _hideLoader: function() {
+                this._loader = false;
             },
 
             _onLinkResponse: function(event) {
@@ -411,6 +432,7 @@ Custom property | Description | Default
                 this.$.appscoApplicationAddLink.reset();
                 this._selected = 'appsco-application-add-search';
                 this._dialogTitle = 'Add application';
+                this._hideLoader();
             },
 
             /**
@@ -429,7 +451,12 @@ Custom property | Description | Default
              * @private
              */
             _onAddApplication: function() {
+                this._showLoader();
                 this._selectedApplication.self ? this.$.appscoApplicationAddSettings.addApplication() : this.$.appscoApplicationAddLink.addLink();
+            },
+
+            _onFormError: function() {
+                this._hideLoader();
             },
 
             /**

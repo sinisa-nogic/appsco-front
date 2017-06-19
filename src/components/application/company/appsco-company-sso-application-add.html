@@ -95,7 +95,7 @@
                             application="[[ _selectedApplication ]]"
                             authorization-token="[[ authorizationToken ]]"
                             add-application-api="[[ addApplicationApi ]]"
-                            loader="{{ _loader }}"
+                            on-form-error="[[ _onFormError ]]"
                             on-application-added="_onApplicationAdded">
                     </appsco-company-application-add-settings>
 
@@ -145,16 +145,6 @@
                         return {};
                     },
                     notify: true
-                },
-
-                /**
-                 * Link application resource.
-                 */
-                _link: {
-                    type: Object,
-                    value: function() {
-                        return {};
-                    }
                 },
 
                 /**
@@ -235,8 +225,7 @@
                  */
                 _loader: {
                     type: Boolean,
-                    value: false,
-                    observer: '_onLoaderChanged'
+                    value: false
                 },
 
                 /**
@@ -286,15 +275,16 @@
                 }
             },
 
-            _onLoaderChanged: function(loader) {
-                this._loader = loader;
+            _showLoader: function() {
+                this._loader = true;
             },
 
-            _onLinkResponse: function(event) {
-                var link = event.detail.response;
+            _hideLoader: function() {
+                this._loader = false;
+            },
 
-                link.title = 'Link';
-                this.set('_link', link);
+            _onFormError: function() {
+                this._hideLoader();
             },
 
             _onItemResponse: function(event) {
@@ -361,17 +351,6 @@
             },
 
             /**
-             * Called after clicked on Add Link action.
-             *
-             * @private
-             */
-            _onAddLink: function() {
-                this.set('_selectedApplication', this._link);
-                this._onApplicationSelect();
-                this._dialogTitle = 'Add link';
-            },
-
-            /**
              * Called after dialog has been opened.
              *
              * @private
@@ -394,6 +373,7 @@
                 this.$.appscoApplicationAddSettings.reset();
                 this._selected = 'appsco-application-add-search';
                 this._dialogTitle = 'Add application';
+                this._hideLoader();
             },
 
             /**
@@ -412,6 +392,7 @@
              * @private
              */
             _onAddApplication: function() {
+                this._showLoader();
                 this.$.appscoApplicationAddSettings.addApplication();
             },
 

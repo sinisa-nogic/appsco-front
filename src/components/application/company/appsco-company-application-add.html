@@ -126,7 +126,7 @@ Custom property | Description | Default
                             application="[[ _selectedApplication ]]"
                             authorization-token="[[ authorizationToken ]]"
                             add-application-api="[[ addApplicationApi ]]"
-                            loader="{{ _loader }}"
+                            on-form-error="_onFormError"
                             on-application-added="_onApplicationAdded">
                     </appsco-company-application-add-settings>
 
@@ -266,8 +266,7 @@ Custom property | Description | Default
                  */
                 _loader: {
                     type: Boolean,
-                    value: false,
-                    observer: '_onLoaderChanged'
+                    value: false
                 },
 
                 /**
@@ -317,8 +316,16 @@ Custom property | Description | Default
                 }
             },
 
-            _onLoaderChanged: function(loader) {
-                this._loader = loader;
+            _showLoader: function() {
+                this._loader = true;
+            },
+
+            _hideLoader: function() {
+                this._loader = false;
+            },
+
+            _onFormError: function() {
+                this._hideLoader();
             },
 
             _onLinkResponse: function(event) {
@@ -425,6 +432,7 @@ Custom property | Description | Default
                 this.$.appscoApplicationAddSettings.reset();
                 this._selected = 'appsco-application-add-search';
                 this._dialogTitle = 'Add application';
+                this._hideLoader();
             },
 
             /**
@@ -443,6 +451,7 @@ Custom property | Description | Default
              * @private
              */
             _onAddApplication: function() {
+                this._showLoader();
                 this.$.appscoApplicationAddSettings.addApplication();
             },
 

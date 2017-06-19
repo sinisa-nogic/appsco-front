@@ -9,8 +9,6 @@
 <link rel="import" href="components/account/appsco-account-image.html">
 <link rel="import" href="components/contact/appsco-manage-contact-components-page.html">
 <link rel="import" href="components/contact/appsco-contact-applications-page.html">
-<link rel="import" href="components/contact/appsco-contact-activity-log-page.html">
-
 <link rel="import" href="account/appsco-account-log-page.html">
 
 <dom-module id="appsco-manage-contact-page">
@@ -139,10 +137,9 @@
                                 contact="[[ contact ]]"
                                 administrator="[[ administrator ]]"
                                 authorization-token="[[ authorizationToken ]]"
-                                log-api="[[ contact.meta.log ]]"
+                                log-api="[[ _logApi ]]"
                                 on-manage-applications="_onManageApplications"
                                 on-manage-activity-log="_onManageActivityLog"
-                                on-log-loaded="_pageLoaded"
                                 on-log-empty="_pageLoaded">
                         </appsco-manage-contact-components-page>
 
@@ -157,9 +154,9 @@
                         <appsco-account-log-page
                                 id="appscoAccountLogPage"
                                 name="appsco-account-log-page"
-                                account="{{ contact.account }}"
+                                account="[[ contact.account ]]"
                                 authorization-token="[[ authorizationToken ]]"
-                                log-api="[[ contact.meta.log ]]"
+                                log-api="[[ _logApi ]]"
                                 on-back="_onResourceBack">
                         </appsco-account-log-page>
 
@@ -202,11 +199,9 @@
                     observer: '_onContactsApiChanged'
                 },
 
-                /**
-                 * Get account log link.
-                 */
-                logApi: {
-                    type: String
+                _logApi: {
+                    type: String,
+                    computed: '_computeLogApi(contact)'
                 },
 
                 /**
@@ -328,13 +323,10 @@
                 }
             },
 
-            /**
-             * Computes authorization headers.
-             *
-             * @param {Object} authorizationToken
-             * @returns {{ Authorization: string }}
-             * @private
-             */
+            _computeLogApi: function(contact) {
+                return contact.meta ? contact.meta.log : '';
+            },
+
             _computeHeaders: function (authorizationToken) {
                 return {
                     'Authorization': 'token ' + authorizationToken

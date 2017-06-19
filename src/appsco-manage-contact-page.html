@@ -9,6 +9,7 @@
 <link rel="import" href="components/account/appsco-account-image.html">
 <link rel="import" href="components/contact/appsco-manage-contact-components-page.html">
 <link rel="import" href="components/contact/appsco-contact-applications-page.html">
+<link rel="import" href="account/appsco-account-log-page.html">
 
 <dom-module id="appsco-manage-contact-page">
     <template>
@@ -136,8 +137,9 @@
                                 contact="[[ contact ]]"
                                 administrator="[[ administrator ]]"
                                 authorization-token="[[ authorizationToken ]]"
+                                log-api="[[ _logApi ]]"
                                 on-manage-applications="_onManageApplications"
-                                on-log-loaded="_pageLoaded"
+                                on-manage-activity-log="_onManageActivityLog"
                                 on-log-empty="_pageLoaded">
                         </appsco-manage-contact-components-page>
 
@@ -148,6 +150,15 @@
                                 authorization-token="[[ authorizationToken ]]"
                                 on-back="_onResourceBack">
                         </appsco-contact-applications-page>
+
+                        <appsco-account-log-page
+                                id="appscoAccountLogPage"
+                                name="appsco-account-log-page"
+                                account="[[ contact.account ]]"
+                                authorization-token="[[ authorizationToken ]]"
+                                log-api="[[ _logApi ]]"
+                                on-back="_onResourceBack">
+                        </appsco-account-log-page>
 
                     </neon-animated-pages>
                 </div>
@@ -186,6 +197,11 @@
                     type: String,
                     value: '',
                     observer: '_onContactsApiChanged'
+                },
+
+                _logApi: {
+                    type: String,
+                    computed: '_computeLogApi(contact)'
                 },
 
                 /**
@@ -291,6 +307,11 @@
                 this._showContactComponentsPage();
             },
 
+            _pageLoaded: function() {
+                this.pageLoaded = true;
+                this.fire('page-loaded');
+            },
+
             _updateScreen: function(medium, tablet, mobile) {
                 this.updateStyles();
 
@@ -302,13 +323,10 @@
                 }
             },
 
-            /**
-             * Computes authorization headers.
-             *
-             * @param {Object} authorizationToken
-             * @returns {{ Authorization: string }}
-             * @private
-             */
+            _computeLogApi: function(contact) {
+                return contact.meta ? contact.meta.log : '';
+            },
+
             _computeHeaders: function (authorizationToken) {
                 return {
                     'Authorization': 'token ' + authorizationToken
@@ -371,6 +389,10 @@
 
             _onManageApplications: function() {
                 this._selected = 'appsco-contact-applications-page';
+            },
+
+            _onManageActivityLog: function() {
+                this._selected = 'appsco-account-log-page';
             },
 
             _onResourceBack: function() {

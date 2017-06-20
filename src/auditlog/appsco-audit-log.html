@@ -20,10 +20,9 @@
                 @apply(--appsco-audit-log);
             }
             .audit-log {
+                width: 100%;
                 padding-top: 10px;
                 overflow: hidden;
-                @apply(--layout-vertical);
-                @apply(--layout-center);
                 @apply(--audit-log-list);
             }
             .log-record {
@@ -69,17 +68,38 @@
                 @apply(--paper-font-body2);
                 @apply(--info-message);
             }
-            :host paper-progress {
+            :host .log-progress-bar {
+                min-width: 100px;
                 width: 100%;
                 position: absolute;
                 top: 0;
                 left: 0;
                 @apply(--appsco-audit-log-progress);
             }
+            :host .load-more-box {
+                width: 120px;
+                margin-top: 10px;
+                margin-left: auto;
+                margin-right: auto;
+                padding-top: 4px;
+                position: relative;
+            }
+            :host .load-more-box paper-progress {
+                width: 100%;
+                position: absolute;
+                top: 4px;
+                left: 0;
+            }
+            :host paper-button {
+                display: block;
+                margin: 10px auto 0;
+                text-align: center;
+                @apply(--load-more-button);
+            }
         </style>
 
         <iron-ajax id="ironAjaxLog"
-                   url="[[ auditLogApi ]]"
+                   url="[[ _auditLogApi ]]"
                    method="POST"
                    headers="[[ _headers ]]"
                    handle-as="json"
@@ -103,36 +123,49 @@
 
         <div class="audit-log">
 
-            <paper-progress id="progress" indeterminate></paper-progress>
+            <paper-progress id="progress"
+                            class="log-progress-bar"
+                            indeterminate></paper-progress>
 
-            <div class="log-record log-header">
-                <div class="account-info">Account</div>
-                <div class="event">Event</div>
-                <div class="ip-address">IP Address</div>
-                <div class="date">Date</div>
-            </div>
-
-            <template is="dom-repeat"
-                      items="[[ _logList ]]">
-                <div class="log-record">
-                    <div class="account-info">
-                        <appsco-account-image account="[[ item.account ]]"></appsco-account-image>
-                        <div class="account">[[ item.account.name ]]</div>
-                    </div>
-                    <div class="event">[[ item.event ]]</div>
-                    <div class="ip-address">[[ item.ip_address ]]</div>
-                    <div class="date">
-                        <appsco-date-format date="[[ item.date ]]"
-                                            options="[[ _dateFormat ]]"></appsco-date-format>
-                    </div>
+            <template is="dom-if" if="[[ !_logEmpty ]]">
+                <div class="log-record log-header">
+                    <div class="account-info">Account</div>
+                    <div class="event">Event</div>
+                    <div class="ip-address">IP Address</div>
+                    <div class="date">Date</div>
                 </div>
+
+                <template is="dom-repeat"
+                          items="[[ _logList ]]">
+                    <div class="log-record">
+                        <div class="account-info">
+                            <appsco-account-image account="[[ item.account ]]"></appsco-account-image>
+                            <div class="account">[[ item.account.name ]]</div>
+                        </div>
+                        <div class="event">[[ item.event ]]</div>
+                        <div class="ip-address">[[ item.ip_address ]]</div>
+                        <div class="date">
+                            <appsco-date-format date="[[ item.date ]]"
+                                                options="[[ _dateFormat ]]"></appsco-date-format>
+                        </div>
+                    </div>
+                </template>
             </template>
         </div>
 
-        <template is="dom-if" if="[[ _message ]]">
-            <p class="message">
-                [[ _message ]]
-            </p>
+        <template is="dom-if" if="[[ _logEmpty ]]">
+            <template is="dom-if" if="[[ _message ]]">
+                <p class="message">
+                    [[ _message ]]
+                </p>
+            </template>
+        </template>
+
+        <template is="dom-if" if="[[ !_logEmpty ]]">
+            <div class="load-more-box" hidden$="[[ !_loadMore ]]">
+                <paper-progress id="loadMoreProgress" indeterminate></paper-progress>
+                <paper-button on-tap="_onLoadMoreAction" id="loadMore">Load More</paper-button>
+            </div>
         </template>
 
     </template>
@@ -156,7 +189,34 @@
                  */
                 auditLogApi: {
                     type: String,
+                    value: ''
+                },
+
+                size: {
+                    type: Number,
+                    value: 10
+                },
+
+                loadMore: {
+                    type: Boolean,
+                    value: false
+                },
+
+                _loadMore: {
+                    type: Boolean,
+                    value: false
+                },
+
+                _auditLogApi: {
+                    type: String,
+                    computed: '_computeAuditLogApi(auditLogApi)',
                     observer: '_onAuditLogApiChanged'
+                },
+
+
+                _nextPageAuditLogApi: {
+                    type: String,
+                    value: ''
                 },
 
                 /**
@@ -183,6 +243,11 @@
                     value: function() {
                         return [];
                     }
+                },
+
+                _totalLogItems: {
+                    type: Number,
+                    value: 0
                 },
 
                 _timezoneListUrl: {
@@ -235,6 +300,11 @@
                     }
                 },
 
+                _logEmpty: {
+                    type: Boolean,
+                    value: false
+                },
+
                 /**
                  * Message to display instead of log.
                  */
@@ -277,6 +347,10 @@
                 this.loadResources(this.resolveUrl('data/locales.json'));
             },
 
+            _computeAuditLogApi: function(auditLogApi) {
+                return auditLogApi ? (auditLogApi + '?limit=' + this.size) : '';
+            },
+
             /**
              * Computes authorization headers.
              *
@@ -291,9 +365,25 @@
                 }
             },
 
+            _setLoadMoreAction: function() {
+                this._loadMore = (this.loadMore && (this._wholeLogList.length < this._totalLogItems));
+            },
+
+            _showLoadMoreProgressBar: function() {
+                this.$$('#loadMoreProgress').hidden = false;
+            },
+
+            _hideLoadMoreProgressBar: function() {
+
+                setTimeout(function() {
+                    this.$$('#loadMoreProgress').hidden = true;
+                }.bind(this), 300);
+
+            },
+
             _onAuditLogApiChanged: function(auditLogApi) {
 
-                if (auditLogApi && auditLogApi != '') {
+                if (auditLogApi) {
                     this.loadLog();
                 }
             },
@@ -706,8 +796,12 @@
              * @private
              */
             _onLogError: function(event) {
-                this._message = 'We couldn\'t load log at the moment. Please try again in a minute. If error continues contact us.';
+                this._message = 'We could not load log at the moment. Please contact AppsCo support.';
+                this._totalLogItems = 0;
                 this._handleEmptyLog();
+                this._hideProgressBar();
+                this._hideLoadMoreProgressBar();
+                this._setLoadMoreAction();
             },
 
             /**
@@ -719,25 +813,29 @@
             _onLogResponse: function(event) {
                 var response = event.detail.response;
 
-                this.set('_logList', []);
-                this.set('_wholeLogList', []);
                 this.set('_message', '');
 
-                if (response) {
+                if (response.logs) {
 
-                    if (response.length > 0) {
+                    var logs = response.logs,
+                        length = logs.length;
+                    if (length > 0) {
 
-                        response.forEach(function(log, i) {
-                            var record = this._formatLogItem(response[i]);
+                        this._logEmpty = false;
+
+                        logs.forEach(function(log, i) {
+                            var record = this._formatLogItem(logs[i]);
 
                             var pushItem = setTimeout(function() {
 
                                 this.push('_logList', record);
                                 this.push('_wholeLogList', record);
 
-                                if (i === (response.length - 1)) {
+                                if (i === (length - 1)) {
                                     this.fire('loaded');
                                     this._hideProgressBar();
+                                    this._hideLoadMoreProgressBar();
+                                    this._setLoadMoreAction();
                                     this._itemPushList = [];
                                 }
 
@@ -751,11 +849,16 @@
                         this._message = 'There are no asked log records.';
                         this._handleEmptyLog();
                     }
+
+                    this._totalLogItems = response.meta.total;
+                    this._nextPageAuditLogApi = response.meta.next;
                 }
             },
 
             _handleEmptyLog: function() {
+                this._logEmpty = true;
                 this._hideProgressBar();
+                this._hideLoadMoreProgressBar();
                 this.fire('empty-load');
             },
 
@@ -771,6 +874,12 @@
 
             },
 
+            _onLoadMoreAction: function() {
+                this._showLoadMoreProgressBar();
+                this.$.ironAjaxLog.url = this._nextPageAuditLogApi;
+                this.$.ironAjaxLog.generateRequest();
+            },
+
             loadLog: function() {
                 var itemPushList = this._itemPushList;
 
@@ -780,6 +889,10 @@
                     }
                 }
 
+                this.set('_logList', []);
+                this.set('_wholeLogList', []);
+
+                this.$.ironAjaxLog.url = this._auditLogApi;
                 this.$.ironAjaxLog.generateRequest();
             },
 

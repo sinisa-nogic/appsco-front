@@ -227,6 +227,13 @@ Custom property | Description | Default
                     observer: '_handleClaimsForm'
                 },
 
+                _samlAuthTypes: {
+                    type: Array,
+                    value : function () {
+                        return ['saml', 'saml_office_365', 'saml_dropbox']
+                    }
+                },
+
                 _unPwAuth: {
                     type: Boolean,
                     computed: "_computeAuthType(application, 'unpw')"
@@ -257,7 +264,7 @@ Custom property | Description | Default
                 },
                 _samlAuth: {
                     type: Boolean,
-                    computed: "_computeAuthType(application, 'saml')"
+                    computed: "_computeAuthType(application, _samlAuthTypes)"
                 },
 
                 /**
@@ -377,8 +384,19 @@ Custom property | Description | Default
                 return true; //(application.auth_type === 'item' || application.auth_type === 'unpw');
             },
 
+            /**
+             * Computes auth type of application
+             *
+             * @param {Object} application
+             * @param {Array | String} authType
+             * @private
+             */
             _computeAuthType: function(application, authType) {
-                return application.auth_type === authType;
+                if (authType instanceof Array) {
+                    return (authType.indexOf(application.auth_type) !== -1);
+                } else {
+                    return application.auth_type === authType;
+                }
             },
 
             /**

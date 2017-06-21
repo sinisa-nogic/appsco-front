@@ -1,0 +1,173 @@
+<link rel="import" href="../../../bower_components/polymer/polymer.html">
+
+<link rel="import" href="../../../bower_components/paper-styles/typography.html">
+<link rel="import" href="../../../bower_components/iron-flex-layout/iron-flex-layout.html">
+<link rel="import" href="../../../bower_components/paper-button/paper-button.html">
+<link rel="import" href="../../../bower_components/paper-icon-button/paper-icon-button.html">
+
+<dom-module id="appsco-application-details-idp">
+    <template>
+        <style>
+            :host div[label] {
+                color: var(--secondary-text-color);
+                @apply(--paper-font-body1);
+                @apply(--application-details-label);
+            }
+
+            :host div[content] {
+                color: var(--primary-text-color);
+                @apply(--layout-horizontal);
+                @apply(--layout-center);
+                @apply(--paper-font-subhead);
+                @apply(--application-details-value);
+            }
+
+            :host .flex {
+                @apply(--layout-flex);
+                @apply(--paper-font-common-nowrap);
+            }
+
+            :host > div {
+                margin: 6px 0;
+            }
+            :host .download-action {
+                margin: 0px;
+            }
+        </style>
+
+        <template is="dom-if" if="[[ idpMetadata.signInUrl ]]">
+            <div label>Sign in URL</div>
+            <div content>
+                <div class="flex">
+                    [[ idpMetadata.signInUrl ]]
+                </div>
+                <div>
+                    <appsco-copy value="[[ idpMetadata.signInUrl ]]" name="signInUrl"></appsco-copy>
+                </div>
+            </div>
+        </template>
+
+        <template is="dom-if" if="[[ idpMetadata.signOutUrl ]]">
+            <div label>Sign out URL</div>
+            <div content>
+                <div class="flex">
+                    [[ idpMetadata.signOutUrl ]]
+                </div>
+                <div>
+                    <appsco-copy value="[[ idpMetadata.signOutUrl ]]" name="signOutUrl"></appsco-copy>
+                </div>
+            </div>
+        </template>
+
+        <template is="dom-if" if="[[ idpMetadata.errorUrl ]]">
+            <div label>Error URL</div>
+            <div content>
+                <div class="flex">
+                    [[ idpMetadata.errorUrl ]]
+                </div>
+                <div>
+                    <appsco-copy value="[[ idpMetadata.errorUrl ]]" name="errorUrl"></appsco-copy>
+                </div>
+            </div>
+        </template>
+
+        <!-- Missing reset pass url in response -->
+        <template is="dom-if" if="[[ idpMetadata.resetPasswordUrl ]]">
+            <div label>Reset password URL</div>
+            <div content>
+                <div class="flex">
+                    [[ idpMetadata.resetPasswordUrl ]]
+                </div>
+                <div>
+                    <appsco-copy value="[[ idpMetadata.resetPasswordUrl ]]" name="resetPasswordUrl"></appsco-copy>
+                </div>
+            </div>
+        </template>
+
+        <template is="dom-if" if="[[ idpMetadata.entityId ]]">
+            <div label>Entity ID</div>
+            <div content>
+                <div class="flex">
+                    [[ idpMetadata.entityId ]]
+                </div>
+                <div>
+                    <appsco-copy value="[[ idpMetadata.entityId ]]" name="entityId"></appsco-copy>
+                </div>
+            </div>
+        </template>
+
+        <template is="dom-if" if="[[ idpMetadata.cert ]]">
+            <div label>Certificate download</div>
+            <div content>
+                <div class="flex">
+                    Certificate
+                </div>
+                <div>
+                    <paper-icon-button class="download-action" icon="icons:file-download" on-tap="_onDownloadCertificate">
+                    </paper-icon-button>
+                </div>
+            </div>
+        </template>
+
+        <template is="dom-if" if="[[ idpMetadata.metadataUrl ]]">
+            <div label>IdP Metadata</div>
+            <div content>
+                <div class="flex">
+                    IdP metadata download
+                </div>
+                <div>
+                    <paper-icon-button class="download-action" icon="icons:file-download" on-tap="_onDownloadMetadataXml">
+                    </paper-icon-button>
+                </div>
+            </div>
+        </template>
+
+    </template>
+
+    <script>
+        Polymer({
+
+            is: 'appsco-application-details-idp',
+
+            properties: {
+
+                idpMetadata: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    },
+                    notify: true
+                }
+            },
+
+            _onDownloadCertificate: function(event) {
+                event.stopPropagation();
+                var link = document.createElement('a');
+                var blob = new Blob([this.idpMetadata.cert.cert], {'type':'application/x-pem-file'});
+                link.href = window.URL.createObjectURL(blob);
+                link.download = 'certificate.pem';
+                link.click();
+            },
+
+            /**
+             * "download" parameter only works with relative links, so to make it work
+             * url for XML received from server is stripped from origin if it is
+             * the same origin client app is running on. If it is not - original link is
+             * used in which case filename cannot be hinted.
+             *
+             * @param event
+             * @private
+             */
+            _onDownloadMetadataXml: function(event) {
+                event.stopPropagation();
+                var link = document.createElement("a");
+                link.href = this.idpMetadata.metadataUrl;
+                if (window.location.origin == link.origin) {
+                    link.href = link.pathname;
+                }
+                link.download = 'IdP-Metadata.xml';
+                link.click();
+            }
+        });
+    </script>
+</dom-module>

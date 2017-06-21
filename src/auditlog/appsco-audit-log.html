@@ -336,6 +336,11 @@
                     value: function() {
                         return [];
                     }
+                },
+
+                _filterTerm: {
+                    type: String,
+                    value: ''
                 }
             },
 
@@ -368,12 +373,16 @@
             _setLoadMoreAction: function() {
                 this._loadMore = (this.loadMore && (this._wholeLogList.length < this._totalLogItems));
             },
+            
+            _hideLoadMoreAction: function() {
+                this._loadMore = false;
+            },
 
             _showLoadMoreProgressBar: function() {
                 this.$$('#loadMoreProgress').hidden = false;
             },
 
-            _hideLoadMoreProgressBar: function() {
+            _hideLoadMoreActionProgressBar: function() {
 
                 setTimeout(function() {
                     this.$$('#loadMoreProgress').hidden = true;
@@ -800,7 +809,7 @@
                 this._totalLogItems = 0;
                 this._handleEmptyLog();
                 this._hideProgressBar();
-                this._hideLoadMoreProgressBar();
+                this._hideLoadMoreActionProgressBar();
                 this._setLoadMoreAction();
             },
 
@@ -816,12 +825,12 @@
                 this.set('_message', '');
 
                 if (response.logs) {
-
                     var logs = response.logs,
                         length = logs.length;
+
                     if (length > 0) {
 
-                        this._logEmpty = false;
+                        this._logEmpty = !!this._filterTerm;
 
                         logs.forEach(function(log, i) {
                             var record = this._formatLogItem(logs[i]);
@@ -834,9 +843,15 @@
                                 if (i === (length - 1)) {
                                     this.fire('loaded');
                                     this._hideProgressBar();
-                                    this._hideLoadMoreProgressBar();
+                                    this._hideLoadMoreActionProgressBar();
                                     this._setLoadMoreAction();
                                     this._itemPushList = [];
+
+                                    this._logEmpty = false;
+
+                                    if (this._filterTerm) {
+                                        this.filterLogByTerm(this._filterTerm);
+                                    }
                                 }
 
                             }.bind(this), (i + 1) * 30);
@@ -858,7 +873,7 @@
             _handleEmptyLog: function() {
                 this._logEmpty = true;
                 this._hideProgressBar();
-                this._hideLoadMoreProgressBar();
+                this._hideLoadMoreActionProgressBar();
                 this.fire('empty-load');
             },
 
@@ -905,6 +920,7 @@
                 var body = '';
 
                 this._showProgressBar();
+                this._hideLoadMoreAction();
 
                 if (filterEventType) {
                     body += body == '' ? '' : '&';
@@ -928,11 +944,16 @@
             filterLogByTerm: function(term) {
                 var length = this._wholeLogList.length;
 
+                this._filterTerm = term;
+
                 this._showProgressBar();
+                this._hideLoadMoreAction();
+                this._logEmpty = false;
                 this._message = '';
 
                 if (0 === length) {
                     this._hideProgressBar();
+                    this._logEmpty = true;
                     this._message = 'There are no logs to search.';
                     this.fire('filter-done');
                     return false;
@@ -941,8 +962,8 @@
                 if (0 === term.length) {
                     this.set('_logList', JSON.parse(JSON.stringify(this._wholeLogList)));
                     this._hideProgressBar();
+                    this._setLoadMoreAction();
                     this.fire('filter-done');
-
                     return false;
                 }
 
@@ -958,7 +979,8 @@
 
                     if (index === length - 1) {
 
-                        if (this._logList.length === 0) {
+                        if (0 === this._logList.length) {
+                            this._logEmpty = true;
                             this._message = 'There are no logs with asked term.';
                         }
 

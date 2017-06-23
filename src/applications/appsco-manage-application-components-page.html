@@ -198,17 +198,19 @@
             </paper-card>
         </div>
 
-        <div class="details-idp">
-            <paper-card heading="Appsco IdP information" class="appsco-application-idp-info">
-                <div class="card-content">
-                    <appsco-application-details-idp
-                            idp-metadata-xml-url="[[ companyIdpSamlMetadataXmlUrl ]]"
-                            idp-metadata="[[ _idpMetadata ]]"
-                    >
-                    </appsco-application-details-idp>
-                </div>
-            </paper-card>
-        </div>
+        <template is="dom-if" if="[[ _isSAMLApp ]]">
+            <div class="details-idp">
+                <paper-card heading="Appsco IdP information" class="appsco-application-idp-info">
+                    <div class="card-content">
+                        <appsco-application-details-idp
+                                idp-metadata-xml-url="[[ companyIdpSamlMetadataXmlUrl ]]"
+                                idp-metadata="[[ _idpMetadata ]]"
+                        >
+                        </appsco-application-details-idp>
+                    </div>
+                </paper-card>
+            </div>
+        </template>
 
         <div class="security-sharing">
             <paper-card heading="Security" class="appsco-application-security">
@@ -240,10 +242,6 @@
         Polymer({
 
             is: 'appsco-manage-application-components-page',
-
-            _onCompanyIdpSamlMetadataReponse: function(event) {
-                this._idpMetadata = event.detail.response;
-            },
 
             properties: {
 
@@ -292,6 +290,11 @@
                     value: ''
                 },
 
+                _isSAMLApp: {
+                    type: Boolean,
+                    computed: "_computeIsSAMLApp(application)"
+                },
+
                 /**
                  * Animation config with hero animation.
                  */
@@ -322,6 +325,10 @@
                         }
                     }
                 }
+            },
+
+            test: function(event) {
+                console.log("----soko---" + this._isSAMLApp);
             },
 
             behaviors: [
@@ -375,6 +382,21 @@
             _onAllLog: function(event) {
                 this._setSharedElement(event.target);
                 this.fire('all-log');
+            },
+
+            _onCompanyIdpSamlMetadataReponse: function(event) {
+                this._idpMetadata = event.detail.response;
+            },
+
+            /**
+             * Computes isSAMLApp value
+             *
+             * @param {Object} application
+             * @returns {boolean}
+             * @private
+             */
+            _computeIsSAMLApp: function(application) {
+                    return ['saml', 'saml_dropbox', 'saml_office_365'].indexOf(application.auth_type) !== -1;
             },
 
             reloadAssignees: function() {

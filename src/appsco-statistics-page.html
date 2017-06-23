@@ -793,17 +793,10 @@
                     dataUsers = ['User', 'Overall score', 'Number of configured resources'];
 
                 if (null == response || (response && !response.length)) {
-                    this._userSecurityMessage = 'Resources which are shared to users are not configured. Please configure some yourself or invite users to configure it.';
+                    this._userSecurityMessage = 'There is no users in company!';
 
                     setTimeout(function() {
-                        var exampleChart = this.$$('#userSecurityChartExample');
-
-                        exampleChart.options = chartOptions;
-                        exampleChart.data = [
-                            dataUsers,
-                            ['John Doe', 56, 12],
-                            ['Jane Jonson', 93, 6]
-                        ];
+                        this._showExampleUserSecurityChart(chartOptions, dataUsers);
                     }.bind(this), 1000);
 
                     this._hideLoader('_userSecurityChartLoader');
@@ -812,7 +805,8 @@
 
                 if (response && response.length > 0) {
                     var length = response.length,
-                        scoresExist = false;
+                        scoresExist = false,
+                        isScoreGreaterThanZero = false;
 
                     this._userSecurityMessage = '';
                     chart.options = chartOptions;
@@ -833,6 +827,7 @@
                             }
 
                             if (0 != score && chart.data.length < 11) {
+                                isScoreGreaterThanZero = true;
                                 data.push(record.user.name, (scoresLength > 0) ? (score / scoresLength) : 0, scoresLength);
                                 chart.data.push(data);
                             }
@@ -840,23 +835,43 @@
                     }
 
                     if (!scoresExist) {
-                        this._userSecurityMessage = 'No resources have been assigned to users. Please assign some resources to users.';
+                        this._userSecurityMessage = 'No resources have been assigned to users or resources are not configured. Please assign some resources to users and configure them or invite users to configure them.';
 
                         setTimeout(function() {
-                            var exampleChart = this.$$('#userSecurityChartExample');
+                            this._showExampleUserSecurityChart(chartOptions, dataUsers);
+                        }.bind(this), 1000);
 
-                            exampleChart.options = chartOptions;
-                            exampleChart.data = [
-                                dataUsers,
-                                ['John Doe', 56, 12],
-                                ['Jane Jonson', 93, 6]
-                            ];
+                        this._hideLoader('_userSecurityChartLoader');
+                        return false;
+                    } else if (!isScoreGreaterThanZero) {
+                        this._userSecurityMessage = 'There is no resources with security score greater than zero.';
+
+                        setTimeout(function() {
+                            this._showExampleUserSecurityChart(chartOptions, dataUsers);
                         }.bind(this), 1000);
 
                         this._hideLoader('_userSecurityChartLoader');
                         return false;
                     }
                 }
+            },
+
+            /**
+             * Shows default user security chart in case there is no resources or resources are not configured
+             *
+             * @param {Object} chartOptions
+             * @param {Array} dataUsers
+             * @private
+             */
+            _showExampleUserSecurityChart(chartOptions, dataUsers) {
+                var exampleChart = this.$$('#userSecurityChartExample');
+
+                exampleChart.options = chartOptions;
+                exampleChart.data = [
+                    dataUsers,
+                    ['John Doe', 56, 12],
+                    ['Jane Jonson', 93, 6]
+                ];
             },
 
             _handleUserPasswordsScoresError: function(event) {

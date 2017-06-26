@@ -1,5 +1,4 @@
 <link rel="import" href="../../bower_components/polymer/polymer.html">
-<link rel="import" href="../../bower_components/iron-flex-layout/iron-flex-layout.html">
 <link rel="import" href="../../bower_components/neon-animation/neon-shared-element-animatable-behavior.html">
 <link rel="import" href="../../bower_components/neon-animation/animations/hero-animation.html">
 <link rel="import" href="../../bower_components/neon-animation/animations/fade-in-animation.html">
@@ -7,9 +6,9 @@
 <link rel="import" href="../../bower_components/paper-card/paper-card.html">
 <link rel="import" href="../../bower_components/paper-icon-button/paper-icon-button.html">
 
-<link rel="import" href="../components/application/appsco-application-sharing-settings.html">
+<link rel="import" href="../components/application/company/appsco-company-resource-settings.html">
 
-<dom-module id="appsco-application-sharing-settings-page">
+<dom-module id="appsco-company-resource-settings-page">
     <template>
         <style include="webkit-scrollbar-style">
             :host {
@@ -25,28 +24,20 @@
             .page-close-action {
                 @apply(--page-close-action);
             }
-            appsco-application-sharing-settings {
-                --paper-button: {
-                     padding: 4px 8px;
-                    background-color: var(--app-primary-color);
-                    color: #ffffff;
-                 };
-            }
         </style>
 
-        <paper-card heading="Sharing settings" id="card">
+        <paper-card heading="Settings" id="card">
             <paper-icon-button
                     icon="close"
                     title="Close"
                     class="page-close-action"
-                    on-tap="_back"></paper-icon-button>
+                    on-tap="_onClosePageAction"></paper-icon-button>
 
             <div class="card-content layout vertical">
-                <appsco-application-sharing-settings
-                        id="appscoApplicationSettings"
-                        application="{{ application }}"
-                        authorization-token="[[ authorizationToken ]]"
-                ></appsco-application-sharing-settings>
+                <appsco-company-resource-settings id="appscoResourceSettings"
+                                                     resource="{{ resource }}"
+                                                     authorization-token="[[ authorizationToken ]]"
+                                                     api-errors="[[ apiErrors ]]"></appsco-company-resource-settings>
             </div>
         </paper-card>
 
@@ -55,21 +46,28 @@
     <script>
         Polymer({
 
-            is: 'appsco-application-sharing-settings-page',
+            is: 'appsco-company-resource-settings-page',
 
             properties: {
 
-                /**
-                 * Selected application from search list.
-                 */
-                application: {
+                resource: {
                     type: Object,
+                    value: function() {
+                        return {};
+                    },
                     notify: true
                 },
 
                 authorizationToken: {
                     type: String,
                     value: ''
+                },
+
+                apiErrors: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    }
                 },
 
                 /**
@@ -119,16 +117,17 @@
                 Polymer.NeonSharedElementAnimatableBehavior
             ],
 
-            _back: function() {
+            _onClosePageAction: function() {
+                this.resetPage();
                 this.fire('back');
             },
 
             setPage: function() {
-                this.$.appscoApplicationSettings.setUp();
+                this.$.appscoResourceSettings.setup();
             },
 
             resetPage: function() {
-                this.$.appscoApplicationSettings.reset();
+                this.$.appscoResourceSettings.reset();
             }
         });
     </script>

@@ -1,0 +1,614 @@
+<link rel="import" href="../../../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../../../bower_components/paper-input/paper-input.html">
+<link rel="import" href="../../../../bower_components/paper-button/paper-button.html">
+<link rel="import" href="../../../../bower_components/iron-ajax/iron-request.html">
+<link rel="import" href="../../../../bower_components/iron-a11y-keys/iron-a11y-keys.html">
+<link rel="import" href="../../../../bower_components/neon-animation/neon-animation-runner-behavior.html">
+<link rel="import" href="../../../../bower_components/neon-animation/animations/scale-down-animation.html">
+<link rel="import" href="../../../../bower_components/neon-animation/animations/scale-up-animation.html">
+<link rel="import" href="../../../../bower_components/iron-form/iron-form.html">
+<link rel="import" href="../../../../bower_components/paper-toggle-button/paper-toggle-button.html">
+
+<link rel="import" href="../../components/appsco-loader.html">
+<link rel="import" href="../../components/appsco-form-error.html">
+<link rel="import" href="../appsco-application-form-item.html">
+<link rel="import" href="../appsco-application-form-unpw.html">
+<link rel="import" href="../appsco-application-form-cc.html">
+<link rel="import" href="../appsco-application-form-login.html">
+<link rel="import" href="../appsco-application-form-passport.html">
+<link rel="import" href="../appsco-application-form-securenote.html">
+<link rel="import" href="../appsco-application-form-softwarelicence.html">
+<link rel="import" href="../appsco-application-form-saml.html">
+
+<!--
+`appsco-company-resource-settings`
+Used to update company resource - configuration fields and claims.
+
+    <appsco-company-resource-settings resource="{}"
+                                      authorization-token=""></appsco-company-resource-settings>
+-->
+
+<dom-module id="appsco-company-resource-settings">
+    <template>
+        <style>
+            :host {
+                display: block;
+                position: relative;
+            }
+            :host .claims-container {
+                margin-top: 20px;
+            }
+            :host paper-toggle-button {
+                cursor: pointer;
+            }
+            :host .info {
+                margin-top: 10px;
+            }
+            :host p {
+                margin-top: 4px;
+                margin-bottom: 4px;
+            }
+            :host .claims-form {
+                display: none;
+                margin-top: 10px;
+            }
+            :host .save-action {
+                margin: 10px 0 0 0;
+                @apply(--form-action);
+            }
+        </style>
+
+        <appsco-loader active="[[ _loader ]]" loader-alt="Appsco is processing request" multi-color></appsco-loader>
+
+        <appsco-form-error message="[[ _error ]]"></appsco-form-error>
+
+        <div class="configuration-container">
+            <form is="iron-form"
+                  id="saveResourceConfigurationForm"
+                  method="POST"
+                  action="[[ _updateConfigurationAction ]]"
+                  headers="[[ _headers ]]"
+                  on-iron-form-presubmit="_onConfigurationFormPresubmit"
+                  on-iron-form-error="_onConfigurationFormError"
+                  on-iron-form-response="_onConfigurationFormResponse">
+    
+                <paper-input id="title"
+                             label="Title"
+                             name="configure_application[title]"
+                             value="[[ resource.title ]]"
+                             required
+                             auto-validate
+                             error-message="Please enter resource title."></paper-input>
+    
+                <template is="dom-if" if="[[ _configureUrlPermission ]]" >
+                    <paper-input id="url"
+                                 label="Url"
+                                 name="configure_application[url]"
+                                 value="[[ resource.url ]]"
+                                 pattern="https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)"
+                                 required
+                                 auto-validate
+                                 error-message="Please enter a valid url."></paper-input>
+                </template>
+            </form>
+        </div>
+
+        <div class="claims-container">
+            <template is="dom-if" if="[[ _claimTypeSwitchPermission ]]">
+                <paper-toggle-button checked$="[[ _claimTypeIndividual ]]"
+                                     on-change="_onChangeClaimType">Set individually</paper-toggle-button>
+            </template>
+
+            <template is="dom-if" if="[[ _claimTypeIndividual ]]">
+                <div class="info">
+                    <p>Every employee sets its own configuration.</p>
+                    <p>Disable it in order to manage resource configuration for all employees.</p>
+                </div>
+            </template>
+    
+            <form is="iron-form"
+                  id="saveResourceClaimsForm"
+                  class="claims-form"
+                  method="POST"
+                  action="[[ _updateClaimsAction ]]"
+                  headers="[[ _headers ]]"
+                  on-iron-form-presubmit="_onClaimsFormPresubmit"
+                  on-iron-form-error="_onClaimsFormError"
+                  on-iron-form-response="_onClaimsFormResponse"
+                  on-keyup="_onInputKeyUp">
+    
+            </form>
+    
+            <template is="dom-if" if="[[ !_claimTypeIndividual ]]">
+                <template is="dom-if" if="[[ _unPwAuthType ]]"
+                          restamp
+                          on-dom-change="_onAuthTypeChanged">
+                    <appsco-application-form-unpw
+                            data-claims
+                            claims-name-prefix="application_claims[claims]"
+                            claims="[[ resource.claims ]]"
+                    ></appsco-application-form-unpw>
+                </template>
+
+                <template is="dom-if" if="[[ _itemAuthType ]]"
+                          restamp
+                          on-dom-change="_onAuthTypeChanged">
+                    <appsco-application-form-item
+                            data-claims
+                            claims-name-prefix="application_claims[claims]"
+                            claims="[[ resource.claims ]]"
+                    ></appsco-application-form-item>
+                </template>
+
+                <template is="dom-if" if="[[ _creditCardAuthType ]]"
+                          restamp
+                          on-dom-change="_onAuthTypeChanged">
+                    <appsco-application-form-cc
+                            data-claims
+                            claims-name-prefix="application_claims[claims]"
+                            claims="[[ resource.claims ]]"
+                    ></appsco-application-form-cc>
+                </template>
+
+                <template is="dom-if" if="[[ _loginAuthType ]]"
+                          restamp
+                          on-dom-change="_onAuthTypeChanged">
+                    <appsco-application-form-login
+                            data-claims
+                            claims-name-prefix="application_claims[claims]"
+                            claims="[[ resource.claims ]]"
+                    ></appsco-application-form-login>
+                </template>
+
+                <template is="dom-if" if="[[ _passportAuthType ]]"
+                          restamp
+                          on-dom-change="_onAuthTypeChanged">
+                    <appsco-application-form-passport
+                            data-claims
+                            claims-name-prefix="application_claims[claims]"
+                            claims="[[ resource.claims ]]"
+                    ></appsco-application-form-passport>
+                </template>
+
+                <template is="dom-if" if="[[ _secureNoteAuthType ]]"
+                          restamp
+                          on-dom-change="_onAuthTypeChanged">
+                    <appsco-application-form-securenote
+                            data-claims
+                            claims-name-prefix="application_claims[claims]"
+                            claims="[[ resource.claims ]]"
+                    ></appsco-application-form-securenote>
+                </template>
+
+                <template is="dom-if" if="[[ _softwareLicenceAuthType ]]"
+                          restamp
+                          on-dom-change="_onAuthTypeChanged">
+                    <appsco-application-form-softwarelicence
+                            data-claims
+                            claims-name-prefix="application_claims[claims]"
+                            claims="[[ resource.claims ]]"
+                    ></appsco-application-form-softwarelicence>
+                </template>
+
+                <template is="dom-if" if="[[ _samlAuthType ]]"
+                          restamp
+                          on-dom-change="_onAuthTypeChanged">
+                    <appsco-application-form-saml
+                            data-claims
+                            claims-name-prefix="application_claims[claims]"
+                            claims="[[ resource.claims ]]"
+                    ></appsco-application-form-saml>
+                </template>
+    
+            </template>
+        </div>
+
+        <paper-button class="save-action"
+                      on-tap="_onSaveAction">Save</paper-button>
+
+        <iron-a11y-keys target="[[ _resourceConfigurationForm ]]"
+                        keys="enter"></iron-a11y-keys>
+
+    </template>
+
+    <script>
+        Polymer({
+
+            is: 'appsco-company-resource-settings',
+
+            properties: {
+
+                resource: {
+                    type: Object,
+                    value: function() { 
+                        return {}; 
+                    }
+                },
+
+                authorizationToken: {
+                    type: String,
+                    value: ''
+                },
+
+                apiErrors: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    }
+                },
+
+                _headers: {
+                    type: String,
+                    computed: '_computeHeaders(authorizationToken)'
+                },
+
+                _updateConfigurationAction: {
+                    type: String,
+                    computed: '_computeUpdateConfigurationAction(resource)'
+                },
+
+                _updateClaimsAction: {
+                    type: String,
+                    computed: '_computeUpdateClaimsAction(resource)'
+                },
+
+                _loader: {
+                    type: Boolean,
+                    value: false
+                },
+
+                _error: {
+                    type: String
+                },
+
+                _resourceConfigurationForm: {
+                    type: Object,
+                    value: function() {
+                        return this.$.saveResourceConfigurationForm
+                    }
+                },
+
+                _resourceClaimsForm: {
+                    type: Object,
+                    value: function() {
+                        return this.$.saveResourceClaimsForm
+                    }
+                },
+
+                _resourceClaimsActiveForm: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    }
+                },
+
+                _claimTypeSwitchPermission: {
+                    type: Boolean,
+                    computed: '_computeClaimTypeSwitchPermission(resource)'
+                },
+
+                _claimTypeIndividual: {
+                    type: Boolean,
+                    computed: '_computeClaimTypeIndividual(resource)',
+                    observer: '_onClaimTypeChanged'
+                },
+
+                animationConfig: {
+                    value: function() {
+                        return {
+                            'entry': {
+                                name: 'scale-up-animation',
+                                node: this.$.saveResourceClaimsForm,
+                                transformOrigin: '0 0',
+                                axis: 'y',
+                                timing: {
+                                    duration: 200
+                                }
+                            },
+                            'exit': {
+                                name: 'scale-down-animation',
+                                node: this.$.saveResourceClaimsForm,
+                                transformOrigin: '0 0',
+                                axis: 'y',
+                                timing: {
+                                    duration: 100
+                                }
+                            }
+                        }
+                    }
+                },
+
+                _configureUrlPermission: {
+                    type: Boolean,
+                    computed: '_computeConfigureUrlPermission(resource)'
+                },
+
+                _unPwAuthType: {
+                    type: Boolean,
+                    computed: '_computeAuthType(resource, "unpw")'
+                },
+
+                _itemAuthType: {
+                    type: Boolean,
+                    computed: '_computeAuthType(resource, "item")'
+                },
+
+                _creditCardAuthType: {
+                    type: Boolean,
+                    computed: '_computeAuthType(resource, "cc")'
+                },
+
+                _loginAuthType: {
+                    type: Boolean,
+                    computed: '_computeAuthType(resource, "login")'
+                },
+
+                _passportAuthType: {
+                    type: Boolean,
+                    computed: '_computeAuthType(resource, "passport")'
+                },
+
+                _secureNoteAuthType: {
+                    type: Boolean,
+                    computed: '_computeAuthType(resource, "securenote")'
+                },
+
+                _softwareLicenceAuthType: {
+                    type: Boolean,
+                    computed: '_computeAuthType(resource, "softwarelicence")'
+                },
+
+                _samlAuthType: {
+                    type: Boolean,
+                    computed: '_computeAuthType(resource, "saml")'
+                }
+            },
+
+            behaviors: [
+                Polymer.NeonAnimationRunnerBehavior
+            ],
+
+            listeners: {
+                'iron-overlay-closed': '_stopPropagation',
+                'neon-animation-finish': '_onNeonAnimationFinish',
+                'keys-pressed': '_onEnterAction'
+            },
+
+            setup: function() {},
+
+            /**
+             * Resets component.
+             */
+            reset: function() {
+                var resource = JSON.parse(JSON.stringify(this.resource));
+
+                if (this._resourceClaimsActiveForm) {
+                    this._resourceClaimsActiveForm.reset();
+                }
+
+                this._resourceConfigurationForm.reset();
+                this._resourceClaimsForm.reset();
+                this._hideError();
+                this._hideLoader();
+
+                setTimeout(function() {
+                    this.set('resource', {});
+                    this.set('resource', resource);
+                }.bind(this), 10);
+            },
+
+            _stopPropagation: function(event) {
+                event.stopPropagation();
+            },
+
+            _onResourceChanged: function(resource) {
+                this._claimTypeIndividual = (resource.self && ('individual' === resource.claim_type));
+            },
+
+            _onAuthTypeChanged: function(type) {
+
+                if (type) {
+                    this.set('_resourceClaimsActiveForm', Polymer.dom(this.root).querySelector('[data-claims]'));
+                }
+            },
+
+            _computeHeaders: function(authorizationToken) {
+                return {
+                    'Authorization': 'token ' + authorizationToken,
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                };
+            },
+
+            _computeClaimTypeSwitchPermission: function(resource) {
+                return !(resource.self && (resource.auth_type == 'cc'
+                    || resource.auth_type == 'login'
+                    || resource.auth_type == 'passport'
+                    || resource.auth_type == 'securenote'
+                    || resource.auth_type == 'softwarelicence'));
+            },
+
+            _computeClaimTypeIndividual: function (resource) {
+                return resource.self && 'individual' === resource.claim_type;
+            },
+
+            _computeConfigureUrlPermission: function (resource) {
+                return resource.self && resource.url_editable;
+            },
+
+            _computeUpdateConfigurationAction: function(resource) {
+                return resource.self ? resource.self : '';
+            },
+
+            _computeUpdateClaimsAction: function(resource) {
+                return resource.self ? resource.meta.update_claims : '';
+            },
+
+            _computeAuthType: function(resource, authType) {
+                return (resource.auth_type && resource.auth_type === authType);
+            },
+
+            _showLoader: function() {
+                this._loader = true;
+            },
+
+            _hideLoader: function() {
+                this._loader = false;
+            },
+
+            _showError: function(message) {
+                this._error = message;
+            },
+
+            _hideError: function() {
+                this._error = '';
+            },
+
+            _showClaimsForm: function() {
+                this._resourceClaimsForm.style.display = 'block';
+                this.playAnimation('entry');
+            },
+
+            _hideClaimsForm: function() {
+                this._resetClaimsForm();
+                this.playAnimation('exit');
+            },
+
+            _resetClaimsForm: function() {
+                this._resourceClaimsForm.reset();
+            },
+
+            _onClaimTypeChanged: function(individual) {
+                individual ? this._hideClaimsForm() : this._showClaimsForm();
+            },
+
+            _onConfigurationFormPresubmit: function(event) {
+                var form = event.target;
+
+                form.request.method = 'PATCH';
+            },
+
+            _onConfigurationFormError: function(event) {
+                this._showError(this.apiErrors.getError(event.detail.error.code));
+                this._hideLoader();
+            },
+
+            _onConfigurationFormResponse: function(event) {
+
+                if (this._claimTypeIndividual) {
+                    this._resourceSettingsSaved(event.detail.response);
+                }
+                else {
+                    this._submitClaimsForm();
+                }
+            },
+
+            _onChangeClaimType: function() {
+                var request = document.createElement('iron-request'),
+                    options = {
+                        url: this._updateClaimsAction,
+                        method: 'PATCH',
+                        handleAs: 'json',
+                        headers: this._headers,
+                        body: 'application_claims[claim_type]=' + !this._claimTypeIndividual
+                    };
+
+                this._showLoader();
+
+                request.send(options).then(function() {
+
+                    if (200 === request.status) {
+                        var resource = request.response;
+
+                        this.set('resource', resource);
+
+                        this.fire('claim-type-changed', {
+                            application: resource
+                        });
+
+                        this._hideLoader();
+                    }
+
+                }.bind(this), function() {
+                    this._showError(this.apiErrors.getError(request.error.code));
+                }.bind(this));
+            },
+
+            _onClaimsFormPresubmit: function(event) {
+                var form = event.target,
+                    formSettings = this._resourceClaimsActiveForm;
+
+                this._loader = true;
+                form.request.method = 'PATCH';
+
+                form.request.body = formSettings.encodedBodyValues();
+            },
+
+            _onClaimsFormError: function(event) {
+                this._showError(this.apiErrors.getError(event.detail.error.code));
+                this._hideLoader();
+            },
+
+            _onClaimsFormResponse: function(event) {
+                this._resourceSettingsSaved(event.detail.response);
+            },
+
+            _submitConfigurationForm: function() {
+
+                if (this._resourceConfigurationForm.validate()) {
+                    this._showLoader();
+                    this._resourceConfigurationForm.submit();
+                }
+            },
+
+            _submitClaimsForm: function() {
+                var form = this._resourceClaimsActiveForm;
+
+                if (form) {
+                    this._resourceClaimsForm.submit();
+                }
+            },
+
+            _onSaveAction: function() {
+                this._hideError();
+
+                if (this._claimTypeIndividual) {
+                    this._submitConfigurationForm();
+                }
+                else {
+                    var claimsForm = this._resourceClaimsActiveForm,
+                        claimsFormValid = claimsForm.isValid();
+
+                    if (claimsFormValid) {
+                        this._submitConfigurationForm();
+                    }
+                }
+
+            },
+
+            _onEnterAction: function() {
+                this._onSaveAction();
+            },
+
+            _resourceSettingsSaved: function(resource) {
+
+                if (resource && resource.self) {
+                    this.set('resource', resource);
+
+                    this.fire('application-settings-saved', {
+                        application: resource
+                    });
+                }
+
+                this._hideLoader();
+            },
+
+            _onNeonAnimationFinish: function() {
+
+                if (this._claimTypeIndividual) {
+                    this._resourceClaimsForm.style.display = 'none';
+                }
+
+            }
+        });
+    </script>
+</dom-module>

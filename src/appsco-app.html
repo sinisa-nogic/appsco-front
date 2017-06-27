@@ -376,56 +376,54 @@
 
              <!--Drawer content -->
             <app-drawer id="appDrawer">
-                <iron-selector selected="[[page]]" attr-for-selected="name" class="drawer-list" role="navigation">
+                <iron-selector selected="[[ page ]]"
+                               attr-for-selected="name"
+                               class="drawer-list"
+                               role="navigation"
+                               on-iron-select="_onMenuItemSelected">
                     <template is="dom-if" if="[[ !_companyPage ]]">
-                        <a name="home" href="/home">
+                        <a name="home" href="#">
                             <iron-icon icon="icons:home"></iron-icon> <span class="menu-text">Home</span>
                         </a>
-                        <a name="vault" href="/vault">
+                        <a name="vault" href="#">
                             <iron-icon icon="icons:work"></iron-icon> <span class="menu-text">Vault</span>
                         </a>
-                        <div purchase name="trybusiness" href="/trybusiness">
-                            <div>
-                                Manage your business applications, employees and get meaningful insights.
-                            </div>
-                            <a href="/trybusiness" name="trybusiness">
-                                <paper-button>
-                                    Try Appsco Business
-                                </paper-button>
-                            </a>
+                        <div purchase>
+                            <div>Manage your business applications, employees and get meaningful insights.</div>
+                            <paper-button on-tap="_showTryBusinessPage">
+                                Try Appsco Business
+                            </paper-button>
                         </div>
                     </template>
 
                     <template is="dom-if" if="[[ _companyPage ]]">
                         <template is="dom-if" if="[[ _companyUser ]]">
-                            <a name="company-home" href="/company-home">
+                            <a name="company-home" href="#">
                                 <iron-icon icon="icons:apps"></iron-icon> <span class="menu-text">Dashboard</span>
                             </a>
                             <template is="dom-if" if="[[ _companyAdmin ]]">
-                                <a name="resources" href="/resources">
+                                <a name="resources" href="#">
                                     <iron-icon icon="icons:list"></iron-icon> <span class="menu-text">Resources</span>
                                 </a>
-                                <a name="directory" href="/directory">
+                                <a name="directory" href="#">
                                     <iron-icon icon="icons:supervisor-account"></iron-icon> <span class="menu-text">Directory</span>
-                                    <!--icons:folder-shared-->
                                 </a>
-                                <a name="contacts" href="/contacts">
+                                <a name="contacts" href="#">
                                     <iron-icon icon="icons:perm-contact-calendar"></iron-icon> <span class="menu-text">Contacts</span>
-                                    <!--icons:folder-shared-->
                                 </a>
-                                <a name="provisioning" href="/provisioning" >
+                                <a name="provisioning" href="#">
                                     <iron-icon icon="icons:compare-arrows"></iron-icon> <span class="menu-text">Provisioning</span>
                                 </a>
-                                <a name="audit-log" href="/audit-log">
+                                <a name="audit-log" href="#">
                                     <iron-icon icon="icons:reorder"></iron-icon> <span class="menu-text">Audit</span>
                                 </a>
-                                <a name="statistics" href="/statistics" >
+                                <a name="statistics" href="#">
                                     <iron-icon icon="icons:donut-large"></iron-icon> <span class="menu-text">Statistics</span>
                                 </a>
-                                <a name="billing" href="/billing">
+                                <a name="billing" href="#">
                                     <iron-icon icon="icons:payment"></iron-icon> <span class="menu-text">Billing</span>
                                 </a>
-                                <a name="company" href="/company">
+                                <a name="company" href="#">
                                     <iron-icon icon="icons:settings"></iron-icon> <span class="menu-text">Settings</span>
                                 </a>
                             </template>
@@ -1674,44 +1672,60 @@
 
             },
 
+            _onMenuItemSelected: function(event) {
+                this._showPage(event.detail.item.name);
+            },
+            
+            _showPage: function(name) {
+                this.set('routeData.page', name);
+            },
+            
+            _showManagePage: function(path) {
+                this.set('route.path', this._prefixPath + '/' + path);
+            },
+
             _showHomePage: function() {
-                this.set('routeData.page', 'home');
+                this._showPage('home');
             },
 
             _showVaultPage: function() {
-                this.set('routeData.page', 'vault');
+                this._showPage('vault');
             },
 
             _showAccountPage: function() {
-                this.set('routeData.page', 'account');
+                this._showPage('account');
+            },
+
+            _showTryBusinessPage: function() {
+                this._showPage('trybusiness');
             },
 
             _showCompanyHomePage: function() {
-                this.set('routeData.page', 'company-home');
+                this._showPage('company-home');
             },
 
             _showCompanyPage: function() {
-                this.set('routeData.page', 'company');
+                this._showPage('company');
             },
 
             _showCompanyResourcesPage: function() {
-                this.set('routeData.page', 'resources');
+                this._showPage('resources');
             },
 
             _showCompanyDirectoryPage: function() {
-                this.set('routeData.page', 'directory');
+                this._showPage('directory');
             },
 
             _showContactsPage: function() {
-                this.set('routeData.page', 'contacts');
+                this._showPage('contacts');
             },
 
             _showCompanyProvisioningPage: function() {
-                this.set('routeData.page', 'provisioning');
+                this._showPage('provisioning');
             },
 
             _showLogoutPage: function() {
-                this.set('routeData.page', 'logout');
+                this._showPage('logout');
             },
 
             _showPage404: function() {
@@ -2084,7 +2098,7 @@
             },
 
             _onEditApplication: function() {
-                this.set('route.path', 'resource/' + this.application.alias);
+                this._showManagePage('resource/' + this.application.alias);
             },
 
             _onInfoEditApplication: function() {
@@ -2515,7 +2529,7 @@
             },
 
             _onEditCompanyApplication: function() {
-                this.set('route.path', 'manage-resource/' + this._companyApplication.alias);
+                this._showManagePage('manage-resource/' + this._companyApplication.alias);
             },
 
             _onInfoEditCompanyApplication: function() {
@@ -3159,11 +3173,10 @@
             },
 
             _onEditAccount: function(event) {
-                var role = event.detail.role,
-                    routePath = 'manage-account/' + role.alias;
+                var role = event.detail.role;
 
                 this.set('_role', role);
-                this.set('route.path', routePath);
+                this._showManagePage('manage-account/' + role.alias);
             },
 
             _onResourceActionManageAccountPage: function() {
@@ -3340,14 +3353,13 @@
              * Manage Contact page START
              */
             _onEditContactAction: function(event) {
-                var contact = event.detail.contact,
-                    routePath = 'manage-contact/' + contact.alias;
+                var contact = event.detail.contact;
 
                 if (this.$.appscoManageContactPage.$) {
                     this.$.appscoManageContactPage.setContact(contact);
                 }
 
-                this.set('route.path', routePath);
+                this._showManagePage('manage-contact/' + contact.alias);
             },
 
             _onResetPageActions: function() {

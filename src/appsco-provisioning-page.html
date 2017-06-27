@@ -1,22 +1,13 @@
 <link rel="import" href="../bower_components/polymer/polymer.html">
-<link rel="import" href="../bower_components/paper-icon-button/paper-icon-button.html">
-<link rel="import" href="../bower_components/paper-checkbox/paper-checkbox.html">
-<link rel="import" href="../bower_components/iron-icons/iron-icons.html">
-<link rel="import" href="../bower_components/paper-material/paper-material.html">
-<link rel="import" href="../bower_components/iron-media-query/iron-media-query.html">
 <link rel="import" href="../bower_components/iron-ajax/iron-ajax.html">
-<link rel="import" href="../bower_components/iron-icon/iron-icon.html">
-<link rel="import" href="../bower_components/iron-image/iron-image.html">
-<link rel="import" href="../bower_components/paper-styles/shadow.html">
 <link rel="import" href="../bower_components/neon-animation/neon-animated-pages.html">
 <link rel="import" href="../bower_components/neon-animation/animations/fade-in-animation.html">
 <link rel="import" href="../bower_components/neon-animation/animations/fade-out-animation.html">
+<link rel="import" href="../bower_components/iron-media-query/iron-media-query.html">
 
 <link rel="import" href="shared-styles.html">
-
 <link rel="import" href="components/page/appsco-content.html">
 <link rel="import" href="components/components/appsco-loader.html">
-
 <link rel="import" href="provisioning/available-integration-item.html">
 <link rel="import" href="provisioning/active-integration-item.html">
 
@@ -25,14 +16,12 @@
         <style include="webkit-scrollbar-style">
             :host {
                 display: block;
-                color: #000;
+                color: var(--primary-text-color);
                 font-size: 14px;
 
                 --appsco-content-sections: {
                     padding: 0;
                 };
-
-                --info-width: 300px;
             }
             .progress-container {
                 height: 2px;
@@ -76,13 +65,6 @@
                 padding: 10px;
                 color: var(--primary-text-color);
             }
-            :host div[info] {
-                height: 100%;
-            }
-            :host div[info] > * {
-                padding: 10px;
-                box-sizing: border-box;
-            }
             :host .flex-horizontal {
                 @apply(--layout-horizontal);
                 @apply(--layout-center);
@@ -93,62 +75,33 @@
             :host .flex-center {
                 @apply(--layout-center);
             }
-            :host .flex {
-                @apply(--layout-flex);
-            }
-            :host .info-header {
-                background-color: var(--app-primary-color);
-                padding: 10px 0 5px 10px;
-            }
-            :host .info-content-container {
-                height: calc(100% - 64px - 38px - 40px);
-                position: relative;
-            }
-            :host .info-content {
-                padding: 10px;
-                overflow: auto;
-                position: absolute;
-                top: 0;
-                right: 0;
-                bottom: 0;
-                left: 0;
-            }
-            :host div[info] .info-actions {
-                padding: 0;
-                position: absolute;
-                bottom: 0;
-                left: 0;
-                right: 0;
-            }
-            :host([tablet-screen]) {
-                --info-width: 100%;
-            }
             :host .pt-40{
                 padding-top:40px;
             }
             .image {
                 max-width: 100%;
             }
+            .info {
+                @apply(--info-message);
+            }
         </style>
 
         <iron-ajax
                 auto
-                url="[[ companyApi ]]/integrations/available"
+                url="[[ _availableIntegrationsApi ]]"
                 handle-as="json"
-                headers="[[ _computedHeaders ]]"
+                headers="[[ _headers ]]"
                 on-response="_handleAvailableIntegrationsResponse"
         ></iron-ajax>
 
         <iron-ajax
                 auto
-                url="[[ companyApi ]]/integrations/active"
+                url="[[ _activeIntegrationsApi ]]"
                 handle-as="json"
-                headers="[[ _computedHeaders ]]"
+                headers="[[ _headers ]]"
                 on-response="_handleActiveIntegrationsResponse"
         ></iron-ajax>
 
-        <iron-media-query query="(max-width: 1200px)" query-matches="{{ mediumScreen }}"></iron-media-query>
-        <iron-media-query query="(max-width: 800px)" query-matches="{{ tabletScreen }}"></iron-media-query>
         <iron-media-query query="(max-width: 600px)" query-matches="{{ mobileScreen }}"></iron-media-query>
 
         <appsco-content id="appscoContent" resource-active>
@@ -168,6 +121,10 @@
                     <div class="integrations">
                         <template is="dom-repeat" items="[[ _availableIntegrations ]]" >
                             <available-integration-item item="[[ item ]]"></available-integration-item>
+                        </template>
+
+                        <template is="dom-if" if="[[ _noAvailableIntegrations ]]">
+                            <p class="info">There are no available integrations.</p>
                         </template>
                     </div>
                 </div>
@@ -221,7 +178,32 @@
             properties: {
 
                 companyApi: {
+                    type: String,
+                    value: '',
+                    observer: '_onCompanyApiChanged'
+                },
+
+                authorizationToken: {
                     type: String
+                },
+
+                /**
+                 * Computed headers.
+                 * It contains authorization token.
+                 */
+                _headers: {
+                    type: Object,
+                    computed: '_computeHeaders(authorizationToken)'
+                },
+
+                _availableIntegrationsApi: {
+                    type: String,
+                    value: ''
+                },
+
+                _activeIntegrationsApi: {
+                    type: String,
+                    value: ''
                 },
 
                 _availableIntegrations: {
@@ -238,6 +220,11 @@
                     }
                 },
 
+                _noAvailableIntegrations: {
+                    type: Boolean,
+                    value: false
+                },
+
                 _noActiveIntegrations: {
                     type: Boolean,
                     value: false
@@ -246,41 +233,6 @@
                 _hasActiveIntegrations: {
                     type: Boolean,
                     value: false
-                },
-
-                authorizationToken: {
-                    type: String
-                },
-
-                /**
-                 * Computed headers.
-                 * It contains authorization token.
-                 */
-                _computedHeaders: {
-                    type: Object,
-                    computed: "_computeHeaders(authorizationToken)"
-                },
-
-                /**
-                 * Indicates if it is medium screen size.
-                 * It uses iron-media-query.
-                 */
-                mediumScreen: {
-                    type: Boolean,
-                    value: false,
-                    reflectToAttribute: true
-                },
-
-                tabletScreen: {
-                    type: Boolean,
-                    value: false,
-                    reflectToAttribute: true
-                },
-
-                mobileScreen: {
-                    type: Boolean,
-                    value: false,
-                    reflectToAttribute: true
                 },
 
                 animationConfig: {
@@ -307,6 +259,12 @@
                 pageLoaded: {
                     type: Boolean,
                     value: false
+                },
+
+                mobileScreen: {
+                    type: Boolean,
+                    value: false,
+                    reflectToAttribute: true
                 }
             },
 
@@ -315,21 +273,21 @@
             ],
 
             observers: [
-                '_updateScreen(mediumScreen, tabletScreen, mobileScreen)'
+                '_updateScreen(mobileScreen)'
             ],
 
             attached: function() {
 
                 this.pageLoaded = false;
 
-                if (this.mobileScreen || this.tabletScreen || this.mediumScreen) {
+                if (this.mobileScreen) {
                     this.updateStyles();
                 }
 
                 this._pageLoaded();
             },
 
-            _updateScreen: function(medium, tablet, mobile) {
+            _updateScreen: function(mobile) {
                 this.updateStyles();
 
                 if (mobile) {
@@ -353,6 +311,18 @@
                 }
             },
 
+            _onCompanyApiChanged: function(companyApi) {
+
+                if (companyApi) {
+                    this._availableIntegrationsApi = companyApi + '/integrations/available';
+                    this._activeIntegrationsApi = companyApi + '/integrations/active';
+                }
+                else {
+                    this._availableIntegrationsApi = '';
+                    this._activeIntegrationsApi = '';
+                }
+            },
+
             _pageLoaded: function() {
                 this.pageLoaded = true;
                 this.fire('page-loaded');
@@ -363,18 +333,31 @@
             },
 
             _handleAvailableIntegrationsResponse: function(event) {
-                if (event.detail.response && event.detail.response.available_integrations) {
-                    var integrations = event.detail.response.available_integrations;
+                var response = event.detail.response;
 
-                    integrations.forEach(function(integration, index) {
-                        setTimeout(function() {
-                            this.push('_availableIntegrations', integration);
-                        }.bind(this), (index + 1) * 30);
+                if (response) {
 
-                        if (index == integrations.length - 1) {
-                            this._hideProgressBar('availableIntegrationsLoader');
-                        }
-                    }.bind(this));
+                    if (response.available_integrations.length > 0) {
+                        var integrations = response.available_integrations;
+
+                        this._noAvailableIntegrations = false;
+
+                        integrations.forEach(function(integration, index) {
+
+                            setTimeout(function() {
+                                this.push('_availableIntegrations', integration);
+                            }.bind(this), (index + 1) * 30);
+
+                            if (index == integrations.length - 1) {
+                                this._hideProgressBar('availableIntegrationsLoader');
+                            }
+                        }.bind(this));
+                    }
+                    else {
+                        this._noAvailableIntegrations = true;
+                        this._hideProgressBar('availableIntegrationsLoader');
+                    }
+
                 }
             },
 

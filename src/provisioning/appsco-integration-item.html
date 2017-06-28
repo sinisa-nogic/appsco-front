@@ -128,14 +128,14 @@ Custom property | Description | Default
 
         <div class="item">
 
-            <template is="dom-if" if="[[ syncAborted ]]">
+            <template is="dom-if" if="[[ item.syncAborted ]]">
                 <iron-icon icon="icons:close" class="sync-aborted-icon"></iron-icon>
             </template>
 
             <template is="dom-if" if="[[ synced ]]">
                 <paper-progress class="items-progress-bar"
                                 indeterminate
-                                hidden$="[[ !removing ]]"></paper-progress>
+                                hidden$="[[ !item.removing ]]"></paper-progress>
 
                 <appsco-integration-account account="[[ item.localAccount.account ]]"></appsco-integration-account>
             </template>
@@ -143,7 +143,7 @@ Custom property | Description | Default
             <template is="dom-if" if="[[ !synced ]]">
                 <paper-progress class="items-progress-bar"
                                 indeterminate
-                                hidden$="[[ !syncing ]]"></paper-progress>
+                                hidden$="[[ !item.syncing ]]"></paper-progress>
 
                 <appsco-integration-account account="[[ item.remoteAccount ]]"
                                             class="dismiss-style"></appsco-integration-account>
@@ -161,10 +161,15 @@ Custom property | Description | Default
                     </template>
                 </div>
                 <div class="actions">
-                    <paper-button class="allow-action" on-tap="_onAllowAction">Allow</paper-button>
-                    <paper-button class="dismiss-action" on-tap="_onDismissAction">Dismiss</paper-button>
+                    <paper-button class="allow-action"
+                                  on-tap="_onAllowAction">Allow</paper-button>
+
+                    <paper-button class="dismiss-action"
+                                  on-tap="_onDismissAction">Dismiss</paper-button>
+
                     <paper-button id="syncAction"
-                                  on-tap="_onSyncAction" disabled$="[[ syncAborted ]]">Sync</paper-button>
+                                  on-tap="_onSyncAction"
+                                  disabled$="[[ item.syncAborted ]]">Sync</paper-button>
                 </div>
             </template>
 
@@ -201,21 +206,6 @@ Custom property | Description | Default
                 synced: {
                     type: Boolean,
                     value: false
-                },
-
-                syncing: {
-                    type: Boolean,
-                    computed: '_computeInSyncState(item.syncing)'
-                },
-
-                syncAborted: {
-                    type: Boolean,
-                    computed: '_computeSyncAbortedState(item.syncAborted)'
-                },
-
-                removing: {
-                    type: Boolean,
-                    computed: '_computeRemovingState(item.removing)'
                 },
 
                 /**
@@ -255,18 +245,6 @@ Custom property | Description | Default
 
             _computeDismissState: function(sync) {
                 return (!this.synced && !sync);
-            },
-
-            _computeInSyncState: function(syncing) {
-                return syncing;
-            },
-
-            _computeSyncAbortedState: function(aborted) {
-                return aborted;
-            },
-
-            _computeRemovingState: function(removing) {
-                return removing;
             },
 
             _preventSync: function() {

@@ -10,6 +10,7 @@
 <link rel="import" href="../../../bower_components/iron-a11y-keys/iron-a11y-keys.html">
 
 <link rel="import" href="../components/appsco-credit-card-types.html">
+<link rel="import" href="appsco-application-form-behavior.html">
 
 <dom-module id="appsco-application-form-cc">
     <template>
@@ -109,11 +110,6 @@
             is: 'appsco-application-form-cc',
 
             properties: {
-                claims: {
-                    type: Object,
-                    value: function () { return {}; }
-                },
-
                 _cardNumber: {
                     type: String,
                     computed: '_cardNumberComputed(claims)'
@@ -130,59 +126,16 @@
                 }
             },
 
+            behaviors: [
+                Polymer.AppscoApplicationFormBehavior
+            ],
+
             _cardNumberComputed: function (claims) {
                 return claims.cardNumber ? claims.cardNumber : '';
             },
 
             _verificationNumberComputed: function (claims) {
                 return claims.verificationNumber ? claims.verificationNumber : '';
-            },
-
-            isValid: function() {
-                this.$.cardNumber.validate();
-                this.$.verificationNumber.validate();
-                return !this.$.cardNumber.invalid && !this.$.verificationNumber.invalid;
-            },
-
-            encodedBodyValues: function () {
-                var body = '';
-
-                Polymer.dom(this.root).querySelectorAll('[data-field]').forEach(function(item, key) {
-                    if(item.value) {
-                        body += body === '' ? '' : '&';
-                        body += encodeURIComponent(item.getAttribute('name')) + '=' + encodeURIComponent(item.value)
-                    }
-                }.bind(this));
-
-                return body;
-            },
-
-            didFieldsChanged: function() {
-                var fieldChanged = false,
-                    claimsExist = false;
-                for ( var prop in this.claims ) {
-                    claimsExist = true;
-                }
-                if(!claimsExist) {
-                    Polymer.dom(this.root).querySelectorAll('[data-field]').forEach(function(item, key) {
-                        fieldChanged = fieldChanged || (item.value && '' !== item.value);
-                    }.bind(this));
-
-                    return fieldChanged;
-                }
-
-                Polymer.dom(this.root).querySelectorAll('[data-field]').forEach(function(item, key) {
-                    fieldChanged = fieldChanged || this.claims[item.getAttribute('id')] !== item.value;
-                }.bind(this));
-
-                return fieldChanged;
-            },
-
-            reset: function() {
-
-                Polymer.dom(this.root).querySelectorAll('[data-field]').forEach(function(item, key) {
-                    item.invalid = false;
-                }.bind(this));
             }
         });
     </script>

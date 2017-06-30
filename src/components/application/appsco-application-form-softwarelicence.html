@@ -2,6 +2,7 @@
 <link rel="import" href="../../../bower_components/paper-input/paper-input.html">
 <link rel="import" href="../../../bower_components/paper-input/paper-textarea.html">
 <link rel="import" href="../../../bower_components/iron-a11y-keys/iron-a11y-keys.html">
+<link rel="import" href="appsco-application-form-behavior.html">
 
 <dom-module id="appsco-application-form-softwarelicence">
     <template>
@@ -101,62 +102,15 @@
             is: 'appsco-application-form-softwarelicence',
 
             properties: {
-                claims: {
-                    type: Object,
-                    value: function () { return {}; }
-                },
                 claimsNamePrefix: {
                     type: String,
                     value: "claims_softwarelicence"
                 }
             },
 
-            isValid: function() {
-                this.$.numberOfLicences.validate();
-                this.$.website.validate();
-                return !this.$.numberOfLicences.invalid && !this.$.website.invalid;
-            },
-
-            encodedBodyValues: function () {
-                var body = '';
-
-                Polymer.dom(this.root).querySelectorAll('[data-field]').forEach(function(item, key) {
-                    if(item.value) {
-                        body += body === '' ? '' : '&';
-                        body += encodeURIComponent(item.getAttribute('name')) + '=' + encodeURIComponent(item.value)
-                    }
-                }.bind(this));
-
-                return body;
-            },
-
-            didFieldsChanged: function() {
-                var fieldChanged = false,
-                    claimsExist = false;
-                for ( var prop in this.claims ) {
-                    claimsExist = true;
-                }
-                if(!claimsExist) {
-                    Polymer.dom(this.root).querySelectorAll('[data-field]').forEach(function(item, key) {
-                        fieldChanged = fieldChanged || (item.value && '' !== item.value);
-                    }.bind(this));
-
-                    return fieldChanged;
-                }
-
-                Polymer.dom(this.root).querySelectorAll('[data-field]').forEach(function(item, key) {
-                    fieldChanged = fieldChanged || this.claims[item.getAttribute('id')] !== item.value;
-                }.bind(this));
-
-                return fieldChanged;
-            },
-
-            reset: function() {
-
-                Polymer.dom(this.root).querySelectorAll('[data-field]').forEach(function(item, key) {
-                    item.invalid = false;
-                }.bind(this));
-            }
+            behaviors: [
+                Polymer.AppscoApplicationFormBehavior
+            ]
         });
     </script>
 </dom-module>

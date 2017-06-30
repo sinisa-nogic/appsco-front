@@ -258,7 +258,32 @@
                 this._removeIntegrationItem(mapping);
             },
 
+            /**
+             * If mappings which are connected to company roles are disconnected and then user tries to resync
+             * them "create" url will be missing for those mappings as they were loaded while synced - therefore
+             * we need to check if "create" url is present in mapping's meta and request one if missing.
+             *
+             * @param mapping
+             * @param newAccount
+             * @private
+             */
             _syncWithLocalAccount: function(mapping, newAccount) {
+                if (!mapping.meta.create) {
+                    var selfRequest = document.createElement('iron-request'),
+                            selfRequestOptions = {
+                                url: mapping.self,
+                                method: 'GET',
+                                handleAs: 'json',
+                                headers: this._computedHeaders
+                            };
+                    selfRequest.send(selfRequestOptions).then(function() {
+                        if (selfRequest.response.mapping.meta.create) {
+                            mapping.meta.create = selfRequest.response.mapping.meta.create;
+                            this._syncWithLocalAccount(mapping, newAccount);
+                        }
+                    }.bind(this));
+                    return;
+                }
                 var request = document.createElement('iron-request'),
                     options = {
                         url: mapping.meta.create,

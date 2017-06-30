@@ -19,6 +19,8 @@
 <link rel="import" href="../appsco-application-form-securenote.html">
 <link rel="import" href="../appsco-application-form-softwarelicence.html">
 <link rel="import" href="../appsco-application-form-saml.html">
+<link rel="import" href="../appsco-application-form-saml-dropbox.html">
+<link rel="import" href="../appsco-application-form-saml-office-365.html">
 
 <!--
 `appsco-company-resource-settings`
@@ -197,9 +199,31 @@ Used to update company resource - configuration fields and claims.
                             data-claims
                             claims-name-prefix="application_claims[claims]"
                             claims="[[ resource.claims ]]"
+                            domain="[[ domain ]]"
                     ></appsco-application-form-saml>
                 </template>
-    
+
+                <template is="dom-if" if="[[ _samlDropBoxAuth ]]"
+                          restamp
+                          on-dom-change="_onAuthTypeChanged">
+                    <appsco-application-form-saml-dropbox
+                            data-claims
+                            claims-name-prefix="application_claims[claims]"
+                            claims="[[ resource.claims ]]"
+                            domain="[[ domain ]]"
+                    ></appsco-application-form-saml-dropbox>
+                </template>
+
+                <template is="dom-if" if="[[ _samlOffice365Auth ]]"
+                          restamp
+                          on-dom-change="_onAuthTypeChanged">
+                    <appsco-application-form-saml-office-365
+                            data-claims
+                            claims-name-prefix="application_claims[claims]"
+                            claims="[[ resource.claims ]]"
+                            domain="[[ domain ]]"
+                    ></appsco-application-form-saml-office-365>
+                </template>
             </template>
         </div>
 
@@ -360,7 +384,17 @@ Used to update company resource - configuration fields and claims.
                 _samlAuthType: {
                     type: Boolean,
                     computed: '_computeAuthType(resource, "saml")'
-                }
+                },
+
+                _samlDropBoxAuth: {
+                    type: Boolean,
+                    computed: "_computeAuthType(resource, 'saml_dropbox')"
+                },
+
+                _samlOffice365Auth: {
+                    type: Boolean,
+                    computed: "_computeAuthType(resource, 'saml_office_365')"
+                },
             },
 
             behaviors: [

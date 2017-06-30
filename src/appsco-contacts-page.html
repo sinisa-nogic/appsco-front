@@ -5,12 +5,17 @@
 <link rel="import" href="../bower_components/neon-animation/neon-animatable-behavior.html">
 <link rel="import" href="../bower_components/iron-flex-layout/iron-flex-layout.html">
 <link rel="import" href="../bower_components/iron-media-query/iron-media-query.html">
+<link rel="import" href="../bower_components/paper-tabs/paper-tabs.html">
+<link rel="import" href="../bower_components/paper-tabs/paper-tab.html">
 
 <link rel="import" href="components/page/appsco-content.html">
 <link rel="import" href="components/account/appsco-contacts.html">
 <link rel="import" href="components/account/appsco-invitations.html">
 <link rel="import" href="components/components/appsco-search.html">
 <link rel="import" href="components/label/appsco-company-labels.html">
+<link rel="import" href="components/account/appsco-account-image.html">
+<link rel="import" href="components/account/appsco-account-details.html">
+<link rel="import" href="components/account/appsco-account-log.html">
 
 <dom-module id="appsco-contacts-page">
     <template>
@@ -19,9 +24,26 @@
                 display: block;
 
                 --resource-width: 318px;
+                --info-width: 318px;
 
                 --contacts-progress-bar: {
                     display: none;
+                };
+
+                --account-details-label: {
+                    font-size: 12px;
+                };
+                --account-details-value: {
+                    font-size: 14px;
+                };
+
+                --account-log-appsco-list-item: {
+                    padding-top: 14px;
+                    padding-bottom: 8px;
+                };
+
+                --appsco-account-log-container: {
+                    padding-top: 0;
                 };
             }
             :host .resource-header {
@@ -31,7 +53,7 @@
                 height: 100%;
                 overflow: auto;
             }
-            :host div[resource] > * {
+            :host div[resource] > *, :host div[info] > * {
                 padding: 10px;
                 box-sizing: border-box;
             }
@@ -40,6 +62,26 @@
             }
             div[resource] > .resource-content {
                 padding-top: 20px;
+            }
+            :host div[info] {
+                height: 100%;
+            }
+            :host div[info] .account-info {
+                border-bottom: 1px solid var(--divider-color);
+                height: 50px;
+                @apply(--layout-flex-none);
+                color: var(--primary-text-color);
+            }
+            :host div[info] .details-log {
+                height: calc(100% - 50px - 40px);
+                margin-top: 10px;
+            }
+            .paper-tabs-pages {
+                @apply(--paper-tabs-pages);
+            }
+            .tab-content {
+                margin-top: 20px;
+                @apply(--paper-tabs-content-style);
             }
             appsco-company-labels {
                 margin-top: 20px;
@@ -52,14 +94,57 @@
             .contacts-container {
                 margin-top: 10px;
             }
+            appsco-account-image {
+                --account-image: {
+                    width: 32px;
+                    height: 32px;
+                    margin-right: 5px;
+                };
+
+                --account-initials-background-color: var(--body-background-color-darker);
+                --account-initials-font-size: 14px;
+            }
+            :host .account-name {
+                @apply(--paper-font-subhead);
+                font-size: 18px;
+            }
+            :host .flex-horizontal {
+                @apply(--layout-horizontal);
+                @apply(--layout-center);
+            }
             :host .flex-vertical {
                 @apply(--layout-vertical);
             }
+            :host .flex {
+                @apply(--layout-flex);
+            }
+            :host([tablet-screen]) {
+                --resource-width: 250px;
+                --info-width: 250px;
+            }
             :host([mobile-screen]) {
                 --resource-width: 100%;
+                --info-width: 100%;
+            }
+            :host([screen992]) {
+                --account-basic-info: {
+                    width: 140px;
+                };
+                --account-basic-info-values: {
+                    width: 140px;
+                };
+
+                --account-auth-type-info: {
+                    width: 140px;
+                };
+                --account-auth-type-info-values: {
+                    width: 140px;
+                };
             }
         </style>
 
+        <iron-media-query query="(max-width: 992px)" query-matches="{{ screen992 }}"></iron-media-query>
+        <iron-media-query query="(max-width: 800px)" query-matches="{{ tabletScreen }}"></iron-media-query>
         <iron-media-query query="(max-width: 600px)" query-matches="{{ mobileScreen }}"></iron-media-query>
 
         <appsco-content id="appscoContent" resource-active>
@@ -121,6 +206,43 @@
                 </div>
             </div>
 
+            <div class="flex-vertical" info>
+                <div class="account-info flex-horizontal">
+                    <appsco-account-image account="[[ _account ]]"></appsco-account-image>
+                    <span class="account-name flex">[[ contact.display_name ]]</span>
+                </div>
+
+                <div class="details-log flex-vertical">
+
+                    <paper-tabs id="paperTabs" selected="{{ _selectedTab }}">
+                        <paper-tab name="info">Info</paper-tab>
+                        <paper-tab name="log">Log</paper-tab>
+                    </paper-tabs>
+
+                    <neon-animated-pages
+                            selected="{{ _selectedTab }}"
+                            entry-animation="fade-in-animation"
+                            exit-animation="fade-out-animation"
+                            class="paper-tabs-pages">
+
+                        <div name="info" class="tab-content details">
+                            <appsco-account-details account="[[ _account ]]"></appsco-account-details>
+                        </div>
+
+                        <div name="log" class="tab-content log">
+                            <appsco-account-log
+                                    id="accountLog"
+                                    log-api="[[ contact.meta.log ]]"
+                                    authorization-token="[[ authorizationToken ]]"
+                                    size="5"
+                                    short-view></appsco-account-log>
+                        </div>
+
+                    </neon-animated-pages>
+
+                </div>
+            </div>
+
         </appsco-content>
 
     </template>
@@ -132,6 +254,18 @@
             properties: {
 
                 mobileScreen: {
+                    type: Boolean,
+                    value: false,
+                    reflectToAttribute: true
+                },
+
+                tabletScreen: {
+                    type: Boolean,
+                    value: false,
+                    reflectToAttribute: true
+                },
+
+                screen992: {
                     type: Boolean,
                     value: false,
                     reflectToAttribute: true
@@ -159,6 +293,14 @@
                             }
                         }
                     }
+                },
+
+                contact: {
+                    type: Object,
+                    value: function() {
+                        return {}
+                    },
+                    observer: '_onContactChanged'
                 },
 
                 authorizationToken: {
@@ -190,6 +332,16 @@
                     value: ''
                 },
 
+                _account: {
+                    type: Object,
+                    computed: '_computeAccount(contact)'
+                },
+
+                _contactExists: {
+                    type: Boolean,
+                    computed: '_computeContactExistence(contact)'
+                },
+
                 _contactsLoaded: {
                     type: Boolean,
                     value: false
@@ -219,6 +371,20 @@
                 _selectAll: {
                     type: Boolean,
                     value: false
+                },
+
+                _infoShown: {
+                    type: Boolean,
+                    value: false
+                },
+
+                _selectedTab: {
+                    type: Number
+                },
+
+                _contactAction: {
+                    type: Number,
+                    value: 0
                 }
             },
 
@@ -227,7 +393,7 @@
             ],
 
             observers: [
-                '_updateScreen(mobileScreen)'
+                '_updateScreen(mobileScreen, tabletScreen, screen992)'
             ],
 
             attached: function() {
@@ -242,6 +408,31 @@
                 this._page = page;
             },
 
+            toggleInfo: function() {
+
+                if (this._contactExists) {
+                    this.$.appscoContent.toggleSection('info');
+                    this._infoShown = !this._infoShown;
+
+                    if (this._infoShown) {
+                        this._selectedTab = 0;
+                    }
+                }
+            },
+
+            hideInfo: function() {
+                this.$.appscoContent.hideSection('info');
+                this._infoShown = false;
+            },
+
+            toggleResource: function() {
+                this.$.appscoContent.toggleSection('resource');
+            },
+
+            _setDefaultContact: function() {
+                this.set('contact', this.$.appscoContacts.getFirstContact());
+            },
+
             addContacts: function(contacts) {
                 this.$.appscoContacts.addContacts(contacts);
             },
@@ -252,14 +443,11 @@
 
             removeContacts: function(contacts) {
                 this.$.appscoContacts.removeContacts(contacts);
+                this._setDefaultContact();
             },
 
             removeSelectedContacts: function(contacts) {
                 this.$.appscoContacts.removeSelectedContacts(contacts);
-            },
-
-            _reloadContacts: function() {
-                this.$.appscoContacts.reloadContacts();
             },
 
             reloadContactsAndActions: function() {
@@ -332,10 +520,15 @@
                 this._hideBulkActions();
             },
 
+            initializePage: function() {
+                this._setDefaultContact();
+            },
+
             resetPage: function() {
                 this._resetPageActions();
                 this._showContacts();
                 this._resetPageLists('all');
+                this.hideInfo();
             },
 
             _resetPageActions: function() {
@@ -350,12 +543,40 @@
                 this.filterByTerm('', page);
             },
 
+            _computeAccount: function(contact) {
+                return contact.account ? contact.account : {};
+            },
+
+            _computeContactExistence: function(contact) {
+
+                for (key in contact) {
+                    return true;
+                }
+
+                return false;
+            },
+
             _computePageReadyState: function(contacts, invitations) {
                 return contacts && invitations;
             },
 
             _updateScreen: function() {
                 this.updateStyles();
+            },
+
+            _loadLog: function() {
+                this.$.accountLog.loadLog();
+            },
+
+            _onContactChanged: function(contact) {
+
+                if (contact.meta && contact.meta.log) {
+                    this._loadLog();
+                }
+            },
+
+            _reloadContacts: function() {
+                this.$.appscoContacts.reloadContacts();
             },
 
             _onInvitationsLoaded: function() {
@@ -375,6 +596,7 @@
 
             _onContactsLoaded: function() {
                 this._contactsLoaded = true;
+                this._setDefaultContact();
             },
 
             _onContactsEmptyLoad: function() {
@@ -424,15 +646,28 @@
             _onContactAction: function(event) {
                 var contact = event.detail.contact;
 
-                if (contact.selected) {
-                    this._showBulkActions();
-                }
-                else {
+                clearTimeout(this._contactAction);
 
-                    if (!this.$.appscoContacts.getSelectedContacts().length) {
-                        this._hideBulkActions();
+                this._contactAction = setTimeout(function() {
+
+                    if (contact.selected) {
+                        this._onViewInfo(event);
+                        this._showBulkActions();
                     }
-                }
+                    else {
+                        var selectedContact = this.$.appscoContacts.getFirstSelectedContact();
+
+                        if (!selectedContact) {
+                            this.hideInfo();
+                            this._setDefaultContact();
+                            this._hideBulkActions();
+                        }
+                        else if (contact.self === this.contact.self) {
+                            this._handleInfo(selectedContact);
+                        }
+                    }
+
+                }.bind(this), 10);
 
                 this._handleRemoveLabelFromContactAction();
             },
@@ -464,6 +699,27 @@
 
             _hideRemoveLabelFromContactAction: function() {
                 this.fire('hide-remove-label-from-contact-action');
+            },
+
+            _showInfo: function() {
+
+                if (this._contactExists) {
+                    this.$.appscoContent.showSection('info');
+                    this._infoShown = true;
+                    this._selectedTab = 0;
+                }
+            },
+
+            _handleInfo: function(contact) {
+                this.set('contact', contact);
+
+                if (!this._infoShown) {
+                    this._showInfo();
+                }
+            },
+
+            _onViewInfo: function(event) {
+                this._handleInfo(event.detail.contact);
             },
 
             _onPageAnimationFinished: function(event) {

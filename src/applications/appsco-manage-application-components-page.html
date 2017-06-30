@@ -11,9 +11,9 @@
 
 <link rel="import" href="../components/application/appsco-application-settings-card.html">
 <link rel="import" href="../components/application/company/appsco-application-assignees.html">
-<link rel="import" href="../components/application/appsco-application-sharing-settings.html">
 <link rel="import" href="../components/application/appsco-application-log.html">
 <link rel="import" href="../components/application/appsco-application-analytics-security.html">
+<link rel="import" href="../components/application/appsco-application-details-idp.html">
 
 <dom-module id="appsco-manage-application-components-page">
     <template>
@@ -76,10 +76,10 @@
                 font-size: 12px;
                 color: var(--secondary-text-color);
             }
-            :host .details-subscribers, :host .security-sharing {
+            :host .details-subscribers, :host .security-sharing, :host .details-idp {
                 @apply(--layout-vertical);
             }
-            appsco-application-settings-card {
+            appsco-application-details-idp {
                 --appsco-application-icons-color: var(--app-secondary-color);
 
                 --application-details-label: {
@@ -112,8 +112,11 @@
                      top: 2px;
                  };
             }
-            :host .details-subscribers, :host .security-sharing {
+            :host .details-subscribers, :host .security-sharing, :host .details-idp {
                 margin-right: 10px;
+            }
+            :host([mobile-screen]) .details-idp {
+                margin-right: 0;
             }
             :host .appsco-application-settings-card, :host .appsco-application-assignees, :host .appsco-application-security {
                 margin-bottom: 10px;
@@ -140,6 +143,13 @@
 
         <iron-media-query query="(max-width: 1200px)" query-matches="{{ mediumScreen }}"></iron-media-query>
         <iron-media-query query="(max-width: 800px)" query-matches="{{ mobileScreen }}"></iron-media-query>
+
+        <iron-ajax
+                auto
+                url="[[ companyIdpSamlMetadataApi ]]"
+                headers="[[ _computedHeaders ]]"
+                on-response="_onCompanyIdpSamlMetadataReponse"
+        ></iron-ajax>
 
         <div class="details-subscribers">
             <paper-card heading="Settings" class="appsco-application-settings-card">
@@ -188,26 +198,25 @@
             </paper-card>
         </div>
 
+        <template is="dom-if" if="[[ _isSAMLApp ]]">
+            <div class="details-idp">
+                <paper-card heading="Appsco IdP information" class="appsco-application-idp-info">
+                    <div class="card-content">
+                        <appsco-application-details-idp
+                                idp-metadata-xml-url="[[ companyIdpSamlMetadataXmlUrl ]]"
+                                idp-metadata="[[ _idpMetadata ]]"
+                        >
+                        </appsco-application-details-idp>
+                    </div>
+                </paper-card>
+            </div>
+        </template>
+
         <div class="security-sharing">
             <paper-card heading="Security" class="appsco-application-security">
                 <div class="card-content">
                     <appsco-application-analytics-security application="[[ application ]]"
-                                                 info></appsco-application-analytics-security>
-                </div>
-            </paper-card>
-
-            <paper-card heading="Sharing Settings" class="appsco-application-sharing">
-                <div class="card-content">
-                    <p>
-                        [[ setByInfo ]]
-                    </p>
-                    <p>
-                        If you would like to manage claims for all employees go and change settings.
-                    </p>
-                </div>
-
-                <div class="card-actions">
-                    <paper-button on-tap="_onManageApplicationSharingSettings">Manage</paper-button>
+                                                           info></appsco-application-analytics-security>
                 </div>
             </paper-card>
         </div>
@@ -258,6 +267,15 @@
                 },
 
                 /**
+                 * Computed headers.
+                 * It contains authorization token.
+                 */
+                _computedHeaders: {
+                    type: Object,
+                    computed: "_computeHeaders(authorizationToken)"
+                },
+
+                /**
                  * Selected application from search list.
                  */
                 application: {
@@ -267,8 +285,14 @@
                     }
                 },
 
-                setByInfo: {
-                    type: String
+                companyIdpSamlMetadataApi: {
+                    type: String,
+                    value: ''
+                },
+
+                _isSAMLApp: {
+                    type: Boolean,
+                    computed: "_computeIsSAMLApp(application)"
                 },
 
                 /**
@@ -307,6 +331,19 @@
                 Polymer.NeonSharedElementAnimatableBehavior
             ],
 
+            /**
+             * Computes authorization headers.
+             *
+             * @param {Object} authorizationToken
+             * @returns {{ Authorization: string }}
+             * @private
+             */
+            _computeHeaders: function (authorizationToken) {
+                return {
+                    'Authorization': 'token ' + authorizationToken
+                }
+            },
+
             _setSharedElement: function(target) {
 
                 while (target.tagName.toLowerCase() !== 'paper-card' && !target._templateInstance) {
@@ -328,11 +365,6 @@
                 this.fire('application-settings');
             },
 
-            _onManageApplicationSharingSettings: function(event) {
-                this._setSharedElement(event.target);
-                this.fire('application-sharing-settings');
-            },
-
             _onAllAssignees: function(event) {
                 this._setSharedElement(event.target);
                 this.fire('all-assignees');
@@ -346,6 +378,21 @@
             _onAllLog: function(event) {
                 this._setSharedElement(event.target);
                 this.fire('all-log');
+            },
+
+            _onCompanyIdpSamlMetadataReponse: function(event) {
+                this._idpMetadata = event.detail.response;
+            },
+
+            /**
+             * Computes isSAMLApp value
+             *
+             * @param {Object} application
+             * @returns {boolean}
+             * @private
+             */
+            _computeIsSAMLApp: function(application) {
+                    return ['saml', 'saml_dropbox', 'saml_office_365'].indexOf(application.auth_type) !== -1;
             },
 
             reloadAssignees: function() {

@@ -106,9 +106,6 @@
                         <iron-icon icon="social:people" class="resource-item-icon"></iron-icon> Synced Accounts with AppsCo
                     </div>
 
-                    <div class="resource-item" name="settings" disabled>
-                        <iron-icon icon="icons:settings" class="resource-item-icon"></iron-icon> Settings
-                    </div>
                 </iron-selector>
 
             </div>
@@ -126,8 +123,8 @@
                                                  authorization-token="[[ authorizationToken ]]"
                                                  items-api="[[ _integrationAccountsApi ]]"
                                                  company-roles-api="[[ companyRolesApi ]]"
+                                                 api-errors="[[ apiErrors ]]"
                                                  on-loaded="_onPageLoaded"
-                                                 on-sync="_onSyncAccount"
                                                  on-local-account-synced="_onAccountSynced"
                                                  on-new-account-synced="_onAccountSynced"
                                                  on-accounts-sync-new-account-synced="_onAccountSynced"></appsco-integration-page>
@@ -172,6 +169,13 @@
                 companyRolesApi: {
                     type: String,
                     value: ''
+                },
+
+                apiErrors: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    }
                 },
 
                 _activePage: {
@@ -301,6 +305,7 @@
             resetPage: function() {
                 this.fire('reset-page');
                 this.$.appscoIntegrationPage.resetPage();
+                this._showAppscoIntegrationPage();
             },
 
             _updateScreen: function(medium, tablet, mobile) {
@@ -330,6 +335,10 @@
                 this.fire('page-loaded');
             },
 
+            _showAppscoIntegrationPage: function() {
+                this._activePage = 'appsco-integration-page'
+            },
+
             _checkIntegration: function() {
                 if (!this.integration.self) {
                     this.fire('back');
@@ -337,7 +346,9 @@
             },
 
             _onIntegrationChanged: function(integration) {
+
                 if (integration.self) {
+                    this.pageLoaded = false;
                     this._getIntegrationAccounts();
                 }
             },
@@ -381,6 +392,8 @@
 
             _load: function() {
                 this.$.remoteAccountsCall.generateRequest();
+                this.$.appscoIntegrationPage.emptyAccounts();
+                this.$.appscoSyncedAccountsPage.emptyAccounts();
             },
 
             _loadIntegratedAccounts: function() {
@@ -498,12 +511,6 @@
                 this._onPageLoaded();
                 this.$.appscoIntegrationPage.itemsLoaded(this._items);
                 this.$.appscoSyncedAccountsPage.itemsLoaded(this._syncedItems);
-            },
-
-            _onSyncAccount: function(event) {
-                var item = event.detail.item;
-
-                this.$.appscoIntegrationPage.syncAccount(item);
             },
 
             syncAccounts: function() {

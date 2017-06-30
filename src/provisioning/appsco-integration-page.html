@@ -43,9 +43,9 @@
 
         <appsco-integration-items id="appscoIntegrationItems"
                                   authorization-token="[[ authorizationToken ]]"
-                                  items-api="[[ itemsApi ]]"
                                   company-roles-api="[[ companyRolesApi ]]"
                                   on-allow-sync="_onAllowSync"
+                                  on-sync="_onSyncAccount"
                                   on-synced-item-removed="_onSyncedItemRemoved"></appsco-integration-items>
 
     </template>
@@ -65,15 +65,16 @@
                     value: ''
                 },
 
+                apiErrors: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    }
+                },
+
                 _computedHeaders: {
                     type: Object,
                     computed: '_computeHeaders(authorizationToken)'
-                },
-
-                itemsApi: {
-                    type: String,
-                    value: '',
-                    notify: true
                 },
 
                 companyRolesApi: {
@@ -163,6 +164,8 @@
 
             resetPage: function() {
                 this.hideBulkActions();
+                this._setPageInfo('');
+                this.$.appscoIntegrationItems.reset();
             },
 
             showBulkActions: function() {
@@ -206,6 +209,8 @@
             _onAllowSync: function(event) {
                 var item = event.detail.item;
 
+                this._setPageInfo('');
+
                 this._items.forEach(function(mapping, index) {
 
                     if (item.self === mapping.self) {
@@ -228,11 +233,11 @@
                 this.$.appscoIntegrationItems.removeIntegrationItem(item);
             },
 
-            _abortSyncForItem: function(item, message) {
-                this._setPageInfo(message);
+            _abortSyncForItem: function(item, errorCode) {
+                this._setPageInfo(this.apiErrors.getError(errorCode));
                 this.$.appscoIntegrationItems.abortSyncForItem(item);
 
-                if (-1 === message.toLowerCase().indexOf('maximum number')) {
+                if (1498548911 != errorCode) {
 
                     this._items.forEach(function(syncItem, index) {
 
@@ -258,7 +263,32 @@
                 this._removeIntegrationItem(mapping);
             },
 
+            /**
+             * If mappings which are connected to company roles are disconnected and then user tries to resync
+             * them "create" url will be missing for those mappings as they were loaded while synced - therefore
+             * we need to check if "create" url is present in mapping's meta and request one if missing.
+             *
+             * @param mapping
+             * @param newAccount
+             * @private
+             */
             _syncWithLocalAccount: function(mapping, newAccount) {
+                if (!mapping.meta.create) {
+                    var selfRequest = document.createElement('iron-request'),
+                            selfRequestOptions = {
+                                url: mapping.self,
+                                method: 'GET',
+                                handleAs: 'json',
+                                headers: this._computedHeaders
+                            };
+                    selfRequest.send(selfRequestOptions).then(function() {
+                        if (selfRequest.response.mapping.meta.create) {
+                            mapping.meta.create = selfRequest.response.mapping.meta.create;
+                            this._syncWithLocalAccount(mapping, newAccount);
+                        }
+                    }.bind(this));
+                    return;
+                }
                 var request = document.createElement('iron-request'),
                     options = {
                         url: mapping.meta.create,
@@ -295,24 +325,19 @@
                         }
                     }
 
-                }.bind(this));
+                }.bind(this), function() {
+                    this._abortSyncForItem(mapping, request.response.code);
+                });
             },
 
             _syncWithNewAccount: function(mapping) {
                 var request = document.createElement('iron-request'),
                         options = {
-                            url: this.companyRolesApi,
+                            url: mapping.meta.upgrade,
                             method: 'POST',
                             handleAs: 'json',
                             headers: this._computedHeaders
-                        },
-                        account = mapping.remoteAccount;
-
-                options.body = 'register_account[firstName]=' + encodeURIComponent(account.first_name) +
-                        '&register_account[lastName]=' + encodeURIComponent(account.last_name) +
-                        '&register_account[email]=' + encodeURIComponent(account.email) +
-                        '&register_account[companyRoles][COMPANY_ROLE_EMPLOYEE]=COMPANY_ROLE_EMPLOYEE';
-
+                        };
                 request.send(options).then(function() {
 
                     if (request.succeeded) {
@@ -321,13 +346,13 @@
                     }
 
                 }.bind(this), function() {
-                    this._abortSyncForItem(mapping, request.response.message);
+                    this._abortSyncForItem(mapping, request.response.code);
 
                 }.bind(this));
             },
 
-            syncAccount: function(item) {
-                this.push('_syncItems', item);
+            _onSyncAccount: function(event) {
+                this.push('_syncItems', event.detail.item);
             },
 
             _syncAccount: function(item) {
@@ -335,10 +360,11 @@
             },
 
             syncAccounts: function() {
-                var items = this._items,
+                var items = this.$.appscoIntegrationItems.getIntegrationItems(),
                     length = items.length,
                     count = 0;
 
+                this.set('_items', items);
                 this.set('_syncItems', []);
 
                 if (length > 0) {
@@ -353,6 +379,10 @@
                             this._syncAccount(item);
                             count++;
                             break;
+                        }
+
+                        if (i === length - 1 && 0 === count) {
+                            this._setPageInfo('Sync is disabled for all accounts.');
                         }
                     }
 

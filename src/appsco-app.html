@@ -51,6 +51,8 @@
 <link rel="import" href="components/application/company/appsco-application-remove-orgunit.html">
 <link rel="import" href="components/application/company/appsco-application-assignee-claims.html">
 <link rel="import" href="components/application/company/appsco-application-assignee-revoke.html">
+<link rel="import" href="components/application/appsco-import-resources.html">
+
 <link rel="import" href="components/label/appsco-company-remove-label.html">
 <link rel="import" href="components/label/appsco-resource-add-labels.html">
 <link rel="import" href="components/label/appsco-resource-remove-labels.html">
@@ -490,6 +492,7 @@
                                     authorization-token="[[ authorizationToken ]]"
                                     filter-api="[[ api.dashboards ]]?extended=1"
                                     on-add-item-action="_onAddCompanyItemAction"
+                                    on-import-resources="_onImportResourcesAction"
                                     on-search="_onSearchCompanyApplications"
                                     on-search-clear="_onSearchCompanyApplicationsClear"
                                     on-share="_onShareApplications"
@@ -988,6 +991,12 @@
                 on-application-added="_onCompanyApplicationAdded">
         </appsco-company-sso-application-add>
 
+        <appsco-import-resources
+                id="appscoImportResources"
+                authorization-token="[[ authorizationToken ]]"
+                import-api="[[ _companyImportResourcesApi ]]"
+                on-import-finished="_onImportCompanyResourcesFinished"></appsco-import-resources>
+
         <appsco-application-orgunit
                 id="appscoApplicationOrgunit"
                 authorization-token="[[ authorizationToken ]]"
@@ -1427,6 +1436,11 @@
                     value: ''
                 },
 
+                _companyImportResourcesApi: {
+                    type: String,
+                    computed: '_computeCompanyImportResourcesApi(_companyApplicationsApi)'
+                },
+
                 _companyInvitationsApi: {
                     type: String,
                     value: ''
@@ -1773,6 +1787,10 @@
                     this._companyLabelsApi = companyApi + '/labels';
                     this._companySamlMetadataApi = companyApi + '/idp/saml/metadata';
                 }
+            },
+
+            _computeCompanyImportResourcesApi: function(companyApplicationsApi) {
+                return companyApplicationsApi ? companyApplicationsApi + '/import' : '';
             },
 
             _computeCompanyImportContactsApi: function(contactsApi) {
@@ -2687,6 +2705,28 @@
 
                 this.$.appscoApplicationsPage.addApplications(applications);
                 this._notify(message);
+            },
+
+            _onImportResourcesAction: function() {
+                this.$.appscoImportResources.toggle();
+            },
+
+            _onImportCompanyResourcesFinished: function() {
+                var response = event.detail.response,
+                    message;
+
+                message = response.numberOfCustomApplications + response.numberOfSecureNotes + ' resources imported out of '
+                    + response.total + ', '
+                    + response.numberOfCustomApplications + ' custom applications created, '
+                    + response.numberOfSecureNotes + ' secure notes created, '
+                    + 'number of failed imports ' + response.numberOfFailed + '.';
+
+                if (0 < response.numberOfCustomApplications || 0 < numberOfSecureNotes) {
+                    this._reloadCompanyApplications();
+                }
+
+                this._notify(message, true);
+                this._notifyAccountLog();
             },
 
             _addApplicationsToOrgunit: function(applications) {

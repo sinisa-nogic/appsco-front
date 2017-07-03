@@ -23,7 +23,6 @@
                 overflow-y: auto;
                 @apply(--layout-horizontal);
                 @apply(--layout-wrap);
-                @apply(--layout-justified);
                 font-size: 14px;
                 color: var(--primary-text-color);
 
@@ -124,20 +123,18 @@
             :host([medium-screen]) > * {
                 width: calc(100% / 2 - 10px);
             }
-            :host([medium-screen]) > .appsco-application-log {
+            :host([medium-screen][_three-columns-view]) > .appsco-application-log {
                 width: 100%;
             }
             :host([medium-screen]) .security-sharing {
                 margin-right: 0;
+                margin-bottom: 0;
             }
             :host([mobile-screen]) > * {
                 width: 100%;
             }
             :host([mobile-screen]) .details-subscribers {
                 margin-right: 0;
-            }
-            .message {
-                @apply(--info-message);
             }
         </style>
 
@@ -198,7 +195,7 @@
             </paper-card>
         </div>
 
-        <template is="dom-if" if="[[ _isSAMLApp ]]">
+        <template is="dom-if" if="[[ _isSAMLApp ]]" restamp>
             <div class="details-idp">
                 <paper-card heading="Appsco IdP information" class="appsco-application-idp-info">
                     <div class="card-content">
@@ -212,14 +209,16 @@
             </div>
         </template>
 
-        <div class="security-sharing">
-            <paper-card heading="Security" class="appsco-application-security">
-                <div class="card-content">
-                    <appsco-application-analytics-security application="[[ application ]]"
-                                                           info></appsco-application-analytics-security>
-                </div>
-            </paper-card>
-        </div>
+        <template is="dom-if" if="[[ _viewSecurityPermission ]]" restamp>
+            <div class="security-sharing">
+                <paper-card heading="Security" class="appsco-application-security">
+                    <div class="card-content">
+                        <appsco-application-analytics-security application="[[ application ]]"
+                                                               info></appsco-application-analytics-security>
+                    </div>
+                </paper-card>
+            </div>
+        </template>
 
         <paper-card heading="Resource Log" class="appsco-application-log">
             <div class="card-content">
@@ -292,7 +291,19 @@
 
                 _isSAMLApp: {
                     type: Boolean,
-                    computed: "_computeIsSAMLApp(application)"
+                    computed: '_computeIsSAMLApp(application)'
+                },
+
+                _viewSecurityPermission: {
+                    type: Boolean,
+                    computed: '_computeViewSecurityPermission(application)',
+                    observer: '_onViewSecurityPermissionChanged'
+                },
+
+                _threeColumnsView: {
+                    type: Boolean,
+                    value: false,
+                    reflectToAttribute: true
                 },
 
                 /**
@@ -344,6 +355,25 @@
                 }
             },
 
+            /**
+             * Computes isSAMLApp value
+             *
+             * @param {Object} application
+             * @returns {boolean}
+             * @private
+             */
+            _computeIsSAMLApp: function(application) {
+                return ['saml', 'saml_dropbox', 'saml_office_365'].indexOf(application.auth_type) !== -1;
+            },
+
+            _computeViewSecurityPermission: function(application) {
+                return ['unpw', 'item'].indexOf(application.auth_type) !== -1;
+            },
+
+            _onViewSecurityPermissionChanged: function(viewSecurityPermission) {
+                this._threeColumnsView = viewSecurityPermission;
+            },
+
             _setSharedElement: function(target) {
 
                 while (target.tagName.toLowerCase() !== 'paper-card' && !target._templateInstance) {
@@ -382,17 +412,6 @@
 
             _onCompanyIdpSamlMetadataReponse: function(event) {
                 this._idpMetadata = event.detail.response;
-            },
-
-            /**
-             * Computes isSAMLApp value
-             *
-             * @param {Object} application
-             * @returns {boolean}
-             * @private
-             */
-            _computeIsSAMLApp: function(application) {
-                    return ['saml', 'saml_dropbox', 'saml_office_365'].indexOf(application.auth_type) !== -1;
             },
 
             reloadAssignees: function() {

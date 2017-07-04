@@ -1,17 +1,13 @@
 <link rel="import" href="../../../../bower_components/polymer/polymer.html">
 <link rel="import" href="../../../../bower_components/iron-flex-layout/iron-flex-layout.html">
-<link rel="import" href="../../../../bower_components/paper-button/paper-button.html">
-<link rel="import" href="../../../../bower_components/paper-dialog/paper-dialog.html">
 <link rel="import" href="../../../../bower_components/iron-ajax/iron-request.html">
 <link rel="import" href="../../../../bower_components/paper-styles/typography.html">
-<link rel="import" href="../../../../bower_components/paper-styles/shadow.html">
 <link rel="import" href="../../../../bower_components/neon-animation/neon-shared-element-animatable-behavior.html">
 <link rel="import" href="../../../../bower_components/neon-animation/animations/hero-animation.html">
 <link rel="import" href="../../../../bower_components/neon-animation/animations/fade-out-animation.html">
 
 <link rel="import" href="../../components/appsco-loader.html">
 <link rel="import" href="../../components/appsco-search.html">
-
 <link rel="import" href="../appsco-application-card.html">
 
 <dom-module id="appsco-company-application-sso-list">
@@ -40,22 +36,6 @@
                 @apply(--paper-font-body2);
                 @apply(--info-message);
             }
-            :host .or-add-container {
-                color: var(--secondary-text-color);
-                line-height: 24px;
-            }
-            :host .add-custom-app-container {
-                margin-top: 10px;
-            }
-            :host .link-button {
-                padding: 0;
-                margin: 0;
-                min-width: initial;
-                background-color: transparent;
-                font-size: inherit;
-                text-transform: uppercase;
-                @apply(--link-button);
-            }
         </style>
 
         <appsco-search id="appscoSearch"
@@ -81,14 +61,6 @@
             </template>
         </div>
 
-        <!--<template is="dom-if" if="[[ _customApplicationAction ]]">-->
-            <!--<div class="or-add-container add-custom-app-container">-->
-                <!--or-->
-                <!--<paper-button class="link-button"-->
-                              <!--on-tap="_onAddSSOApplication">Add custom SSO application</paper-button>-->
-            <!--</div>-->
-        <!--</template>-->
-
     </template>
 
     <script>
@@ -103,6 +75,9 @@
                  */
                 selectedApplication: {
                     type: Object,
+                    value: function() {
+                        return {};
+                    },
                     notify: true
                 },
 
@@ -120,14 +95,16 @@
                  * Message to display if there is no search result.
                  */
                 _message: {
-                    type: String
+                    type: String,
+                    value: ''
                 },
 
                 /**
                  * Authorization token.
                  */
                 authorizationToken: {
-                    type: String
+                    type: String,
+                    value: ''
                 },
 
                 /**
@@ -135,7 +112,8 @@
                  * API to get applications.
                  */
                 applicationsTemplateApi: {
-                    type: String
+                    type: String,
+                    value: ''
                 },
 
                 /**
@@ -149,16 +127,6 @@
                 _computedHeaders: {
                     type: Object,
                     computed: '_computeHeaders(authorizationToken)'
-                },
-
-                _searchActive: {
-                    type: Boolean,
-                    value: false
-                },
-
-                _customApplicationAction: {
-                    type: Boolean,
-                    value: false
                 },
 
                 /**
@@ -214,7 +182,7 @@
             ],
 
             attached: function() {
-                this._populateTopTenSSOApps();
+                this._populateTopSSOApps();
             },
 
             _computeHeaders: function (authorizationToken) {
@@ -224,11 +192,27 @@
                 }
             },
 
-            _populateTopTenSSOApps: function() {
+            _showLoader: function() {
+                this._searchLoader = true;
+            },
+
+            _hideLoader: function() {
+                this._searchLoader = false;
+            },
+
+            _showMessage: function(message) {
+                this._message = message;
+            },
+
+            _hideMessage: function() {
+                this._message = '';
+            },
+
+            _populateTopSSOApps: function() {
                 var request = document.createElement('iron-request'),
                     url = this.applicationsTemplateApi + '?status=3&extended=1&limit=8';
 
-                this._message = '';
+                this._hideMessage();
 
                 var options = {
                     url: url,
@@ -243,7 +227,8 @@
                     if (applications && applications.length > 0) {
                         this.set('_searchList', applications);
                     }
-                    this._searchLoader = false;
+
+                    this._hideLoader();
                 }.bind(this));
             },
 
@@ -257,18 +242,18 @@
                 var searchValue = event.detail.term,
                     searchLength = searchValue.length;
 
-                this._searchLoader = true;
-                this._message = '';
-                this._searchActive = true;
+                this._showLoader();
+                this._hideMessage();
+
+                if (0 === searchLength) {
+                    this._populateTopSSOApps();
+
+                    return false;
+                }
 
                 if (searchLength < 3) {
-                    this._hideCustomApplicationAction();
-                    this._message = 'Please type three or more letters.';
-                    if (searchLength === 0) {
-                        this._searchActive = false;
-                        this._message = '';
-                    }
-                    this._searchLoader = false;
+                    this._showMessage('Please type three or more letters.');
+                    this._hideLoader();
                     this.set('_searchList', []);
 
                     return false;
@@ -277,7 +262,7 @@
                 var request = document.createElement('iron-request'),
                     url = this.applicationsTemplateApi + '?status=3&extended=1&limit=' + this.size + '&term=' + searchValue;
 
-                this._message = '';
+                this._hideMessage();
 
                 var options = {
                     url: url,
@@ -291,15 +276,13 @@
 
                     if (applications && applications.length > 0) {
                         this.set('_searchList', applications);
-                        this._hideCustomApplicationAction();
                     }
                     else {
                         this.set('_searchList', []);
-                        this._message = 'There are no applications with asked title. Please check your input.';
-                        this._showCustomApplicationAction();
+                        this._showMessage('There are no applications with asked title. Please check your input.');
                     }
 
-                    this._searchLoader = false;
+                    this._hideLoader();
                 }.bind(this));
             },
 
@@ -342,14 +325,6 @@
                 this.fire('add-custom-sso');
             },
 
-            _showCustomApplicationAction: function() {
-                this._customApplicationAction = true;
-            },
-
-            _hideCustomApplicationAction: function() {
-                this._customApplicationAction = false;
-            },
-
             /**
              * Sets focus on search input.
              */
@@ -363,10 +338,9 @@
             reset: function() {
                 this.$.appscoSearch.reset();
                 this._searchList = [];
-                this._populateTopTenSSOApps();
-                this._searchActive = false;
-                this._message = '';
-                this._hideCustomApplicationAction();
+                this._populateTopSSOApps();
+                this._hideMessage();
+                this._hideLoader();
             }
         });
     </script>

@@ -6,30 +6,16 @@
 <link rel="import" href="../../bower_components/neon-animation/neon-animation-runner-behavior.html">
 <link rel="import" href="../../bower_components/neon-animation/animations/transform-animation.html">
 
-<link rel="import" href="appsco-company-domain-item.html">
+<link rel="import" href="appsco-company-idp-domain-item.html">
 
 <!--
-`appsco-company-domains`
-Contains domain list and Load More action.
+`appsco-company-idp-domains`
+Contains domain list for which IdP settings can be set.
 Domains are loaded inside component through iron-ajax.
-
-    <appsco-company-domains company="{}">
-    </appsco-company-domains>
-
-### Styling
-
-`<appsco-company-domains>` provides the following custom properties and mixins for styling:
-
-Custom property | Description | Default
-----------------|-------------|----------
-`--appsco-company-domains` | Mixin for the root element | `{}`
-`--appsco-company-domain-item` | Mixin for item style | `{}`
-`--domains-container` | Mixin for the domains container | `{}`
-`--domains-progress-bar` | Mixin applied to paper-progress for domain list | `{}`
 
 -->
 
-<dom-module id="appsco-company-domains">
+<dom-module id="appsco-company-idp-domains">
     <template>
         <style>
             :host {
@@ -37,16 +23,15 @@ Custom property | Description | Default
                 position: relative;
                 @apply(--layout-vertical);
                 @apply(--layout-center);
-                @apply(--appsco-company-domains);
             }
             .domains {
                 @apply(--layout-vertical);
                 @apply(--layout-start);
             }
-            appsco-company-domain-item {
+            appsco-company-idp-domain-item {
                 width: 100%;
                 margin: 0 0 10px 0;
-                @apply(--appsco-company-domain-item);
+                @apply(--appsco-company-idp-domain-item);
             }
             .domains-container {
                 width: 100%;
@@ -55,17 +40,6 @@ Custom property | Description | Default
             appsco-loader {
                 background-color: rgba(255, 255, 255, 0.4);
             }
-            .load-more-box {
-                margin-top: 10px;
-                padding-top: 4px;
-                position: relative;
-            }
-            .load-more-box paper-progress {
-                width: 100%;
-                position: absolute;
-                top: 4px;
-                left: 0;
-            }
             .progress-bar {
                 min-width: 100px;
                 width: 100%;
@@ -73,23 +47,6 @@ Custom property | Description | Default
                 top: 0;
                 left: 0;
                 @apply(--domains-progress-bar);
-            }
-            paper-button {
-                display: block;
-                width: 120px;
-                margin: 20px auto 0;
-                text-align: center;
-                @apply(--load-more-button);
-            }
-            .info-total {
-                margin-bottom: 10px;
-            }
-            .total {
-                @apply(--paper-font-caption);
-                color: var(--secondary-text-color);
-            }
-            .emphasized {
-                color: var(--app-danger-color);
             }
             .message {
                 color: var(--secondary-text-color);
@@ -119,41 +76,26 @@ Custom property | Description | Default
 
             <template is="dom-if" if="[[ !_domainsEmpty ]]">
 
-                <div class="info-total">
-                    <div class="total">
-                        Total verified domains: [[ _verifiedDomains ]]
-                        <span class="total emphasized">([[ _unverifiedDomains ]] unverified)</span>
-                    </div>
-                </div>
-
                 <div class="domains">
                     <template is="dom-repeat"
-                              items="{{ _domains }}"
+                              items="[[ _domains ]]"
                               on-dom-change="_onItemsDomChange">
 
-                        <appsco-company-domain-item id="appscoDomainItem_[[ index ]]"
-                                                    domain="{{ item }}"
-                                                    domains-api="[[ domainsApi ]]"
-                                                    authorization-token="[[ authorizationToken ]]"
-                                                    preview="[[ preview ]]"></appsco-company-domain-item>
+                        <appsco-company-idp-domain-item id="appscoDomainItem_[[ index ]]"
+                                                        domain="[[ item ]]"
+                                                        preview="[[ preview ]]"></appsco-company-idp-domain-item>
 
                     </template>
                 </div>
             </template>
         </div>
 
-        <template is="dom-if" if="[[ !_domainsEmpty ]]">
-            <div class="load-more-box" hidden$="[[ !_loadMore ]]">
-                <paper-progress id="loadMoreProgress" indeterminate></paper-progress>
-                <paper-button on-tap="_loadMoreDomains" id="loadMore">Load More</paper-button>
-            </div>
-        </template>
     </template>
 
     <script>
         Polymer({
 
-            is: 'appsco-company-domains',
+            is: 'appsco-company-idp-domains',
 
             properties: {
 
@@ -182,14 +124,6 @@ Custom property | Description | Default
                 },
 
                 /**
-                 * Show load more button
-                 */
-                loadMore: {
-                    type: Boolean,
-                    value: false
-                },
-
-                /**
                  * Indicates if domain should be in preview mode rather then full detailed view.
                  */
                 preview: {
@@ -197,14 +131,15 @@ Custom property | Description | Default
                     value: false
                 },
 
-                _loadMore: {
-                    type: Boolean,
-                    value: false
-                },
-
                 _computedHeaders: {
                     type: Object,
                     computed: '_computeHeaders(authorizationToken)'
+                },
+
+                _domainsApiUrl: {
+                    type: String,
+                    computed: '_computeDomainsApiUrl(domainsApi, size)',
+                    observer: '_onDomainsApiUrlChanged'
                 },
 
                 _domains: {
@@ -222,39 +157,19 @@ Custom property | Description | Default
                     }
                 },
 
+                _totalDomains: {
+                    type: Number,
+                    value: 0
+                },
+
                 _domainsEmpty: {
                     type: Boolean,
                     value: false
                 },
 
-                _verifiedDomains: {
-                    type: Number,
-                    value: 0
-                },
-
-                _unverifiedDomains: {
-                    type: Number,
-                    value: 0
-                },
-
                 _message: {
                     type: String,
                     value: ''
-                },
-
-                _domainsApiUrl: {
-                    type: String,
-                    computed: '_computeDomainsApiUrl(domainsApi, size)',
-                    observer: '_onDomainsApiUrlChanged'
-                },
-
-                _next: {
-                    type: String
-                },
-
-                _totalDomains: {
-                    type: Number,
-                    value: 0
                 },
 
                 _renderedIndex: {
@@ -286,6 +201,39 @@ Custom property | Description | Default
                 Polymer.NeonAnimationRunnerBehavior
             ],
 
+            reloadDomains: function() {
+                this._loadDomains();
+            },
+
+            modifyDomain: function(domain) {
+                var domains = JSON.parse(JSON.stringify(this._domains)),
+                    length = domains.length,
+                    allDomains = JSON.parse(JSON.stringify(this._allDomains)),
+                    allLength = allDomains.length;
+
+                for (var i = 0; i < length; i++) {
+                    if (domain.alias === domains[i].alias) {
+                        domains[i] = domain;
+                        break;
+                    }
+                }
+
+                for (var j = 0; j < allLength; j++) {
+                    if (domain.alias === allDomains[j].alias) {
+                        allDomains[j] = domain;
+                        break;
+                    }
+                }
+
+                this.set('_domains', []);
+                this.set('_allDomains', []);
+
+                setTimeout(function() {
+                    this.set('_domains', domains);
+                    this.set('_allDomains', allDomains);
+                }.bind(this), 10);
+            },
+
             _computeDomainsApiUrl: function(domainsApi, size) {
                 return (domainsApi && size) ? (domainsApi + '&page=1&limit=' + size) : '';
             },
@@ -294,14 +242,6 @@ Custom property | Description | Default
                 return {
                     'Authorization': 'token ' + authorizationToken
                 }
-            },
-
-            _setLoadMoreAction: function() {
-                this._loadMore = (this.loadMore && this._allDomains.length < this._totalDomains);
-            },
-
-            _hideLoadMoreAction: function() {
-                this._loadMore = false;
             },
 
             _onDomainsApiUrlChanged: function(url) {
@@ -313,19 +253,8 @@ Custom property | Description | Default
 
             _loadDomains: function() {
                 this._showProgressBar();
-                this._loadMore = false;
                 this.set('_domains', []);
                 this.set('_allDomains', []);
-                this.$.getDomainsApiRequest.generateRequest();
-            },
-
-            reloadDomains: function() {
-                this._loadDomains();
-            },
-
-            _loadMoreDomains: function() {
-                this._showLoadMoreProgressBar();
-                this.$.getDomainsApiRequest.url = this._next;
                 this.$.getDomainsApiRequest.generateRequest();
             },
 
@@ -346,20 +275,15 @@ Custom property | Description | Default
                 this.fire('empty-load');
 
                 this._hideProgressBar();
-                this._hideLoadMoreProgressBar();
             },
 
             _onResponse: function(event) {
                 var response = event.detail.response,
                     domains = response.domains,
                     meta = response.meta,
-                    verifiedCount = response.verified,
                     domainsCount = domains.length - 1;
 
                 this._totalDomains = meta.total;
-                this._verifiedDomains = verifiedCount;
-                this._unverifiedDomains = this._totalDomains - verifiedCount;
-                this._next = meta.next + "&limit=" + this.size;
 
                 if (meta.total === 0) {
                     this._handleEmptyLoad();
@@ -371,22 +295,15 @@ Custom property | Description | Default
 
                 domains.forEach(function(el, index) {
 
-                    setTimeout( function() {
+                    setTimeout(function() {
 
-                        this.push('_domains', el);
-                        this.push('_allDomains', el);
+                        if (el.verified) {
+                            this.push('_domains', el);
+                            this.push('_allDomains', el);
+                        }
 
                         if (index == domainsCount) {
-
-                            this._loadMore = this.loadMore;
-
-                            if (this._domains.length === meta.total) {
-                                this._loadMore = false;
-                            }
-
                             this._hideProgressBar();
-                            this._hideLoadMoreProgressBar();
-                            this._setLoadMoreAction();
 
                             /**
                              * Fired when domains are loaded
@@ -399,114 +316,19 @@ Custom property | Description | Default
                             });
                         }
 
-                    }.bind(this), (index + 1) * 30 );
+                    }.bind(this), (index + 1) * 30);
 
                 }.bind(this));
-            },
-
-            addDomain: function(domain, respectLimit) {
-                this._domainsEmpty = false;
-                this._message = '';
-                this._renderedIndex = 0;
-
-                this.unshift('_domains', domain);
-                this.unshift('_allDomains', domain);
-
-                if (respectLimit && this._domains.length > this.size) {
-                    this.pop('_domains');
-                    this.pop('_allDomains');
-                }
-
-                domain.verified ? this._verifiedDomains++ : this._unverifiedDomains++;
-                this._totalDomains++;
-            },
-
-            modifyDomain: function(domain) {
-                var _domains = JSON.parse(JSON.stringify(this._domains)),
-                    _length = _domains.length,
-                    allDomains = JSON.parse(JSON.stringify(this._allDomains)),
-                    allLength = allDomains.length;
-
-                for (var j = 0; j < _length; j++) {
-                    if (domain.alias === _domains[j].alias) {
-                        _domains[j] = domain;
-                        break;
-                    }
-                }
-
-                for (var k = 0; k < allLength; k++) {
-                    if (domain.alias === allDomains[k].alias) {
-                        allDomains[k] = domain;
-                        break;
-                    }
-                }
-
-                this.set('_domains', []);
-                this.set('_domains', _domains);
-
-                this.set('_allDomains', []);
-                this.set('_allDomains', allDomains);
-
-                if (domain.verified) {
-                    this._verifiedDomains++;
-                    this._unverifiedDomains--;
-                }
-                else {
-                    this._verifiedDomains--;
-                    this._unverifiedDomains++;
-                }
-            },
-
-            removeDomain: function(domain) {
-                var _domains = this._domains,
-                    _length = _domains.length,
-                    allDomains = this._allDomains,
-                    allLength = allDomains.length;
-
-                for (var j = 0; j < _length; j++) {
-
-                    if (domain.alias === _domains[j].alias) {
-                        this.splice('_domains', j, 1);
-                        break;
-                    }
-                }
-
-                for (var k = 0; k < allLength; k++) {
-
-                    if (domain.alias === allDomains[k].alias) {
-                        this.splice('_allDomains', k, 1);
-                        break;
-                    }
-                }
-
-                domain.verified ? this._verifiedDomains-- : this._unverifiedDomains--;
-                this._totalDomains--;
-
-                if (0 === this._domains.length) {
-                    this._handleEmptyLoad();
-                }
             },
 
             _showProgressBar: function() {
                 this.$$('#paperProgress').hidden = false;
             },
 
-            _showLoadMoreProgressBar: function() {
-                this.$$('#loadMoreProgress').hidden = false;
-            },
-
             _hideProgressBar: function() {
 
                 setTimeout(function() {
                     this.$$('#paperProgress').hidden = true;
-                }.bind(this), 300);
-
-            },
-
-            _hideLoadMoreProgressBar: function() {
-
-                setTimeout(function() {
-                    this.$$('#loadMoreProgress').hidden = true;
                 }.bind(this), 300);
 
             },

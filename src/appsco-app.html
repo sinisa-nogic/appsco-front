@@ -108,6 +108,7 @@
 <link rel="import" href="company/appsco-company-remove-domain.html">
 <link rel="import" href="company/appsco-company-domain-token.html">
 <link rel="import" href="company-account/appsco-company-account-page-actions.html">
+<link rel="import" href="company/appsco-deactivate-idp-settings.html">
 
 <link rel="import" href="application/appsco-dialog-application-add.html">
 <link rel="import" href="applications/appsco-dialog-application-company-add.html">
@@ -953,6 +954,7 @@
                             authorization-token="[[ authorizationToken ]]"
                             computed-headers="[[ _computedHeaders ]]"
                             brand-logo="[[ _brandLogo ]]"
+                            api-errors="[[ _apiErrors ]]"
                             on-company-settings-changed="_onCompanySettingsChanged"
                             on-company-brand-settings-changed="_onCompanyBrandSettingsChanged"
                             on-company-logo-changed="_onCompanyLogoChanged"
@@ -965,6 +967,8 @@
                             on-domain-verified="_onDomainVerified"
                             on-domain-not-verified="_onDomainNotVerified"
                             on-remove-group-from-company-role="_onRemoveGroupFromCompanyRole"
+                            on-idp-settings-saved="_onIdPSettingsSaved"
+                            on-deactivate-domain-idp-settings="_onDeactivateDomainIdPSettings"
                     ></appsco-company-page>
 
                     <appsco-logout-page name="logout"
@@ -1309,6 +1313,12 @@
                 on-contacts-removed="_onDeletedContacts"
                 on-contacts-remove-failed="_onDeleteContactsFailed">
         </appsco-delete-contacts>
+
+        <appsco-deactivate-idp-settings
+                id="appscoDeactivateIdPSettings"
+                authorization-token="[[ authorizationToken ]]"
+                api-errors="[[ _apiErrors ]]"
+                on-idp-settings-deactivated="_onIdPSettingsDeactivated"></appsco-deactivate-idp-settings>
 
         <template is="dom-if" if="[[ api.me ]]">
             <iron-ajax auto
@@ -4201,6 +4211,22 @@
             // TODO
             _onAddItemToGroupAction: function(event) {
                 var action = event.detail.action;
+            },
+
+            _onIdPSettingsSaved: function(event) {
+                this._notify('IdP settings for ' + event.detail.domain.domain + ' domain was successfully saved.');
+            },
+
+            _onDeactivateDomainIdPSettings: function(event) {
+                this.$.appscoDeactivateIdPSettings.setDomain(event.detail.domain);
+                this.$.appscoDeactivateIdPSettings.open();
+            },
+
+            _onIdPSettingsDeactivated: function(event) {
+                var domain = event.detail.domain;
+
+                this.$.appscoCompanyPage.modifyDomain(domain);
+                this._notify('IdP settings for ' + domain.domain + ' domain was successfully deactivated.');
             },
             /**
              * Company page END

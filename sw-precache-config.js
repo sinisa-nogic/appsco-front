@@ -13,5 +13,9 @@ module.exports = {
     '/manifest.json',
     '/bower_components/webcomponentsjs/webcomponents-lite.min.js'
   ],
-  navigateFallback: '/index.html'
+  navigateFallback: '/index.html',
+  cacheId: "appscoo",
+  clientsClaim: true,
+  handleFetch: true,
+  skipWaiting: true
 };

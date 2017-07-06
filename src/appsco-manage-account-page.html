@@ -241,7 +241,7 @@
                         <appsco-manage-account-change-password-page
                                 name="appsco-manage-account-change-password-page"
                                 authorization-token="[[ authorizationToken ]]"
-                                change-password-api="[[ changePasswordApi ]]"
+                                change-password-api="[[ _changePasswordApi ]]"
                                 on-password-changed="_onPasswordChanged"
                                 on-back="_onResourceBack">
                         </appsco-manage-account-change-password-page>
@@ -265,14 +265,13 @@
         <iron-ajax id="ironAjaxGetAccount"
                    on-error="_onAccountError"
                    on-response="_onAccountResponse"
-                   headers="{{ _computedHeaders }}">
-        </iron-ajax>
-        <iron-ajax id="ironAjaxCanBeManaged"
+                   headers="[[ _computedHeaders ]]"></iron-ajax>
+
+        <iron-ajax auto
+                   url="[[ _canBeManagedApi ]]"
                    on-error="_onCanBeManagedError"
                    on-response="_onCanBeManagedResponse"
-                   headers="[[ _computedHeaders ]]"
-                   >
-        </iron-ajax>
+                   headers="[[ _computedHeaders ]]"></iron-ajax>
 
     </template>
 
@@ -287,11 +286,6 @@
                     value: function() {
                         return {};
                     }
-                },
-
-                _canManage: {
-                    type: Boolean,
-                    value: false
                 },
 
                 role: {
@@ -318,13 +312,23 @@
                 },
 
                 authorizationToken: {
-                    type: String
+                    type: String,
+                    value: ''
                 },
 
                 companyApi: {
                     type: String,
                     value: '',
                     observer: '_onCompanyApiChanged'
+                },
+
+                /**
+                 * Computed headers.
+                 * It contains authorization token.
+                 */
+                _computedHeaders: {
+                    type: Object,
+                    computed: "_computeHeaders(authorizationToken)"
                 },
 
                 /**
@@ -366,22 +370,22 @@
                     type: String
                 },
 
-
                 /**
                  * Change account password link.
                  */
-                changePasswordApi: {
+                _changePasswordApi: {
                     type: String,
                     computed: '_computeChangePasswordApi(role)'
                 },
 
-                /**
-                 * Computed headers.
-                 * It contains authorization token.
-                 */
-                _computedHeaders: {
-                    type: Object,
-                    computed: "_computeHeaders(authorizationToken)"
+                _canBeManagedApi: {
+                    type: String,
+                    computed: '_computeCanBeManagedApi(role)'
+                },
+
+                _canManage: {
+                    type: Boolean,
+                    value: false
                 },
 
                 /**
@@ -514,6 +518,10 @@
                 return role.self + '/change-password';
             },
 
+            _computeCanBeManagedApi: function(role) {
+                return role.self ? role.self + '/can-be-managed' : '';
+            },
+
             _pageLoaded: function() {
                 this.pageLoaded = true;
                 this.fire('page-loaded');
@@ -543,13 +551,7 @@
                 if (role.self) {
                     this.$.appscoManageAccountComponentsPage.load();
                     this.account = role.account;
-                    this._getCanManage(this._computeCanBeManagedUrl(role));
                 }
-            },
-
-            _getCanManage: function(url) {
-                this.$.ironAjaxCanBeManaged.url = url;
-                this.$.ironAjaxCanBeManaged.generateRequest();
             },
 
             /**
@@ -656,10 +658,6 @@
 
             _onCanBeManagedError: function(event) {
                 this._canManage = false;
-            },
-
-            _computeCanBeManagedUrl: function(role) {
-                return role.self ? role.self + '/can-be-managed' : '';
             },
 
             reloadApplications: function() {

@@ -390,12 +390,15 @@
                         <a name="vault" href="#">
                             <iron-icon icon="icons:work"></iron-icon> <span class="menu-text">Vault</span>
                         </a>
-                        <div purchase>
-                            <div>Manage your business applications, employees and get meaningful insights.</div>
-                            <paper-button on-tap="_showTryBusinessPage">
-                                Try Appsco Business
-                            </paper-button>
-                        </div>
+
+                        <template is="dom-if" if="[[ account.user_allowed_to_create_company ]]">
+                            <div purchase>
+                                <div>Manage your business applications, employees and get meaningful insights.</div>
+                                <paper-button on-tap="_showTryBusinessPage">
+                                    Try Appsco Business
+                                </paper-button>
+                            </div>
+                        </template>
                     </template>
 
                     <template is="dom-if" if="[[ _companyPage ]]">
@@ -664,6 +667,7 @@
                             authorization-token="[[ authorizationToken ]]"
                             company-upgrade-api="[[ api.upgradeToBusiness ]]"
                             on-upgraded="_upgradedToBusiness"
+                            on-upgrade-failed="_onUpgradeToCompanyFailed"
                     ></appsco-trybusiness-page>
 
                     <appsco-company-home-page
@@ -861,6 +865,7 @@
                             id="appscoCompanyPage"
                             name="company"
                             company="{{ currentCompany.company }}"
+                            account="[[ account ]]"
                             authorization-token="[[ authorizationToken ]]"
                             computed-headers="[[ _computedHeaders ]]"
                             brand-logo="[[ _brandLogo ]]"
@@ -3649,6 +3654,10 @@
                 setTimeout(function() {
                     this._notify('Please setup your company settings.');
                 }.bind(this), 2000);
+            },
+
+            _onUpgradeToCompanyFailed: function(event) {
+                this._notify(this._apiErrors.getError(event.detail.error), true);
             },
 
             _onShowDomainsPageActions: function() {

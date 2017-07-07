@@ -633,6 +633,14 @@
                 this.$.appscoContent.toggleSection('info');
             },
 
+            _showLoader: function() {
+                this._loader = true;
+            },
+
+            _hideLoader: function() {
+                this._loader = false;
+            },
+
             _upgradeToBusiness: function() {
                 var request = document.createElement('iron-request'),
                     options = {
@@ -646,7 +654,7 @@
                         }
                     };
 
-                this._loader = true;
+                this._showLoader();
 
                 request.send(options).then(function() {
 
@@ -656,8 +664,15 @@
                         });
                     }
 
-                    this._loader = false;
+                    this._hideLoader();
 
+                }.bind(this), function() {
+
+                    this.fire('upgrade-failed', {
+                        error: request.response.code
+                    });
+
+                    this._hideLoader();
                 }.bind(this));
             }
         });

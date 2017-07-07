@@ -363,7 +363,7 @@
                 notifications-api="[[ api.notifications ]]"
                 logout-api="[[ api.logout ]]"
                 notifications-size="5"
-                product-business="[[ account.companies ]]"
+                product-business="[[ _companiesAccountHasPermissionTo ]]"
                 product-partner="[[ account.partner ]]"
                 domain="{{ domain }}"
                 on-brand-action="_onBrandAction"
@@ -1210,6 +1210,11 @@
                        on-response="_onGetAccountResponse"
                        on-error="_onGetAccountError"
                        headers="[[ _computedHeaders ]]"></iron-ajax>
+
+            <iron-ajax auto
+                       url="[[ api.companiesAccountIsContactInApi ]]"
+                       on-response="_onGetCompaniesAccountIsContactInApiResponse"
+                       headers="[[ _computedHeaders ]]"></iron-ajax>
         </template>
 
         <template is="dom-if" if="[[ api.dashboards ]]">
@@ -1327,6 +1332,18 @@
                     },
                     notify: true,
                     observer: '_onCurrentCompanyChanged'
+                },
+
+                _companiesAccountIsContactIn: {
+                    type: Array,
+                    value: function() {
+                        return [];
+                    }
+                },
+
+                _companiesAccountHasPermissionTo: {
+                    type: Array,
+                    computed: '_computeCompaniesAccountHasPermissionTo(account, _companiesAccountIsContactIn)'
                 },
 
                 /**
@@ -1625,6 +1642,12 @@
                 return company.company_admin;
             },
 
+            _computeCompaniesAccountHasPermissionTo: function(account, companiesAccountIsContactIn) {
+
+                return (account.companies && 0 < account.companies.length && 0 < companiesAccountIsContactIn.length) ?
+                    account.companies.concat(companiesAccountIsContactIn) : [];
+            },
+
             _setProduct: function(company) {
                 var appscoHeader = this.$.appscoHeader;
 
@@ -1825,6 +1848,18 @@
 
             _onGetAccountError: function() {
 //                this._showPage404();
+            },
+
+            _onGetCompaniesAccountIsContactInApiResponse: function(event) {
+                var response = event.detail.response;
+
+                if (response.companies && 0 < response.companies.length) {
+                    this.set('_companiesAccountIsContactIn', response.companies.map(function(company) {
+                        return {
+                            company: company
+                        };
+                    }));
+                }
             },
 
             _setGetApplicationsApi: function() {

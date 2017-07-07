@@ -171,6 +171,13 @@ Custom property | Description | Default
                     reflectToAttribute: true
                 },
 
+                account: {
+                    type: Object,
+                    value: function () {
+                        return {};
+                    }
+                },
+
                 /**
                  * Authorization token.
                  */
@@ -203,6 +210,11 @@ Custom property | Description | Default
                  * Show load more button
                  */
                 loadMore: {
+                    type: Boolean,
+                    value: false
+                },
+
+                isOnCompany: {
                     type: Boolean,
                     value: false
                 },
@@ -325,7 +337,8 @@ Custom property | Description | Default
 
             ready: function () {
 
-                if (this.applicationsApi && this.applicationsApi != '') {
+                if (this.applicationsApi && this.applicationsApi != '' &&
+                        (this.account.personal_dashboard_allowed || this.isOnCompany == true)) {
                     this._currentUrl = this.applicationsApi + '?page=1&extended=1&limit=' + this.size;
                 }
 
@@ -349,24 +362,30 @@ Custom property | Description | Default
             },
 
             _loadApplications: function() {
-                var iconsPushList = this._iconsPushList;
+                if (this.account.personal_dashboard_allowed || this.isOnCompany == true) {
+                    var iconsPushList = this._iconsPushList;
 
-                if (iconsPushList.length > 0) {
-                    for (var c in iconsPushList) {
-                        clearTimeout(iconsPushList[c]);
+                    if (iconsPushList.length > 0) {
+                        for (var c in iconsPushList) {
+                            clearTimeout(iconsPushList[c]);
+                        }
                     }
-                }
 
-                this.$$('#paperProgress').hidden = false;
-                this._loadMore = false;
-                this._currentUrl = this.applicationsApi + '?page=1&extended=1&limit=' + this.size;
-                this.set('_applications', []);
-                this.set('_allApplications', []);
+                    this.$$('#paperProgress').hidden = false;
+                    this._loadMore = false;
+
+                    this._currentUrl = this.applicationsApi + '?page=1&extended=1&limit=' + this.size;
+
+                    this.set('_applications', []);
+                    this.set('_allApplications', []);
+                }
             },
 
             _loadMoreApps: function () {
-                this.$$('#loadMoreProgress').hidden = false;
-                this._currentUrl = this._next;
+                if (this.account.personal_dashboard_allowed || this.isOnCompany == true) {
+                    this.$$('#loadMoreProgress').hidden = false;
+                    this._currentUrl = this._next;
+                }
             },
 
             _onError: function() {
@@ -388,6 +407,9 @@ Custom property | Description | Default
             },
 
             _onResponse: function(e) {
+                if (!e.detail.response) {
+                    return false;
+                }
                 var me = this,
                     response = e.detail.response,
                     icons = response.icons ? response.icons : response.applications,

@@ -887,7 +887,8 @@
                     <appsco-logout-page name="logout"
                                         logout-api="[[ api.logout ]]"></appsco-logout-page>
 
-                    <appsco-not-found-page name="404"></appsco-not-found-page>
+                    <appsco-not-found-page name="404"
+                                           on-back-to-home-page="_onBackToHomePageAction"></appsco-not-found-page>
                 </neon-animated-pages>
             </app-header-layout>
         </app-drawer-layout>
@@ -1648,9 +1649,9 @@
             },
 
             _computeCompaniesAccountHasPermissionTo: function(account, companiesAccountIsContactIn) {
+                var companies = (account.companies && 0 < account.companies.length) ? account.companies : [];
 
-                return (account.companies && 0 < account.companies.length && 0 < companiesAccountIsContactIn.length) ?
-                    account.companies.concat(companiesAccountIsContactIn) : [];
+                return (0 < companiesAccountIsContactIn.length) ? companies.concat(companiesAccountIsContactIn) : companies;
             },
 
             _setProduct: function(company) {
@@ -1773,6 +1774,10 @@
                 this._showPage('logout');
             },
 
+            _showContactHomePage: function() {
+                this._showPage('contact-home');
+            },
+
             _showPage404: function() {
                 this.page = '404';
                 this._pageName = 'Not Found';
@@ -1861,7 +1866,8 @@
                 if (response.companies && 0 < response.companies.length) {
                     this.set('_companiesAccountIsContactIn', response.companies.map(function(company) {
                         return {
-                            company: company
+                            company: company,
+                            company_contact: true
                         };
                     }));
                 }
@@ -1955,15 +1961,17 @@
             },
 
             _onAppscoProductChangeAction: function(event) {
-                var panel = event.detail.product;
+                var panel = event.detail.product,
+                    company = event.detail.company;
 
                 if ('appsco-product' === panel && 'home' !== this.page) {
                     this._showHomePage();
                 }
 
                 if ('appsco-business-product' === panel) {
-                    this.currentCompany = event.detail.company;
-                    this._showCompanyHomePage();
+                    this.currentCompany = company;
+
+                    company.company_contact ? this._showContactHomePage() : this._showCompanyHomePage();
                 }
 
             },
@@ -4377,6 +4385,11 @@
                     this._reloadHomePageApplications();
                     this._reloadCompanyHomePageApplications();
                 }
+            },
+
+            _onBackToHomePageAction: function() {
+                this._showHomePage();
+                this._setProduct(false);
             }
             /**
              * Global END

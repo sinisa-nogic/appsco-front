@@ -592,6 +592,7 @@
                             id="appscoHomePage"
                             name="home"
                             application="{{ application }}"
+                            account="[[ account ]]"
                             application-log="[[ application.meta.log ]]"
                             authorization-token="[[ authorizationToken ]]"
                             applications-api="[[ _applicationsApi ]]"
@@ -673,6 +674,7 @@
                             name="company-home"
                             authorization-token="[[ authorizationToken ]]"
                             applications-api="[[ _companyIconsApi ]]"
+                            account="[[ account ]]"
                             on-loaded="_onLoadedApplications"
                     ></appsco-company-home-page>
 
@@ -680,6 +682,7 @@
                             id="appscoApplicationsPage"
                             name="resources"
                             application="{{ _companyApplication }}"
+                            account="[[ account ]]"
                             application-log="[[ _companyApplication.meta.log ]]"
                             authorization-token="[[ authorizationToken ]]"
                             computed-headers="[[ _computedHeaders ]]"
@@ -1206,6 +1209,7 @@
 
         <template is="dom-if" if="[[ api.me ]]">
             <iron-ajax auto
+                       id = "getAccountRequest"
                        url="[[ api.me ]]"
                        on-response="_onGetAccountResponse"
                        on-error="_onGetAccountError"
@@ -1566,7 +1570,8 @@
             observers: [
                 '_updateScreen(mobileScreen, tabletScreen)',
                 '_routePageChanged(routeData.page)',
-                '_changeTheme(_companyPage, currentCompany)'
+                '_changeTheme(_companyPage, currentCompany)',
+                '_redirectToCompany(page, currentCompany, account)'
             ],
 
             listeners: {
@@ -1618,19 +1623,27 @@
                 return '';
             },
 
-            _onCurrentCompanyChanged: function(company) {
+            _onCurrentCompanyChanged: function(company, oldCompany) {
 
                 if (company && company.company) {
                     document.cookie = 'company=' + company.company.alias;
 
                     this._setCompanyApi(company);
+                    this._setProduct(this._companyPage);
 
-                    if (this._companyPage) {
-                        this._setProduct(true);
+                    if (oldCompany && oldCompany.company
+                            && company.company.personal_dashboards_allowed !== oldCompany.company.personal_dashboards_allowed) {
+                        this.$$('#getAccountRequest').generateRequest();
                     }
                 }
                 else {
                     this._setProduct(false);
+                }
+            },
+
+            _redirectToCompany(page, currentCompany, account) {
+                if (account.self && currentCompany.company && page) {
+                    this._checkPersonalDashboardPermission(page, account);
                 }
             },
 
@@ -1848,6 +1861,61 @@
                     this.currentCompany = currentCompany;
                 }
 
+            },
+
+            /**
+             * Checks is user allowed to see personal dashboard pages
+             *
+             * @param {String} page
+             * @param {Object} account
+             *
+             * @private
+             */
+            _checkPersonalDashboardPermission: function(page, account) {
+                if (!account.personal_dashboard_allowed) {
+                    this._disablePersonalDashboard(page);
+                } else {
+                    this._enablePersonalDashboard(page);
+                }
+            },
+
+            /**
+             * Remove personal from product list, and redirect user to company page if needed
+             *
+             * @param {String} page
+             *
+             * @private
+             */
+            _disablePersonalDashboard: function(page) {
+                this.$.appscoHeader.removeProduct('appsco-product');
+                this._setProduct(true);
+
+                if (this._isPersonalPage(page)) {
+                    this._showCompanyHomePage();
+                }
+            },
+
+            /**
+             * Returns Personal to product list
+             *
+             * @private
+             */
+            _enablePersonalDashboard: function(page) {
+                this.$.appscoHeader.addPersonalToProducts();
+                this._setProduct(!this._isPersonalPage(page));
+            },
+
+            /**
+             * Returns true if page is on personal dashboard
+             *
+             * @param {String} page
+             * @returns {Boolean}
+             *
+             * @private
+             */
+            _isPersonalPage: function(page) {
+                var personalPages = ['home', 'vault', 'trybusiness', 'account'];
+                return personalPages.indexOf(page) != -1;
             },
 
             _onGetAccountError: function() {

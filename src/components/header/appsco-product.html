@@ -316,14 +316,24 @@ Custom property | Description | Default
 
             },
 
+            _createPersonalProduct: function() {
+                return {
+                    label: 'Personal',
+                    value: 'appsco-product',
+                    name: 'appsco-product',
+                    company: null
+                };
+            },
+
             setProduct: function(product) {
-                var products = this._products,
+                var products = JSON.parse(JSON.stringify(this._products)),
                     length = products.length;
 
                 this.set('_productToSelect', product);
 
                 if (length > 0) {
                     for (var i = 0; i < length; i++) {
+
                         if (product === products[i].value) {
                             this.set('_selectedProduct', products[i]);
                             break;
@@ -331,16 +341,49 @@ Custom property | Description | Default
                     }
                 }
                 else {
-                    this.push('_products', {
-                        label: 'Personal',
-                        value: 'appsco-product',
-                        name: 'appsco-product',
-                        company: null
-                    });
+                    products.push(this._createPersonalProduct());
 
-                    this.set('_productListDisplay', this._products);
+                    this.set('_products', products);
+                    this.set('_productListDisplay',products);
                     this.set('_selectedProduct', products[length]);
                 }
+            },
+
+            removeProduct: function(product) {
+                var products = JSON.parse(JSON.stringify(this._products)),
+                    length = products.length;
+
+                for (var i = 0; i < length; i++) {
+
+                    if (products[i].value == product) {
+                        products.splice(i, 1);
+                        break;
+                    }
+                }
+
+                this.set('_products', []);
+                this.set('_products', products);
+            },
+
+            addPersonalToProducts: function(product) {
+                var products = JSON.parse(JSON.stringify(this._products)),
+                    length = products.length,
+                    alreadyExists = false;
+
+                for (var i = 0; i < length; i++) {
+
+                    if ('appsco-product' === products[i].value) {
+                        alreadyExists = true;
+                        break;
+                    }
+                }
+
+                if (!alreadyExists) {
+                    products.unshift(this._createPersonalProduct());
+                }
+
+                this.set('_products', []);
+                this.set('_products', products);
             },
 
             _onPartnerChanged: function(partner) {

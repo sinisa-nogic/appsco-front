@@ -57,6 +57,9 @@ Custom property | Description | Default
                 margin: 20px 0 0 0;
                 @apply(--form-action);
             }
+            :host #allowPersonalDashboard {
+                margin-top: 10px;
+            }
         </style>
 
         <appsco-loader active="[[ _loader ]]" loader-alt="Appsco is processing request" multi-color></appsco-loader>
@@ -109,6 +112,15 @@ Custom property | Description | Default
                               auto-validate
                               error-message="Please type in correct email."
             ></gold-email-input>
+
+            <p class="info info-personal-dash">
+                If you turn off the personal dashboard for managed users they will no longer be able to view, add and share private resources.
+                Once it's turned back on, users will get back the private dashboard. This applies to all managed users including admins in your company.
+            </p>
+
+            <paper-toggle-button id="allowPersonalDashboard"
+                                 name="company_settings[canHavePrivateDashboards]"
+                                 checked$="[[ _isPersonalDashboardAllowed ]]">Allow personal dashboard</paper-toggle-button>
 
             <div class="toggle-button-container">
                 <p class="info">
@@ -195,6 +207,11 @@ Custom property | Description | Default
                     value: function() {
                         return this.$.form
                     }
+                },
+
+                _isPersonalDashboardAllowed: {
+                    type: Boolean,
+                    computed: '_computeDashboardAllowed(company)'
                 }
             },
 
@@ -210,6 +227,10 @@ Custom property | Description | Default
                     'Authorization': 'token ' + authorizationToken,
                     'Content-Type': 'application/x-www-form-urlencoded'
                 }
+            },
+
+            _computeDashboardAllowed: function(company) {
+                return company.personal_dashboards_allowed;
             },
 
             _onCompanyChanged: function() {

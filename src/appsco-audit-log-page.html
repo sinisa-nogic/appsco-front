@@ -133,11 +133,22 @@
                 <div class="filters">
                     <div class="filter">
 
-                        <appsco-search id="appscoSearchLog"
+                        <appsco-search id="filterAccount"
                                        label="Filter log by account"
                                        float-label
-                                       on-search="_onFilterSearch"
-                                       on-search-clear="_onClearSearch"></appsco-search>
+                                       on-keyup="_onFilterAccountKeyup"
+                                       on-search="_onFilterAccountSearch"
+                                       on-search-clear="_onClearAccountSearch">
+                        </appsco-search>
+                        <paper-listbox id="suggestedAccounts"
+                                       class="dropdown-content"
+                                       attr-for-selected="value"
+                                       on-iron-activate="_onFilterAccount" hidden>
+                                <template is="dom-repeat" items="{{ _accountList }}">
+                                    <paper-item value="[[ item.value ]]"
+                                                label="[[ item.text ]]">[[ item.text ]]</paper-item>
+                                </template>
+                        </paper-listbox>
                     </div>
 
                     <div id="filterEventType" class="filter">
@@ -222,6 +233,11 @@
                     computed: '_computeAuditLogApi(companyApi)'
                 },
 
+                _searchAccountsApi: {
+                    type: String,
+                    computed: '_computeSearchAccountsApi(companyApi, _accountTerm)'
+                },
+
                 _headers: {
                     type: Object,
                     computed: '_computeHeaders(authorizationToken)'
@@ -242,6 +258,22 @@
                     value: function() {
                         return []
                     }
+                },
+
+                _accountList: {
+                    type: Array,
+                    value: function() {
+                        return []
+                    }
+                },
+
+                _accountTerm: {
+                    type: String,
+                    value: ''
+                },
+
+                _filterAccount: {
+                    type: String
                 },
 
                 _filterEventType: {
@@ -346,7 +378,9 @@
             initializePage: function() {},
 
             resetPage: function() {
-                this.$.appscoSearchLog.reset();
+                this.$.filterAccount.reset();
+                this._hideAccountList();
+                this.$.suggestedAccounts.selected = 0;
                 this.$.appscoSearchEventType.reset();
                 this._hideEventTypeList();
                 this.$.filterListEventTypes.selected = 0;
@@ -375,6 +409,9 @@
                 if (!this._isInPath(path, this.$.filterEventType)) {
                     this._hideEventTypeList();
                 }
+                if (!this._isInPath(path, this.$.filterAccount)) {
+                    this._hideAccountList();
+                }
 
             },
 
@@ -391,6 +428,10 @@
                     'Authorization': 'token ' + authorizationToken,
                     'Content-Type': 'application/x-www-form-urlencoded'
                 }
+            },
+
+            _computeSearchAccountsApi: function(companyApi, term) {
+                return companyApi + '/directory/roles?extended=1&limit=50&term=' + term;
             },
 
             _setValidFromDate: function() {
@@ -442,25 +483,6 @@
                 this.$.appscoSearchEventType.setValue(event.detail.item.label);
                 this._filterLog();
                 this._hideEventTypeList();
-            },
-
-            _onFilterSearch: function(event) {
-                var term = event.detail.term;
-
-                if (term.length < 3) {
-                    term = '';
-                }
-
-                this.$.appscoAuditLog.filterLogByTerm(term);
-            },
-
-            _onClearSearch: function () {
-                this.$.appscoSearchLog.reset();
-                this._onFilterSearch({
-                    detail: {
-                        term: ''
-                    }
-                });
             },
 
             _formatEventType: function(item) {
@@ -799,12 +821,83 @@
                 eventTypeFilter.selectedItem.focus();
             },
 
+            _onFilterAccountSearch: function(event) {
+                this._filterAccountListByTerm(event.detail.term);
+            },
+
+            _getAccountsByTerm: function() {
+                return new Promise(function(resolve, reject) {
+                    var request = document.createElement('iron-request'),
+                            options = {
+                                url: this._searchAccountsApi,
+                                method: 'GET',
+                                handleAs: 'json',
+                                headers: {'Authorization': 'token ' + this.authorizationToken}
+                            };
+
+                    request.send(options).then(function() {
+
+                        if (request.response) {
+                            resolve(request.response.company_roles);
+                        }
+
+                    }, function() {
+                        reject(request.response.message);
+                    });
+                }.bind(this));
+            },
+
+            _filterAccountListByTerm: function(term) {
+
+                this._accountTerm = term;
+                this.set('_accountList', []);
+
+                 this._getAccountsByTerm().then(function(accounts) {
+
+                        accounts.forEach(function(elem, index) {
+                            this.push('_accountList', {
+                                value: elem.account.self,
+                                text: elem.account.display_name
+                            });
+
+
+                        }.bind(this));
+
+                }.bind(this));
+            },
+
+            _onFilterAccount: function(event) {
+                this._filterAccount = event.detail.selected;
+                this.$.filterAccount.setValue(event.detail.item.label);
+                this._filterLog();
+                this._hideAccountList();
+            },
+
+            _onClearAccountSearch: function () {
+                this.$.filterAccount.reset();
+                this.$.suggestedAccounts.selected = 0;
+                this._filterAccount = '';
+                this._filterLog();
+            },
+
+            _onFilterAccountKeyup: function() {
+                this._showAccountList();
+            },
+
+            _showAccountList: function () {
+                this.$.suggestedAccounts.hidden = false;
+            },
+
+            _hideAccountList: function() {
+                this.$.suggestedAccounts.hidden = true;
+            },
+
             reloadLog: function() {
                 this.$.appscoAuditLog.reloadLog();
             },
 
             _filterLog: function() {
-                this.$.appscoAuditLog.filter(this._filterEventType, this._filterFromDate, this._filterToDate);
+                this.$.appscoAuditLog.filter(this._filterEventType, this._filterFromDate, this._filterToDate, this._filterAccount);
             },
 
             toggleResource: function() {

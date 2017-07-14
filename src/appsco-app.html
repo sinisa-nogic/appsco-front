@@ -100,6 +100,7 @@
 <link rel="import" href="company/appsco-company-add-domain.html">
 <link rel="import" href="company/appsco-company-remove-domain.html">
 <link rel="import" href="company/appsco-company-domain-token.html">
+<link rel="import" href="company-account/appsco-company-account-page-actions.html">
 
 <link rel="import" href="application/appsco-dialog-application-add.html">
 <link rel="import" href="applications/appsco-dialog-application-company-add.html">
@@ -471,9 +472,16 @@
                             <appsco-account-page-actions
                                     id="appscoAccountPageActions"
                                     name="account"
-                                    on-back="_showHomePage"
+                                    on-back="_onBackFromAccountAction"
                                     on-resource-section="_onResourceActionAccountPage"
                                     on-advanced-settings="_onAccountAdvancedSettings"></appsco-account-page-actions>
+
+                            <appsco-company-account-page-actions
+                                    id="appscoCompanyAccountPageActions"
+                                    name="company-account"
+                                    on-back="_onBackFromAccountAction"
+                                    on-resource-section="_onResourceActionAccountPage"
+                                    on-advanced-settings="_onAccountAdvancedSettings"></appsco-company-account-page-actions>
 
                             <appsco-vault-page-actions
                                     name="vault"
@@ -642,13 +650,27 @@
                             partner-api="[[ api.partner ]]"
                             api-errors="[[ _apiErrors ]]"
                             on-settings-saved="_onAccountSettingsSaved"
-                            on-password-changed="_onAccountPasswordChanged"
-                            on-disable-advanced-settings="_onDisableAdvancedSettings"
-                            on-enable-advanced-settings="_onEnableAdvancedSettings"
-                            on-twofa-enabled="_onTwoFaEnabled"
-                            on-twofa-disabled="_onTwoFaDisabled"
-                            on-revoke-authorized-application="_onRevokeAuthorizedApplication"
-                            on-token-generated="_onTokenGenerated"></appsco-account-page>
+                            on-password-changed="_onAccountPasswordChanged"></appsco-account-page>
+
+                    <appsco-company-account-page
+                            id="appscoCompanyAccountPage"
+                            name="company-account"
+                            account="{{ account }}"
+                            authorization-token="[[ authorizationToken ]]"
+                            notifications-api="[[ api.notifications ]]"
+                            authorized-apps-api="[[ api.authorizedApps ]]"
+                            log-api="[[ api.accountLog ]]"
+                            two-fa-api="[[ api.twoFA ]]"
+                            two-fa-qr-api="[[ api.twoFAQr ]]"
+                            two-fa-codes-api="[[ api.twoFACodes ]]"
+                            settings-api="[[ api.me ]]"
+                            image-settings-api="[[ api.profileImage ]]"
+                            transfer-token-api="[[ api.transferToken ]]"
+                            change-password-api="[[ api.changePassword ]]"
+                            partner-api="[[ api.partner ]]"
+                            api-errors="[[ _apiErrors ]]"
+                            on-settings-saved="_onAccountSettingsSaved"
+                            on-password-changed="_onAccountPasswordChanged"></appsco-company-account-page>
 
                     <appsco-vault-page
                             id="appscoVaultPage"
@@ -1291,6 +1313,11 @@
                     notify: true
                 },
 
+                _accountManaged: {
+                    type: Boolean,
+                    computed: '_computeAccountManagedState(account, currentCompany)'
+                },
+
                 _role: {
                     type: Object,
                     value: function() {
@@ -1571,7 +1598,8 @@
                 '_updateScreen(mobileScreen, tabletScreen)',
                 '_routePageChanged(routeData.page)',
                 '_changeTheme(_companyPage, currentCompany)',
-                '_redirectToCompany(page, currentCompany, account)'
+                '_redirectToCompany(page, currentCompany, account)',
+                '_setupCompanyAccountPage(page, account)'
             ],
 
             listeners: {
@@ -1591,7 +1619,13 @@
                 'label-added': '_onLabelAdded',
                 'remove-invitation': '_onRemoveInvitationAction',
                 'reload-contacts': '_onReloadContacts',
-                'change-assignee-claims': '_onChangeAssigneeClaims'
+                'change-assignee-claims': '_onChangeAssigneeClaims',
+                'enable-advanced-settings': '_onEnableAccountAdvancedSettings',
+                'disable-advanced-settings': '_onDisableAccountAdvancedSettings',
+                'twofa-enabled': '_onTwoFaEnabled',
+                'twofa-disabled': '_onTwoFaDisabled',
+                'revoke-authorized-application': '_onRevokeAuthorizedApplication',
+                'token-generated': '_onTokenGenerated'
             },
 
             attached: function() {
@@ -1641,7 +1675,7 @@
                 }
             },
 
-            _redirectToCompany(page, currentCompany, account) {
+            _redirectToCompany: function(page, currentCompany, account) {
                 if (account.self && currentCompany.company && page) {
                     this._checkPersonalDashboardPermission(page, account);
                 }
@@ -1719,6 +1753,9 @@
                     case 'trybusiness':
                         return 'Try Appsco Business';
 
+                    case 'company-account':
+                        return 'Account';
+
                     default:
                         return page;
                 }
@@ -1747,6 +1784,10 @@
 
             _showAccountPage: function() {
                 this._showPage('account');
+            },
+
+            _showCompanyAccountPage: function() {
+                this._showPage('company-account');
             },
 
             _showTryBusinessPage: function() {
@@ -2006,6 +2047,9 @@
                 }
             },
 
+            _computeAccountManagedState: function(account) {
+                return !!account.native_company;
+            },
             /**
              * Ajax END
              */
@@ -2043,14 +2087,22 @@
             },
 
             _onAccountSettingsAction: function() {
-                this._setProduct(false);
-                this._showAccountPage();
+                this._setProduct(this._accountManaged);
+
+                this._accountManaged ? this._showCompanyAccountPage() : this._showAccountPage();
             },
 
             _onAllNotifications: function() {
-                this.$.appscoAccountPage.showAllNotifications = true;
-                this._showAccountPage();
-                this._setProduct(false);
+                this._setProduct(this._accountManaged);
+
+                if (this._accountManaged) {
+                    this.$.appscoCompanyAccountPage.showAllNotifications = true;
+                    this._showCompanyAccountPage();
+                }
+                else {
+                    this.$.appscoAccountPage.showAllNotifications = true;
+                    this._showAccountPage();
+                }
             },
 
             _onAccountLogout: function() {
@@ -2100,6 +2152,14 @@
                     case 'contacts':
                         return this.$.appscoContactsPage;
                         break;
+
+                    case 'account':
+                        return this.$.appscoAccountPage;
+                        break;
+
+                    case 'company-account':
+                        return this.$.appscoCompanyAccountPage;
+                        break;
                 }
             },
 
@@ -2120,6 +2180,14 @@
 
                     case 'contacts':
                         return this.$.appscoContactsPageActions;
+                        break;
+
+                    case 'account':
+                        return this.$.appscoAccountPageActions;
+                        break;
+
+                    case 'company-account':
+                        return this.$.appscoCompanyAccountPageActions;
                         break;
                 }
 
@@ -2482,11 +2550,11 @@
              * Account page START
              */
             _onResourceActionAccountPage: function() {
-                this.$.appscoAccountPage.toggleResource();
+                this.getCurrentAppscoPageElement().toggleResource();
             },
 
             _onAccountAdvancedSettings: function() {
-                this.$.appscoAccountPage._onAccountAdvancedSettings();
+                this.getCurrentAppscoPageElement()._onAccountAdvancedSettings();
             },
 
             _onAccountSettingsSaved: function(event) {
@@ -2498,6 +2566,7 @@
                         break;
 
                     case 'account':
+                    case 'company-account':
                         this._notify('Account settings were successfully changed.');
 
                         break;
@@ -2522,18 +2591,26 @@
 
                 this._authorizedApplication = {};
                 this._notify(application.title + ' was successfully revoked.');
-                this.$.appscoAccountPage.reloadAuthorizedApplications();
+                this.getCurrentAppscoPageElement().reloadAuthorizedApplications();
 
                 this._notifyAccountLog();
                 this._notifyReloadAccounts();
             },
 
-            _onDisableAdvancedSettings: function() {
-                this.$.appscoAccountPageActions.disableAdvancedSettings();
+            _onEnableAccountAdvancedSettings: function() {
+                var pageActions = this.getCurrentAppscoPageActionsElement();
+
+                if (pageActions) {
+                    pageActions.enableAdvancedSettings();
+                }
             },
 
-            _onEnableAdvancedSettings: function() {
-                this.$.appscoAccountPageActions.enableAdvancedSettings();
+            _onDisableAccountAdvancedSettings: function() {
+                var pageActions = this.getCurrentAppscoPageActionsElement();
+
+                if (pageActions) {
+                    pageActions.disableAdvancedSettings();
+                }
             },
 
             _onTwoFaEnabled: function() {
@@ -2552,10 +2629,14 @@
                 if (this.$.appscoAccountPage.$) {
                     this.$.appscoAccountPage.reloadLog();
                 }
+
+                if (this.$.appscoCompanyAccountPage.$) {
+                    this.$.appscoCompanyAccountPage.reloadLog();
+                }
             },
 
             _onTokenGenerated: function() {
-                this._notify("Transfer token was successfully generated.");
+                this._notify('Transfer token was successfully generated.');
             },
             /**
              * Account page END
@@ -3945,6 +4026,10 @@
                         this.$.appscoCompanyPage.pageLoaded ? this._hideProgressBar() : this._showProgressBar();
                         break;
 
+                    case 'company-account':
+                        this.$.appscoCompanyAccountPage.pageLoaded ? this._hideProgressBar() : this._showProgressBar();
+                        break;
+
                     default:
                         this._hideProgressBar();
                 }
@@ -3983,7 +4068,8 @@
                         page === 'provisioning-integration-authorization-failed' ||
                         page === 'billing' ||
                         page === 'company' ||
-                        page === 'audit-log');
+                        page === 'audit-log' ||
+                        page === 'company-account');
             },
 
             _computePanel: function(company) {
@@ -4051,6 +4137,7 @@
                     case 'audit-log':
                     case 'provisioning-settings':
                     case 'company':
+                    case 'company-account':
 
                         if (fromPage.$) {
                             fromPage.resetPage();
@@ -4424,6 +4511,32 @@
             _onBackToHomePageAction: function() {
                 this._showHomePage();
                 this._setProduct(false);
+            },
+
+            _setNativeCompanyAsCurrent: function() {
+                var nativeCompany = this.account.native_company,
+                    accountCompanies = this.account.companies,
+                    length = accountCompanies.length;
+
+                for (var i = 0; i < length; i++) {
+                    var company = accountCompanies[i];
+
+                    if (nativeCompany.alias === company.company.alias) {
+                        this.set('currentCompany', company);
+                        break;
+                    }
+                }
+            },
+
+            _setupCompanyAccountPage: function(page, account) {
+
+                if ('company-account' === page && account.self) {
+                    account.native_company ? this._setNativeCompanyAsCurrent() : this._showHomePage();
+                }
+            },
+
+            _onBackFromAccountAction: function() {
+                this._accountManaged ? this._showCompanyHomePage() : this._showHomePage();
             }
             /**
              * Global END

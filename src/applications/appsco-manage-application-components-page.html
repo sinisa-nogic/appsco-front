@@ -14,6 +14,7 @@
 <link rel="import" href="../components/application/appsco-application-log.html">
 <link rel="import" href="../components/application/appsco-application-analytics-security.html">
 <link rel="import" href="../components/application/appsco-application-details-idp.html">
+<link rel="import" href="../components/application/appsco-application-groups.html">
 
 <dom-module id="appsco-manage-application-components-page">
     <template>
@@ -75,7 +76,7 @@
                 font-size: 12px;
                 color: var(--secondary-text-color);
             }
-            :host .details-subscribers, :host .security-sharing, :host .details-idp {
+            :host .details-subscribers, :host .security-sharing, :host .details-idp, :host .middle-column {
                 @apply(--layout-vertical);
             }
             appsco-application-details-idp {
@@ -91,7 +92,7 @@
                  };
             }
             .appsco-application-log {
-                --paper-card-content: {
+                --paper-ard-content: {
                      min-height: 70px;
                      padding-top: 0;
                      padding-bottom: 0;
@@ -111,13 +112,14 @@
                      top: 2px;
                  };
             }
-            :host .details-subscribers, :host .security-sharing, :host .details-idp {
+            :host .details-subscribers, :host .security-sharing, :host .details-idp, :host .appsco-application-groups {
                 margin-right: 10px;
             }
             :host([mobile-screen]) .details-idp {
                 margin-right: 0;
             }
-            :host .appsco-application-settings-card, :host .appsco-application-assignees, :host .appsco-application-security {
+            :host .appsco-application-settings-card, :host .appsco-application-assignees, :host .appsco-application-security,
+                    :host .appsco-application-idp-info, :host .appsco-application-groups {
                 margin-bottom: 10px;
             }
             :host([medium-screen]) > * {
@@ -133,7 +135,7 @@
             :host([mobile-screen]) > * {
                 width: 100%;
             }
-            :host([mobile-screen]) .details-subscribers {
+            :host([mobile-screen]) .details-subscribers, .middle-column {
                 margin-right: 0;
             }
         </style>
@@ -195,19 +197,37 @@
             </paper-card>
         </div>
 
-        <template is="dom-if" if="[[ _isSAMLApp ]]" restamp>
-            <div class="details-idp">
-                <paper-card heading="Appsco IdP information" class="appsco-application-idp-info">
-                    <div class="card-content">
-                        <appsco-application-details-idp
-                                idp-metadata-xml-url="[[ companyIdpSamlMetadataXmlUrl ]]"
-                                idp-metadata="[[ _idpMetadata ]]"
-                        >
-                        </appsco-application-details-idp>
+        <div class="middle-column">
+            <template is="dom-if" if="[[ _isSAMLApp ]]" restamp>
+                <div class="details-idp">
+                    <paper-card heading="Appsco IdP information" class="appsco-application-idp-info">
+                        <div class="card-content">
+                            <appsco-application-details-idp
+                                    idp-metadata-xml-url="[[ companyIdpSamlMetadataXmlUrl ]]"
+                                    idp-metadata="[[ _idpMetadata ]]"
+                            >
+                            </appsco-application-details-idp>
+                        </div>
+                    </paper-card>
+                </div>
+            </template>
+
+            <paper-card heading="Groups" class="appsco-application-groups">
+                <div class="card-content">
+                    <appsco-application-groups
+                        id="appscoApplicationGroup"
+                        authorization-token="[[ authorizationToken ]]"
+                        groups-api="[[ groupsApi ]]"
+                        application="[[ application ]]"
+                        size="5"
+                        preview></appsco-application-groups>
                     </div>
-                </paper-card>
-            </div>
-        </template>
+
+                <div class="card-actions">
+                    <paper-button on-tap="_onManageGroups">Manage</paper-button>
+                </div>
+            </paper-card>
+        </div>
 
         <template is="dom-if" if="[[ _viewSecurityPermission ]]" restamp>
             <div class="security-sharing">
@@ -272,6 +292,13 @@
                 _computedHeaders: {
                     type: Object,
                     computed: "_computeHeaders(authorizationToken)"
+                },
+
+                /**
+                 * Get application groups link.
+                 */
+                groupsApi: {
+                    type: String
                 },
 
                 /**
@@ -355,6 +382,14 @@
                 }
             },
 
+            load: function () {
+                this._loadGroups();
+            },
+
+            _loadGroups: function() {
+                this.$.appscoApplicationGroup.loadGroups();
+            },
+
             /**
              * Computes isSAMLApp value
              *
@@ -412,6 +447,11 @@
 
             _onCompanyIdpSamlMetadataReponse: function(event) {
                 this._idpMetadata = event.detail.response;
+            },
+
+            _onManageGroups: function(event) {
+                this._setSharedElement(event.target);
+                this.fire('manage-groups');
             },
 
             reloadAssignees: function() {

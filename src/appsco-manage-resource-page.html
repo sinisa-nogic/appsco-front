@@ -13,6 +13,7 @@
 <link rel="import" href="applications/appsco-manage-application-components-page.html">
 <link rel="import" href="applications/appsco-application-orgunits-page.html">
 <link rel="import" href="applications/appsco-application-assignees-page.html">
+<link rel="import" href="applications/appsco-application-groups-page.html">
 <link rel="import" href="components/account/appsco-account-image.html">
 
 <dom-module id="appsco-manage-resource-page">
@@ -193,11 +194,13 @@
                                 name="appsco-application-components-page"
                                 application="{{ application }}"
                                 company-idp-saml-metadata-api="[[ companyIdpSamlMetadataApi ]]"
+                                groups-api="[[ _groupsApi ]]"
                                 authorization-token="[[ authorizationToken ]]"
                                 on-application-settings="_onResourceSettings"
                                 on-all-assignees="_onAllAssignees"
                                 on-all-log="_onAllLog"
                                 on-manage-orgunits="_onManageOrgunits"
+                                on-manage-groups="_onManageGroups"
                                 on-log-empty="_pageLoaded"
                                 on-log-loaded="_pageLoaded">
                         </appsco-manage-application-components-page>
@@ -210,6 +213,15 @@
                                                                on-back="_onResourceSettingsBack"
                                                                domain="[[ domain ]]"
                         ></appsco-company-resource-settings-page>
+
+                        <appsco-application-groups-page
+                                id="appscoApplicationGroupsPage"
+                                name="appsco-application-groups-page"
+                                application="[[ application ]]"
+                                groups-api="[[ _groupsApi ]]"
+                                authorization-token="[[ authorizationToken ]]"
+                                on-back="_onResourceBack">
+                        </appsco-application-groups-page>
 
                         <appsco-application-assignees-page
                                 id="appscoApplicationAssigneesPage"
@@ -269,7 +281,8 @@
                     type: Object,
                     value: function() {
                         return {};
-                    }
+                    },
+                    observer: '_onApplicationChanged'
                 },
 
                 apiErrors: {
@@ -339,6 +352,14 @@
                     type: String,
                     value: '',
                     observer: '_onCompanyApiChanged'
+                },
+
+                /**
+                 * Get application groups link
+                 */
+                _groupsApi: {
+                    type: String,
+                    computed: '_computeGroupsForApplication(application)'
                 },
 
                 /**
@@ -457,6 +478,10 @@
                 }
             },
 
+            _computeGroupsForApplication: function(application) {
+                return application.meta ? application.meta.groups + '?extended=1' : '';
+            },
+
             _computeLastEditedDate: function(application) {
                 return (application && application.last_modified) ? this._dateFormat(application.last_modified.date.date) : '';
             },
@@ -507,6 +532,13 @@
                 this.application = event.detail.response;
             },
 
+            _onApplicationChanged: function (application) {
+                if (application.self) {
+                    this.$.appscoManageApplicationComponentsPage.load();
+                    this.$.appscoApplicationGroupsPage.loadGroups();
+                }
+            },
+
             _onApplicationError: function() {
                 this.fire('page-error');
             },
@@ -527,6 +559,10 @@
                 this._selected = 'appsco-application-orgunits-page';
             },
 
+            _onManageGroups: function() {
+                this._selected = 'appsco-application-groups-page';
+            },
+
             _onResourceSettingsSaved: function(event) {
                 this.application = event.detail.application;
                 this._showApplicationComponentsPage();
@@ -538,6 +574,10 @@
 
             _onResourceBack: function() {
                 this._showApplicationComponentsPage();
+            },
+
+            removeGroup: function(group) {
+                this.$.appscoApplicationGroupsPage.removeGroup(group);
             },
 
             _showApplicationComponentsPage: function() {
@@ -607,6 +647,10 @@
                         break;
                 }
 
+            },
+
+            reload: function() {
+                this.$.appscoManageApplicationComponentsPage.load();
             }
         });
     </script>

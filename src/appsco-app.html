@@ -52,6 +52,7 @@
 <link rel="import" href="components/application/company/appsco-application-assignee-claims.html">
 <link rel="import" href="components/application/company/appsco-application-assignee-revoke.html">
 <link rel="import" href="components/application/appsco-import-resources.html">
+<link rel="import" href="components/application/appsco-application-remove-group.html">
 
 <link rel="import" href="components/group/appsco-company-remove-group.html">
 <link rel="import" href="components/group/appsco-resource-add-groups.html">
@@ -764,7 +765,8 @@
                             on-remove-from-orgunit="_onRemoveApplicationFromOrgunit"
                             on-enable-assignees-search-action="_onEnableAssigneesSearchAction"
                             on-disable-assignees-search-action="_onDisableAssigneesSearchAction"
-                            on-page-error="_onError"></appsco-manage-resource-page>
+                            on-page-error="_onError"
+                            on-remove-from-group="_onRemoveApplicationFromGroup"></appsco-manage-resource-page>
 
                     <appsco-directory-page
                             id="appscoDirectoryPage"
@@ -1132,6 +1134,12 @@
                 authorization-token="[[ authorizationToken ]]"
                 account="[[ _role ]]"
                 on-account-removed-from-group="_onAccountRemovedFromGroup"></appsco-account-remove-group>
+
+        <appsco-application-remove-group
+                id="appscoApplicationRemoveGroup"
+                authorization-token="[[ authorizationToken ]]"
+                application="[[ application ]]"
+                on-application-removed-from-group="_onApplicationRemovedFromGroup"></appsco-application-remove-group>
 
         <appsco-account-remove
                 id="appscoAccountsRemove"
@@ -3222,6 +3230,12 @@
                 this.$.appscoApplicationRemoveOrgunit.toggle();
             },
 
+            _onRemoveApplicationFromGroup: function(event) {
+                this.$.appscoApplicationRemoveGroup.setGroup(event.detail.group);
+                this.$.appscoApplicationRemoveGroup.setApplication(event.detail.application);
+                this.$.appscoApplicationRemoveGroup.toggle();
+            },
+
             _onApplicationRemovedFromOrgunit: function(event) {
                 var application = event.detail.application,
                     orgunit = event.detail.orgunit;
@@ -3231,6 +3245,18 @@
 
                 this._companyApplication = application;
                 this._notify(application.title + ' has been removed from ' + orgunit.name + ' organization unit.');
+
+                this._notifyReloadApplications();
+            },
+
+            _onApplicationRemovedFromGroup: function(event) {
+                var application = event.detail.application,
+                        group = event.detail.group;
+
+                this.$.appscoManageApplicationPage.removeGroup(group);
+                this.$.appscoManageApplicationPage.reload();
+
+                this._notify(application.display_name + ' has been successfully removed from group ' + group.name + '.');
 
                 this._notifyReloadApplications();
             },

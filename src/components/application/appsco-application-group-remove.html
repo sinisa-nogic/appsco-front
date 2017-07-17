@@ -1,0 +1,204 @@
+<link rel="import" href="../../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../../bower_components/paper-button/paper-button.html">
+<link rel="import" href="../../../bower_components/iron-ajax/iron-request.html">
+<link rel="import" href="../../../bower_components/paper-dialog/paper-dialog.html">
+<link rel="import" href="../../../bower_components/paper-dialog-scrollable/paper-dialog-scrollable.html">
+<link rel="import" href="../../../bower_components/neon-animation/animations/fade-out-animation.html">
+<link rel="import" href="../../../bower_components/neon-animation/animations/scale-up-animation.html">
+
+<link rel="import" href="../components/appsco-loader.html">
+<link rel="import" href="../components/appsco-form-error.html">
+
+
+<dom-module id="appsco-company-remove-group">
+    <template>
+        <style>
+            :host {
+                display: block;
+                position: relative;
+                @apply(--appsco-group-remove);
+
+                --form-error-box: {
+                    margin-top: 0;
+                };
+            }
+            :host paper-dialog {
+                width: 670px;
+                top: 20vh;
+                @apply(--appsco-paper-dialog);
+            }
+            :host paper-dialog-scrollable > * {
+                @apply(--paper-dialog-scrollable-child);
+            }
+            :host .buttons paper-button {
+                @apply(--paper-dialog-button);
+            }
+            :host .buttons paper-button[dialog-dismiss] {
+                @apply(--paper-dialog-dismiss-button);
+            }
+            :host appsco-loader {
+                @apply(--paper-dialog-appsco-loader);
+            }
+        </style>
+
+        <paper-dialog
+                with-backdrop
+                id="dialog"
+                entry-animation="scale-up-animation"
+                exit-animation="fade-out-animation"
+                on-iron-overlay-closed="_onDialogClosed">
+        </paper-dialog>
+
+        <h2>Remove [[ group.name ]]</h2>
+
+        <appsco-loader active="[[ _loader ]]" loader-alt="Appsco is processing request" multi-color></appsco-loader>
+
+        <paper-dialog-scrollable>
+            <div class="remove-container">
+                <appsco-form-error message="[[ _error ]]"></appsco-form-error>
+                <p>Please confirm removal of [[ resource.name ]] from [[ group.name ]] group.</p>
+            </div>
+        </paper-dialog-scrollable>
+
+        <div class="buttons">
+            <paper-button dialog-dismiss>Cancel</paper-button>
+            <paper-button autofocus on-tap="_onRemove">Remove</paper-button>
+        </div>
+    </template>
+
+    <script>
+        Polymer({
+            is: 'appsco-application-group-remove',
+
+            properties: {
+
+                /**
+                 * Group to remove.
+                 */
+                group: {
+                    type: Array,
+                    value: function() {
+                        return {};
+                    }
+                },
+
+                _removeGroupApi: {
+                    type: String,
+                    computed: '_computeRemoveGroupApi(group)'
+                },
+
+                /**
+                 * Authorization token.
+                 */
+                authorizationToken: {
+                    type: String,
+                    value: ''
+                },
+
+                _headers: {
+                    type: String,
+                    computed: '_computeHeaders(authorizationToken)'
+                },
+
+                _loader: {
+                    type: Boolean,
+                    value: false
+                },
+
+                /**
+                 * Error message.
+                 */
+                _error: {
+                    type: String
+                }
+            },
+
+            setGroup: function(group) {
+                this.group = group;
+            },
+
+            open: function () {
+                this.$.dialog.open();
+            },
+
+            close: function () {
+                this.$.dialog.close();
+            },
+
+            toggle: function () {
+                this.$.dialog.toggle();
+            },
+
+            _computeHeaders: function(authorizationToken) {
+                return {
+                    'Authorization': 'token ' + authorizationToken,
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                };
+            },
+
+            _computeRemoveGroupApi: function(group) {
+                return group.meta ? group.meta + '/applications/' + application.id : '';
+            },
+
+            _showLoader: function() {
+                this._loader = true;
+            },
+
+            _hideLoader: function() {
+                this._loader = false;
+            },
+
+            _showError: function(message) {
+                this._error = message;
+            },
+
+            _hideError: function() {
+                this._error = '';
+            },
+
+            _onDialogClosed: function() {
+                this._hideError();
+                this._hideLoader();
+            },
+
+            _onRemove: function() {
+                var request = document.createElement('iron-request'),
+                        options = {
+                            url: this._removeGroupApi,
+                            method: 'DELETE',
+                            handleAs: 'json',
+                            headers: this._headers
+                        };
+
+                this._showLoader();
+
+                request.send(options).then(function() {
+                    this.close();
+
+                    if (200 === request.status) {
+                        var group = request.response;
+
+                        /**
+                         * Fired when group is deleted.
+                         *
+                         * @event group-removed
+                         * @param [Object] group
+                         */
+                        this.fire('group-removed', {
+                            group: group
+                        });
+                    }
+
+                }.bind(this), function() {
+
+                    if (request.status === 404) {
+                        this._showError('We couldn\'t remove group from resource. Please try again in a minute.');
+                    }
+
+                    this._hideLoader();
+                }.bind(this));
+            }
+
+        });
+    </script>
+</dom-module>

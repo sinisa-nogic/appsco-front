@@ -10,21 +10,21 @@
 <link rel="import" href="../components/appsco-form-error.html">
 
 <!--
-`appsco-resource-remove-labels`
-Shows dialog screen with confirmation for removal company resource from label.
+`appsco-resource-remove-groups`
+Shows dialog screen with confirmation for removal company resource from group.
 
-    <appsco-resource-remove-labels labels="[]" items="[]" authorization-token="">
-    </appsco-resource-remove-labels>
+    <appsco-resource-remove-groups groups="[]" items="[]" authorization-token="">
+    </appsco-resource-remove-groups>
 
 -->
 
-<dom-module id="appsco-resource-remove-labels">
+<dom-module id="appsco-resource-remove-groups">
     <template>
         <style>
             :host {
                 display: block;
                 position: relative;
-                @apply(--appsco-resource-remove-labels);
+                @apply(--appsco-resource-remove-groups);
 
                 --form-error-box: {
                      margin-top: 0;
@@ -55,7 +55,7 @@ Shows dialog screen with confirmation for removal company resource from label.
                 exit-animation="fade-out-animation"
                 on-iron-overlay-closed="_onDialogClosed">
 
-            <h2>Detach label</h2>
+            <h2>Remove from group</h2>
 
             <appsco-loader active="[[ _loader ]]"
                            loader-alt="Appsco is processing request"
@@ -66,20 +66,20 @@ Shows dialog screen with confirmation for removal company resource from label.
                     <appsco-form-error message="[[ _error ]]"></appsco-form-error>
 
                     <template is="dom-if" if="[[ _applicationsType ]]">
-                        <p>Detaching label from resource also removes access for accounts that label is attached to.</p>
+                        <p>Removing resource from group also removes access for accounts that is added to group.</p>
                     </template>
 
                     <template is="dom-if" if="[[ _accountsType ]]">
-                        <p>Detaching label from account also removes access to applications that label is attached to.</p>
+                        <p>Removing account from group also removes access to applications that is shared to group.</p>
                     </template>
 
-                    <p>Please confirm detach action.</p>
+                    <p>Please confirm remove action.</p>
                 </div>
             </paper-dialog-scrollable>
 
             <div class="buttons">
                 <paper-button dialog-dismiss>Cancel</paper-button>
-                <paper-button autofocus on-tap="_onRemoveAction">Detach</paper-button>
+                <paper-button autofocus on-tap="_onRemoveAction">Remove</paper-button>
             </div>
         </paper-dialog>
 
@@ -87,11 +87,11 @@ Shows dialog screen with confirmation for removal company resource from label.
     <script>
         Polymer({
 
-            is: 'appsco-resource-remove-labels',
+            is: 'appsco-resource-remove-groups',
 
             properties: {
 
-                label: {
+                group: {
                     type: Array,
                     value: function() {
                         return {};
@@ -99,7 +99,7 @@ Shows dialog screen with confirmation for removal company resource from label.
                 },
 
                 /**
-                 * Items to remove labels from.
+                 * Items to remove groups from.
                  */
                 items: {
                     type: Array,
@@ -126,9 +126,9 @@ Shows dialog screen with confirmation for removal company resource from label.
                     computed: '_computeHeaders(authorizationToken)'
                 },
 
-                _removeLabelsApi: {
+                _removeGroupsApi: {
                     type: String,
-                    computed: '_computeRemoveLabelsApi(label, resourceType)'
+                    computed: '_computeRemoveGroupsApi(group, resourceType)'
                 },
 
                 _responseItems: {
@@ -166,8 +166,8 @@ Shows dialog screen with confirmation for removal company resource from label.
                 }
             },
 
-            setLabel: function(label) {
-                this.label = label;
+            setGroup: function(group) {
+                this.group = group;
             },
 
             setItems: function(items) {
@@ -197,13 +197,13 @@ Shows dialog screen with confirmation for removal company resource from label.
                 };
             },
 
-            _computeRemoveLabelsApi: function(label, resourceType) {
+            _computeRemoveGroupsApi: function(group, resourceType) {
                 return ('applications' === resourceType) ?
-                    this.label.meta.applications :
+                    this.group.meta.applications :
                     ('accounts' === resourceType) ?
-                        this.label.meta.company_roles :
+                        this.group.meta.company_roles :
                             ('contacts' === resourceType) ?
-                                    this.label.meta.contacts :
+                                    this.group.meta.contacts :
                                     '';
             },
 
@@ -241,7 +241,7 @@ Shows dialog screen with confirmation for removal company resource from label.
                 return new Promise(function(resolve, reject) {
                     var request = document.createElement('iron-request'),
                         options = {
-                            url: this._removeLabelsApi + '/' + item.alias,
+                            url: this._removeGroupsApi + '/' + item.alias,
                             method: 'DELETE',
                             handleAs: 'json',
                             headers: this._headers
@@ -255,7 +255,7 @@ Shows dialog screen with confirmation for removal company resource from label.
                     }, function() {
 
                         if (404 === request.status) {
-                            reject('There was an error while removing label. Label was not removed from all ' + this.resourceType + '.');
+                            reject('There was an error while removing group. Group was not removed from all ' + this.resourceType + '.');
                         }
                     }.bind(this));
                 }.bind(this));
@@ -265,12 +265,12 @@ Shows dialog screen with confirmation for removal company resource from label.
 
                 if (this._responseItems.length > 0) {
                     /**
-                     * Fired when label have been removed from items.
+                     * Fired when group have been removed from items.
                      *
-                     * @event label-removed-from-resources
+                     * @event group-removed-from-resources
                      */
-                    this.fire('label-removed-from-resources', {
-                        label: this.label,
+                    this.fire('group-removed-from-resources', {
+                        group: this.group,
                         items: this._responseItems,
                         resourceType: this.resourceType
                     });
@@ -279,7 +279,7 @@ Shows dialog screen with confirmation for removal company resource from label.
 
                 }
                 else {
-                    this._showError('There was an error while removing selected ' + this.resourceType + ' from label. Please close the dialog and try again.');
+                    this._showError('There was an error while removing selected ' + this.resourceType + ' from group. Please close the dialog and try again.');
                 }
 
                 this._hideLoader();
@@ -290,7 +290,7 @@ Shows dialog screen with confirmation for removal company resource from label.
                 var length = this.items.length;
 
                 if (0 >= length) {
-                    this._showError('You have not selected ' + this.resourceType + ' to remove label from.');
+                    this._showError('You have not selected ' + this.resourceType + ' to remove group from.');
                     return false;
                 }
 

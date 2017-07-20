@@ -15,6 +15,7 @@
 <link rel="import" href="../components/account/appsco-account-notifications.html">
 <link rel="import" href="../components/account/appsco-account-log.html">
 <link rel="import" href="../components/account/company/appsco-account-roles.html">
+<link rel="import" href="../components/account/company/appsco-account-groups.html">
 
 <link rel="import" href="../../bower_components/iron-ajax/iron-ajax.html">
 
@@ -149,7 +150,7 @@
                 @apply(--layout-horizontal);
                 @apply(--layout-center);
             }
-            .appsco-account-details, .appsco-account-2fa, .appsco-account-notifications, .appsco-account-roles, .appsco-account-log {
+            .appsco-account-details, .appsco-account-2fa, .appsco-account-notifications, .appsco-account-roles, .appsco-account-log, .appsco-application-assignees {
                 margin-bottom: 10px;
             }
             :host .info-item {
@@ -259,6 +260,7 @@
                     <paper-button on-tap="_onManageOrgunits">Manage</paper-button>
                 </div>
             </paper-card>
+
         </div>
 
         <div class="notifications">
@@ -306,6 +308,23 @@
                     <paper-button on-tap="_onAllApplications">ALL</paper-button>
                 </div>
             </paper-card>
+
+            <paper-card heading="Groups" class="appsco-account-groups">
+                <div class="card-content">
+                    <appsco-account-groups
+                            id="appscoAccountGroup"
+                            authorization-token="[[ authorizationToken ]]"
+                            groups-api="[[ groupsApi ]]"
+                            account="[[ role ]]"
+                            size="5"
+                            preview></appsco-account-groups>
+                </div>
+
+                <div class="card-actions">
+                    <paper-button on-tap="_onManageGroups">Manage</paper-button>
+                </div>
+            </paper-card>
+
         </div>
 
         <div class="log-card">
@@ -372,6 +391,13 @@
                  * Get 2fa status link.
                  */
                 twoFaApi: {
+                    type: String
+                },
+
+                /**
+                 * Get role groups link.
+                 */
+                groupsApi: {
                     type: String
                 },
 
@@ -482,6 +508,7 @@
             load: function() {
                 this._loadNotifications();
                 this.loadLog();
+                this._loadGroups();
             },
 
             setSharedElement: function(target, callback) {
@@ -527,6 +554,10 @@
                 this.$.appscoAccountLog.loadLog();
             },
 
+            _loadGroups: function() {
+                this.$.appscoAccountGroup.loadGroups();
+            },
+
             load2FaApi: function() {
                 this.$.twofaapi.generateRequest();
             },
@@ -545,6 +576,11 @@
             _onManageOrgunits: function(event) {
                 this._setSharedElement(event.target);
                 this.fire('manage-orgunits');
+            },
+
+            _onManageGroups: function(event) {
+                this._setSharedElement(event.target);
+                this.fire('manage-groups');
             },
 
             _onAccountNotifications: function(event) {

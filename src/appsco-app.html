@@ -90,6 +90,7 @@
 
 <link rel="import" href="components/account/company/appsco-account-orgunit.html">
 <link rel="import" href="components/account/company/appsco-account-remove-orgunit.html">
+<link rel="import" href="components/account/company/appsco-account-remove-group.html">
 <link rel="import" href="components/account/company/appsco-account-remove.html">
 
 <link rel="import" href="auditlog/appsco-audit-log-page-actions.html">
@@ -821,6 +822,7 @@
                             on-password-changed="_onCompanyAccountPasswordChanged"
                             on-add-to-orgunit="_onAddAccountToOrgunit"
                             on-remove-from-orgunit="_onRemoveAccountFromOrgunit"
+                            on-remove-from-group="_onRemoveAccountFromGroup"
                             on-account-role-changed="_onAccountRoleChanged"
                             on-page-error="_onError"
                             on-revoke-assignee="_onRevokeAssigneeAccess"
@@ -1122,6 +1124,12 @@
                 authorization-token="[[ authorizationToken ]]"
                 account="[[ _role ]]"
                 on-account-removed-from-orgunit="_onAccountRemovedFromOrgunit"></appsco-account-remove-orgunit>
+
+        <appsco-account-remove-group
+                id="appscoAccountRemoveGroup"
+                authorization-token="[[ authorizationToken ]]"
+                account="[[ _role ]]"
+                on-account-removed-from-group="_onAccountRemovedFromGroup"></appsco-account-remove-group>
 
         <appsco-account-remove
                 id="appscoAccountsRemove"
@@ -3504,6 +3512,12 @@
                 this.$.appscoAccountRemoveOrgunit.toggle();
             },
 
+            _onRemoveAccountFromGroup: function(event) {
+                this.$.appscoAccountRemoveGroup.group = event.detail.group;
+                this._role = event.detail.account;
+                this.$.appscoAccountRemoveGroup.toggle();
+            },
+
             _onAccountRemovedFromOrgunit: function(event) {
                 var role = event.detail.account;
 
@@ -3517,6 +3531,28 @@
 
                 this._role = role;
                 this._notify(role.account.name + ' has been removed from ' + event.detail.orgunit.name + ' organization unit.');
+
+                this._notifyAccountLog();
+                this._notifyReloadApplications();
+                this._notifyReloadAccounts();
+            },
+
+            _onAccountRemovedFromGroup: function(event) {
+                var role = event.detail.account,
+                    group = event.detail.group;
+
+                this.$.appscoManageAccountPage.removeGroup(group);
+
+                if (role.account.email === this.account.email) {
+                    this._reloadHomePageApplications();
+                }
+
+                if (this.$.appscoDirectoryPage.$) {
+                    this.$.appscoDirectoryPage.modifyAccounts([role]);
+                }
+
+                this._role = role;
+                this._notify(role.account.name + ' has been successfully removed from group ' + group.name + '.');
 
                 this._notifyAccountLog();
                 this._notifyReloadApplications();

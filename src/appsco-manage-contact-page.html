@@ -9,6 +9,7 @@
 <link rel="import" href="components/account/appsco-account-image.html">
 <link rel="import" href="components/contact/appsco-manage-contact-components-page.html">
 <link rel="import" href="components/contact/appsco-contact-applications-page.html">
+<link rel="import" href="components/contact/appsco-contact-groups-page.html">
 <link rel="import" href="account/appsco-account-log-page.html">
 
 <dom-module id="appsco-manage-contact-page">
@@ -138,8 +139,10 @@
                                 administrator="[[ administrator ]]"
                                 authorization-token="[[ authorizationToken ]]"
                                 log-api="[[ _logApi ]]"
+                                groups-api="[[ _groupsApi ]]"
                                 on-manage-applications="_onManageApplications"
                                 on-manage-activity-log="_onManageActivityLog"
+                                on-manage-groups="_onManageGroups"
                                 on-log-empty="_pageLoaded">
                         </appsco-manage-contact-components-page>
 
@@ -159,6 +162,15 @@
                                 log-api="[[ _logApi ]]"
                                 on-back="_onResourceBack">
                         </appsco-account-log-page>
+
+                        <appsco-contact-groups-page
+                                id="appscoContactsGroup"
+                                name="appsco-contact-groups-page"
+                                authorization-token="[[ authorizationToken ]]"
+                                groups-api="[[ _groupsApi ]]"
+                                contact="[[ contact ]]"
+                                on-back="_onResourceBack">
+                        </appsco-contact-groups-page>
 
                     </neon-animated-pages>
                 </div>
@@ -185,7 +197,8 @@
                     type: Object,
                     value: function() {
                         return {};
-                    }
+                    },
+                    observer: '_onContactChanged'
                 },
 
                 authorizationToken: {
@@ -203,6 +216,12 @@
                     type: String,
                     computed: '_computeLogApi(contact)'
                 },
+
+                _groupsApi: {
+                    type: String,
+                    computed: '_computeGroupsApi(contact)'
+                },
+
 
                 /**
                  * Computed headers.
@@ -327,6 +346,10 @@
                 return contact.meta ? contact.meta.log : '';
             },
 
+            _computeGroupsApi: function(contact) {
+                return contact.meta ? contact.meta.groups + '?extended=1' : '';
+            },
+
             _computeHeaders: function (authorizationToken) {
                 return {
                     'Authorization': 'token ' + authorizationToken
@@ -340,6 +363,13 @@
 
             _onContactsApiChanged: function() {
                 this._getContact();
+            },
+
+            _onContactChanged: function(contact) {
+                if (contact.self) {
+                    this.$.appscoManageContactComponentsPage.load();
+                    this.$.appscoContactsGroup.loadGroups();
+                }
             },
 
             _getContact: function() {
@@ -395,6 +425,10 @@
                 this._selected = 'appsco-account-log-page';
             },
 
+            _onManageGroups: function() {
+                this._selected = 'appsco-contact-groups-page';
+            },
+
             _onResourceBack: function() {
                 this._showContactComponentsPage();
             },
@@ -405,6 +439,14 @@
 
             reloadApplications: function() {
                 this.$.appscoContactApplicationsPage.reloadApplications();
+            },
+
+            removeGroup: function(group) {
+                this.$.appscoContactsGroup.removeGroup(group);
+            },
+
+            reload: function() {
+                this.$.appscoManageContactComponentsPage.load();
             }
 
         });

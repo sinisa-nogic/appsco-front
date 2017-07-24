@@ -13,6 +13,7 @@
 <link rel="import" href="../../../bower_components/iron-ajax/iron-ajax.html">
 
 <link rel="import" href="appsco-contact-applications.html">
+<link rel="import" href="appsco-contact-groups.html">
 <link rel="import" href="../account/appsco-account-log.html">
 
 <dom-module id="appsco-manage-contact-components-page">
@@ -91,6 +92,10 @@
                 margin-left: 10px;
                 margin-top: 10px;
             }
+            .groups {
+                @apply(--layout-vertical);
+                margin-top: 10px;
+            }
 
             :host([medium-screen]) > * {
                 width: calc(100% / 2 - 10px);
@@ -120,6 +125,25 @@
                     <paper-button on-tap="_onAllApplications">ALL</paper-button>
                 </div>
             </paper-card>
+
+            <div class="groups">
+                <paper-card heading="Groups" class="appsco-contact-groups">
+                    <div class="card-content">
+                        <appsco-contact-groups
+                                id="appscoContactGroup"
+                                authorization-token="[[ authorizationToken ]]"
+                                groups-api="[[ groupsApi ]]"
+                                contact="[[ contact ]]"
+                                size="5"
+                                preview></appsco-contact-groups>
+                    </div>
+
+                    <div class="card-actions">
+                        <paper-button on-tap="_onManageGroups">Manage</paper-button>
+                    </div>
+                </paper-card>
+            </div>
+
         </div>
 
         <div class="activity-log">
@@ -175,6 +199,13 @@
                     type: String,
                     value: '',
                     observer: '_onLogApiChanged'
+                },
+
+                /**
+                 * Get contact log link.
+                 */
+                groupsApi: {
+                    type: String
                 },
 
                 /**
@@ -251,6 +282,14 @@
                 }
             },
 
+            load: function() {
+                this._loadGroups();
+            },
+
+            _loadGroups: function() {
+                this.$.appscoContactGroup.loadGroups();
+            },
+
             _updateScreen: function(tablet, medium) {
                 this.updateStyles();
             },
@@ -279,6 +318,11 @@
             _onManageActivityLog: function(event) {
                 this._setSharedElement(event.target);
                 this.fire('manage-activity-log');
+            },
+
+            _onManageGroups: function(event) {
+                this._setSharedElement(event.target);
+                this.fire('manage-groups');
             },
 
             reloadApplications: function() {

@@ -92,6 +92,7 @@
 <link rel="import" href="components/account/company/appsco-account-remove-orgunit.html">
 <link rel="import" href="components/account/company/appsco-account-remove-group.html">
 <link rel="import" href="components/account/company/appsco-account-remove.html">
+<link rel="import" href="components/contact/appsco-contact-remove-group.html">
 
 <link rel="import" href="auditlog/appsco-audit-log-page-actions.html">
 
@@ -835,6 +836,7 @@
                             authorization-token="[[ authorizationToken ]]"
                             contacts-api="[[ _companyContactsApi ]]"
                             on-convert-contact-to-user="_onConvertContactToUserAction"
+                            on-remove-from-group="_onRemoveContactFromGroup"
                             on-delete-contact="_onDeleteContactAction"
                             on-page-error="_onError"
                             on-revoke-assignee="_onRevokeAssigneeAccess"
@@ -1138,6 +1140,11 @@
                 company-api="[[ _companyApi ]]"
                 api-errors="[[ _apiErrors ]]"
                 on-accounts-removed="_onAccountsRemoved"></appsco-account-remove>
+
+        <appsco-contact-remove-group
+                id="appscoContactRemoveGroup"
+                authorization-token="[[ authorizationToken ]]"
+                on-contact-removed-from-group="_onContactRemovedFromGroup"></appsco-contact-remove-group>
 
         <appsco-upgrade-action
                 id="appscoUpgradeAction"
@@ -3518,6 +3525,12 @@
                 this.$.appscoAccountRemoveGroup.toggle();
             },
 
+            _onRemoveContactFromGroup: function(event) {
+                this.$.appscoContactRemoveGroup.setGroup(event.detail.group);
+                this.$.appscoContactRemoveGroup.setContact(event.detail.contact);
+                this.$.appscoContactRemoveGroup.toggle();
+            },
+
             _onAccountRemovedFromOrgunit: function(event) {
                 var role = event.detail.account;
 
@@ -3557,6 +3570,18 @@
                 this._notifyAccountLog();
                 this._notifyReloadApplications();
                 this._notifyReloadAccounts();
+            },
+
+            _onContactRemovedFromGroup: function(event) {
+                var contact = event.detail.contact,
+                        group = event.detail.group;
+
+                this.$.appscoManageContactPage.removeGroup(group);
+                this.$.appscoManageContactPage.reload();
+
+                this._notify(contact.display_name + ' has been successfully removed from group ' + group.name + '.');
+
+                this._notifyReloadApplications();
             },
 
             _onAccountRoleChanged: function(event) {

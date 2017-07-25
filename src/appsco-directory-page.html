@@ -16,7 +16,7 @@
 <link rel="import" href="components/account/appsco-invitations.html">
 <link rel="import" href="components/components/appsco-search.html">
 
-<link rel="import" href="components/label/appsco-company-labels.html">
+<link rel="import" href="components/group/appsco-company-groups.html">
 <link rel="import" href="components/account/appsco-account-image.html">
 
 <dom-module id="appsco-directory-page">
@@ -98,10 +98,10 @@
                 margin-top: 20px;
                 @apply(--paper-tabs-content-style);
             }
-            appsco-company-labels {
+            appsco-company-groups {
                 margin-top: 20px;
 
-                --appsco-company-label-item: {
+                --appsco-company-group-item: {
                     padding: 4px;
                     margin-bottom: 5px;
                 };
@@ -190,7 +190,7 @@
                 <div class="resource-container">
                     <paper-tabs id="paperTabs" selected="{{ _selectedFilter }}">
                         <paper-tab name="organization-units">Organization units</paper-tab>
-                        <paper-tab name="labels">Labels</paper-tab>
+                        <paper-tab name="groups">Groups</paper-tab>
                     </paper-tabs>
 
                     <neon-animated-pages
@@ -205,20 +205,20 @@
                                                  on-selected="_onOrgunitSelected"></appsco-orgunit-tree>
                         </div>
 
-                        <div name="labels" class="tab-content labels">
+                        <div name="groups" class="tab-content groups">
                             <appsco-search id="appscoSearch"
-                                           label="Search labels"
-                                           on-search="_onSearchLabels"
-                                           on-search-clear="_onSearchLabelsClear"></appsco-search>
+                                           label="Search groups"
+                                           on-search="_onSearchGroups"
+                                           on-search-clear="_onSearchGroupsClear"></appsco-search>
 
-                            <appsco-company-labels id="appscoCompanyLabels"
-                                                   labels-api="[[ labelsApi ]]"
+                            <appsco-company-groups id="appscoCompanyGroups"
+                                                   groups-api="[[ groupsApi ]]"
                                                    authorization-token="[[ authorizationToken ]]"
                                                    size="100"
                                                    preview
                                                    hide-total
                                                    selectable
-                                                   on-label-selected="_onLabelSelected"></appsco-company-labels>
+                                                   on-group-selected="_onGroupSelected"></appsco-company-groups>
                         </div>
 
                     </neon-animated-pages>
@@ -352,7 +352,7 @@
                     value: ''
                 },
 
-                labelsApi: {
+                groupsApi: {
                     type: String,
                     value: ''
                 },
@@ -559,8 +559,8 @@
 
                 switch (filter) {
                     case 0:
-                        this.$.appscoCompanyLabels.reset();
-                        this._onSearchLabelsClear();
+                        this.$.appscoCompanyGroups.reset();
+                        this._onSearchGroupsClear();
 
                         break;
 
@@ -611,18 +611,14 @@
                 this.subscriptionLoaded = true;
             },
 
-            addLabel: function(label) {
-                this.$.appscoCompanyLabels.addLabel(label);
-            },
-
-            removeLabel: function(label) {
-                this.$.appscoCompanyLabels.removeLabel(label);
+            addGroup: function(group) {
+                this.$.appscoCompanyGroups.addGroup(group);
             },
 
             resetPage: function() {
                 this.set('selectedAccounts', []);
                 this.$.appscoAccounts.selectAllAccounts(false);
-                this.$.appscoCompanyLabels.selectAllLabels(false);
+                this.$.appscoCompanyGroups.selectAllGroups(false);
                 this._hideBulkActions();
                 this.hideInfo();
             },
@@ -879,27 +875,27 @@
                 this.$.appscoAccounts.filterByOrgunit(event.detail);
             },
 
-            _searchLabels: function(term) {
-                this.$.appscoCompanyLabels.search(term);
+            _searchGroups: function(term) {
+                this.$.appscoCompanyGroups.search(term);
             },
 
-            _onSearchLabels: function(event) {
-                this._searchLabels(event.detail.term);
+            _onSearchGroups: function(event) {
+                this._searchGroups(event.detail.term);
             },
 
-            _onSearchLabelsClear: function() {
+            _onSearchGroupsClear: function() {
                 this.$.appscoSearch.reset();
-                this._searchLabels('');
+                this._searchGroups('');
             },
 
-            _loadCompanyRolesForLabel: function(label) {
-                this.$.appscoAccounts.loadCompanyRolesForLabel(label);
+            _loadCompanyRolesForGroup: function(group) {
+                this.$.appscoAccounts.loadCompanyRolesForGroup(group);
             },
 
-            _onLabelSelected: function(event) {
-                var label = event.detail.label;
+            _onGroupSelected: function(event) {
+                var group = event.detail.group;
 
-                label.selected ? this._loadCompanyRolesForLabel(label) : this.reloadAccounts();
+                group.selected ? this._loadCompanyRolesForGroup(group) : this.reloadAccounts();
             }
         });
     </script>

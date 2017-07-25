@@ -6,9 +6,9 @@
 <link rel="import" href="../../../bower_components/paper-card/paper-card.html">
 <link rel="import" href="../../../bower_components/paper-icon-button/paper-icon-button.html">
 
-<link rel="import" href="appsco-company-label-roles.html">
+<link rel="import" href="appsco-company-group-roles.html">
 
-<dom-module id="appsco-company-label-info-page">
+<dom-module id="appsco-company-group-info-page">
     <template>
         <style include="webkit-scrollbar-style">
             :host {
@@ -32,7 +32,7 @@
             }
         </style>
 
-        <paper-card heading="[[ label.name ]]" id="card">
+        <paper-card heading="[[ group.name ]]" id="card">
             <paper-icon-button
                     icon="close"
                     title="Close"
@@ -40,13 +40,13 @@
                     on-tap="_onBack"></paper-icon-button>
 
             <div class="card-content">
-                <appsco-company-label-roles
-                        id="appscoCompanyLabelRoles"
+                <appsco-company-group-roles
+                        id="appscoCompanyGroupRoles"
                         authorization-token="[[ authorizationToken ]]"
-                        list-api="[[ _labelRolesApi ]]"
+                        list-api="[[ _groupRolesApi ]]"
                         size="10"
                         load-more
-                        on-remove-label-from-company-role="_onRemoveLabelFromCompanyRole"></appsco-company-label-roles>
+                        on-remove-group-from-company-role="_onRemoveGroupFromCompanyRole"></appsco-company-group-roles>
             </div>
         </paper-card>
 
@@ -55,11 +55,11 @@
     <script>
         Polymer({
 
-            is: 'appsco-company-label-info-page',
+            is: 'appsco-company-group-info-page',
 
             properties: {
 
-                label: {
+                group: {
                     type: Object,
                     value: function() {
                         return {};
@@ -70,9 +70,9 @@
                     type: String
                 },
 
-                _labelRolesApi: {
+                _groupRolesApi: {
                     type: String,
-                    computed: '_computeLabelRolesApi(label)'
+                    computed: '_computeGroupRolesApi(group)'
                 },
 
                 animationConfig: {
@@ -101,68 +101,52 @@
                 Polymer.NeonAnimatableBehavior
             ],
 
-            _computeLabelRolesApi: function(label) {
-                return label.meta ? label.meta.company_roles + '?extended=1' : '';
+            _computeGroupRolesApi: function(group) {
+                return group.meta ? group.meta.company_roles + '?extended=1' : '';
             },
 
             _onBack: function() {
                 this.fire('back');
             },
 
-            setLabel: function(label) {
-                this.label = label;
+            setGroup: function(group) {
+                this.group = group;
             },
 
-            searchLabels: function(term) {
-                this.$.appscoCompanyLabels.search(term);
-            },
+            addGroupsCompanyRoles: function(groups, items) {
 
-            addLabel: function(label) {
-                this.$.appscoCompanyLabels.addLabel(label);
-            },
-
-            modifyLabel: function(label) {
-                this.$.appscoCompanyLabel.modifyLabel(label);
-            },
-
-            removeLabel: function(label) {
-                this.$.appscoCompanyLabel.removeLabel(label);
-            },
-
-            addLabelsCompanyRoles: function(labels, items) {
-
-                if (this.$.appscoCompanyLabelRoles.$) {
-                    var length = labels.length;
+                if (this.$.appscoCompanyGroupRoles.$) {
+                    var length = groups.length;
 
                     for (var i = 0; i < length; i++) {
 
-                        if (labels[i].alias === this.label.alias) {
-                            this.$.appscoCompanyLabelRoles.addLabelRoles(items);
+                        if (groups[i].alias === this.group.alias) {
+                            this.$.appscoCompanyGroupRoles.addGroupRoles(items);
                         }
                     }
                 }
             },
 
-            removeLabelCompanyRoles: function(label, items) {
+            removeGroupsCompanyRoles: function(group, items) {
 
-                if (this.$.appscoCompanyLabelRoles.$ && (label.alias === this.label.alias)) {
-                    this.$.appscoCompanyLabelRoles.removeLabelRoles(items);
+                if (this.$.appscoCompanyGroupRoles.$ && (group.alias === this.group.alias)) {
+                    this.$.appscoCompanyGroupRoles.removeGroupRoles(items);
                 }
             },
 
             setupPage: function() {
-                this.fire('show-labels-page-actions');
+                this.fire('show-groups-page-actions');
             },
 
             resetPage: function() {
-                this.fire('hide-labels-page-actions');
+                this.fire('hide-groups-page-actions');
             },
 
-            _onRemoveLabelFromCompanyRole: function(event) {
+            _onRemoveGroupFromCompanyRole: function(event) {
                 event.stopPropagation();
 
-                this.fire('remove-label-from-company-role', {
-                    label: this.label,
+                this.fire('remove-group-from-company-role', {
+                    group: this.group,
                     role: event.detail.role
                 })
             }

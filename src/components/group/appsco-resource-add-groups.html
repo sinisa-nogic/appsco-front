@@ -12,20 +12,20 @@
 <link rel="import" href="../components/appsco-loader.html">
 <link rel="import" href="../components/appsco-form-error.html">
 <link rel="import" href="../components/appsco-search.html">
-<link rel="import" href="appsco-label-card.html">
+<link rel="import" href="appsco-group-card.html">
 
 <!--
-`appsco-resource-add-labels`
-Provides functionality of adding resource item to labels.
+`appsco-resource-add-groups`
+Provides functionality of adding resource item to groups.
 
-    <appsco-resource-add-labels items="[]" 
+    <appsco-resource-add-groups items="[]"
                                 authorization-token="" 
-                                labels-api="" 
-                                size=""></appsco-resource-add-labels>
+                                groups-api=""
+                                size=""></appsco-resource-add-groups>
 
 -->
 
-<dom-module id="appsco-resource-add-labels">
+<dom-module id="appsco-resource-add-groups">
     <template>
         <style>
             :host {
@@ -50,18 +50,18 @@ Provides functionality of adding resource item to labels.
             .dialog-container {
                 padding-bottom: 20px;
             }
-            .label-list {
+            .group-list {
                 @apply(--layout-horizontal);
                 @apply(--layout-wrap);
                 padding: 2px;
                 margin-right: -8px;
             }
-            appsco-label-card {
+            appsco-group-card {
                 margin-right: 6px;
                 margin-bottom: 6px;
             }
-            .selected-label {
-                --label-card: {
+            .selected-group {
+                --group-card: {
                     padding-right: 10px;
                     width: 136px;
                 };
@@ -107,15 +107,15 @@ Provides functionality of adding resource item to labels.
             <paper-dialog-scrollable>
                 <div class="dialog-container">
 
-                    <div class="label-list">
+                    <div class="group-list">
 
                         <appsco-form-error message="[[ _error ]]"></appsco-form-error>
 
-                        <template is="dom-repeat" items="[[ _selectedLabels ]]">
-                            <appsco-label-card class="selected-label"
-                                               label="[[ item ]]"
+                        <template is="dom-repeat" items="[[ _selectedGroups ]]">
+                            <appsco-group-card class="selected-group"
+                                               group="[[ item ]]"
                                                remove-action
-                                               on-selected="_onRemoveSelectedLabel"></appsco-label-card>
+                                               on-selected="_onRemoveSelectedGroup"></appsco-group-card>
                         </template>
                     </div>
 
@@ -125,24 +125,24 @@ Provides functionality of adding resource item to labels.
                                    on-search="_onSearch"
                                    on-search-clear="_onSearchClear"></appsco-search>
 
-                    <div class="label-list">
+                    <div class="group-list">
 
                         <appsco-loader active="[[ _searchLoader ]]"
                                        loader-alt="Appsco is processing request"
                                        multi-color></appsco-loader>
 
                         <template is="dom-repeat" items="[[ _searchList ]]">
-                            <appsco-label-card label="[[ item ]]"
-                                                 on-selected="_onLabelSelected"></appsco-label-card>
+                            <appsco-group-card group="[[ item ]]"
+                                                 on-selected="_onGroupSelected"></appsco-group-card>
                         </template>
 
                         <template is="dom-if" if="[[ _message ]]">
                             <p class="message">
                                 [[ _message ]]
 
-                                <template is="dom-if" if="[[ _showCreateNewLabelAction ]]">
+                                <template is="dom-if" if="[[ _showCreateNewGroupAction ]]">
                                     <paper-button class="link-button"
-                                                  on-tap="_onCreateLabelAction">Create it</paper-button>
+                                                  on-tap="_onCreateGroupAction">Create it</paper-button>
                                 </template>
                             </p>
                         </template>
@@ -152,7 +152,7 @@ Provides functionality of adding resource item to labels.
 
             <div class="buttons">
                 <paper-button dialog-dismiss>Cancel</paper-button>
-                <paper-button autofocus on-tap="_onAddLabelsToResourcesAction">Share</paper-button>
+                <paper-button autofocus on-tap="_onAddGroupsToResourcesAction">Share</paper-button>
             </div>
         </paper-dialog>
 
@@ -160,12 +160,12 @@ Provides functionality of adding resource item to labels.
     <script>
         Polymer({
 
-            is: 'appsco-resource-add-labels',
+            is: 'appsco-resource-add-groups',
 
             properties: {
 
                 /**
-                 * Items to add labels to.
+                 * Items to add groups to.
                  */
                 items: {
                     type: Array,
@@ -183,15 +183,15 @@ Provides functionality of adding resource item to labels.
                 },
 
                 /**
-                 * Labels API link
+                 * Groups API link
                  */
-                labelsApi: {
+                groupsApi: {
                     type: String,
                     value: ''
                 },
 
                 /**
-                 * Number of labels to load show in search result.
+                 * Number of groups to load show in search result.
                  */
                 size: {
                     type: Number,
@@ -220,7 +220,7 @@ Provides functionality of adding resource item to labels.
                 },
 
                 /**
-                 * Label list from search.
+                 * Groups list from search.
                  */
                 _searchList: {
                     type: Array,
@@ -237,17 +237,17 @@ Provides functionality of adding resource item to labels.
                 },
 
                 /**
-                 * Indicates if Create New Label action should be displayed.
+                 * Indicates if Create New Group action should be displayed.
                  */
-                _showCreateNewLabelAction: {
+                _showCreateNewGroupAction: {
                     type: Boolean,
                     value: false
                 },
 
                 /**
-                 * Selected labels from search list.
+                 * Selected groups from search list.
                  */
-                _selectedLabels: {
+                _selectedGroups: {
                     type: Array,
                     value: function() {
                         return [];
@@ -328,7 +328,7 @@ Provides functionality of adding resource item to labels.
              */
             _onDialogClosed: function() {
                 this._reset();
-                this.set('_selectedLabels', []);
+                this.set('_selectedGroups', []);
             },
             
             _showDialogLoader: function() {
@@ -356,7 +356,7 @@ Provides functionality of adding resource item to labels.
             },
 
             /**
-             * Gets labels by term.
+             * Gets groups by term.
              *
              * @param {Object} event
              * @private
@@ -368,11 +368,11 @@ Provides functionality of adding resource item to labels.
                 this._showSearchLoader();
                 this._message = '';
                 this._hideError();
-                this._showCreateNewLabelAction = false;
+                this._showCreateNewGroupAction = false;
 
                 if (searchLength === 0) {
                     this._message = '';
-                    this._showCreateNewLabelAction = false;
+                    this._showCreateNewGroupAction = false;
                     this._hideSearchLoader();
                     this.set('_searchList', []);
                     return false;
@@ -386,7 +386,7 @@ Provides functionality of adding resource item to labels.
                 }
 
                 var request = document.createElement('iron-request'),
-                    url = this.labelsApi + '?extended=1&limit=' + this.size + '&term=' + searchValue;
+                    url = this.groupsApi + '?extended=1&limit=' + this.size + '&term=' + searchValue;
 
                 this._message = '';
 
@@ -398,15 +398,15 @@ Provides functionality of adding resource item to labels.
                 };
 
                 request.send(options).then(function() {
-                    var labels = request.response.company_labels;
+                    var groups = request.response.company_groups;
 
-                    if (labels && labels.length > 0) {
-                        this.set('_searchList', labels);
+                    if (groups && groups.length > 0) {
+                        this.set('_searchList', groups);
                     }
                     else {
                         this.set('_searchList', []);
                         this._message = 'Group with name \'' + decodeURIComponent(searchValue) + '\' does not exist.';
-                        this._showCreateNewLabelAction = true;
+                        this._showCreateNewGroupAction = true;
                     }
 
                     this._hideSearchLoader();
@@ -417,33 +417,33 @@ Provides functionality of adding resource item to labels.
                 this._reset();
             },
 
-            _onCreateLabelAction: function() {
+            _onCreateGroupAction: function() {
                 var name = this.$.appscoSearch.getValue(),
                     request = document.createElement('iron-request'),
-                    url = this.labelsApi,
+                    url = this.groupsApi,
                     options = {
                         url: url,
                         method: 'POST',
                         handleAs: 'json',
                         headers: this._headers,
-                        body: 'company_label[name]=' + encodeURIComponent(name)
+                        body: 'company_group[name]=' + encodeURIComponent(name)
                     };
                 
                 this._showDialogLoader();
 
                 request.send(options).then(function() {
-                    var label = request.response;
+                    var group = request.response;
 
-                    if (label && label.alias) {
-                        this.push('_selectedLabels', label);
+                    if (group && group.alias) {
+                        this.push('_selectedGroups', group);
                         this._message = '';
                     }
 
-                    this._showCreateNewLabelAction = false;
+                    this._showCreateNewGroupAction = false;
                     this._hideDialogLoader();
 
-                    this.fire('label-added', {
-                        label: label
+                    this.fire('group-added', {
+                        group: group
                     });
                     
                 }.bind(this), function() {
@@ -453,30 +453,30 @@ Provides functionality of adding resource item to labels.
             },
 
             /**
-             * Called after label has been selected from search list.
+             * Called after group has been selected from search list.
              *
              * @param {Object} event
              * @private
              */
-            _onLabelSelected: function(event) {
+            _onGroupSelected: function(event) {
                 this._hideError();
-                this.push('_selectedLabels', event.model.item);
+                this.push('_selectedGroups', event.model.item);
                 this.splice('_searchList', this._searchList.indexOf(event.model.item), 1);
             },
 
-            _onRemoveSelectedLabel: function(event) {
+            _onRemoveSelectedGroup: function(event) {
                 this.push('_searchList', event.model.item);
-                this.splice('_selectedLabels', this._selectedLabels.indexOf(event.model.item), 1);
+                this.splice('_selectedGroups', this._selectedGroups.indexOf(event.model.item), 1);
             },
 
-            _addLabelsToResource: function(item) {
+            _addGroupsToResource: function(item) {
 
                 return new Promise(function(resolve, reject) {
-                    var labels = this._selectedLabels,
-                        length = labels.length - 1,
+                    var groups = this._selectedGroups,
+                        length = groups.length - 1,
                         request = document.createElement('iron-request'),
                         options = {
-                            url: item.self + '/labels',
+                            url: item.self + '/groups',
                             method: 'POST',
                             handleAs: 'json',
                             headers: this._headers
@@ -485,7 +485,7 @@ Provides functionality of adding resource item to labels.
 
                     for (var i = 0; i <= length; i++) {
                         var next = (i === length) ? '' : '&';
-                        body += 'labels[]=' + encodeURIComponent(labels[i].meta.self) + next;
+                        body += 'groups[]=' + encodeURIComponent(groups[i].meta.self) + next;
                     }
 
                     options.body = body;
@@ -522,12 +522,12 @@ Provides functionality of adding resource item to labels.
                 if (this._responseItems.length > 0) {
 
                     /**
-                     * Fired when labels have been added to items.
+                     * Fired when groups have been added to items.
                      *
-                     * @event labels-added-to-resources
+                     * @event groups-added-to-resources
                      */
-                    this.fire('labels-added-to-resources', {
-                        labels: this._selectedLabels,
+                    this.fire('groups-added-to-resources', {
+                        groups: this._selectedGroups,
                         items: this._responseItems,
                         resourceType: this.resourceType
                     });
@@ -538,14 +538,14 @@ Provides functionality of adding resource item to labels.
                     this._showError('There was an error while sharing ' + this.resourceType + ' to selected groups. Please close the dialog and try again.');
                 }
 
-                this.set('_selectedLabels', []);
+                this.set('_selectedGroups', []);
                 this.set('_responseItems', []);
                 this._hideDialogLoader();
             },
 
-            _onAddLabelsToResourcesAction: function() {
+            _onAddGroupsToResourcesAction: function() {
 
-                if (0 === this._selectedLabels.length) {
+                if (0 === this._selectedGroups.length) {
                     this._showError('Please add at least one group to share ' + this.resourceType + ' to.');
                     return false;
                 }
@@ -563,7 +563,7 @@ Provides functionality of adding resource item to labels.
 
                     (function(me) {
 
-                        me._addLabelsToResource(item).then(function(item) {
+                        me._addGroupsToResource(item).then(function(item) {
                             me.push('_responseItems', item);
                             me._requests--;
 

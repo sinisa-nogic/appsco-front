@@ -10,25 +10,25 @@
 <link rel="import" href="../components/appsco-form-error.html">
 
 <!--
-`appsco-company-remove-label`
+`appsco-company-remove-group`
 Shows dialog screen with confirmation for account removal from organization unit.
 
-    <appsco-company-remove-label label="{}" authorization-token="">
-    </appsco-company-remove-label>
+    <appsco-company-remove-group group="{}" authorization-token="">
+    </appsco-company-remove-group>
 
 ### Styling
 
-`<appsco-company-remove-label>` provides the following custom properties and mixins for styling:
+`<appsco-company-remove-group>` provides the following custom properties and mixins for styling:
 
 -->
 
-<dom-module id="appsco-company-remove-label">
+<dom-module id="appsco-company-remove-group">
     <template>
         <style>
             :host {
                 display: block;
                 position: relative;
-                @apply(--appsco-label-remove);
+                @apply(--appsco-group-remove);
 
                 --form-error-box: {
                      margin-top: 0;
@@ -59,15 +59,15 @@ Shows dialog screen with confirmation for account removal from organization unit
                 exit-animation="fade-out-animation"
                 on-iron-overlay-closed="_onDialogClosed">
 
-            <h2>Remove [[ label.name ]]</h2>
+            <h2>Remove [[ group.name ]]</h2>
 
             <appsco-loader active="[[ _loader ]]" loader-alt="Appsco is processing request" multi-color></appsco-loader>
 
             <paper-dialog-scrollable>
                 <div class="remove-container">
                     <appsco-form-error message="[[ _error ]]"></appsco-form-error>
-                    <p>Removing label detaches all accounts from it.</p>
-                    <p>Please confirm removal of this label.</p>
+                    <p>Removing group detaches all accounts from it.</p>
+                    <p>Please confirm removal of this group.</p>
                 </div>
             </paper-dialog-scrollable>
 
@@ -81,23 +81,23 @@ Shows dialog screen with confirmation for account removal from organization unit
     <script>
         Polymer({
 
-            is: 'appsco-company-remove-label',
+            is: 'appsco-company-remove-group',
 
             properties: {
 
                 /**
-                 * Label to remove.
+                 * Group to remove.
                  */
-                label: {
+                group: {
                     type: Array,
                     value: function() {
                         return {};
                     }
                 },
 
-                _removeLabelApi: {
+                _removeGroupApi: {
                     type: String,
-                    computed: '_computeRemoveLabelApi(label)'
+                    computed: '_computeRemoveGroupApi(group)'
                 },
 
                 /**
@@ -126,8 +126,8 @@ Shows dialog screen with confirmation for account removal from organization unit
                 }
             },
 
-            setLabel: function(label) {
-                this.label = label;
+            setGroup: function(group) {
+                this.group = group;
             },
 
             open: function () {
@@ -149,8 +149,8 @@ Shows dialog screen with confirmation for account removal from organization unit
                 };
             },
 
-            _computeRemoveLabelApi: function(label) {
-                return label.meta ? label.meta.self : '';
+            _computeRemoveGroupApi: function(group) {
+                return group.meta ? group.meta.self : '';
             },
 
             _showLoader: function() {
@@ -177,7 +177,7 @@ Shows dialog screen with confirmation for account removal from organization unit
             _onRemove: function() {
                 var request = document.createElement('iron-request'),
                         options = {
-                            url: this._removeLabelApi,
+                            url: this._removeGroupApi,
                             method: 'DELETE',
                             handleAs: 'json',
                             headers: this._headers
@@ -189,23 +189,23 @@ Shows dialog screen with confirmation for account removal from organization unit
                     this.close();
 
                     if (200 === request.status) {
-                        var label = request.response;
+                        var group = request.response;
 
                         /**
-                         * Fired when label is deleted.
+                         * Fired when group is deleted.
                          *
-                         * @event label-removed
-                         * @param [Object] label
+                         * @event group-removed
+                         * @param [Object] group
                          */
-                        this.fire('label-removed', {
-                            label: label
+                        this.fire('group-removed', {
+                            group: group
                         });
                     }
 
                 }.bind(this), function() {
 
                     if (request.status === 404) {
-                        this._showError('We couldn\'t remove label from company. Please try again in a minute.');
+                        this._showError('We couldn\'t remove group from company. Please try again in a minute.');
                     }
 
                     this._hideLoader();

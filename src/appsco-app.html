@@ -53,9 +53,9 @@
 <link rel="import" href="components/application/company/appsco-application-assignee-revoke.html">
 <link rel="import" href="components/application/appsco-import-resources.html">
 
-<link rel="import" href="components/label/appsco-company-remove-label.html">
-<link rel="import" href="components/label/appsco-resource-add-labels.html">
-<link rel="import" href="components/label/appsco-resource-remove-labels.html">
+<link rel="import" href="components/group/appsco-company-remove-group.html">
+<link rel="import" href="components/group/appsco-resource-add-groups.html">
+<link rel="import" href="components/group/appsco-resource-remove-groups.html">
 
 <link rel="import" href="components/account/appsco-account-authorized-app-revoke.html">
 
@@ -542,7 +542,7 @@
                                     on-search-clear="_onSearchAccountsClear"
                                     on-upgrade="_fireUpgrade"
                                     on-remove="_onRemoveAccounts"
-                                    on-add-labels-to-company-roles="_onAddLabelsToCompanyRoles"
+                                    on-add-groups-to-company-roles="_onAddGroupsToCompanyRoles"
                                     on-orgunits="_onAddAccountsToOrgunit"
                                     on-manage-domains="_onManageDomains"
                             ></appsco-directory-page-actions>
@@ -558,7 +558,7 @@
                                     on-add-contact="_onAddContactAction"
                                     on-import-contacts="_onImportContactsAction"
                                     on-delete-contacts="_onDeleteContactsAction"
-                                    on-add-labels-to-contacts="_onAddLabelsToContactsAction"
+                                    on-add-groups-to-contacts="_onAddGroupsToContactsAction"
                                     on-select-all-contacts="_onSelectAllContactsAction"
                                     on-page-selected="_onContactsPageSelected"
                                     on-search="_onSearchContacts"
@@ -591,8 +591,8 @@
                                     name="company"
                                     on-resource-section="_onResourceActionCompanyPage"
                                     on-add-domain="_onAddDomain"
-                                    on-search-labels="_onSearchLabels"
-                                    on-search-labels-clear="_onSearchLabelsClear"></appsco-company-page-actions>
+                                    on-search-groups="_onSearchGroups"
+                                    on-search-groups-clear="_onSearchGroupsClear"></appsco-company-page-actions>
                         </neon-animated-pages>
 
                     </app-toolbar>
@@ -775,7 +775,7 @@
                             company-directory-roles-api="[[ _companyRolesApi ]]"
                             company-orgunits-api="[[ _companyOrgunitsApi ]]"
                             domains-api="[[ _companyDomainsApi ]]"
-                            labels-api="[[ _companyLabelsApi ]]"
+                            groups-api="[[ _companyGroupsApi ]]"
                             on-invitation-resent="_onInvitationResent"
                             on-hide-subscription-limit-reached-info="_onHideSubscriptionLimitReachedInfo"
                             on-show-domain-not-verified-info="_onShowDomainNotVerifiedInfo"
@@ -792,7 +792,7 @@
                             id="appscoContactsPage"
                             name="contacts"
                             authorization-token="[[ authorizationToken ]]"
-                            labels-api="[[ _companyLabelsApi ]]"
+                            groups-api="[[ _companyGroupsApi ]]"
                             company-invitations-api="[[ _companyInvitationsApi ]]"
                             company-contacts-api="[[ _companyContactsApi ]]"
                             on-edit-contact="_onEditContactAction"
@@ -913,14 +913,14 @@
                             on-company-logo-changed="_onCompanyLogoChanged"
                             on-show-domains-page-actions="_onShowDomainsPageActions"
                             on-hide-domains-page-actions="_onHideDomainsPageActions"
-                            on-show-labels-page-actions="_onShowLabelsPageActions"
-                            on-hide-labels-page-actions="_onHideLabelsPageActions"
+                            on-show-groups-page-actions="_onShowGroupsPageActions"
+                            on-hide-groups-page-actions="_onHideGroupsPageActions"
                             on-remove-domain="_onRemoveDomain"
                             on-get-token="_onDomainGetToken"
                             on-domain-verified="_onDomainVerified"
                             on-domain-not-verified="_onDomainNotVerified"
-                            on-remove-label="_onRemoveLabel"
-                            on-remove-label-from-company-role="_onRemoveLabelFromCompanyRole"
+                            on-remove-group="_onRemoveGroup"
+                            on-remove-group-from-company-role="_onRemoveGroupFromCompanyRole"
                     ></appsco-company-page>
 
                     <appsco-logout-page name="logout"
@@ -1196,21 +1196,21 @@
         <appsco-company-domain-token
                 id="appscoCompanyDomainToken"></appsco-company-domain-token>
 
-        <appsco-company-remove-label
-                id="appscoCompanyRemoveLabel"
+        <appsco-company-remove-group
+                id="appscoCompanyRemoveGroup"
                 authorization-token="[[ authorizationToken ]]"
-                on-label-removed="_onLabelRemoved"></appsco-company-remove-label>
+                on-group-removed="_onGroupRemoved"></appsco-company-remove-group>
 
-        <appsco-resource-add-labels
-                id="appscoReourceShareToGroup"
+        <appsco-resource-add-groups
+                id="appscoShareToGroupDialog"
                 authorization-token="[[ authorizationToken ]]"
-                labels-api="[[ _companyLabelsApi ]]"
-                on-labels-added-to-resources="_onLabelsAddedToResources"></appsco-resource-add-labels>
+                groups-api="[[ _companyGroupsApi ]]"
+                on-groups-added-to-resources="_onGroupsAddedToResources"></appsco-resource-add-groups>
 
-        <appsco-resource-remove-labels
-                id="appscoResourceRemoveLabels"
+        <appsco-resource-remove-groups
+                id="appscoResourceRemoveGroups"
                 authorization-token="[[ authorizationToken ]]"
-                on-label-removed-from-resources="_onLabelRemovedFromResources"></appsco-resource-remove-labels>
+                on-group-removed-from-resources="_onGroupRemovedFromResources"></appsco-resource-remove-groups>
 
         <appsco-add-contact
                 id="appscoAddContact"
@@ -1560,7 +1560,7 @@
                     value: ''
                 },
 
-                _companyLabelsApi: {
+                _companyGroupsApi: {
                     type: String,
                     value: ''
                 },
@@ -1652,7 +1652,7 @@
                 'application-settings-saved': '_onApplicationUpdated',
                 'show-subscription-limit-reached-info': '_onShowSubscriptionLimitReachedInfo',
                 'copied-application-attribute': '_onCopiedApplicationAttribute',
-                'label-added': '_onLabelAdded',
+                'group-added': '_onGroupAdded',
                 'remove-invitation': '_onRemoveInvitationAction',
                 'reload-contacts': '_onReloadContacts',
                 'change-assignee-claims': '_onChangeAssigneeClaims',
@@ -1908,7 +1908,7 @@
                     this._companyOrgunitsApi = companyApi + '/org-units?extended=1';
                     this._companySubscriptionApi = companyApi + '/billing/subscription';
                     this._companyDomainsApi = companyApi + '/domains';
-                    this._companyLabelsApi = companyApi + '/labels';
+                    this._companyGroupsApi = companyApi + '/groups';
                     this._companySamlMetadataApi = companyApi + '/idp/saml/metadata';
                 }
             },
@@ -3617,9 +3617,9 @@
                 this._notify('An error occurred. Selected contacts were not removed from company. Please try again.');
             },
 
-            _onAddLabelsToContactsAction: function() {
+            _onAddGroupsToContactsAction: function() {
                 var selectedContacts = this.$.appscoContactsPage.getSelectedContacts();
-                this._addLabelsToResources(selectedContacts, 'contacts');
+                this._shareToGroup(selectedContacts, 'contacts');
             },
 
             _onSelectAllContactsAction: function() {
@@ -3978,60 +3978,60 @@
                 this._notify('Unable to verify ' + domain.domain + ' domain - please wait until the DNS record change is propagated.', true);
             },
 
-            _onShowLabelsPageActions: function() {
-                this.$.appscoCompanyPageActions.showLabelsPageActions();
+            _onShowGroupsPageActions: function() {
+                this.$.appscoCompanyPageActions.showGroupsPageActions();
             },
 
-            _onHideLabelsPageActions: function() {
-                this.$.appscoCompanyPageActions.hideLabelsPageActions();
+            _onHideGroupsPageActions: function() {
+                this.$.appscoCompanyPageActions.hideGroupsPageActions();
             },
 
-            _addLabel: function(label) {
+            _addGroup: function(group) {
 
                 if (this.$.appscoCompanyPage.$) {
-                    this.$.appscoCompanyPage.addLabel(label);
+                    this.$.appscoCompanyPage.addGroup(group);
                 }
 
                 if (this.$.appscoDirectoryPage.$) {
-                    this.$.appscoDirectoryPage.addLabel(label);
+                    this.$.appscoDirectoryPage.addGroup(group);
                 }
 
                 if (this.$.appscoContactsPage.$) {
-                    this.$.appscoContactsPage.addLabel(label);
+                    this.$.appscoContactsPage.addGroup(group);
                 }
             },
 
-            _onLabelAdded: function(event) {
-                var label = event.detail.label;
+            _onGroupAdded: function(event) {
+                var group = event.detail.group;
 
-                this._addLabel(label);
-                this._notify('Label ' + label.name + ' was successfully saved.');
+                this._addGroup(group);
+                this._notify('Group ' + group.name + ' was successfully saved.');
             },
 
-            _searchLabels: function(term) {
+            _searchGroups: function(term) {
                 this._showProgressBar();
-                this.$.appscoCompanyPage.searchLabels(term);
+                this.$.appscoCompanyPage.searchGroups(term);
             },
 
-            _onSearchLabels: function(event) {
-                this._searchLabels(event.detail.term);
+            _onSearchGroups: function(event) {
+                this._searchGroups(event.detail.term);
             },
 
-            _onSearchLabelsClear: function() {
-                this._searchLabels('');
+            _onSearchGroupsClear: function() {
+                this._searchGroups('');
             },
 
-            _onRemoveLabel: function(event) {
-                this.$.appscoCompanyRemoveLabel.setLabel(event.detail.label);
-                this.$.appscoCompanyRemoveLabel.open();
+            _onRemoveGroup: function(event) {
+                this.$.appscoCompanyRemoveGroup.setGroup(event.detail.group);
+                this.$.appscoCompanyRemoveGroup.open();
             },
 
-            _onLabelRemoved: function(event) {
-                var label = event.detail.label;
+            _onGroupRemoved: function(event) {
+                var group = event.detail.group;
 
-                this.$.appscoCompanyPage.removeLabel(label);
+                this.$.appscoCompanyPage.removeGroup(group);
                 this._reloadApplicationsForCompanyAdministrator();
-                this._notify('Label ' + label.name + ' was successfully removed.');
+                this._notify('Group ' + group.name + ' was successfully removed.');
             },
             /**
              * Company page END
@@ -4428,35 +4428,35 @@
                 }
             },
 
-            _addLabelsCompanyRoles: function(labels, items) {
+            _addGroupsCompanyRoles: function(groups, items) {
 
                 if (this.$.appscoCompanyPage.$) {
-                    this.$.appscoCompanyPage.addLabelsCompanyRoles(labels, items);
+                    this.$.appscoCompanyPage.addGroupsCompanyRoles(groups, items);
                 }
             },
 
-            _shareResourcesToGroup: function(items, type) {
+            _shareToGroup: function(items, type) {
 
                 if (items.length > 0) {
-                    this.$.appscoReourceShareToGroup.setItems(items);
-                    this.$.appscoReourceShareToGroup.setType(type);
-                    this.$.appscoReourceShareToGroup.open();
+                    this.$.appscoShareToGroupDialog.setItems(items);
+                    this.$.appscoShareToGroupDialog.setType(type);
+                    this.$.appscoShareToGroupDialog.open();
                 }
             },
 
             _onShareResourcesToGroup: function() {
                 var selectedResources = this.$.appscoApplicationsPage.getSelectedApplications();
 
-                this._shareResourcesToGroup(selectedResources, 'resources');
+                this._shareToGroup(selectedResources, 'resources');
             },
 
-            _onAddLabelsToCompanyRoles: function() {
+            _onAddGroupsToCompanyRoles: function() {
                 var selectedRoles = this.$.appscoDirectoryPage.getSelectedAccounts();
 
-                this._addLabelsToResources(selectedRoles, 'accounts');
+                this._shareToGroup(selectedRoles, 'accounts');
             },
 
-            _onLabelsAddedToResources: function(event) {
+            _onGroupsAddedToResources: function(event) {
                 var items = event.detail.items,
                     length = items.length,
                     oneItem = (length === 1),
@@ -4499,7 +4499,7 @@
                             }
                         }
 
-                        this._addLabelsCompanyRoles(event.detail.labels, items);
+                        this._addGroupsCompanyRoles(event.detail.groups, items);
                         this._notifyAccountLog();
                         this._notifyReloadApplications();
                         this._notifyReloadAccounts();
@@ -4519,33 +4519,33 @@
                 }
             },
 
-            _removeLabelFromResources: function(label, items, type) {
-                this.$.appscoResourceRemoveLabels.setLabel(label);
-                this.$.appscoResourceRemoveLabels.setItems(items);
-                this.$.appscoResourceRemoveLabels.setType(type);
-                this.$.appscoResourceRemoveLabels.open();
+            _removeGroupFromResources: function(group, items, type) {
+                this.$.appscoResourceRemoveGroups.setGroup(group);
+                this.$.appscoResourceRemoveGroups.setItems(items);
+                this.$.appscoResourceRemoveGroups.setType(type);
+                this.$.appscoResourceRemoveGroups.open();
             },
 
-            _removeLabelCompanyRoles: function(label, items) {
+            _removeGroupCompanyRoles: function(group, items) {
 
                 if (this.$.appscoCompanyPage.$) {
-                    this.$.appscoCompanyPage.removeLabelCompanyRoles(label, items);
+                    this.$.appscoCompanyPage.removeGroupCompanyRoles(group, items);
                 }
             },
 
-            _onRemoveLabelFromCompanyRole: function(event) {
-                this._removeLabelFromResources(event.detail.label, [event.detail.role], 'accounts');
+            _onRemoveGroupFromCompanyRole: function(event) {
+                this._removeGroupFromResources(event.detail.group, [event.detail.role], 'accounts');
             },
 
-            _onLabelRemovedFromResources: function(event) {
+            _onGroupRemovedFromResources: function(event) {
                 var items = event.detail.items,
-                    label = event.detail.label,
+                    group = event.detail.group,
                     length = items.length,
                     resourceType = event.detail.resourceType;
 
                 (1 === items.length) ?
-                    this._notify('Label ' + label.name + ' was successfully removed from ' + items[0].account.name + '.') :
-                    this._notify('Label was successfully removed from selected ' + resourceType + '.');
+                    this._notify('Group ' + group.name + ' was successfully removed from ' + items[0].account.name + '.') :
+                    this._notify('Group was successfully removed from selected ' + resourceType + '.');
 
                 switch (resourceType) {
                     case 'resources':
@@ -4573,7 +4573,7 @@
                             }
                         }
 
-                        this._removeLabelCompanyRoles(label, items);
+                        this._removeGroupCompanyRoles(group, items);
                         this._notifyAccountLog();
                         this._notifyReloadApplications();
                         this._notifyReloadAccounts();
@@ -4587,7 +4587,7 @@
                             this.$.appscoContactsPage.removeSelectedContacts(items);
                         }
 
-                        this._onHideRemoveLabelFromContactAction();
+                        //this._onHideRemoveLabelFromContactAction();
 
                         break;
 

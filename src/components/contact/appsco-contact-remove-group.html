@@ -1,0 +1,172 @@
+<link rel="import" href="../../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../../bower_components/paper-button/paper-button.html">
+<link rel="import" href="../../../bower_components/iron-ajax/iron-request.html">
+<link rel="import" href="../../../bower_components/paper-dialog/paper-dialog.html">
+<link rel="import" href="../../../bower_components/paper-dialog-scrollable/paper-dialog-scrollable.html">
+<link rel="import" href="../../../bower_components/neon-animation/animations/fade-out-animation.html">
+<link rel="import" href="../../../bower_components/neon-animation/animations/scale-up-animation.html">
+
+<link rel="import" href="../components/appsco-loader.html">
+<link rel="import" href="../components/appsco-form-error.html">
+
+
+<dom-module id="appsco-contact-remove-group">
+    <template>
+        <style>
+            :host {
+                display: block;
+                position: relative;
+                @apply(--appsco-contact-remove);
+
+                --form-error-box: {
+                    margin-top: 0;
+                };
+            }
+            :host paper-dialog {
+                width: 670px;
+                top: 20vh;
+                @apply(--appsco-paper-dialog);
+            }
+            :host paper-dialog-scrollable > * {
+                @apply(--paper-dialog-scrollable-child);
+            }
+            :host .buttons paper-button {
+                @apply(--paper-dialog-button);
+            }
+            :host .buttons paper-button[dialog-dismiss] {
+                @apply(--paper-dialog-dismiss-button);
+            }
+            :host appsco-loader {
+                @apply(--paper-dialog-appsco-loader);
+            }
+        </style>
+        <paper-dialog
+                with-backdrop
+                id="dialog"
+                entry-animation="scale-up-animation"
+                exit-animation="fade-out-animation"
+                on-iron-overlay-closed="_onDialogClosed">
+
+            <h2>Remove [[ contact.display_name ]] from [[ group.name ]]</h2>
+
+            <appsco-loader active="[[ _loader ]]" loader-alt="Appsco is processing request" multi-color></appsco-loader>
+
+            <paper-dialog-scrollable>
+                <div class="remove-container">
+                    <appsco-form-error message="[[ _error ]]"></appsco-form-error>
+                    <p>Please confirm removal of [[ contact.display_name ]] from [[ group.name ]] group.</p>
+                </div>
+            </paper-dialog-scrollable>
+
+            <div class="buttons">
+                <paper-button dialog-dismiss>Cancel</paper-button>
+                <paper-button autofocus on-tap="_remove">Remove</paper-button>
+            </div>
+        </paper-dialog>
+
+    </template>
+    <script>
+        Polymer({
+
+            is: 'appsco-contact-remove-group',
+
+            properties: {
+
+                /**
+                 * Account to remove from group.
+                 */
+                contact: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    }
+                },
+
+                /**
+                 * Group to remove from.
+                 */
+                group: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    }
+                },
+
+                /**
+                 * Authorization token.
+                 */
+                authorizationToken: {
+                    type: String
+                },
+
+                _loader: {
+                    type: Boolean,
+                    value: false
+                },
+
+                /**
+                 * Error message.
+                 */
+                _error: {
+                    type: String
+                }
+            },
+
+            toggle: function () {
+                this.$.dialog.open();
+            },
+
+            _onDialogClosed: function() {
+                this._error = '';
+                this._loader = false;
+            },
+
+            setGroup: function(group) {
+                this.group = group;
+            },
+
+            setContact: function(contact) {
+                this.contact = contact;
+            },
+
+            _remove: function() {
+                var appRequest = document.createElement('iron-request'),
+                        options = {
+                            url: this.group.meta.self + '/contacts/' + this.contact.alias,
+                            method: 'DELETE',
+                            handleAs: 'json',
+                            headers: {
+                                'Authorization': 'token ' + this.authorizationToken,
+                                'Content-Type': 'application/x-www-form-urlencoded'
+                            }
+                        };
+
+                this._loader = true;
+
+                appRequest.send(options).then(function(request) {
+                    this.$.dialog.close();
+
+                    /**
+                     * Fired when account is detached from group
+                     *
+                     * @event application-removed-from-group
+                     * @param [Object] account
+                     * @param [Object] group
+                     */
+                    this.fire('contact-removed-from-group', {
+                        contact: request.response,
+                        group: this.group
+                    });
+
+                }.bind(this), function() {
+
+                    if (appRequest.status != 200) {
+                        this._error = this.apiErrors.getError(request.response.code);
+                    }
+
+                    this._loader = false;
+                }.bind(this));
+            }
+        });
+    </script>
+</dom-module>

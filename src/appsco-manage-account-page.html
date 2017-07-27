@@ -17,6 +17,7 @@
 <link rel="import" href="directory/appsco-account-orgunits-page.html">
 <link rel="import" href="directory/appsco-manage-account-change-password-page.html">
 <link rel="import" href="directory/appsco-directory-role-applications-page.html">
+<link rel="import" href="directory/appsco-account-groups-page.html">
 
 <link rel="import" href="components/account/appsco-account-image.html">
 
@@ -198,10 +199,12 @@
                                 notifications-api="[[ _notificationsApi ]]"
                                 log-api="[[ _logApi ]]"
                                 two-fa-api="[[ _twoFaApi ]]"
+                                groups-api="[[ _groupsApi ]]"
                                 on-account-settings="_onAccountSettings"
                                 on-all-notifications="_onAllNotifications"
                                 on-whole-log="_onWholeLog"
                                 on-manage-orgunits="_onManageOrgunits"
+                                on-manage-groups="_onManageGroups"
                                 on-manage-applications="_onManageApplications"
                                 on-log-loaded="_pageLoaded"
                                 on-log-empty="_pageLoaded">
@@ -238,6 +241,15 @@
                                 on-back="_onResourceBack">
                         </appsco-account-orgunits-page>
 
+                        <appsco-account-groups-page
+                                id="appscoAccountGroupsPage"
+                                name="appsco-account-groups-page"
+                                account="[[ role ]]"
+                                groups-api="[[ _groupsApi ]]"
+                                authorization-token="[[ authorizationToken ]]"
+                                on-back="_onResourceBack">
+                        </appsco-account-groups-page>
+
                         <appsco-manage-account-change-password-page
                                 name="appsco-manage-account-change-password-page"
                                 authorization-token="[[ authorizationToken ]]"
@@ -272,7 +284,6 @@
                    on-error="_onCanBeManagedError"
                    on-response="_onCanBeManagedResponse"
                    headers="[[ _computedHeaders ]]"></iron-ajax>
-
     </template>
 
     <script>
@@ -353,6 +364,14 @@
                 _twoFaApi: {
                     type: String,
                     computed: '_computeTwoFaApi(role)'
+                },
+
+                /**
+                 * Get company role groups link
+                 */
+                _groupsApi: {
+                    type: String,
+                    computed: '_computeGroupsForRole(role)'
                 },
 
                 /**
@@ -514,6 +533,10 @@
                 return role.self + '/2fa';
             },
 
+            _computeGroupsForRole: function(role) {
+                return role.meta ? role.meta.groups + '?extended=1' : '';
+            },
+
             _computeChangePasswordApi: function(role) {
                 return role.self + '/change-password';
             },
@@ -550,6 +573,7 @@
 
                 if (role.self) {
                     this.$.appscoManageAccountComponentsPage.load();
+                    this.$.appscoAccountGroupsPage.loadGroups();
                     this.account = role.account;
                 }
             },
@@ -567,6 +591,10 @@
             refreshLog: function() {
                 this.$.appscoManageAccountComponentsPage.loadLog();
                 this.$.appscoAccountLogPage.loadLog();
+            },
+
+            removeGroup: function(group) {
+                this.$.appscoAccountGroupsPage.removeGroup(group);
             },
 
             _onSettingsSaved: function(event) {
@@ -611,6 +639,10 @@
 
             _onManageOrgunits: function() {
                 this._selected = 'appsco-account-orgunits-page';
+            },
+
+            _onManageGroups: function() {
+                this._selected = 'appsco-account-groups-page';
             },
 
             _onManageApplications: function() {

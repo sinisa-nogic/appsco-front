@@ -57,6 +57,7 @@
 <link rel="import" href="components/group/appsco-company-remove-group.html">
 <link rel="import" href="components/group/appsco-resource-add-groups.html">
 <link rel="import" href="components/group/appsco-resource-remove-groups.html">
+<link rel="import" href="components/group/appsco-manage-group-page-actions.html">
 
 <link rel="import" href="components/account/appsco-account-authorized-app-revoke.html">
 
@@ -487,14 +488,14 @@
                                     id="appscoAccountPageActions"
                                     name="account"
                                     on-back="_onBackFromAccountAction"
-                                    on-resource-section="_onResourceActionAccountPage"
+                                    on-resource-section="_onResourceActionPage"
                                     on-advanced-settings="_onAccountAdvancedSettings"></appsco-account-page-actions>
 
                             <appsco-company-account-page-actions
                                     id="appscoCompanyAccountPageActions"
                                     name="company-account"
                                     on-back="_onBackFromAccountAction"
-                                    on-resource-section="_onResourceActionAccountPage"
+                                    on-resource-section="_onResourceActionPage"
                                     on-advanced-settings="_onAccountAdvancedSettings"></appsco-company-account-page-actions>
 
                             <appsco-vault-page-actions
@@ -584,7 +585,13 @@
                             <appsco-manage-contact-page-actions
                                     name="manage-contact"
                                     on-back="_showContactsPage"
-                                    on-resource-section="_onResourceActionManageContactPage"></appsco-manage-contact-page-actions>
+                                    on-resource-section="_onResourceActionPage"></appsco-manage-contact-page-actions>
+
+                            <appsco-manage-group-page-actions
+                                    name="manage-group"
+                                    on-back="_showGroupsPage"
+                                    on-add-item-to-group-action="_onAddItemToGroupAction"
+                                    on-resource-section="_onResourceActionPage"></appsco-manage-group-page-actions>
 
                             <appsco-audit-log-page-actions
                                     name="audit-log"
@@ -866,6 +873,16 @@
                             on-revoke-assignee="_onRevokeAssigneeAccess"
                     ></appsco-manage-contact-page>
 
+                    <appsco-manage-group-page
+                            id="appscoManageGroupPage"
+                            name="manage-group"
+                            route="[[ subroute ]]"
+                            authorization-token="[[ authorizationToken ]]"
+                            group-api="[[ _companyGroupApi ]]"
+                            on-remove-group="_onRemoveGroupAction"
+                            on-page-error="_onError"
+                    ></appsco-manage-group-page>
+
                     <appsco-provisioning-page
                             id="appscoProvisioningPage"
                             name="provisioning"
@@ -947,7 +964,6 @@
                             on-get-token="_onDomainGetToken"
                             on-domain-verified="_onDomainVerified"
                             on-domain-not-verified="_onDomainNotVerified"
-                            on-remove-group="_onRemoveGroup"
                             on-remove-group-from-company-role="_onRemoveGroupFromCompanyRole"
                     ></appsco-company-page>
 
@@ -1610,6 +1626,11 @@
                     value: ''
                 },
 
+                _companyGroupApi: {
+                    type: String,
+                    value: ''
+                },
+
                 _companySamlMetadataApi: {
                     type: String,
                     value: ''
@@ -1817,6 +1838,9 @@
                     case 'manage-contact':
                         return 'Manage Contact';
 
+                    case 'manage-group':
+                        return 'Manage Group';
+
                     case 'company-home':
                         return 'Dashboard';
 
@@ -1958,6 +1982,7 @@
                     this._companySubscriptionApi = companyApi + '/billing/subscription';
                     this._companyDomainsApi = companyApi + '/domains';
                     this._companyGroupsApi = companyApi + '/groups';
+                    this._companyGroupApi = companyApi + '/group';
                     this._companySamlMetadataApi = companyApi + '/idp/saml/metadata';
                 }
             },
@@ -2680,7 +2705,7 @@
             /**
              * Account page START
              */
-            _onResourceActionAccountPage: function() {
+            _onResourceActionPage: function() {
                 this.getCurrentAppscoPageElement().toggleResource();
             },
 
@@ -3812,10 +3837,6 @@
                 this.$.appscoContactsPageActions.hideBulkActions();
             },
 
-            _onResourceActionManageContactPage: function() {
-                this.$.appscoManageContactPage.toggleResource();
-            },
-
             _onConvertContactToUserAction: function(event) {
                 var contact = event.detail.contact,
                     convertContact = this.$.appscoConvertContact;
@@ -4164,7 +4185,7 @@
                 this._searchGroups('');
             },
 
-            _onRemoveGroup: function(event) {
+            _onRemoveGroupAction: function(event) {
                 this.$.appscoCompanyRemoveGroup.setGroup(event.detail.group);
                 this.$.appscoCompanyRemoveGroup.open();
             },
@@ -4175,6 +4196,11 @@
                 this.$.appscoCompanyPage.removeGroup(group);
                 this._reloadApplicationsForCompanyAdministrator();
                 this._notify('Group ' + group.name + ' was successfully removed.');
+            },
+
+            // TODO
+            _onAddItemToGroupAction: function(event) {
+                var action = event.detail.action;
             },
             /**
              * Company page END
@@ -4238,6 +4264,10 @@
                         this.$.appscoManageContactPage.pageLoaded ? this._hideProgressBar() : this._showProgressBar();
                         break;
 
+                    case 'manage-group':
+                        this.$.appscoManageGroupPage.pageLoaded ? this._hideProgressBar() : this._showProgressBar();
+                        break;
+
                     case 'audit-log':
                         this.$.appscoAuditLogPage.pageLoaded ? this._hideProgressBar() : this._showProgressBar();
                         break;
@@ -4298,6 +4328,7 @@
                         page === 'groups' ||
                         page === 'manage-account' ||
                         page === 'manage-contact' ||
+                        page === 'manage-group' ||
                         page === 'statistics' ||
                         page === 'provisioning' ||
                         page === 'provisioning-settings' ||
@@ -4376,6 +4407,7 @@
                     case 'contacts':
                     case 'manage-account':
                     case 'manage-contact':
+                    case 'manage-group':
                     case 'audit-log':
                     case 'provisioning-settings':
                     case 'company':

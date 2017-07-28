@@ -1,0 +1,195 @@
+<link rel="import" href="../../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../../bower_components/iron-ajax/iron-ajax.html">
+<link rel="import" href="../../../bower_components/iron-flex-layout/iron-flex-layout.html">
+<link rel="import" href="../../../bower_components/paper-button/paper-button.html">
+<link rel="import" href="../../../bower_components/iron-icon/iron-icon.html">
+<link rel="import" href="../../../bower_components/iron-icons/iron-icons.html">
+<link rel="import" href="../../../bower_components/iron-icons/social-icons.html">
+<link rel="import" href="../../../bower_components/paper-listbox/paper-listbox.html">
+<link rel="import" href="../../../bower_components/paper-item/paper-item.html">
+<link rel="import" href="../../../bower_components/paper-styles/shadow.html">
+
+<!--
+`appsco-manage-group-actions`
+Actions related to group.
+
+    <appsco-manage-group-actions></appsco-manage-group-actions>
+
+-->
+
+<dom-module id="appsco-manage-group-actions">
+    <template>
+        <style>
+            :host {
+                display: inline-block;
+                position: relative;
+                margin-right: -10px;
+                @apply(--layout-horizontal);
+                @apply(--layout-center);
+                @apply(--layout-end-justified);
+                @apply(--appsco-manage-group-actions);
+            }
+            :host .action {
+                margin-right: 10px;
+                position: relative;
+                @apply(--layout-vertical);
+                @apply(--layout-center);
+                @apply(--group-action);
+            }
+            :host paper-listbox {
+                @apply(--paper-listbox);
+                max-width: 230px;
+                overflow: hidden;
+            }
+            :host paper-item:hover {
+                @apply(--paper-item-hover);
+            }
+            :host .add-item-action {
+                min-width: 100px;
+                @apply(--add-item-action);
+            }
+            :host .flex-none {
+                @apply(--layout-flex-none);
+            }
+            .item-action-list {
+                position: absolute;
+                top: 34px;
+                right: 0;
+                width: 200px;
+                @apply(--shadow-elevation-2dp);
+                opacity: 0;
+                visibility: hidden;
+                transform: scale(1, 0.6);
+                transform-origin: top center;
+                transition: all 0.1s linear;
+                @apply(--item-action-list);
+
+            }
+            :host([_add-item-actions-visible]) .item-action-list {
+                opacity: 1;
+                visibility: visible;
+                transform: scale(1, 1);
+                transform-origin: top center;
+                transition: all 0.2s linear;
+            }
+            .item-icon {
+                width: 18px;
+                height: 18px;
+                margin-right: 8px;
+            }
+        </style>
+
+        <div class="action flex-none">
+            <paper-button id="addItemAction"
+                          class="add-item-action"
+                          on-tap="_onAddItemAction">Add</paper-button>
+
+            <paper-listbox id="actionList"
+                           class="item-action-list"
+                           on-iron-select="_onAddItemActionSelect">
+
+                <template is="dom-repeat" items="[[ _actionList ]]">
+                    <paper-item value="[[ item.value ]]">
+                        <iron-icon icon="[[ item.icon ]]" class="item-icon"></iron-icon>
+                        [[ item.name ]]</paper-item>
+                </template>
+            </paper-listbox>
+        </div>
+
+    </template>
+
+    <script>
+        Polymer({
+
+            is: 'appsco-manage-group-actions',
+
+            properties: {
+
+                _actionList: {
+                    type: Array,
+                    value: function() {
+                        return [
+                            {
+                                value: 'users',
+                                name: 'Users',
+                                icon: 'social:person'
+                            },
+                            {
+                                value: 'contacts',
+                                name: 'Contacts',
+                                icon: 'icons:perm-contact-calendar'
+                            },
+                            {
+                                value: 'resources',
+                                name: 'Resources',
+                                icon: 'icons:apps'
+                            }
+                        ]
+                    }
+                },
+
+                _addItemActionsVisible: {
+                    type: Boolean,
+                    value: false,
+                    reflectToAttribute: true
+                }
+            },
+
+            ready: function() {
+                Polymer.Gestures.add(document, 'tap', this._handleDocumentClick.bind(this));
+            },
+
+            /**
+             * Evaluates if item is in given path.
+             *
+             * @param {HTMLElement} element The element to be evaluated.
+             * @param {Array<HTMLElements>=} path Elements in path to be checked against item element.
+             * @return {Boolean}
+             *
+             * @private
+             */
+            _isInPath: function(path, element) {
+                path = path || [];
+
+                for (var i = 0; i < path.length; i++) {
+
+                    if (path[i] == element) {
+                        return true;
+                    }
+                }
+
+                return false;
+            },
+
+            /**
+             * Listens for click outside.
+             * @private
+             */
+            _handleDocumentClick: function(event) {
+                var path = Polymer.dom(event).path;
+
+                if (!this._isInPath(path, this.$.addItemAction)) {
+                    this._addItemActionsVisible = false;
+                }
+            },
+
+            _toggleActionList: function() {
+                this._addItemActionsVisible = !this._addItemActionsVisible;
+            },
+
+            _onAddItemActionSelect: function(event) {
+                this.fire('add-item-to-group-action', {
+                    action: event.detail.item.value
+                });
+
+                this._addItemActionsVisible = false;
+
+                this.$$('#actionList').selected = -1;
+            },
+
+            _onAddItemAction: function() {
+                this._toggleActionList();
+            }
+        });
+    </script>
+</dom-module>

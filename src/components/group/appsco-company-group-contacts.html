@@ -6,34 +6,34 @@
 <link rel="import" href="../../../bower_components/neon-animation/neon-animation-runner-behavior.html">
 <link rel="import" href="../../../bower_components/neon-animation/animations/transform-animation.html">
 
-<link rel="import" href="appsco-company-group-role-item.html">
+<link rel="import" href="appsco-company-group-contact-item.html">
 
 <!--
-`appsco-company-group-roles`
-Contains group's role list and Load More action.
-Roles are loaded inside component through iron-ajax.
+`appsco-company-group-contacts`
+Contains group's contact list and Load More action.
+Contacts are loaded inside component through iron-ajax.
 
-    <appsco-company-group-roles list-api=""
+    <appsco-company-group-contacts list-api=""
                            authorization-token=""
                            size=""
                            load-more
                            preview>
-    </appsco-company-group-roles>
+    </appsco-company-group-contacts>
 
 ### Styling
 
-`<appsco-company-group-roles>` provides the following custom properties and mixins for styling:
+`<appsco-company-group-contacts>` provides the following custom properties and mixins for styling:
 
 Custom property | Description | Default
 ----------------|-------------|----------
-`--appsco-company-group-roles` | Mixin for the root element | `{}`
-`--appsco-company-group-role-item` | Mixin for item style | `{}`
-`--group-roles-container` | Mixin for the roles container | `{}`
-`--group-roles-progress-bar` | Mixin applied to paper-progress for role list | `{}`
+`--appsco-company-group-contacts` | Mixin for the root element | `{}`
+`--appsco-company-group-contact-item` | Mixin for item style | `{}`
+`--group-contacts-container` | Mixin for the contacts container | `{}`
+`--group-contacts-progress-bar` | Mixin applied to paper-progress for contact list | `{}`
 
 -->
 
-<dom-module id="appsco-company-group-roles">
+<dom-module id="appsco-company-group-contacts">
     <template>
         <style>
             :host {
@@ -41,18 +41,18 @@ Custom property | Description | Default
                 position: relative;
                 @apply(--layout-vertical);
                 @apply(--layout-center);
-                @apply(--appsco-company-group-roles);
+                @apply(--appsco-company-group-contacts);
             }
-            .roles {
+            .contacts {
                 @apply(--layout-vertical);
                 @apply(--layout-start);
             }
-            appsco-company-group-role-item {
+            appsco-company-group-contact-item {
                 width: 100%;
                 margin: 0 0 10px 0;
-                @apply(--appsco-company-group-role-item);
+                @apply(--appsco-company-group-contact-item);
             }
-            .group-roles-container {
+            .group-contacts-container {
                 width: 100%;
                 position: relative;
             }
@@ -76,7 +76,7 @@ Custom property | Description | Default
                 position: absolute;
                 top: 0;
                 left: 0;
-                @apply(--group-roles-progress-bar);
+                @apply(--group-contacts-progress-bar);
             }
             paper-button {
                 display: block;
@@ -98,22 +98,22 @@ Custom property | Description | Default
                 @apply(--paper-font-body2);
                 @apply(--info-message);
             }
-            :host([preview]) .roles {
+            :host([preview]) .contacts {
                 @apply(--layout-flex-none);
                 display: block;
             }
-            :host([preview]) appsco-company-group-role-item[preview] {
+            :host([preview]) appsco-company-group-contact-item[preview] {
                 width: auto;
                 margin: 0 0 0px 5px;
                 float:left;
-                @apply(--appsco-company-group-role-item-preview);
+                @apply(--appsco-company-group-contact-item-preview);
             }
         </style>
 
-        <div class="group-roles-container">
+        <div class="group-contacts-container">
 
             <iron-ajax
-                    id="getGroupRolesApiRequest"
+                    id="getGroupContactsApiRequest"
                     url="[[ listApi ]]"
                     headers="[[ _computedHeaders ]]"
                     debounce-duration="300"
@@ -128,32 +128,32 @@ Custom property | Description | Default
                 <p class="message">[[ _message ]]</p>
             </template>
 
-            <template is="dom-if" if="[[ !_rolesEmpty ]]">
+            <template is="dom-if" if="[[ !_contactsEmpty ]]">
 
                 <div class="info-total">
                     <div class="total">
-                        Total roles: [[ _totalRoles ]]
+                        Total contacts: [[ _totalContacts ]]
                     </div>
                 </div>
 
-                <div class="roles" preview="[[ preview ]]">
+                <div class="contacts">
                     <template is="dom-repeat"
-                              items="{{ _roles }}"
+                              items="{{ _contacts }}"
                               on-dom-change="_onItemsDomChange">
 
-                        <appsco-company-group-role-item id="appscoGroupRoleItem_[[ index ]]"
-                                                    role="{{ item }}"
-                                                    preview="[[ preview ]]"></appsco-company-group-role-item>
+                        <appsco-company-group-contact-item id="appscoGroupContactItem_[[ index ]]"
+                                                    contact="{{ item }}"
+                                                    preview="[[ preview ]]"></appsco-company-group-contact-item>
 
                     </template>
                 </div>
             </template>
         </div>
 
-        <template is="dom-if" if="[[ !_rolesEmpty ]]">
+        <template is="dom-if" if="[[ !_contactsEmpty ]]">
             <div class="load-more-box" hidden$="[[ !_loadMore ]]">
                 <paper-progress id="loadMoreProgress" indeterminate></paper-progress>
-                <paper-button on-tap="_loadMoreRoles" id="loadMore">Load More</paper-button>
+                <paper-button on-tap="_loadMoreContacts" id="loadMore">Load More</paper-button>
             </div>
         </template>
     </template>
@@ -161,7 +161,7 @@ Custom property | Description | Default
     <script>
         Polymer({
 
-            is: 'appsco-company-group-roles',
+            is: 'appsco-company-group-contacts',
 
             properties: {
 
@@ -216,7 +216,7 @@ Custom property | Description | Default
                     computed: '_computeHeaders(authorizationToken)'
                 },
 
-                _roles: {
+                _contacts: {
                     type: Array,
                     value: function() {
                         return [];
@@ -224,14 +224,14 @@ Custom property | Description | Default
                     notify: true
                 },
 
-                _allRoles: {
+                _allContacts: {
                     type: Array,
                     value: function() {
                         return [];
                     }
                 },
 
-                _rolesEmpty: {
+                _contactsEmpty: {
                     type: Boolean,
                     value: false
                 },
@@ -245,7 +245,7 @@ Custom property | Description | Default
                     type: String
                 },
 
-                _totalRoles: {
+                _totalContacts: {
                     type: Number,
                     value: 0
                 },
@@ -288,34 +288,34 @@ Custom property | Description | Default
             _onListApiChanged: function(url) {
 
                 if (url && url.length > 0) {
-                    this._loadRoles();
+                    this._loadContacts();
                 }
             },
 
             _setLoadMoreAction: function() {
-                this._loadMore = (this.loadMore && this._allRoles.length < this._totalRoles);
+                this._loadMore = (this.loadMore && this._allContacts.length < this._totalContacts);
             },
 
             _hideLoadMoreAction: function() {
                 this._loadMore = false;
             },
 
-            _loadRoles: function() {
+            _loadContacts: function() {
                 this._showProgressBar();
                 this._loadMore = false;
-                this.set('_roles', []);
-                this.set('_allRoles', []);
-                this.$.getGroupRolesApiRequest.generateRequest();
+                this.set('_contacts', []);
+                this.set('_allContacts', []);
+                this.$.getGroupContactsApiRequest.generateRequest();
             },
 
-            reloadRoles: function() {
-                this._loadRoles();
+            reloadContacts: function() {
+                this._loadContacts();
             },
 
-            _loadMoreRoles: function() {
+            _loadMoreContacts: function() {
                 this._showLoadMoreProgressBar();
-                this.$.getGroupRolesApiRequest.url = this._nextPageApiUrl;
-                this.$.getGroupRolesApiRequest.generateRequest();
+                this.$.getGroupContactsApiRequest.url = this._nextPageApiUrl;
+                this.$.getGroupContactsApiRequest.generateRequest();
             },
 
             _onError: function() {
@@ -324,11 +324,11 @@ Custom property | Description | Default
             },
 
             _handleEmptyLoad: function() {
-                this._rolesEmpty = true;
+                this._contactsEmpty = true;
                 this._message = 'There are no accounts attached to this group.';
 
                 /**
-                 * Fired when there are no roles.
+                 * Fired when there are no contacts.
                  *
                  * @event empty-load
                  */
@@ -341,12 +341,12 @@ Custom property | Description | Default
             _onResponse: function(event) {
                 var response = event.detail.response;
 
-                if (response && response.company_roles) {
-                    var roles = response.company_roles,
+                if (response && response.contacts) {
+                    var contacts = response.contacts,
                         meta = response.meta,
-                        rolesCount = roles.length - 1;
+                        contactsCount = contacts.length - 1;
 
-                    this._totalRoles = meta.total;
+                    this._totalContacts = meta.total;
                     this._nextPageApiUrl = meta.next + "&limit=" + this.size;
 
                     if (meta.total === 0) {
@@ -354,21 +354,21 @@ Custom property | Description | Default
                         return false;
                     }
 
-                    this._rolesEmpty = false;
+                    this._contactsEmpty = false;
                     this._message = '';
 
-                    roles.forEach(function(el, index) {
+                    contacts.forEach(function(el, index) {
 
                         setTimeout(function() {
 
-                            this.push('_roles', el);
-                            this.push('_allRoles', el);
+                            this.push('_contacts', el);
+                            this.push('_allContacts', el);
 
-                            if (index == rolesCount) {
+                            if (index == contactsCount) {
 
                                 this._loadMore = this.loadMore;
 
-                                if (this._roles.length === meta.total) {
+                                if (this._contacts.length === meta.total) {
                                     this._loadMore = false;
                                 }
 
@@ -377,13 +377,13 @@ Custom property | Description | Default
                                 this._setLoadMoreAction();
 
                                 /**
-                                 * Fired when roles are loaded
+                                 * Fired when contacts are loaded
                                  *
                                  * @event loaded
-                                 * @param {Object} companyRoles[]
+                                 * @param {Object} companyContacts[]
                                  */
                                 this.fire('loaded', {
-                                    companyRoles: roles
+                                    companyContacts: contacts
                                 });
                             }
 
@@ -393,100 +393,73 @@ Custom property | Description | Default
                 }
             },
 
-            addGroupRoles: function(roles) {
-                var length = roles.length,
-                    allRoles = this._allRoles,
-                    allLength = allRoles.length;
+            addGroupContacts: function(contacts) {
+                var length = contacts.length,
+                    allContacts = this._allContacts,
+                    allLength = allContacts.length;
 
-                this._rolesEmpty = false;
+                this._contactsEmpty = false;
                 this._message = '';
                 this._renderedIndex = length - 1;
 
                 for (var i = 0; i < length; i++) {
 
                     if (0 === allLength) {
-                        this.push('_roles', roles[i]);
-                        this.push('_allRoles', roles[i]);
+                        this.push('_contacts', contacts[i]);
+                        this.push('_allContacts', contacts[i]);
 
-                        this._totalRoles++;
+                        this._totalContacts++;
                     }
                     else {
 
                         for (var j = 0; j < allLength; j++) {
 
-                            if (allRoles[j].alias === roles[i].alias) {
+                            if (allContacts[j].alias === contacts[i].alias) {
                                 break;
                             }
                             else if (j === allLength - 1) {
-                                this.unshift('_roles', roles[i]);
-                                this.unshift('_allRoles', roles[i]);
+                                this.unshift('_contacts', contacts[i]);
+                                this.unshift('_allContacts', contacts[i]);
 
-                                this._totalRoles++;
+                                this._totalContacts++;
                             }
 
                         }
                     }
                 }
             },
-//
-//            modifyLabel: function(label) {
-//                var _roles = JSON.parse(JSON.stringify(this._roles)),
-//                    _length = _roles.length,
-//                    allRoles = JSON.parse(JSON.stringify(this._allRoles)),
-//                    allLength = allRoles.length;
-//
-//                for (var j = 0; j < _length; j++) {
-//                    if (label.alias === _roles[j].alias) {
-//                        _roles[j] = label;
-//                        break;
-//                    }
-//                }
-//
-//                for (var k = 0; k < allLength; k++) {
-//                    if (label.alias === allRoles[k].alias) {
-//                        allRoles[k] = label;
-//                        break;
-//                    }
-//                }
-//
-//                this.set('_roles', []);
-//                this.set('_roles', _roles);
-//
-//                this.set('_allRoles', []);
-//                this.set('_allRoles', allRoles);
-//            },
-//
-            removeGroupRoles: function(roles) {
-                var length = roles.length,
-                    _roles = this._roles,
-                    _length = _roles.length,
-                    allRoles = this._allRoles,
-                    allLength = allRoles.length;
+
+            removeGroupContacts: function(contacts) {
+                var length = contacts.length,
+                    _contacts = this._contacts,
+                    _length = _contacts.length,
+                    allContacts = this._allContacts,
+                    allLength = allContacts.length;
 
                 for (var i = 0; i < length; i++) {
-                    var role = roles[i];
+                    var contact = contacts[i];
 
                     for (var j = 0; j < _length; j++) {
 
-                        if (role.self === _roles[j].self) {
-                            this.splice('_roles', j, 1);
+                        if (contact.self === _contacts[j].self) {
+                            this.splice('_contacts', j, 1);
                             break;
                         }
                     }
 
                     for (var k = 0; k < allLength; k++) {
 
-                        if (role.self === allRoles[k].self) {
-                            this.splice('_allRoles', k, 1);
+                        if (contact.self === allContacts[k].self) {
+                            this.splice('_allContacts', k, 1);
                             break;
                         }
                     }
 
-                    this._totalRoles--;
+                    this._totalContacts--;
 
                 }
 
-                if (0 === this._roles.length) {
+                if (0 === this._contacts.length) {
                     this._handleEmptyLoad();
                 }
             },
@@ -523,7 +496,7 @@ Custom property | Description | Default
                     this.animationConfig.entry.nodes = [];
 
                     for (var i = 0; i <= index; i++) {
-                        var addedItem = this.$$('#appscoGroupRoleItem_' + i);
+                        var addedItem = this.$$('#appscoGroupContactItem_' + i);
                         this.animationConfig.entry.nodes.push(addedItem);
                     }
 

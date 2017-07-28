@@ -1,0 +1,207 @@
+<link rel="import" href="../../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../../bower_components/iron-ajax/iron-ajax.html">
+<link rel="import" href="../../../bower_components/iron-flex-layout/iron-flex-layout.html">
+<link rel="import" href="../../../bower_components/paper-icon-button/paper-icon-button.html">
+<link rel="import" href="../../../bower_components/iron-icons/iron-icons.html">
+<link rel="import" href="../../../bower_components/iron-icons/social-icons.html">
+<link rel="import" href="../../../bower_components/paper-styles/typography.html">
+<link rel="import" href="../../../bower_components/paper-tooltip/paper-tooltip.html">
+<link rel="import" href="../../../bower_components/neon-animation/neon-animation-runner-behavior.html">
+<link rel="import" href="../../../bower_components/neon-animation/animations/cascaded-animation.html">
+<link rel="import" href="../../../bower_components/neon-animation/animations/fade-in-animation.html">
+<link rel="import" href="../../../bower_components/neon-animation/animations/fade-out-animation.html">
+
+<link rel="import" href="../components/appsco-search.html">
+
+<dom-module id="appsco-group-actions">
+    <template>
+        <style>
+            :host {
+                display: inline-block;
+                position: relative;
+                margin-right: -10px;
+                @apply(--layout-horizontal);
+                @apply(--layout-center);
+                @apply(--layout-end-justified);
+                @apply(--appsco-group-actions);
+            }
+            paper-icon-button {
+                color: var(--account-action-icon-color);
+                --paper-icon-button-ink-color: var(--account-action-icon-color);
+            }
+            appsco-search {
+                max-width: 200px;
+            }
+            :host .action {
+                margin-right: 10px;
+                position: relative;
+                @apply(--layout-vertical);
+                @apply(--layout-center);
+                @apply(--group-action);
+            }
+            :host .bulk-action {
+                display: none;
+            }
+            :host([bulk-actions]) .bulk-action {
+                display: flex;
+            }
+            :host .bulk-action[hidden] {
+                display: none !important;
+            }
+            :host .flex-none {
+                @apply(--layout-flex-none);
+            }
+            :host paper-icon-button::shadow paper-ripple {
+                width: 150%;
+                height: 150%;
+                top: -25%;
+                left: -25%;
+            }
+            :host paper-tooltip {
+                top: 100% !important;
+                font-weight: 500;
+                min-width: 100px;
+                text-align: center;
+                @apply(--group-actions-tooltip);
+            }
+            .info-icon {
+                --iron-icon-fill-color: var(--info-icon-color, --paper-orange-300);
+            }
+            :host .info {
+                margin: 0;
+            }
+            :host .emphasis {
+                font-weight: 600;
+            }
+            paper-icon-button {
+                color: var(--application-action-icon-color);
+                --paper-icon-button-ink-color: var(--application-action-icon-color);
+            }
+            :host .add-group-button {
+                @apply(--add-item-action);
+            }
+        </style>
+
+        <div class="action action-search flex-none">
+
+            <appsco-search id="appscoSearch"
+                           label="Search groups"></appsco-search>
+        </div>
+
+        <paper-button
+                id="addGroupAction"
+                class="add-group-button"
+                toggles
+                on-tap="_onAddGroupAction">Create group</paper-button>
+
+    </template>
+
+    <script>
+        Polymer({
+
+            is: 'appsco-group-actions',
+
+            properties: {
+
+                _selectedAll: {
+                    type: Boolean,
+                    value: false
+                },
+
+                /**
+                 * Animation config for bulk actions.
+                 */
+                animationConfig: {
+                    value: function() {
+                        return {
+                            'entry': {
+                                name: 'cascaded-animation',
+                                animation: 'fade-in-animation',
+                                nodes: [],
+                                nodeDelay: 50,
+                                timing: {
+                                    duration: 300
+                                }
+                            },
+                            'exit': {
+                                name: 'cascaded-animation',
+                                animation: 'fade-out-animation',
+                                nodes: [],
+                                nodeDelay: 0,
+                                timing: {
+                                    duration: 200
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+
+            behaviors: [
+                Polymer.NeonAnimationRunnerBehavior
+            ],
+
+            listeners: {
+                'neon-animation-finish': '_onNeonAnimationFinish'
+            },
+
+            _selected: function (e) {
+                /**
+                 * Fired when filter is selected
+                 *
+                 * @event filtered
+                 * @param {Object} filter {id: filter_id, name: filter_name}
+                 */
+                this.fire('group-selected', {
+                    id: e.detail.item.getAttribute('value'),
+                    name: e.detail.item.getAttribute('name')
+                })
+            },
+
+            /**
+             * Called on add account button tap.
+             * It fires an event.
+             *
+             * @private
+             */
+            _onAddGroupAction: function() {
+
+                /**
+                 * Fired when add group action is tapped.
+                 *
+                 * @event add-company-group
+                 */
+                this.fire('add-company-group');
+            },
+
+            _onSearchIcon: function() {
+                this.fire('search-icon');
+            },
+
+            /**
+             * Sets focus on search input field.
+             */
+            focusSearch: function() {
+                this.$.appscoSearch.setup();
+            },
+
+            _onNeonAnimationFinish: function() {
+
+                if (!this.bulkActions) {
+                    var bulkActions = Polymer.dom(this.root).querySelectorAll('.bulk-action'),
+                            length = bulkActions.length;
+
+                    for (var i = 0; i < length; i++) {
+                        bulkActions[i].style.display = 'none';
+                    }
+                }
+
+            },
+
+            reset: function() {
+                this.$.appscoSearch.reset();
+                this.hideBulkActions();
+            }
+        });
+    </script>
+</dom-module>

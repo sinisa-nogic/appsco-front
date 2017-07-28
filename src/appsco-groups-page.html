@@ -1,0 +1,535 @@
+<link rel="import" href="../bower_components/polymer/polymer.html">
+<link rel="import" href="../bower_components/neon-animation/neon-animated-pages.html">
+<link rel="import" href="../bower_components/neon-animation/animations/fade-in-animation.html">
+<link rel="import" href="../bower_components/neon-animation/animations/fade-out-animation.html">
+<link rel="import" href="../bower_components/neon-animation/neon-animatable-behavior.html">
+<link rel="import" href="../bower_components/iron-flex-layout/iron-flex-layout.html">
+<link rel="import" href="../bower_components/iron-media-query/iron-media-query.html">
+<link rel="import" href="../bower_components/paper-tabs/paper-tabs.html">
+<link rel="import" href="../bower_components/paper-tabs/paper-tab.html">
+
+<link rel="import" href="components/page/appsco-content.html">
+<link rel="import" href="components/components/appsco-search.html">
+<link rel="import" href="components/group/appsco-company-groups.html">
+<link rel="import" href="components/group/appsco-company-group-roles.html">
+<link rel="import" href="components/group/appsco-company-group-resources.html">
+<link rel="import" href="components/group/appsco-company-group-contacts.html">
+<link rel="import" href="components/group/appsco-company-group-info.html">
+<link rel="import" href="components/group/appsco-company-group-image.html">
+
+<dom-module id="appsco-groups-page">
+    <template>
+
+        <style include="shared-styles webkit-scrollbar-style">
+            :host {
+                display: block;
+
+                --resource-width: 318px;
+                --info-width: 318px;
+
+                --groups-progress-bar: {
+                    display: none;
+                };
+            }
+            :host .resource-header {
+                border-bottom: 1px solid var(--divider-color);
+            }
+            :host div[resource] {
+                height: 100%;
+                overflow: auto;
+            }
+            :host div[resource] > *, :host div[info] > * {
+                padding: 10px;
+                box-sizing: border-box;
+            }
+            :host div[content] > * {
+                padding: 0 10px 10px 10px;
+            }
+            div[resource] > .resource-content {
+                padding-top: 20px;
+            }
+            :host div[info] {
+                height: 100%;
+            }
+            :host div[info] .account-info {
+                border-bottom: 1px solid var(--divider-color);
+                height: 50px;
+                @apply(--layout-flex-none);
+                color: var(--primary-text-color);
+            }
+            :host div[info] .details-log {
+                height: calc(100% - 50px - 40px);
+                margin-top: 10px;
+            }
+            .paper-tabs-pages {
+                @apply(--paper-tabs-pages);
+            }
+            .tab-content {
+                margin-top: 20px;
+                @apply(--paper-tabs-content-style);
+            }
+            appsco-company-groups {
+                --appsco-company-group-item: {
+                    padding: 4px;
+                };
+            }
+            .groups-container {
+                margin-top: 10px;
+            }
+            appsco-account-image {
+                --account-image: {
+                    width: 32px;
+                    height: 32px;
+                    margin-right: 5px;
+                };
+
+                --account-initials-background-color: var(--body-background-color-darker);
+                --account-initials-font-size: 14px;
+            }
+            :host .account-name {
+                @apply(--paper-font-subhead);
+                font-size: 18px;
+            }
+            :host .flex-horizontal {
+                @apply(--layout-horizontal);
+                @apply(--layout-center);
+            }
+            :host .flex-vertical {
+                @apply(--layout-vertical);
+            }
+            :host .flex {
+                @apply(--layout-flex);
+            }
+            :host([tablet-screen]) {
+                --resource-width: 250px;
+                --info-width: 250px;
+            }
+            :host([mobile-screen]) {
+                --resource-width: 100%;
+                --info-width: 100%;
+            }
+            :host([screen992]) {
+                --account-basic-info: {
+                    width: 140px;
+                };
+                --account-basic-info-values: {
+                    width: 140px;
+                };
+
+                --account-auth-type-info: {
+                    width: 140px;
+                };
+                --account-auth-type-info-values: {
+                    width: 140px;
+                };
+            }
+            :host div[info] .group-info {
+                border-bottom: 1px solid var(--divider-color);
+                height: 50px;
+                @apply(--layout-flex-none);
+                color: var(--primary-text-color);
+            }
+        </style>
+
+        <iron-media-query query="(max-width: 992px)" query-matches="{{ screen992 }}"></iron-media-query>
+        <iron-media-query query="(max-width: 800px)" query-matches="{{ tabletScreen }}"></iron-media-query>
+        <iron-media-query query="(max-width: 600px)" query-matches="{{ mobileScreen }}"></iron-media-query>
+
+        <appsco-content id="appscoContent">
+            <div class="flex-vertical" resource></div>
+
+            <div content>
+                <div class="groups-container">
+                    <appsco-company-groups id="appscoGroups"
+                                           groups-api="[[ groupsApi ]]"
+                                           authorization-token="[[ authorizationToken ]]"
+                                           size="100"
+                                           hide-total
+                                           selectable
+                                           on-group-selected="_onGroupSelected"></appsco-company-groups>
+                </div>
+            </div>
+
+            <div class="flex-vertical" info>
+
+                <div class="group-info flex-horizontal">
+                    <appsco-company-group-image group="[[ group ]]" preview></appsco-company-group-image>
+                    <span class="group-name flex">[[ group.name ]]</span>
+                </div>
+
+                <appsco-company-group-roles
+                        id="appscoCompanyGroupRoles"
+                        authorization-token="[[ authorizationToken ]]"
+                        list-api="[[ _groupRolesApi ]]"
+                        size="10"
+                        load-more
+                        preview
+                        ></appsco-company-group-roles>
+
+                <appsco-company-group-resources
+                        id="appscoCompanyGroupResources"
+                        authorization-token="[[ authorizationToken ]]"
+                        list-api="[[ _groupResourcesApi ]]"
+                        size="10"
+                        load-more
+                        preview
+                ></appsco-company-group-resources>
+
+                <appsco-company-group-contacts
+                        id="appscoCompanyGroupContacts"
+                        authorization-token="[[ authorizationToken ]]"
+                        list-api="[[ _groupContactsApi ]]"
+                        size="10"
+                        load-more
+                        preview
+                ></appsco-company-group-contacts>
+            </div>
+        </appsco-content>
+
+    </template>
+
+    <script>
+        Polymer({
+            is: 'appsco-groups-page',
+
+            properties: {
+
+                mobileScreen: {
+                    type: Boolean,
+                    value: false,
+                    reflectToAttribute: true
+                },
+
+                tabletScreen: {
+                    type: Boolean,
+                    value: false,
+                    reflectToAttribute: true
+                },
+
+                screen992: {
+                    type: Boolean,
+                    value: false,
+                    reflectToAttribute: true
+                },
+
+                /**
+                 * Animation config.
+                 */
+                animationConfig: {
+                    value: function() {
+                        return {
+                            'entry': {
+                                name: 'fade-in-animation',
+                                node: this,
+                                timing: {
+                                    duration: 300
+                                }
+                            },
+                            'exit': {
+                                name: 'fade-out-animation',
+                                node: this,
+                                timing: {
+                                    duration: 200
+                                }
+                            }
+                        }
+                    }
+                },
+
+                group: {
+                    type: Object,
+                    value: function() {
+                        return {}
+                    },
+                    observer: '_onGroupChanged'
+                },
+
+                authorizationToken: {
+                    type: String,
+                    value: ''
+                },
+
+                /**
+                 * Get company accounts.
+                 */
+                companyGroupsApi: {
+                    type: String,
+                    value: function() { return ''; }
+                },
+
+                /**
+                 * Get groups.
+                 */
+                groupsApi: {
+                    type: String,
+                    value: ''
+                },
+
+                _groupExists: {
+                    type: Boolean,
+                    computed: '_computeGroupExistence(group)'
+                },
+
+                _groupsLoaded: {
+                    type: Boolean,
+                    value: false
+                },
+
+                _pageReady: {
+                    type: Boolean,
+                    computed: '_computePageReadyState(_groupsLoaded)',
+                    observer: '_onPageReadyChanged'
+                },
+
+                pageLoaded: {
+                    type: Boolean,
+                    value: false
+                },
+
+                _selectAll: {
+                    type: Boolean,
+                    value: false
+                },
+
+                _infoShown: {
+                    type: Boolean,
+                    value: false
+                },
+
+                _groupAction: {
+                    type: Number,
+                    value: 0
+                },
+
+                _groupRolesApi: {
+                    type: String,
+                    computed: '_computeGroupRolesApi(group)'
+                },
+
+                _groupContactsApi: {
+                    type: String,
+                    computed: '_computeGroupContactsApi(group)'
+                },
+
+                _groupResourcesApi: {
+                    type: String,
+                    computed: '_computeGroupResourcesApi(group)'
+                }
+            },
+
+            behaviors: [
+                Polymer.NeonAnimatableBehavior
+            ],
+
+            observers: [
+                '_updateScreen(mobileScreen, tabletScreen, screen992)'
+            ],
+
+            attached: function() {
+                this.pageLoaded = false;
+
+                if (this.mobileScreen) {
+                    this.updateStyles();
+                }
+            },
+
+            toggleInfo: function() {
+                if (this._groupExists) {
+                    this.$.appscoContent.toggleSection('info');
+                    this._infoShown = !this._infoShown;
+                }
+            },
+
+            hideInfo: function() {
+                this.$.appscoContent.hideSection('info');
+                this._infoShown = false;
+            },
+
+            toggleResource: function() {
+                this.$.appscoContent.toggleSection('resource');
+            },
+
+            _setDefaultGroup: function() {
+                this.set('group', this.$.appscoGroups.getFirstGroup());
+            },
+
+            addGroups: function(groups) {
+                this.$.appscoGroups.addGroups(groups);
+            },
+
+            modifyGroups: function(groups) {
+                this.$.appscoGroups.modifyGroups(groups);
+            },
+
+            removeGroups: function(groups) {
+                this.$.appscoGroups.removeGroups(groups);
+                this._setDefaultGroup();
+            },
+
+            removeSelectedGroups: function(groups) {
+                this.$.appscoGroups.removeSelectedGroups(groups);
+            },
+
+            filterByTerm: function(term) {
+                this.$.appscoGroups.filterByTerm(term);
+            },
+
+            selectAllGroups: function() {
+                this._selectAll = !this._selectAll;
+                this.$.appscoGroups.selectAll(this._selectAll);
+                if (!this._selectAll) {
+                    this._hideBulkActions();
+                }
+            },
+
+            getSelectedGroups: function() {
+                return this.$.appscoGroups.getSelectedGroups();
+            },
+
+            addGroup: function(group) {
+                this.$.appscoCompanyGroups.addGroup(group);
+            },
+
+            resetGroupSelection: function() {
+                this.$.appscoCompanyGroups.reset();
+            },
+
+            hideBulkActions: function() {
+                this._hideBulkActions();
+            },
+
+            initializePage: function() {
+                this._setDefaultGroup();
+            },
+
+            resetPage: function() {
+                this._resetPageActions();
+                this._showGroups();
+                this._resetPageLists('all');
+                this.hideInfo();
+            },
+
+            _resetPageActions: function() {
+                this._onSearchGroupsClear();
+                this.$.appscoCompanyGroups.selectAllGroups(false);
+                this.fire('reset-page-actions');
+            },
+
+            _resetPageLists: function(page) {
+                this._selectAll = false;
+                this.$.appscoGroups.selectAll(this._selectAll);
+                this.filterByTerm('', page);
+            },
+
+            _computeAccount: function(group) {
+                return group.account ? group.account : {};
+            },
+
+            _computeGroupExistence: function(group) {
+
+                for (key in group) {
+                    return true;
+                }
+
+                return false;
+            },
+
+            _computePageReadyState: function(groups) {
+                return groups;
+            },
+
+            _computeGroupRolesApi: function(group) {
+                return group.meta ? group.meta.company_roles + '?extended=1' : '';
+            },
+
+            _computeGroupContactsApi: function(group) {
+                return group.meta ? group.meta.contacts + '?extended=1' : '';
+            },
+
+            _computeGroupResourcesApi: function(group) {
+                return group.meta ? group.meta.applications + '?extended=1' : '';
+            },
+
+            _updateScreen: function() {
+                this.updateStyles();
+            },
+
+            _onGroupChanged: function(group) {
+
+                if (group.meta && group.meta.log) {
+                    this._loadLog();
+                }
+            },
+
+            _onPageReadyChanged: function() {
+                this._onPageLoaded();
+            },
+
+            _onPageLoaded: function() {
+                this.pageLoaded = true;
+                this.fire('page-loaded');
+            },
+
+            _onGroupSelected: function(event) {
+                var group = event.detail.group;
+
+                clearTimeout(this._groupAction);
+
+                this._groupAction = setTimeout(function() {
+
+                    if (group.selected) {
+                        this._onViewInfo(event);
+                        this._showBulkActions();
+                    }
+                    else {
+                        var selectedGroup = this.$.appscoGroups.getFirstSelectedGroup();
+
+                        if (!selectedGroup) {
+                            this.hideInfo();
+                            this._setDefaultGroup();
+                            this._hideBulkActions();
+                        }
+                        else if (group.self === this.group.self) {
+                            this._handleInfo(selectedGroup);
+                        }
+                    }
+
+                }.bind(this), 10);
+            },
+
+            _showBulkActions: function() {
+                this.fire('show-bulk-actions');
+            },
+
+            _hideBulkActions: function() {
+                this.fire('hide-bulk-actions');
+            },
+
+            _showInfo: function() {
+
+                if (this._groupExists) {
+                    this.$.appscoContent.showSection('info');
+                    this._infoShown = true;
+                }
+            },
+
+            _handleInfo: function(group) {
+                this.set('group', group);
+
+                if (!this._infoShown) {
+                    this._showInfo();
+                }
+            },
+
+            _onViewInfo: function(event) {
+                this._handleInfo(event.detail.group);
+            },
+
+            _onPageAnimationFinished: function(event) {
+                this._resetPageActions();
+                this._resetPageLists(event.detail.fromPage.getAttribute('name'));
+            }
+        });
+    </script>
+
+</dom-module>

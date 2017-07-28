@@ -8,27 +8,28 @@
 <link rel="import" href="../../../bower_components/paper-styles/typography.html">
 
 <link rel="import" href="../../components/account/appsco-account-image.html">
+<link rel="import" href="../../components/application/appsco-application-image.html">
 
 <!--
-`appsco-company-group-role-item`
+`appsco-company-group-resource-item`
 Account item is used to present account in form of an item.
 
-    <appsco-company-group-role-item>
-    </appsco-company-group-role-item>
+    <appsco-company-group-resource-item>
+    </appsco-company-group-resource-item>
 
 ### Styling
 
-`<appsco-company-group-role-item>` provides the following custom properties and mixins for styling:
+`<appsco-company-group-resource-item>` provides the following custom properties and mixins for styling:
 
 Custom property | Description | Default
 ----------------|-------------|----------
 `--background-color` | Background color applied to the root element | `#fff`
 `--color` | Color applied to all the text | `#33`
-`--appsco-company-group-role-item` | Mixin applied to role item | `{}`
+`--appsco-company-group-resource-item` | Mixin applied to resource item | `{}`
 
 -->
 
-<dom-module id="appsco-company-group-role-item">
+<dom-module id="appsco-company-group-resource-item">
     <template>
         <style>
             :host {
@@ -48,7 +49,7 @@ Custom property | Description | Default
                 @apply(--layout-horizontal);
                 @apply(--layout-center);
                 transition: all 0.1s ease-out;
-                @apply(--appsco-company-group-role-item);
+                @apply(--appsco-company-group-resource-item);
             }
             .item:hover {
                 @apply(--shadow-elevation-4dp);
@@ -123,37 +124,30 @@ Custom property | Description | Default
                 display: block;
                 font-size: 12px;
             }
-            .preview-account-image {
-                --account-image: {
+            .preview-application-image {
+                --application-image: {
                     width: 28px;
                     height: 28px;
                 };
-                --account-initials-background-color: var(--body-background-color-darker);
-                --account-initials-font-size: 12px;
+                --application-initials-background-color: var(--body-background-color-darker);
+                --application-initials-font-size: 12px;
             }
         </style>
 
         <template is="dom-if" if="[[ !preview ]]">
             <div class="item">
 
-                <appsco-account-image account="[[ role.account ]]"></appsco-account-image>
+                <appsco-application-image
+                    application="[[ resource ]]"
+                ></appsco-application-image>
 
                 <div class="account-info account-basic-info">
-                    <span class="info-label account-title">[[ role.account.display_name ]]</span>
-                    <span class="info-value">[[ role.account.email ]]</span>
-                </div>
-
-                <div class="account-info account-additional-info">
-                    <template is="dom-if" if="[[ _orgUnits ]]">
-                        <div class="info">
-                            <span class="info-label">Organization units:&nbsp;</span>
-                            <span class="info-value">[[ _orgUnits ]]</span>
-                        </div>
-                    </template>
+                    <span class="info-label account-title">[[ resource.account.display_name ]]</span>
+                    <span class="info-value">[[ resource.account.email ]]</span>
                 </div>
 
                 <div class="actions">
-                    <paper-button on-tap="_onRemoveRole">Remove role</paper-button>
+                    <paper-button on-tap="_onRemoveResource">Remove resource</paper-button>
                 </div>
 
             </div>
@@ -161,9 +155,9 @@ Custom property | Description | Default
 
         <template is="dom-if" if="[[ preview ]]">
             <div class="preview-item">
-                <appsco-account-image account="[[ role.account ]]"
-                                      class="preview-account-image"></appsco-account-image>
-                <paper-tooltip position="right">[[ assignee.display_name ]]<br/>[[ assignee.email ]]</paper-tooltip>
+                <appsco-application-image application="[[ resource ]]"
+                                      class="preview-application-image"></appsco-application-image>
+                <paper-tooltip position="right">[[ resource.title ]]</paper-tooltip>
             </div>
         </template>
 
@@ -172,20 +166,15 @@ Custom property | Description | Default
     <script>
         Polymer({
 
-            is: 'appsco-company-group-role-item',
+            is: 'appsco-company-group-resource-item',
 
             properties: {
 
-                role: {
+                resource: {
                     type: Object,
                     value: function() {
                         return {};
                     }
-                },
-
-                _orgUnits: {
-                    type: String,
-                    computed: '_computeOrganizationUnits(role)'
                 },
 
                 preview: {
@@ -228,36 +217,17 @@ Custom property | Description | Default
                 this.playAnimation('entry');
             },
 
-            _computeOrganizationUnits: function(role) {
-
-                if (role.account.org_units) {
-                    var result = '',
-                        orgUnits = role.account.org_units,
-                        length = orgUnits.length;
-
-                    for (var i = 0; i < length; i++) {
-                        result += orgUnits[i].name;
-                        result += (i === length -1) ? '' : ', ';
-                    }
-
-                    return result;
-                }
-
-                return '';
-
-            },
-
-            _onRemoveRole: function (event) {
+            _onRemoveResource: function (event) {
                 event.stopPropagation();
 
                 /**
-                 * Fired when `remove role` action is tapped.
+                 * Fired when `remove resource` action is tapped.
                  *
-                 * @event remove-group-from-company-role
-                 * @param {Object} role
+                 * @event remove-group-from-company-resource
+                 * @param {Object} resource
                  */
-                this.fire('remove-group-from-company-role', {
-                    role: this.role
+                this.fire('remove-resource-from-company-group', {
+                    resource: this.resource
                 });
             }
 

@@ -1,0 +1,97 @@
+<link rel="import" href="../../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../../bower_components/iron-flex-layout/iron-flex-layout.html">
+<link rel="import" href="../../../bower_components/iron-image/iron-image.html">
+
+<!--
+`appsco-group-image`
+Account image is used to present group in form of an image or initials if image is not present.
+
+    <appsco-group-image group="{}">
+    </appsco-group-image>
+-->
+
+<dom-module id="appsco-company-group-image">
+    <template>
+        <style>
+            :host {
+                display: block;
+            }
+            :host .group-image {
+                @apply(--layout-vertical);
+                @apply(--layout-center-justified);
+                width: 52px;
+                height: 52px;
+                margin: 0;
+                border-radius: 50%;
+                @apply(--group-image);
+            }
+            :host .group-initials {
+                background-color: var(--group-initials-background-color, #f5f8fa);
+                color: var(--primary-text-color);
+            }
+            :host[preview] .group-image {
+                width: 46px;
+                height: 46px;
+            }
+            :host .group-initials .initials {
+                text-align: center;
+                text-transform: uppercase;
+                font-size: var(--group-initials-font-size, 18px);
+                line-height: var(--group-initials-font-size, 18px);
+                color: var(--group-initials-font-color);
+            }
+        </style>
+
+            <template is="dom-if" if="[[ group.image ]]">
+                <iron-image class="group-image"
+                            sizing="cover"
+                            preload fade
+                            src="[[ group.image ]]"></iron-image>
+            </template>
+
+            <template is="dom-if" if="[[ !group.image ]]">
+                <div class="group-image group-initials">
+                    <span class="initials">[[ _groupInitials ]]</span>
+                </div>
+            </template>
+
+    </template>
+
+    <script>
+        Polymer({
+
+            is: 'appsco-company-group-image',
+
+            properties: {
+
+                group: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    }
+                },
+
+                preview: {
+                    type: Boolean,
+                    value: false,
+                    reflectToAttribute: true
+                },
+
+                _groupInitials: {
+                    type: String,
+                    computed: '_computeGroupInitials(group)'
+                }
+            },
+
+            _computeGroupInitials: function(group) {
+                var initials = '';
+
+                if (group.name) {
+                    initials = group.name.substring(0, 2);
+                }
+
+                return initials;
+            }
+        });
+    </script>
+</dom-module>

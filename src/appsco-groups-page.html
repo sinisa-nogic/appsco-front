@@ -210,21 +210,12 @@
                     type: Object,
                     value: function() {
                         return {}
-                    },
-                    observer: '_onGroupChanged'
+                    }
                 },
 
                 authorizationToken: {
                     type: String,
                     value: ''
-                },
-
-                /**
-                 * Get company accounts.
-                 */
-                companyGroupsApi: {
-                    type: String,
-                    value: function() { return ''; }
                 },
 
                 /**
@@ -252,11 +243,6 @@
                 },
 
                 pageLoaded: {
-                    type: Boolean,
-                    value: false
-                },
-
-                _selectAll: {
                     type: Boolean,
                     value: false
                 },
@@ -295,14 +281,6 @@
                 '_updateScreen(mobileScreen, tabletScreen, screen992)'
             ],
 
-            attached: function() {
-                this.pageLoaded = false;
-
-                if (this.mobileScreen) {
-                    this.updateStyles();
-                }
-            },
-
             toggleInfo: function() {
                 if (this._groupExists) {
                     this.$.appscoContent.toggleSection('info');
@@ -327,45 +305,16 @@
                 this.$.appscoGroups.addGroups(groups);
             },
 
-            modifyGroups: function(groups) {
-                this.$.appscoGroups.modifyGroups(groups);
-            },
-
-            removeGroups: function(groups) {
-                this.$.appscoGroups.removeGroups(groups);
-                this._setDefaultGroup();
-            },
-
-            removeSelectedGroups: function(groups) {
-                this.$.appscoGroups.removeSelectedGroups(groups);
-            },
-
             filterByTerm: function(term) {
                 this.$.appscoGroups.filterByTerm(term);
-            },
-
-            selectAllGroups: function() {
-                this._selectAll = !this._selectAll;
-                this.$.appscoGroups.selectAll(this._selectAll);
-                if (!this._selectAll) {
-                    this._hideBulkActions();
-                }
             },
 
             getSelectedGroups: function() {
                 return this.$.appscoGroups.getSelectedGroups();
             },
 
-            addGroup: function(group) {
-                this.$.appscoCompanyGroups.addGroup(group);
-            },
-
             resetGroupSelection: function() {
                 this.$.appscoCompanyGroups.reset();
-            },
-
-            hideBulkActions: function() {
-                this._hideBulkActions();
             },
 
             initializePage: function() {
@@ -374,8 +323,7 @@
 
             resetPage: function() {
                 this._resetPageActions();
-                this._showGroups();
-                this._resetPageLists('all');
+                this._resetPageLists();
                 this.hideInfo();
             },
 
@@ -386,8 +334,6 @@
             },
 
             _resetPageLists: function(page) {
-                this._selectAll = false;
-                this.$.appscoGroups.selectAll(this._selectAll);
                 this.filterByTerm('', page);
             },
 
@@ -424,13 +370,6 @@
                 this.updateStyles();
             },
 
-            _onGroupChanged: function(group) {
-
-                if (group.meta && group.meta.log) {
-                    this._loadLog();
-                }
-            },
-
             _onPageReadyChanged: function() {
                 this._onPageLoaded();
             },
@@ -449,7 +388,6 @@
 
                     if (group.selected) {
                         this._onViewInfo(event);
-                        this._showBulkActions();
                     }
                     else {
                         var selectedGroup = this.$.appscoGroups.getFirstSelectedGroup();
@@ -457,7 +395,6 @@
                         if (!selectedGroup) {
                             this.hideInfo();
                             this._setDefaultGroup();
-                            this._hideBulkActions();
                         }
                         else if (group.self === this.group.self) {
                             this._handleInfo(selectedGroup);
@@ -467,16 +404,7 @@
                 }.bind(this), 10);
             },
 
-            _showBulkActions: function() {
-                this.fire('show-bulk-actions');
-            },
-
-            _hideBulkActions: function() {
-                this.fire('hide-bulk-actions');
-            },
-
             _showInfo: function() {
-
                 if (this._groupExists) {
                     this.$.appscoContent.showSection('info');
                     this._infoShown = true;

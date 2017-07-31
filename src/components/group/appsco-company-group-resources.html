@@ -255,6 +255,11 @@ Custom property | Description | Default
                     value: -1
                 },
 
+                _loaders: {
+                    type: Array,
+                    value: []
+                },
+
                 /**
                  * Animation for loader appearance.
                  */
@@ -338,6 +343,12 @@ Custom property | Description | Default
                 this._hideLoadMoreProgressBar();
             },
 
+            _clearLoaders: function() {
+                for (var idx in this._loaders) {
+                    clearTimeout(this._loaders[idx]);
+                }
+            },
+
             _onResponse: function(event) {
                 var response = event.detail.response;
 
@@ -357,9 +368,12 @@ Custom property | Description | Default
                     this._resourcesEmpty = false;
                     this._message = '';
 
+                    this.set('_resources', []);
+                    this.set('_allResources', []);
+                    this._clearLoaders();
                     resources.forEach(function(el, index) {
 
-                        setTimeout(function() {
+                        this._loaders.push(setTimeout(function() {
 
                             this.push('_resources', el);
                             this.push('_allResources', el);
@@ -387,7 +401,7 @@ Custom property | Description | Default
                                 });
                             }
 
-                        }.bind(this), (index + 1) * 30);
+                        }.bind(this), (index + 1) * 30));
 
                     }.bind(this));
                 }

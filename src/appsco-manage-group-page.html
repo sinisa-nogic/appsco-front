@@ -1,0 +1,368 @@
+<link rel="import" href="../bower_components/polymer/polymer.html">
+<link rel="import" href="../bower_components/neon-animation/neon-animated-pages.html">
+<link rel="import" href="../bower_components/neon-animation/animations/fade-in-animation.html">
+<link rel="import" href="../bower_components/neon-animation/animations/fade-out-animation.html">
+<link rel="import" href="../bower_components/iron-media-query/iron-media-query.html">
+<link rel="import" href="../bower_components/iron-ajax/iron-ajax.html">
+<link rel="import" href="../bower_components/iron-icon/iron-icon.html">
+<link rel="import" href="../bower_components/iron-icons/social-icons.html">
+
+<link rel="import" href="components/page/appsco-content.html">
+<link rel="import" href="components/contact/appsco-manage-contact-components-page.html">
+<link rel="import" href="components/components/appsco-date-format.html">
+
+<dom-module id="appsco-manage-group-page">
+    <template>
+        <style include="webkit-scrollbar-style">
+            :host {
+                display: block;
+                color: var(--app-primary-color);
+
+                --resource-width: 300px;
+            }
+            div[resource] {
+                padding: 10px;
+                height: calc(100% - 32px - 20px - 10px);
+                overflow: auto;
+            }
+            div[content] {
+                height: 100%;
+            }
+            .resource-header {
+                padding: 20px 10px 30px;
+                border-bottom: 1px solid var(--divider-color);
+                position: relative;
+            }
+            .group-icon {
+                width: 96px;
+                height: 96px;
+                margin-left: auto;
+                margin-right: auto;
+                background-color: var(--brand-color);
+                border-radius: 50%;
+                position: relative;
+            }
+            .group-icon iron-icon {
+                width: 48px;
+                height: 48px;
+                position: absolute;
+                top: 0;
+                right: 0;
+                bottom: 0;
+                left: 0;
+                margin: auto;
+
+                --iron-icon-fill-color: #ffffff;
+            }
+            .group-info {
+                margin-top: 10px;
+                font-size: 14px;
+            }
+            .group-info p {
+                margin: 4px 0;
+            }
+            div[resource] .resource-actions {
+                position: absolute;
+                bottom: 0;
+                left: 0;
+                right: 0;
+            }
+            .remove-action {
+                @apply(--primary-button);
+                @apply(--danger-button);
+                border-radius: 0;
+            }
+            :host .contact-components, :host .contact-components neon-animated-pages {
+                height: 100%;
+            }
+            .flex-horizontal {
+                @apply(--layout-horizontal);
+                @apply(--layout-center);
+            }
+            .flex-vertical {
+                @apply(--layout-vertical);
+            }
+            .flex {
+                @apply(--layout-flex);
+            }
+            :host([medium-screen]) {
+                --resource-width: 240px;
+            }
+            :host([mobile-screen]) {
+                --resource-width: 180px;
+            }
+        </style>
+
+        <iron-media-query query="(max-width: 1200px)" query-matches="{{ mediumScreen }}"></iron-media-query>
+        <iron-media-query query="(max-width: 800px)" query-matches="{{ tabletScreen }}"></iron-media-query>
+        <iron-media-query query="(max-width: 600px)" query-matches="{{ mobileScreen }}"></iron-media-query>
+
+        <iron-ajax id="ironAjaxGetGroup"
+                   headers="[[ _headers ]]"
+                   on-error="_onGetGroupError"
+                   on-response="_onGetGroupResponse"></iron-ajax>
+
+        <appsco-content id="appscoContent" resource-active>
+
+            <div class="flex-vertical" resource>
+
+                <div class="resource-header">
+                    <div class="group-icon">
+                        <iron-icon icon="social:people"></iron-icon>
+                    </div>
+                </div>
+
+                <div class="group-info">
+                    <p>[[ group.name ]]</p>
+                    <p>
+                        Created at:
+                        <appsco-date-format date="[[ group.createdAt.date ]]"
+                                            options='{"year": "numeric", "month": "long", "day": "numeric", "hour": "2-digit", "minute": "2-digit"}'></appsco-date-format>
+                    </p>
+                </div>
+
+                <div class="resource-actions flex-horizontal">
+                    <paper-button class="remove-action flex"
+                                  on-tap="_onRemoveGroupAction">
+                        Remove
+                    </paper-button>
+                </div>
+
+            </div>
+
+            <div content>
+
+                <div class="contact-components">
+                    <neon-animated-pages class="flex"
+                                         selected="{{ _selected }}"
+                                         attr-for-selected="name">
+
+                        <appsco-manage-group-components-page
+                                id="appscoManageGroupComponentsPage"
+                                name="appsco-group-components-page">
+                        </appsco-manage-group-components-page>
+
+                    </neon-animated-pages>
+                </div>
+
+            </div>
+        </appsco-content>
+
+    </template>
+
+    <script>
+        Polymer({
+            is: 'appsco-manage-group-page',
+
+            properties: {
+
+                route: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    }
+                },
+
+                group: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    },
+                    observer: '_onGroupChanged'
+                },
+
+                authorizationToken: {
+                    type: String,
+                    value: ''
+                },
+
+                groupApi: {
+                    type: String,
+                    value: '',
+                    observer: '_onGroupApiChanged'
+                },
+
+                /**
+                 * Computed headers.
+                 * It contains authorization token.
+                 */
+                _headers: {
+                    type: Object,
+                    computed: '_computeHeaders(authorizationToken)'
+                },
+
+                /**
+                 * Indicates if it is medium screen size.
+                 * It uses iron-media-query.
+                 */
+                mediumScreen: {
+                    type: Boolean,
+                    value: false,
+                    reflectToAttribute: true
+                },
+
+                tabletScreen: {
+                    type: Boolean,
+                    value: false,
+                    reflectToAttribute: true
+                },
+
+                mobileScreen: {
+                    type: Boolean,
+                    value: false,
+                    reflectToAttribute: true
+                },
+
+                /**
+                 * Selected page.
+                 * It has value of component's 'name' attribute.
+                 */
+                _selected: {
+                    type: String,
+                    value: 'appsco-group-components-page',
+                    notify: true
+                },
+
+                /**
+                 * Animation config.
+                 */
+                animationConfig: {
+                    value: function() {
+                        return {
+                            'entry': {
+                                name: 'fade-in-animation',
+                                node: this,
+                                timing: {
+                                    duration: 300
+                                }
+                            },
+                            'exit': {
+                                name: 'fade-out-animation',
+                                node: this,
+                                timing: {
+                                    duration: 200
+                                }
+                            }
+                        }
+                    }
+                },
+
+                pageLoaded: {
+                    type: Boolean,
+                    value: false
+                }
+            },
+
+            behaviors: [
+                Polymer.NeonAnimatableBehavior
+            ],
+
+            observers: [
+                '_updateScreen(mediumScreen, tabletScreen, mobileScreen)'
+            ],
+
+            attached: function() {
+
+                this.pageLoaded = false;
+
+                if (this.mobileScreen || this.tabletScreen || this.mediumScreen) {
+                    this.updateStyles();
+                }
+
+                this._getGroup();
+
+            },
+
+            reload: function() {
+                this.$.appscoManageGroupComponentsPage.load();
+            },
+
+            toggleResource: function() {
+                this.$.appscoContent.toggleSection('resource');
+            },
+
+            resetPage: function() {
+                this._showComponentsPage();
+            },
+
+            _updateScreen: function(medium, tablet, mobile) {
+                this.updateStyles();
+
+                if (mobile) {
+                    this.$.appscoContent.hideSection('resource');
+                }
+                else if (!this.$.appscoContent.resourceActive) {
+                    this.$.appscoContent.showSection('resource');
+                }
+            },
+
+            _computeHeaders: function (authorizationToken) {
+                return {
+                    'Authorization': 'token ' + authorizationToken
+                }
+            },
+
+            _onPageLoaded: function() {
+                this.pageLoaded = true;
+                this.fire('page-loaded');
+            },
+
+            _onGroupApiChanged: function() {
+                this._getGroup();
+            },
+
+            _onGroupChanged: function(group) {
+                if (group.self) {
+                    this.$.appscoManageGroupComponentsPage.load();
+                }
+            },
+
+            _getGroup: function() {
+
+                if (!this.group.self && this.groupApi && this._headers) {
+                    var groupApi = this.groupApi + this.route.path,
+                        getGroupRequest = this.$.ironAjaxGetGroup;
+
+                    if (getGroupRequest.lastRequest) {
+                        getGroupRequest.lastRequest.abort();
+                    }
+
+                    getGroupRequest.url = groupApi;
+                    getGroupRequest.generateRequest();
+                }
+            },
+
+            _onGetGroupResponse: function(event) {
+
+                if (200 === event.detail.status && event.detail.response) {
+                    this.set('group', event.detail.response);
+                }
+
+                this._onPageLoaded();
+            },
+
+            _onGetGroupError: function(event) {
+
+                if (!event.detail.request.aborted) {
+                    this.fire('page-error');
+                }
+            },
+
+            _onRemoveGroupAction: function() {
+
+                this.fire('remove-group', {
+                    group: this.group
+                });
+            },
+
+            _onResourceBack: function() {
+                this._showComponentsPage();
+            },
+
+            _showComponentsPage: function() {
+                this._selected = 'appsco-group-components-page';
+            }
+
+        });
+    </script>
+</dom-module>

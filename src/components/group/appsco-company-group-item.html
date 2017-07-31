@@ -7,6 +7,8 @@
 <link rel="import" href="../../../bower_components/paper-styles/typography.html">
 <link rel="import" href="../../../bower_components/iron-ajax/iron-ajax.html">
 
+<link rel="import" href="appsco-company-group-image.html">
+
 <!--
 `appsco-company-group-item`
 Presents group in form of an item.
@@ -58,6 +60,11 @@ Custom property | Description | Default
                 @apply(--layout-center);
                 transition: all 0.1s ease-out;
                 @apply(--appsco-company-group-item);
+            }
+            :host([active]) .item {
+                background: #279FBC;
+                color: #ffffff;
+                transition: all 0.2s ease-in;
             }
             .item:hover {
                 @apply(--shadow-elevation-4dp);
@@ -122,16 +129,19 @@ Custom property | Description | Default
                 @apply(--group-status-info-values);
             }
             .info-group {
-                font-size: 16px;
+                font-size: 14px;
                 height: auto;
                 line-height: normal;
             }
+            .info-group.group-title {
+                font-size: 16px;
+            }
             .info-group.preview {
-                font-size: 14px;
+                font-size: 12px;
             }
             .info-value {
                 display: block;
-                font-size: 14px;
+                font-size: 12px;
             }
         </style>
 
@@ -142,6 +152,20 @@ Custom property | Description | Default
                    on-error="_onGroupRolesError"
                    on-response="_onGroupRolesResponse"></iron-ajax>
 
+        <iron-ajax id="getGroupContactsApiRequest"
+                   url="[[ _groupContactsApiUrl ]]"
+                   headers="[[ _headers ]]"
+                   auto
+                   on-error="_onGroupContactsError"
+                   on-response="_onGroupContactsResponse"></iron-ajax>
+
+        <iron-ajax id="getGroupResourcesApiRequest"
+                   url="[[ _groupResourcesApiUrl ]]"
+                   headers="[[ _headers ]]"
+                   auto
+                   on-error="_onGroupResourcesError"
+                   on-response="_onGroupResourcesResponse"></iron-ajax>
+
         <template is="dom-if" if="[[ preview ]]">
             <span class="info-group group-title preview">[[ group.name ]]</span>
         </template>
@@ -149,18 +173,22 @@ Custom property | Description | Default
         <template is="dom-if" if="[[ !preview ]]">
             <div class="item">
 
+                <appsco-company-group-image group="[[ group ]]"></appsco-company-group-image>
+
                 <div class="group-info group-basic-info">
                     <span class="info-group group-title">[[ group.name ]]</span>
+                    <span class="info-group">Group</span>
                 </div>
 
                 <div class="group-info group-status-info">
                     <!--<span class="info-group"></span>-->
-                    <span class="info-value">Attached accounts: [[ _groupRolesCount ]]</span>
+                    <span class="info-value">Total users: [[ _groupRolesCount ]]</span>
+                    <span class="info-value">Total contacts: [[ _groupContactsCount ]]</span>
+                    <span class="info-value">Total resources: [[ _groupResourcesCount ]]</span>
                 </div>
 
                 <div class="actions">
-                    <paper-button on-tap="_onInfoAction">Info</paper-button>
-                    <paper-button on-tap="_onRemoveAction">Remove</paper-button>
+                    <paper-button on-tap="_onEditAction">Edit</paper-button>
                 </div>
             </div>
         </template>
@@ -223,7 +251,27 @@ Custom property | Description | Default
                     computed: '_computeGroupRolesApiUrl(group, preview)'
                 },
 
+                _groupResourcesApiUrl: {
+                    type: String,
+                    computed: '_computeGroupResourcesApiUrl(group, preview)'
+                },
+
+                _groupContactsApiUrl: {
+                    type: String,
+                    computed: '_computeGroupContactsApiUrl(group, preview)'
+                },
+
                 _groupRolesCount: {
+                    type: Number,
+                    value: 0
+                },
+
+                _groupResourcesCount: {
+                    type: Number,
+                    value: 0
+                },
+
+                _groupContactsCount: {
                     type: Number,
                     value: 0
                 },
@@ -283,6 +331,13 @@ Custom property | Description | Default
             _computeGroupRolesApiUrl: function(group, preview) {
                 return (group.meta && !preview) ? group.meta.company_roles : '';
             },
+            _computeGroupResourcesApiUrl: function (group, preview) {
+                return (group.meta && !preview) ? group.meta.applications : '';
+            },
+
+            _computeGroupContactsApiUrl: function(group, preview) {
+                return (group.meta && !preview) ? group.meta.contacts : '';
+            },
 
             _onGroupChanged: function(group) {
                 this.active = group.selected ? group.selected : false;
@@ -296,6 +351,18 @@ Custom property | Description | Default
                 var response = event.detail.response;
 
                 this._groupRolesCount = (response && response.meta) ? response.meta.total : 0;
+            },
+
+            _onGroupResourcesResponse: function(event) {
+                var response = event.detail.response;
+
+                this._groupResourcesCount = (response && response.meta) ? response.meta.total : 0;
+            },
+
+            _onGroupContactsResponse: function(event) {
+                var response = event.detail.response;
+
+                this._groupContactsCount = (response && response.meta) ? response.meta.total : 0;
             },
 
             _onGroupAction: function() {
@@ -337,6 +404,16 @@ Custom property | Description | Default
                  * @param {Object} group
                  */
                 this.fire('remove', {
+                    group: this.group
+                });
+            },
+
+            _onEditAction: function(event) {
+                /**
+                 * Fired when `edit` is tapped.
+                 * @event edit
+                 */
+                this.fire('edit-company-group', {
                     group: this.group
                 });
             }

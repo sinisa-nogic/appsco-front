@@ -123,31 +123,49 @@ Custom property | Description | Default
                 display: block;
                 font-size: 12px;
             }
+            .preview-account-image {
+                --account-image: {
+                    width: 28px;
+                    height: 28px;
+                };
+                --account-initials-background-color: var(--body-background-color-darker);
+                --account-initials-font-size: 12px;
+            }
         </style>
 
-        <div class="item">
+        <template is="dom-if" if="[[ !preview ]]">
+            <div class="item">
 
-            <appsco-account-image account="[[ role.account ]]"></appsco-account-image>
+                <appsco-account-image account="[[ role.account ]]"></appsco-account-image>
 
-            <div class="account-info account-basic-info">
-                <span class="info-label account-title">[[ role.account.display_name ]]</span>
-                <span class="info-value">[[ role.account.email ]]</span>
+                <div class="account-info account-basic-info">
+                    <span class="info-label account-title">[[ role.account.display_name ]]</span>
+                    <span class="info-value">[[ role.account.email ]]</span>
+                </div>
+
+                <div class="account-info account-additional-info">
+                    <template is="dom-if" if="[[ _orgUnits ]]">
+                        <div class="info">
+                            <span class="info-label">Organization units:&nbsp;</span>
+                            <span class="info-value">[[ _orgUnits ]]</span>
+                        </div>
+                    </template>
+                </div>
+
+                <div class="actions">
+                    <paper-button on-tap="_onRemoveRole">Remove role</paper-button>
+                </div>
+
             </div>
+        </template>
 
-
-            <div class="account-info account-additional-info">
-                <template is="dom-if" if="[[ _orgUnits ]]">
-                    <div class="info">
-                        <span class="info-label">Organization units:&nbsp;</span>
-                        <span class="info-value">[[ _orgUnits ]]</span>
-                    </div>
-                </template>
+        <template is="dom-if" if="[[ preview ]]">
+            <div class="preview-item">
+                <appsco-account-image account="[[ role.account ]]"
+                                      class="preview-account-image"></appsco-account-image>
+                <paper-tooltip position="right">[[ assignee.display_name ]]<br/>[[ assignee.email ]]</paper-tooltip>
             </div>
-
-            <div class="actions">
-                <paper-button on-tap="_onRemoveRole">Remove role</paper-button>
-            </div>
-        </div>
+        </template>
 
     </template>
 
@@ -168,6 +186,12 @@ Custom property | Description | Default
                 _orgUnits: {
                     type: String,
                     computed: '_computeOrganizationUnits(role)'
+                },
+
+                preview: {
+                    type: Boolean,
+                    value: false,
+                    reflectToAttribute: true
                 },
 
                 /**

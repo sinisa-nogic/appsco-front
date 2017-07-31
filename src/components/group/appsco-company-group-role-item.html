@@ -6,6 +6,7 @@
 <link rel="import" href="../../../bower_components/neon-animation/animations/fade-in-animation.html">
 <link rel="import" href="../../../bower_components/neon-animation/animations/fade-out-animation.html">
 <link rel="import" href="../../../bower_components/paper-styles/typography.html">
+<link rel="import" href="../../../bower_components/paper-tooltip/paper-tooltip.html">
 
 <link rel="import" href="../../components/account/appsco-account-image.html">
 
@@ -34,6 +35,27 @@ Custom property | Description | Default
             :host {
                 display: none;
                 color: var(--primary-text-color);
+            }
+            appsco-account-image.preview-account-image {
+                --account-image: {
+                    width: 28px;
+                    height: 28px;
+                };
+                --account-initials-background-color: var(--group-role-initials-background-color);
+                --account-initials-font-size: 12px;
+            }
+            appsco-account-image.full-account-image {
+                --account-image: {
+                    width: 52px;
+                    height: 52px;
+                };
+                --account-initials-background-color: var(--group-role-initials-background-color);
+            }
+            paper-tooltip {
+                --paper-tooltip: {
+                    font-size: 11px;
+                    line-height: 12px;
+                };
             }
             .item {
                 width: 100%;
@@ -123,20 +145,19 @@ Custom property | Description | Default
                 display: block;
                 font-size: 12px;
             }
-            .preview-account-image {
-                --account-image: {
-                    width: 28px;
-                    height: 28px;
-                };
-                --account-initials-background-color: var(--body-background-color-darker);
-                --account-initials-font-size: 12px;
-            }
         </style>
+
+        <template is="dom-if" if="[[ preview ]]">
+            <appsco-account-image account="[[ role.account ]]"
+                                  class="preview-account-image"></appsco-account-image>
+            <paper-tooltip
+                    position="right">[[ role.account.display_name ]]<br/>[[ role.account.email ]]</paper-tooltip>
+        </template>
 
         <template is="dom-if" if="[[ !preview ]]">
             <div class="item">
-
-                <appsco-account-image account="[[ role.account ]]"></appsco-account-image>
+                <appsco-account-image account="[[ role.account ]]"
+                                      class="full-account-image"></appsco-account-image>
 
                 <div class="account-info account-basic-info">
                     <span class="info-label account-title">[[ role.account.display_name ]]</span>
@@ -153,17 +174,8 @@ Custom property | Description | Default
                 </div>
 
                 <div class="actions">
-                    <paper-button on-tap="_onRemoveRole">Remove role</paper-button>
+                    <paper-button on-tap="_onRemoveAction">Remove</paper-button>
                 </div>
-
-            </div>
-        </template>
-
-        <template is="dom-if" if="[[ preview ]]">
-            <div class="preview-item">
-                <appsco-account-image account="[[ role.account ]]"
-                                      class="preview-account-image"></appsco-account-image>
-                <paper-tooltip position="right">[[ role.account.display_name ]]<br/>[[ role.account.email ]]</paper-tooltip>
             </div>
         </template>
 
@@ -175,6 +187,13 @@ Custom property | Description | Default
             is: 'appsco-company-group-role-item',
 
             properties: {
+
+                group: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    }
+                },
 
                 role: {
                     type: Object,
@@ -247,16 +266,17 @@ Custom property | Description | Default
 
             },
 
-            _onRemoveRole: function (event) {
+            _onRemoveAction: function (event) {
                 event.stopPropagation();
 
                 /**
-                 * Fired when `remove role` action is tapped.
+                 * Fired when `remove` action is tapped.
                  *
-                 * @event remove-group-from-company-role
+                 * @event remove-company-role-from-group
                  * @param {Object} role
                  */
-                this.fire('remove-group-from-company-role', {
+                this.fire('remove-company-role-from-group', {
+                    group: this.group,
                     role: this.role
                 });
             }

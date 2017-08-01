@@ -11,6 +11,7 @@
 <link rel="import" href="components/components/appsco-date-format.html">
 <link rel="import" href="components/group/appsco-manage-group-components-page.html">
 <link rel="import" href="components/group/appsco-group-roles-page.html">
+<link rel="import" href="components/group/appsco-group-contacts-page.html">
 
 <dom-module id="appsco-manage-group-page">
     <template>
@@ -146,10 +147,12 @@
                                 name="appsco-group-components-page"
                                 group="[[ group ]]"
                                 group-roles-api="[[ _groupRolesApi ]]"
+                                group-contacts-api="[[ _groupContactsApi ]]"
                                 authorization-token="[[ authorizationToken ]]"
                                 on-group-roles-loaded="_onPageLoaded"
                                 on-empty-load="_onPageLoaded"
-                                on-manage-group-roles="_onManageGroupRoles">
+                                on-manage-group-roles="_onManageGroupRoles"
+                                on-manage-group-contacts="_onManageGroupContacts">
                         </appsco-manage-group-components-page>
 
                         <appsco-group-roles-page
@@ -160,6 +163,15 @@
                                 authorization-token="[[ authorizationToken ]]"
                                 on-back="_onResourceBack">
                         </appsco-group-roles-page>
+
+                        <appsco-group-contacts-page
+                                id="appscoGroupContactsPage"
+                                name="appsco-group-contacts-page"
+                                group="[[ group ]]"
+                                group-contacts-api="[[ _groupContactsApi ]]"
+                                authorization-token="[[ authorizationToken ]]"
+                                on-back="_onResourceBack">
+                        </appsco-group-contacts-page>
 
                     </neon-animated-pages>
                 </div>
@@ -213,6 +225,11 @@
                 _groupRolesApi: {
                     type: String,
                     computed: '_computeGroupRoleApi(group)'
+                },
+
+                _groupContactsApi: {
+                    type: String,
+                    computed: '_computeGroupContactApi(group)'
                 },
 
                 /**
@@ -350,6 +367,10 @@
                 return group.meta ? group.meta.company_roles + '?extended=1' : '';
             },
 
+            _computeGroupContactApi: function(group) {
+                return group.meta ? group.meta.contacts + '?extended=1' : '';
+            },
+
             _onPageLoaded: function() {
                 this.pageLoaded = true;
                 this.fire('page-loaded');
@@ -363,6 +384,10 @@
                 this._selected = 'appsco-group-roles-page';
             },
 
+            _showGroupContactsPage: function() {
+                this._selected = 'appsco-group-contacts-page';
+            },
+
             _addGroupRoles: function(roles) {
                 this.$.appscoManageGroupComponentsPage.addGroupRoles(roles);
                 this.$.appscoGroupRolesPage.addGroupRoles(roles);
@@ -371,6 +396,16 @@
             _removeGroupRoles: function(roles) {
                 this.$.appscoManageGroupComponentsPage.removeGroupRoles(roles);
                 this.$.appscoGroupRolesPage.removeGroupRoles(roles);
+            },
+
+            _addGroupContacts: function(contacts) {
+                this.$.appscoManageGroupComponentsPage.addGroupContacts(contacts);
+                this.$.appscoGroupContactsPage.addGroupContacts(contacts);
+            },
+
+            _removeGroupContacts: function(contacts) {
+                this.$.appscoManageGroupComponentsPage.removeGroupContacts(contacts);
+                this.$.appscoGroupContactsPage.removeGroupContacts(contacts);
             },
 
             _addGroupItems: function(items, resourceType) {
@@ -385,7 +420,7 @@
                         break;
 
                     case 'contact':
-
+                        this._addGroupContacts(items);
                         break;
 
                     default:
@@ -405,7 +440,7 @@
                         break;
 
                     case 'contact':
-
+                        this._removeGroupContacts(items);
                         break;
 
                     default:
@@ -467,6 +502,10 @@
 
             _onManageGroupRoles: function() {
                 this._showGroupRolesPage();
+            },
+
+            _onManageGroupContacts: function() {
+                this._showGroupContactsPage();
             }
 
         });

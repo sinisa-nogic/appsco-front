@@ -35,6 +35,61 @@ Custom property | Description | Default
                 display: none;
                 color: var(--primary-text-color);
             }
+            appsco-account-image.preview-account-image {
+                --account-image: {
+                    width: 28px;
+                    height: 28px;
+                };
+                --account-initials-background-color: var(--group-role-initials-background-color);
+                --account-initials-font-size: 12px;
+            }
+            appsco-account-image.full-account-image {
+                --account-image: {
+                    width: 52px;
+                    height: 52px;
+                };
+                --account-initials-background-color: var(--group-role-initials-background-color);
+            }
+            paper-tooltip {
+                --paper-tooltip: {
+                    font-size: 11px;
+                    line-height: 12px;
+                };
+            }
+            .item {
+                width: 100%;
+                height: 70px;
+                padding: 0 10px;
+                box-sizing: border-box;
+                overflow: hidden;
+                position: relative;
+                background-color: var(--background-color, #fff);
+                border-radius: 3px;
+                @apply(--shadow-elevation-2dp);
+                @apply(--layout-horizontal);
+                @apply(--layout-center);
+                transition: all 0.1s ease-out;
+                @apply(--appsco-company-group-contact-item);
+            }
+            .item:hover {
+                @apply(--shadow-elevation-4dp);
+            }
+            .account-title {
+                display: block;
+                height: 32px;
+                line-height: 16px;
+                @apply(--paper-font-common-base);
+                font-size: 14px;
+                font-weight: 400;
+                overflow: hidden;
+            }
+            .actions {
+                @apply(--layout-horizontal);
+                @apply(--layout-center);
+                position: absolute;
+                right: 4px;
+                bottom: 4px;
+            }
             paper-button {
                 @apply(--paper-font-common-base);
                 @apply(--paper-font-common-nowrap);
@@ -46,20 +101,67 @@ Custom property | Description | Default
                 line-height: 18px;
                 text-transform: uppercase;
             }
-            .preview-account-image {
-                --account-image: {
-                    width: 28px;
-                    height: 28px;
-                };
-                --account-initials-background-color: var(--body-background-color-darker);
-                --account-initials-font-size: 12px;
+            paper-button[disabled] {
+                background: transparent;
+            }
+            .account-info {
+                @apply(--layout-vertical);
+                @apply(--layout-start);
+                padding: 0 10px;
+            }
+            .account-basic-info {
+                width: 220px;
+                @apply(--account-basic-info);
+            }
+            .account-basic-info .info-label, .account-basic-info .info-value {
+                width: 220px;
+                @apply(--paper-font-common-nowrap);
+                @apply(--account-basic-info-values);
+            }
+            .account-additional-info .info-label, .account-additional-info .info-value {
+                font-size: 13px;
+                line-height: 18px;
+                @apply(--paper-font-common-nowrap);
+                @apply(--account-additional-info-values);
+            }
+            .account-additional-info .info-label {
+                color: var(--secondary-text-color);
+            }
+            .info-label {
+                font-size: 16px;
+                height: auto;
+                line-height: normal;
+            }
+            .info-value {
+                display: block;
+                font-size: 12px;
             }
         </style>
-        <div class="preview-item">
-            <appsco-account-image account="[[ contact.account ]]"
-                                  class="preview-account-image"></appsco-account-image>
-            <paper-tooltip position="right">[[ contact.account.display_name ]]<br/>[[ contact.account.email ]]</paper-tooltip>
-        </div>
+
+        <template is="dom-if" if="[[ !preview ]]">
+            <div class="item">
+
+                <appsco-account-image account="[[ contact.account ]]"></appsco-account-image>
+
+                <div class="account-info account-basic-info">
+                    <span class="info-label account-title">[[ contact.account.display_name ]]</span>
+                    <span class="info-value">[[ contact.account.email ]]</span>
+                </div>
+
+                <div class="actions">
+                    <paper-button on-tap="_onRemove">Remove</paper-button>
+                </div>
+
+            </div>
+        </template>
+
+        <template is="dom-if" if="[[ preview ]]">
+            <div class="preview-item">
+                <appsco-account-image account="[[ contact.account ]]"
+                                      class="preview-account-image"></appsco-account-image>
+                <paper-tooltip position="right">[[ contact.account.display_name ]]<br/>[[ contact.account.email ]]</paper-tooltip>
+            </div>
+        </template>
 
     </template>
 
@@ -71,6 +173,13 @@ Custom property | Description | Default
             properties: {
 
                 contact: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    }
+                },
+
+                group: {
                     type: Object,
                     value: function() {
                         return {};
@@ -115,6 +224,21 @@ Custom property | Description | Default
             attached: function() {
                 this.style.display = 'inline-block';
                 this.playAnimation('entry');
+            },
+
+            _onRemove: function (event) {
+                event.stopPropagation();
+
+                /**
+                 * Fired when `remove contact` action is tapped.
+                 *
+                 * @event remove-group-from-company-contact
+                 * @param {Object} contact
+                 */
+                this.fire('remove-company-contact-from-group', {
+                    group: this.group,
+                    contact: this.contact
+                });
             }
 
         });

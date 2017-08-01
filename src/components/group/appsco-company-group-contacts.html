@@ -52,6 +52,15 @@ Custom property | Description | Default
                 margin: 0 0 10px 0;
                 @apply(--appsco-company-group-contact-item);
             }
+            :host([preview]) {
+                @apply(--layout-flex-none);
+                display: block;
+            }
+            :host([preview]) appsco-company-group-contact-item {
+                width: auto;
+                margin: 0 2px 0 0;
+                @apply(--appsco-company-group-contact-item-preview);
+            }
             .group-contacts-container {
                 width: 100%;
                 position: relative;
@@ -78,12 +87,13 @@ Custom property | Description | Default
                 left: 0;
                 @apply(--group-contacts-progress-bar);
             }
-            paper-button {
-                display: block;
-                width: 120px;
-                margin: 20px auto 0;
-                text-align: center;
-                @apply(--load-more-button);
+            .contacts, .info-total {
+                margin-top: 5px;
+            }
+            .contacts {
+                @apply(--layout-horizontal);
+                @apply(--layout-wrap);
+                width: 100%;
             }
             .info-total {
                 margin-bottom: 10px;
@@ -91,6 +101,13 @@ Custom property | Description | Default
             .total {
                 @apply(--paper-font-caption);
                 color: var(--secondary-text-color);
+            }
+            paper-button {
+                display: block;
+                width: 120px;
+                margin: 20px auto 0;
+                text-align: center;
+                @apply(--load-more-button);
             }
             .message {
                 color: var(--secondary-text-color);
@@ -143,6 +160,7 @@ Custom property | Description | Default
 
                         <appsco-company-group-contact-item id="appscoGroupContactItem_[[ index ]]"
                                                     contact="{{ item }}"
+                                                    group="[[ group ]]"
                                                     preview="[[ preview ]]"></appsco-company-group-contact-item>
 
                     </template>
@@ -204,6 +222,13 @@ Custom property | Description | Default
                 preview: {
                     type: Boolean,
                     value: false
+                },
+
+                group: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    }
                 },
 
                 _loadMore: {
@@ -291,7 +316,6 @@ Custom property | Description | Default
             },
 
             _onListApiChanged: function(url) {
-
                 if (url && url.length > 0) {
                     this._loadContacts();
                 }
@@ -303,6 +327,10 @@ Custom property | Description | Default
 
             _hideLoadMoreAction: function() {
                 this._loadMore = false;
+            },
+
+            loadContacts: function() {
+                this._loadContacts();
             },
 
             _loadContacts: function() {
@@ -357,7 +385,6 @@ Custom property | Description | Default
 
             _onResponse: function(event) {
                 var response = event.detail.response;
-
                 if (response && response.contacts) {
                     var contacts = response.contacts,
                         meta = response.meta,
@@ -452,6 +479,78 @@ Custom property | Description | Default
                     this._renderedIndex = -1;
                 }
 
+            },
+
+
+            addGroupContacts: function(contacts) {
+                var length = contacts.length,
+                        allContacts = this._allContacts,
+                        allLength = allContacts.length;
+
+                this._contactsEmpty = false;
+                this._message = '';
+                this._renderedIndex = length - 1;
+
+                for (var i = 0; i < length; i++) {
+
+                    if (0 === allLength) {
+                        this.push('_contacts', contacts[i]);
+                        this.push('_allContacts', contacts[i]);
+
+                        this._totalContacts++;
+                    }
+                    else {
+
+                        for (var j = 0; j < allLength; j++) {
+
+                            if (allContacts[j].alias === contacts[i].alias) {
+                                break;
+                            }
+                            else if (j === allLength - 1) {
+                                this.unshift('_contacts', contacts[i]);
+                                this.unshift('_allContacts', contacts[i]);
+
+                                this._totalContacts++;
+                            }
+
+                        }
+                    }
+                }
+            },
+
+            removeGroupContacts: function(contacts) {
+                var length = contacts.length,
+                        _contacts = this._contacts,
+                        _length = _contacts.length,
+                        allContacts = this._allContacts,
+                        allLength = allContacts.length;
+
+                for (var i = 0; i < length; i++) {
+                    var contact = contacts[i];
+
+                    for (var j = 0; j < _length; j++) {
+
+                        if (contact.self === _contacts[j].self) {
+                            this.splice('_contacts', j, 1);
+                            break;
+                        }
+                    }
+
+                    for (var k = 0; k < allLength; k++) {
+
+                        if (contact.self === allContacts[k].self) {
+                            this.splice('_allContacts', k, 1);
+                            break;
+                        }
+                    }
+
+                    this._totalContacts--;
+
+                }
+
+                if (0 === this._contacts.length) {
+                    this._handleEmptyLoad();
+                }
             }
         });
     </script>

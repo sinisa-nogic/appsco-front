@@ -737,7 +737,55 @@ Custom property | Description | Default
 
             getFirstGroup: function() {
                 return (this._groups.length > 0) ? this._groups[0] : {};
-            }
+            },
+
+            filterByTerm: function(term) {
+                this._filterTerm = term;
+
+                if (0 === this._allGroups.length) {
+                    this._handleEmptyLoad();
+                    return false;
+                }
+
+                if (term.length < 3) {
+                    this._message = '';
+                    this.set('_groups', JSON.parse(JSON.stringify(this._allGroups)));
+                    this.fire('filter-done');
+                    this._setLoadMoreAction();
+                    return false;
+                }
+
+                this._searchGroups(term).then(function(groups) {
+                    this._hideLoadMoreAction();
+                    this.set('_groups', []);
+
+                    if (groups.length > 0) {
+                        this._message = '';
+
+                        groups.forEach(function(group, index) {
+                            this.push('_groups', group);
+
+                            if (index === (groups.length - 1)) {
+
+                                this._hideProgressBar();
+                                this.fire('filter-done');
+                            }
+
+                        }.bind(this));
+
+                    }
+                    else {
+                        this._message = 'There are no groups with asked term.';
+                        this.fire('filter-done');
+                    }
+
+                }.bind(this), function(message) {
+                    this.set('_groups', []);
+                    this._hideLoadMoreAction();
+                    this._message = message;
+                    this.fire('filter-done');
+                }.bind(this));
+            },
         });
     </script>
 </dom-module>

@@ -11,6 +11,8 @@
 <link rel="import" href="company/appsco-company-settings-page.html">
 <link rel="import" href="company/appsco-company-brand-settings-page.html">
 <link rel="import" href="company/appsco-company-domains-page.html">
+<link rel="import" href="company/appsco-company-manage-idp-settings-page.html">
+
 
 <dom-module id="appsco-company-page">
     <template>
@@ -112,18 +114,19 @@
                                 company="[[ company ]]"
                                 brand-logo="[[ brandLogo ]]"
                                 authorization-token="[[ authorizationToken ]]"
-                                domains-api="[[ domainsApi ]]"
+                                domains-api="[[ _domainsApi ]]"
                                 on-loaded="_onPageLoaded"
                                 on-manage-company-settings="_onManageCompanySettings"
                                 on-manage-company-brand-settings="_onManageCompanyBrandSettings"
-                                on-manage-company-domains="_onManageCompanyDomains">
+                                on-manage-company-domains="_onManageCompanyDomains"
+                                on-manage-company-idp-settings="_onManageCompanyIdPSettings">
                         </appsco-company-components-page>
 
                         <appsco-company-settings-page
                                 name="appsco-company-settings-page"
                                 company="[[ company ]]"
                                 authorization-token="[[ authorizationToken ]]"
-                                settings-api="[[ settingsApi ]]"
+                                settings-api="[[ _settingsApi ]]"
                                 on-company-settings-changed="_onSettingsChanged"
                                 on-back="_onResourceBack">
                         </appsco-company-settings-page>
@@ -132,16 +135,27 @@
                                 name="appsco-company-brand-settings-page"
                                 company="[[ company ]]"
                                 authorization-token="[[ authorizationToken ]]"
-                                settings-api="[[ brandSettingsApi ]]"
-                                image-settings-api="[[ imageSettingsApi ]]"
+                                settings-api="[[ _brandSettingsApi ]]"
+                                image-settings-api="[[ _imageSettingsApi ]]"
                                 on-company-brand-settings-changed="_onCompanyBrandSettingsChanged"
                                 on-back="_onResourceBack">
                         </appsco-company-brand-settings-page>
 
+                        <appsco-company-manage-idp-settings-page id="appscoCompanyManageIdPSettingsPage"
+                                name="appsco-company-manage-idp-settings-page"
+                                company="[[ company ]]"
+                                authorization-token="[[ authorizationToken ]]"
+                                settings-api="[[ _idPSettingsApi ]]"
+                                domains-api="[[ _domainsApi ]]"
+                                api-errors="[[ apiErrors ]]"
+                                on-company-settings-changed="_onSettingsChanged"
+                                on-back="_onResourceBack">
+                        </appsco-company-manage-idp-settings-page>
+
                         <appsco-company-domains-page id="appscoCompanyDomainsPage"
                                 name="appsco-company-domains-page"
                                 authorization-token="[[ authorizationToken ]]"
-                                domains-api="[[ domainsApi ]]"
+                                domains-api="[[ _domainsApi ]]"
                                 on-back="_onResourceBack">
                         </appsco-company-domains-page>
                     </neon-animated-pages>
@@ -170,10 +184,17 @@
                     type: String
                 },
 
+                apiErrors: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    }
+                },
+
                 /**
                  * Update company settings link.
                  */
-                settingsApi: {
+                _settingsApi: {
                     type: String,
                     computed: '_computeSettingsApi(company)'
                 },
@@ -181,7 +202,7 @@
                 /**
                  * Update company settings link.
                  */
-                brandSettingsApi: {
+                _brandSettingsApi: {
                     type: String,
                     computed: '_computeBrandSettingsApi(company)'
                 },
@@ -189,7 +210,7 @@
                 /**
                  * Update company logo link.
                  */
-                imageSettingsApi: {
+                _imageSettingsApi: {
                     type: String,
                     computed: '_computeImageSettingsApi(company)'
                 },
@@ -197,7 +218,7 @@
                 /**
                  * Get domains link.
                  */
-                domainsApi: {
+                _domainsApi: {
                     type: String,
                     computed: '_computeDomainsApi(company)'
                 },
@@ -208,6 +229,11 @@
                 groupsApi: {
                     type: String,
                     computed: '_computeGroupsApi(company)'
+                },
+
+                _idPSettingsApi: {
+                    type: String,
+                    computed: '_computeIdPSettingsApi(company)'
                 },
 
                 /**
@@ -293,6 +319,7 @@
             modifyDomain: function(domain) {
                 this.$.appscoCompanyComponentsPage.modifyDomain(domain);
                 this.$.appscoCompanyDomainsPage.modifyDomain(domain);
+                this.$.appscoCompanyManageIdPSettingsPage.modifyDomain(domain);
             },
 
             removeDomain: function(domain) {
@@ -331,23 +358,27 @@
             },
 
             _computeSettingsApi: function(company) {
-                return company.meta && company.meta.settings;
+                return (company.meta && company.meta.settings) ? company.meta.settings : '';
             },
 
             _computeBrandSettingsApi: function(company) {
-                return company.self && company.self + '/branding';
+                return company.self ? (company.self + '/branding') : '';
             },
 
             _computeImageSettingsApi: function(company) {
-                return company.meta && company.meta.logo;
+                return (company.meta && company.meta.logo) ? company.meta.logo : '';
             },
 
             _computeDomainsApi: function(company) {
-                return company.meta && company.meta.domains;
+                return (company.meta && company.meta.domains) ? company.meta.domains + '?extended=1' : '';
             },
 
             _computeGroupsApi: function(company) {
                 return company.self && company.self + '/groups';
+            },
+
+            _computeIdPSettingsApi: function(company) {
+                return company.self ? (company.self + '/settings/idps') : '';
             },
 
             _updateScreen: function(medium, tablet, mobile) {
@@ -380,6 +411,10 @@
 
             _showCompanyDomainsPage: function() {
                 this._selected = 'appsco-company-domains-page';
+            },
+
+            _showCompanyManageIdPSettings: function() {
+                this._selected = 'appsco-company-manage-idp-settings-page';
             },
 
             _onResourceBack: function() {
@@ -418,6 +453,10 @@
                 if (this.$.appscoCompanyManageGroupsPage.$) {
                     this.$.appscoCompanyManageGroupsPage.removeGroupsCompanyRoles(group, items);
                 }
+            },
+
+            _onManageCompanyIdPSettings: function() {
+                this._showCompanyManageIdPSettings();
             },
 
             _onPageAnimationFinish: function(event) {

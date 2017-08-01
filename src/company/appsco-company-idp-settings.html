@@ -1,0 +1,466 @@
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../bower_components/iron-form/iron-form.html">
+<link rel="import" href="../../bower_components/paper-input/paper-input.html">
+<link rel="import" href="../../bower_components/paper-input/paper-textarea.html">
+<link rel="import" href="../../bower_components/paper-button/paper-button.html">
+<link rel="import" href="../../bower_components/paper-dropdown-menu/paper-dropdown-menu.html">
+<link rel="import" href="../../bower_components/paper-listbox/paper-listbox.html">
+<link rel="import" href="../../bower_components/paper-item/paper-item.html">
+<link rel="import" href="../../bower_components/iron-flex-layout/iron-flex-layout.html">
+<link rel="import" href="../../bower_components/iron-a11y-keys/iron-a11y-keys.html">
+<link rel="import" href="../../bower_components/iron-ajax/iron-ajax.html">
+<link rel="import" href="../../bower_components/paper-styles/shadow.html">
+<link rel="import" href="../../bower_components/vaadin-upload/vaadin-upload-file.html">
+<link rel="import" href="../../bower_components/iron-icon/iron-icon.html">
+<link rel="import" href="../../bower_components/iron-icons/iron-icons.html">
+
+<link rel="import" href="../components/components/appsco-loader.html">
+<link rel="import" href="../components/components/appsco-form-error.html">
+
+<!--
+`appsco-company-idp-settings`
+Update company idP settings component.
+
+    <appsco-company-idp-settings company="{}"
+                             authorization-token=""
+                             settings-api=""></appsco-company-idp-settings>
+
+-->
+
+<dom-module id="appsco-company-idp-settings">
+    <template>
+        <style>
+            :host {
+                display: block;
+                position: relative;
+
+                --paper-dropdown-menu: {
+                    display: block;
+                };
+            }
+            :host .info {
+                margin-bottom: 0;
+            }
+            :host .info-inner {
+                margin-top: 20px;
+                font-weight: 500;
+            }
+            vaadin-upload {
+                --primary-color: var(--app-primary-color-dark);
+
+                --vaadin-upload-button-add: {
+                    @apply(--primary-button);
+                };
+            }
+            paper-textarea {
+                height: 200px;
+                overflow-x: hidden;
+                overflow-y: auto;
+                outline: none;
+
+                --paper-input-container-input: {
+                    font-size: 14px;
+                    line-height: 24px;
+                };
+            }
+            :host .submit-button {
+                margin: 20px 0 0 0;
+                @apply(--form-action);
+            }
+        </style>
+
+        <iron-ajax auto
+                   url="[[ _idPIntegrationsApi ]]"
+                   headers="[[ _headers ]]"
+                   handle-as="json"
+                   on-error="_onIdPIntegrationsError"
+                   on-response="_onIdPIntegrationsResponse"></iron-ajax>
+
+        <iron-ajax id="getDomainIdPConfig"
+                   url="[[ domain.samlIdpConfig ]]"
+                   headers="[[ _headers ]]"
+                   handle-as="json"
+                   on-response="_onIdPConfigResponse"></iron-ajax>
+
+        <appsco-loader active="[[ _loader ]]" loader-alt="Appsco is processing request" multi-color></appsco-loader>
+
+        <appsco-form-error message="[[ _error ]]"></appsco-form-error>
+
+        <form is="iron-form"
+              id="form"
+              method="POST"
+              action="[[ settingsApi ]]"
+              headers="[[ _headers ]]"
+              on-iron-form-presubmit="_onFormPresubmit"
+              on-iron-form-error="_onFormError"
+              on-iron-form-response="_onFormResponse">
+
+            <paper-input id="title"
+                         label="Title"
+                         name="saml_idp_config[title]"
+                         value="{{ _idPConfig.name }}"></paper-input>
+
+            <paper-input id="domain"
+                         label="Domain"
+                         value="[[ domain.domain ]]"
+                         disabled></paper-input>
+
+            <paper-input label="Domain"
+                         name="saml_idp_config[companyDomains][0]"
+                         value="[[ domain.self ]]"
+                         hidden></paper-input>
+
+            <paper-dropdown-menu label="Integration type"
+                                 horizontal-align="left"
+                                 required
+                                 auto-validate
+                                 error-message="Please select integration type."
+                                 disabled$="[[ domain.hasIdp ]]">
+                <paper-listbox id="integrationList"
+                               class="dropdown-content"
+                               attr-for-selected="value"
+                               selected="{{ _idPConfig.integrationId }}">
+                    <template is="dom-repeat" items="[[ _integrations ]]">
+                        <paper-item value="[[ item.id ]]">[[ item.name ]]</paper-item>
+                    </template>
+                </paper-listbox>
+            </paper-dropdown-menu>
+
+
+            <p class="info info-inner">Upload IdP metadata XML file:</p>
+
+            <vaadin-upload id="uploadIdpMetadataField"
+                           no-auto
+                           max-files="1"
+                           max-file-size="1000000"
+                           accept=".xml, text/xml, application/xml"
+                           on-upload-before="_onUploadIdPMetadataBefore">
+                <div class="drop-label">
+                    <iron-icon icon="icons:file-upload"></iron-icon>
+                    Upload IdP metadata XML file
+                </div>
+            </vaadin-upload>
+
+            <p class="info info-inner">Or enter values manually:</p>
+
+            <paper-input label="Sign in URL"
+                         name="saml_idp_config[idpSSOUrl]"
+                         value="{{ _idPConfig.idpSSOUrl }}"
+                         pattern="https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)"
+                         required
+                         auto-validate
+                         error-message="Please type in sign in URL in proper format."></paper-input>
+
+            <paper-input label="Entity ID"
+                         name="saml_idp_config[idpEntityId]"
+                         value="{{ _idPConfig.idpEntityId }}"
+                         pattern="https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)"
+                         required
+                         auto-validate
+                         error-message="Please type in entity ID."></paper-input>
+
+            <paper-input label="App ID"
+                         name="saml_idp_config[appId]"
+                         value="{{ _idPConfig.idpEntityId }}"
+                         pattern="https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)"
+                         required
+                         auto-validate
+                         error-message="Please type in app ID."></paper-input>
+
+            <paper-textarea label="Certificate"
+                            name="saml_idp_config[cert]"
+                            value="{{ _idPConfig.cert }}"
+                            rows="5"
+                            required
+                            auto-validate
+                            error-message="Please type in certificate in proper format."></paper-textarea>
+
+        </form>
+
+        <paper-button id="submit"
+                      class="submit-button"
+                      on-tap="_submitForm">Save</paper-button>
+
+        <iron-a11y-keys target="[[ _target ]]"
+                        keys="enter"
+                        on-keys-pressed="_onEnter"></iron-a11y-keys>
+
+    </template>
+    <script>
+        Polymer({
+
+            is: 'appsco-company-idp-settings',
+
+            properties: {
+
+                company: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    }
+                },
+
+                domain: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    },
+                    observer: '_onDomainChanged'
+                },
+
+                /**
+                 * Authorization token.
+                 */
+                authorizationToken: {
+                    type: String,
+                    value: ''
+                },
+
+                /**
+                 * Settings api link.
+                 */
+                settingsApi: {
+                    type: String,
+                    value: ''
+                },
+
+                apiErrors: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    }
+                },
+
+                _idPConfig: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    }
+                },
+
+                /**
+                 * Computed headers.
+                 * It contains authorization token.
+                 */
+                _headers: {
+                    type: Object,
+                    computed: '_computeHeaders(authorizationToken)'
+                },
+
+                _idPIntegrationsApi: {
+                    type: String,
+                    computed: '_computeIdPIntegrationsApi(settingsApi)'
+                },
+
+                _integrations: {
+                    type: Array,
+                    value: function() {
+                        return [];
+                    }
+                },
+
+                _loader: {
+                    type: Boolean,
+                    value: false
+                },
+
+                /**
+                 * Error message for settings form.
+                 */
+                _error: {
+                    type: String
+                },
+
+                /**
+                 * Target for iron-a11y-keys component.
+                 * Submit form on enter.
+                 */
+                _target: {
+                    type: Object,
+                    value: function() {
+                        return this.$.form
+                    }
+                }
+            },
+
+            ready: function() {
+                this.$.uploadIdpMetadataField.set('i18n.addFiles.many', 'Upload file');
+            },
+
+            setup: function() {
+                this.$.title.focus();
+            },
+
+            reset: function() {
+                this.$.form.reset();
+                this._hideError();
+                this._hideLoader();
+                this.$.uploadIdpMetadataField.files = [];
+                this.set('_idPConfig', {});
+                this.set('domain', {});
+            },
+
+            setDomain: function(domain) {
+                this.set('domain', domain);
+            },
+
+            _computeHeaders: function (authorizationToken) {
+                return {
+                    'Authorization': 'token ' + authorizationToken,
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                }
+            },
+
+            _computeIdPIntegrationsApi: function(settingsApi) {
+                return settingsApi ? (settingsApi + '/integrations') : '';
+            },
+
+            _showLoader: function() {
+                this._loader = true;
+            },
+
+            _hideLoader: function() {
+                this._loader = false;
+            },
+
+            _showError: function(message) {
+                this._error = message;
+            },
+
+            _hideError: function() {
+                this._error = '';
+            },
+
+            _onDomainChanged: function(domain) {
+
+                if (domain && domain.samlIdpConfig) {
+                    this.$.getDomainIdPConfig.generateRequest();
+                }
+            },
+
+            _onUploadIdPMetadataBefore: function(event) {
+                var file = event.detail.file,
+                    uploadField = this.$.uploadIdpMetadataField,
+                    fileIndex = uploadField.files.indexOf(file);
+
+                // Prevent AJAX request
+                event.preventDefault();
+
+                // Update UI
+                uploadField.set(['files', fileIndex, 'progress'], 100);
+                uploadField.set(['files', fileIndex, 'complete'], true);
+
+                this._parseIdPMetadataXMLFile(file);
+            },
+
+            _fillIdPMetadataFromXML: function(xmlDocument) {
+                var idpSSODescriptor = xmlDocument.getElementsByTagName('IDPSSODescriptor')[0],
+                    keyDescriptor = idpSSODescriptor.childNodes[0],
+                    certificate = keyDescriptor.getElementsByTagName('X509Certificate')[0].childNodes[0].nodeValue,
+                    singleSignOnServices = idpSSODescriptor.getElementsByTagName('SingleSignOnService'),
+                    length = singleSignOnServices.length,
+                    signInURL,
+                    config = JSON.parse(JSON.stringify(this._idPConfig));
+
+                for (var i = 0; i < length; i++) {
+                    var singleSignOnService = singleSignOnServices[i];
+
+                    if (-1 != singleSignOnService.getAttribute('Binding').indexOf('HTTP-Redirect')) {
+                        signInURL = singleSignOnService.getAttribute('Location');
+                        break;
+                    }
+                }
+
+                config.idpSSOUrl = signInURL;
+                config.idpEntityId = signInURL;
+                config.cert = '-----BEGIN CERTIFICATE-----\n' +
+                                    certificate +
+                                    '\n-----END CERTIFICATE-----';
+
+                this.set('_idPConfig', {});
+                this.set('_idPConfig', config);
+            },
+
+            _parseIdPMetadataXMLFile: function(file) {
+                var reader = new FileReader();
+
+                (function(me) {
+
+                    reader.onload = function() {
+                        var xmlDocument = new DOMParser().parseFromString(this.result, 'text/xml');
+
+                        me._fillIdPMetadataFromXML(xmlDocument);
+                    };
+                })(this);
+
+                reader.readAsText(file);
+            },
+
+            _onIdPIntegrationsError: function() {
+                this.set('_integrations', []);
+            },
+
+            _onIdPIntegrationsResponse: function(event) {
+                var response = event.detail.response;
+
+                if (response && response.integrations) {
+                    this.set('_integrations', response.integrations);
+                }
+
+            },
+
+            _onIdPConfigResponse: function(event) {
+                var response = event.detail.response;
+
+                if (response) {
+                    this.set('_idPConfig', response[0]);
+                }
+
+            },
+
+            _onEnter: function() {
+                this._submitForm();
+            },
+
+            _submitForm: function() {
+
+                if (this.$.form.validate()) {
+                    this._showLoader();
+                    this.$.form.submit();
+                }
+            },
+
+            _onFormPresubmit: function(event) {
+                var form = event.target;
+
+                if (this.domain.hasIdp) {
+                    form.request.url = this.domain.samlIdpConfig;
+                    form.request.method = 'PUT';
+                }
+                else {
+                    form.request.body['saml_idp_config[integrationId]'] = encodeURIComponent(this.$.integrationList.selectedItem.value);
+                }
+
+            },
+
+            _onFormError: function(event) {
+                this._showError(this.apiErrors.getError(event.detail.request.response.code));
+                this._hideLoader();
+            },
+
+            _onFormResponse: function(event) {
+                var config = event.detail.response[0];
+
+                this.domain.hasIdp = true;
+                this.domain.samlIdpConfig = config.self;
+
+                this.fire('idp-settings-saved', {
+                    domain: this.domain,
+                    idPConfig: config
+                });
+
+                this._hideLoader();
+            }
+        });
+    </script>
+</dom-module>

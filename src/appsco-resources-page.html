@@ -14,6 +14,8 @@
 <link rel="import" href="components/application/appsco-application-log.html">
 <link rel="import" href="components/orgunit/appsco-orgunit-tree.html">
 <link rel="import" href="components/application/company/appsco-application-assignees.html">
+<link rel="import" href="components/components/appsco-search.html">
+<link rel="import" href="components/group/appsco-company-groups.html">
 
 <dom-module id="appsco-resources-page">
     <template>
@@ -96,9 +98,8 @@
                 height: 100%;
             }
             .tab-content {
-                margin-right: -10px;
-                padding-right: 10px;
-                overflow: auto;
+                margin-top: 20px;
+                @apply(--paper-tabs-content-style);
             }
             :host div[info] .info-actions {
                 padding: 0;
@@ -149,6 +150,22 @@
                 --resource-width: 100%;
                 --info-width: 100%;
             }
+            .resource-container {
+                @apply(--layout-vertical);
+                height: 100%;
+            }
+            .paper-tabs-pages {
+                margin-top: 10px;
+                height: 100%;
+            }
+            appsco-company-groups {
+                margin-top: 20px;
+
+                --appsco-company-group-item: {
+                    padding: 4px;
+                    margin-bottom: 5px;
+                };
+            }
         </style>
 
         <iron-media-query query="(max-width: 800px)" query-matches="{{ tabletScreen }}"></iron-media-query>
@@ -164,13 +181,43 @@
 
             <div class="flex-vertical" resource>
 
-                <div class="resource-header">
-                    Filters
-                </div>
+                <div class="resource-container">
 
-                <appsco-orgunit-tree id="appscoOrgunitTree"
-                                     org-units='[[ _orgUnits ]]'
-                                     on-selected="_onOrgunitSelected"></appsco-orgunit-tree>
+                    <paper-tabs id="paperTabs" selected="{{ _selectedFilter }}">
+                        <paper-tab name="organization-units">Organization units</paper-tab>
+                        <paper-tab name="groups">Groups</paper-tab>
+                    </paper-tabs>
+
+                    <neon-animated-pages
+                            selected="{{ _selectedFilter }}"
+                            entry-animation="fade-in-animation"
+                            exit-animation="fade-out-animation"
+                            class="paper-tabs-pages">
+
+                        <div name="organization-units" class="tab-content organization-units">
+                            <appsco-orgunit-tree id="appscoOrgunitTree"
+                                                 org-units="[[ _orgUnits ]]"
+                                                 on-selected="_onOrgunitSelected"></appsco-orgunit-tree>
+                        </div>
+
+                        <div name="groups" class="tab-content groups">
+                            <appsco-search id="appscoSearch"
+                                           label="Search groups"
+                                           on-search="_onSearchGroups"
+                                           on-search-clear="_onSearchGroupsClear"></appsco-search>
+
+                            <appsco-company-groups id="appscoCompanyGroups"
+                                                   groups-api="[[ groupsApi ]]"
+                                                   authorization-token="[[ authorizationToken ]]"
+                                                   size="100"
+                                                   preview
+                                                   hide-total
+                                                   selectable
+                                                   on-group-selected="_onGroupSelected"></appsco-company-groups>
+                        </div>
+                    </neon-animated-pages>
+
+                </div>
 
             </div>
 
@@ -378,6 +425,17 @@
                 pageLoaded: {
                     type: Boolean,
                     value: false
+                },
+
+                groupsApi: {
+                    type: String,
+                    value: ''
+                },
+
+                _selectedFilter: {
+                    type: Number,
+                    value: 0,
+                    observer: '_onSelectedFilterChanged'
                 }
             },
 
@@ -418,6 +476,7 @@
 
                 this.set('_orgUnits', []);
                 this.$.getOrgunitsLink.generateRequest();
+                this.$.appscoCompanyGroups.selectAllGroups(false);
                 this.hideInfo();
             },
 
@@ -573,6 +632,50 @@
 
             _onOrgunitSelected: function(event) {
                 this.$.appscoApplications.filterByOrgunit(event.detail);
+            },
+
+            _onSelectedFilterChanged: function(filter) {
+                this._resetFilters(filter);
+            },
+
+            _resetFilters: function(filter) {
+
+                this.resetPage();
+
+                switch (filter) {
+                    case 0:
+                        this.$.appscoCompanyGroups.reset();
+                        this._onSearchGroupsClear();
+
+                        break;
+
+                    case 1:
+                        this.$.appscoOrgunitTree.reset();
+
+                        break;
+                }
+            },
+            _searchGroups: function(term) {
+                this.$.appscoCompanyGroups.search(term);
+            },
+
+            _onSearchGroups: function(event) {
+                this._searchGroups(event.detail.term);
+            },
+
+            _onSearchGroupsClear: function() {
+                this.$.appscoSearch.reset();
+                this._searchGroups('');
+            },
+
+            _loadResourcesForGroup: function(group) {
+                this.$.appscoApplications.loadResourcesForGroup(group);
+            },
+
+            _onGroupSelected: function(event) {
+                var group = event.detail.group;
+
+                group.selected ? this._loadResourcesForGroup(group) : this.reloadApplications();
             }
         });
     </script>

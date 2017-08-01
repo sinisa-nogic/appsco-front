@@ -11,14 +11,10 @@
 
 <!--
 `appsco-company-remove-group`
-Shows dialog screen with confirmation for account removal from organization unit.
+Shows dialog screen with confirmation for group removal.
 
     <appsco-company-remove-group group="{}" authorization-token="">
     </appsco-company-remove-group>
-
-### Styling
-
-`<appsco-company-remove-group>` provides the following custom properties and mixins for styling:
 
 -->
 
@@ -66,14 +62,13 @@ Shows dialog screen with confirmation for account removal from organization unit
             <paper-dialog-scrollable>
                 <div class="remove-container">
                     <appsco-form-error message="[[ _error ]]"></appsco-form-error>
-                    <p>Removing group detaches all accounts from it.</p>
                     <p>Please confirm removal of this group.</p>
                 </div>
             </paper-dialog-scrollable>
 
             <div class="buttons">
                 <paper-button dialog-dismiss>Cancel</paper-button>
-                <paper-button autofocus on-tap="_onRemove">Remove</paper-button>
+                <paper-button autofocus on-tap="_onRemoveAction">Remove</paper-button>
             </div>
         </paper-dialog>
 
@@ -95,17 +90,24 @@ Shows dialog screen with confirmation for account removal from organization unit
                     }
                 },
 
-                _removeGroupApi: {
-                    type: String,
-                    computed: '_computeRemoveGroupApi(group)'
-                },
-
                 /**
                  * Authorization token.
                  */
                 authorizationToken: {
                     type: String,
                     value: ''
+                },
+
+                apiErrors: {
+                    type: Array,
+                    value: function() {
+                        return {};
+                    }
+                },
+
+                _removeGroupApi: {
+                    type: String,
+                    computed: '_computeRemoveGroupApi(group)'
                 },
 
                 _headers: {
@@ -174,22 +176,20 @@ Shows dialog screen with confirmation for account removal from organization unit
                 this._hideLoader();
             },
 
-            _onRemove: function() {
+            _onRemoveAction: function() {
                 var request = document.createElement('iron-request'),
-                        options = {
-                            url: this._removeGroupApi,
-                            method: 'DELETE',
-                            handleAs: 'json',
-                            headers: this._headers
-                        };
+                    options = {
+                        url: this._removeGroupApi,
+                        method: 'DELETE',
+                        handleAs: 'json',
+                        headers: this._headers
+                    };
 
                 this._showLoader();
 
                 request.send(options).then(function() {
-                    this.close();
 
                     if (200 === request.status) {
-                        var group = request.response;
 
                         /**
                          * Fired when group is deleted.
@@ -198,16 +198,14 @@ Shows dialog screen with confirmation for account removal from organization unit
                          * @param [Object] group
                          */
                         this.fire('group-removed', {
-                            group: group
+                            group: request.response
                         });
+
+                        this.close();
                     }
 
                 }.bind(this), function() {
-
-                    if (request.status === 404) {
-                        this._showError('We couldn\'t remove group from company. Please try again in a minute.');
-                    }
-
+                    this._showError(this.apiErrors.getError(request.response.code));
                     this._hideLoader();
                 }.bind(this));
             }

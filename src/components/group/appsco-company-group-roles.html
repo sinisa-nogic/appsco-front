@@ -255,6 +255,11 @@ Custom property | Description | Default
                     value: -1
                 },
 
+                _loaders: {
+                    type: Array,
+                    value: function() { return []; }
+                },
+
                 /**
                  * Animation for loader appearance.
                  */
@@ -303,8 +308,7 @@ Custom property | Description | Default
             _loadRoles: function() {
                 this._showProgressBar();
                 this._loadMore = false;
-                this.set('_roles', []);
-                this.set('_allRoles', []);
+                this._clearRoles();
                 this.$.getGroupRolesApiRequest.generateRequest();
             },
 
@@ -338,6 +342,19 @@ Custom property | Description | Default
                 this._hideLoadMoreProgressBar();
             },
 
+            _clearLoaders: function() {
+                for (var idx in this._loaders) {
+                    clearTimeout(this._loaders[idx]);
+                }
+                this.set('_loaders', []);
+            },
+
+            _clearRoles: function() {
+                this._clearLoaders();
+                this.set('_roles', []);
+                this.set('_allRoles', []);
+            },
+
             _onResponse: function(event) {
                 var response = event.detail.response;
 
@@ -357,9 +374,10 @@ Custom property | Description | Default
                     this._rolesEmpty = false;
                     this._message = '';
 
+                    this._clearRoles();
                     roles.forEach(function(el, index) {
 
-                        setTimeout(function() {
+                        this._loaders.push(setTimeout(function() {
 
                             this.push('_roles', el);
                             this.push('_allRoles', el);
@@ -387,7 +405,7 @@ Custom property | Description | Default
                                 });
                             }
 
-                        }.bind(this), (index + 1) * 30);
+                        }.bind(this), (index + 1) * 30));
 
                     }.bind(this));
                 }

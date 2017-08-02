@@ -77,6 +77,10 @@ Shows dialog screen with confirmation for removal company resource from group.
                         <p>Removing account from group also removes access to applications shared to group.</p>
                     </template>
 
+                    <template is="dom-if" if="[[ _contactType ]]">
+                        <p>Removing contact from group also removes access to applications shared to group.</p>
+                    </template>
+
                     <p>Please confirm remove action.</p>
                 </div>
             </paper-dialog-scrollable>
@@ -159,6 +163,11 @@ Shows dialog screen with confirmation for removal company resource from group.
                     computed: '_computeAccountType(resourceType)'
                 },
 
+                _contactType: {
+                    type: Boolean,
+                    computed: '_computeContactType(resourceType)'
+                },
+
                 _loader: {
                     type: Boolean,
                     value: false
@@ -211,13 +220,13 @@ Shows dialog screen with confirmation for removal company resource from group.
             _computeRemoveFromGroupApi: function(group, resourceType) {
 
                 for (key in group) {
-                    return ('application' === resourceType) ?
-                        group.meta.applications :
-                        ('account' === resourceType) ?
-                            group.meta.company_roles :
-                            ('contact' === resourceType) ?
-                                group.meta.contacts :
-                                '';
+                    return ('application' === resourceType)
+                            ? group.meta.applications
+                            : ('account' === resourceType)
+                                    ? group.meta.company_roles
+                                    : ('contact' === resourceType)
+                                        ? group.meta.contacts
+                                        : '';
                 }
 
                 return '';
@@ -229,6 +238,10 @@ Shows dialog screen with confirmation for removal company resource from group.
 
             _computeAccountType: function(resourceType) {
                 return 'account' === resourceType;
+            },
+
+            _computeContactType: function(resourceType) {
+                return 'contact' === resourceType;
             },
 
             _showLoader: function() {

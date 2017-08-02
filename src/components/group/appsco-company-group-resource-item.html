@@ -35,7 +35,40 @@ Custom property | Description | Default
                 display: none;
                 color: var(--primary-text-color);
             }
-
+            .item {
+                width: 100%;
+                height: 70px;
+                padding: 0 10px;
+                box-sizing: border-box;
+                overflow: hidden;
+                position: relative;
+                background-color: var(--background-color, #fff);
+                border-radius: 3px;
+                @apply(--shadow-elevation-2dp);
+                @apply(--layout-horizontal);
+                @apply(--layout-center);
+                transition: all 0.1s ease-out;
+                @apply(--appsco-company-group-resource-item);
+            }
+            .item:hover {
+                @apply(--shadow-elevation-4dp);
+            }
+            .account-title {
+                display: block;
+                height: 32px;
+                line-height: 16px;
+                @apply(--paper-font-common-base);
+                font-size: 14px;
+                font-weight: 400;
+                overflow: hidden;
+            }
+            .actions {
+                @apply(--layout-horizontal);
+                @apply(--layout-center);
+                position: absolute;
+                right: 4px;
+                bottom: 4px;
+            }
             paper-button {
                 @apply(--paper-font-common-base);
                 @apply(--paper-font-common-nowrap);
@@ -58,13 +91,56 @@ Custom property | Description | Default
                 --application-initials-background-color: var(--body-background-color-darker);
                 --application-initials-font-size: 12px;
             }
+            :host .application-title {
+                display: block;
+                line-height: 16px;
+                @apply(--paper-font-common-base);
+                font-size: 14px;
+                font-weight: 400;
+                overflow: hidden;
+            }
+            :host .application-info {
+                @apply(--layout-vertical);
+                @apply(--layout-start);
+                padding: 0 10px;
+            }
+            :host .application-basic-info {
+                width: 220px;
+            }
+            :host .info-value {
+                display: block;
+                font-size: 12px;
+            }
         </style>
 
-        <div class="preview-item">
-            <appsco-application-image application="[[ resource ]]"
-                                  class="preview-application-image"></appsco-application-image>
-            <paper-tooltip position="right">[[ resource.title ]]</paper-tooltip>
-        </div>
+        <template is="dom-if" if="[[ !preview ]]">
+            <div class="item">
+
+                <appsco-application-image
+                        application="[[ resource ]]"
+                ></appsco-application-image>
+
+                <div class="application-info application-basic-info">
+                    <span class="info-label application-title">[[ resource.title ]]</span>
+                    <span class="info-value">[[ _resourceType ]]</span>
+                </div>
+
+                <div class="actions">
+                    <paper-button on-tap="_onRemove">Revoke</paper-button>
+                </div>
+
+            </div>
+        </template>
+
+        <template is="dom-if" if="[[ preview ]]">
+            <div class="preview-item">
+                <appsco-application-image application="[[ resource ]]"
+                                          class="preview-application-image"></appsco-application-image>
+                <paper-tooltip position="right">[[ resource.title ]]</paper-tooltip>
+            </div>
+        </template>
+
+
 
     </template>
 
@@ -86,6 +162,18 @@ Custom property | Description | Default
                     type: Boolean,
                     value: false,
                     reflectToAttribute: true
+                },
+
+                group: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    }
+                },
+
+                _resourceType: {
+                    type: String,
+                    computed: '_computeApplicationType(resource)'
                 },
 
                 /**
@@ -120,6 +208,47 @@ Custom property | Description | Default
             attached: function() {
                 this.style.display = 'inline-block';
                 this.playAnimation('entry');
+            },
+
+            _computeApplicationType: function(resource) {
+
+                switch (resource.auth_type) {
+                    case 'login':
+                        return 'Login';
+
+                    case 'cc':
+                        return 'Credit Card';
+
+                    case 'softwarelicence':
+                        return 'Software Licence';
+
+                    case 'passport':
+                        return 'Passport';
+
+                    case 'securenote':
+                        return 'Secure Note';
+
+                    case 'none':
+                        return 'Link';
+
+                    default:
+                        return 'Application';
+                }
+            },
+
+            _onRemove: function (event) {
+                event.stopPropagation();
+
+                /**
+                 * Fired when `remove role` action is tapped.
+                 *
+                 * @event remove-group-from-company-role
+                 * @param {Object} role
+                 */
+                this.fire('remove-company-resource-from-group', {
+                    resource: this.resource,
+                    group: this.group
+                });
             }
 
         });

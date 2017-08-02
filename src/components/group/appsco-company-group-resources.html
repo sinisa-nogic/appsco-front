@@ -143,6 +143,7 @@ Custom property | Description | Default
 
                         <appsco-company-group-resource-item id="appscoGroupResourceItem_[[ index ]]"
                                                     resource="{{ item }}"
+                                                    group="[[ group ]]"
                                                     preview="[[ preview ]]"></appsco-company-group-resource-item>
 
                     </template>
@@ -204,6 +205,13 @@ Custom property | Description | Default
                 preview: {
                     type: Boolean,
                     value: false
+                },
+
+                group: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    }
                 },
 
                 _loadMore: {
@@ -303,6 +311,10 @@ Custom property | Description | Default
 
             _hideLoadMoreAction: function() {
                 this._loadMore = false;
+            },
+
+            loadResources: function() {
+                this._loadResources();
             },
 
             _loadResources: function() {
@@ -408,6 +420,77 @@ Custom property | Description | Default
                         }.bind(this), (index + 1) * 30));
 
                     }.bind(this));
+                }
+            },
+
+            addGroupResources: function(resources) {
+                var length = resources.length,
+                        allResources = this._allResources,
+                        allLength = allResources.length;
+
+                this._resourcesEmpty = false;
+                this._message = '';
+                this._renderedIndex = length - 1;
+
+                for (var i = 0; i < length; i++) {
+
+                    if (0 === allLength) {
+                        this.push('_resources', resources[i]);
+                        this.push('_allResources', resources[i]);
+
+                        this._totalResources++;
+                    }
+                    else {
+
+                        for (var j = 0; j < allLength; j++) {
+
+                            if (allResources[j].alias === resources[i].alias) {
+                                break;
+                            }
+                            else if (j === allLength - 1) {
+                                this.unshift('_resources', resources[i]);
+                                this.unshift('_allResources', resources[i]);
+
+                                this._totalResources++;
+                            }
+
+                        }
+                    }
+                }
+            },
+
+            removeGroupResources: function(resources) {
+                var length = resources.length,
+                        _resources = this._resources,
+                        _length = _resources.length,
+                        allResources = this._allResources,
+                        allLength = allResources.length;
+
+                for (var i = 0; i < length; i++) {
+                    var resource = resources[i];
+
+                    for (var j = 0; j < _length; j++) {
+
+                        if (resource.application.self === _resources[j].self) {
+                            this.splice('_resources', j, 1);
+                            break;
+                        }
+                    }
+
+                    for (var k = 0; k < allLength; k++) {
+
+                        if (resource.application.self === allResources[k].self) {
+                            this.splice('_allResources', k, 1);
+                            break;
+                        }
+                    }
+
+                    this._totalResources--;
+
+                }
+
+                if (0 === this._resources.length) {
+                    this._handleEmptyLoad();
                 }
             },
 

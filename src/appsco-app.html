@@ -57,6 +57,7 @@
 <link rel="import" href="components/group/appsco-company-remove-group.html">
 <link rel="import" href="components/group/appsco-company-add-group.html">
 <link rel="import" href="components/group/appsco-resource-add-groups.html">
+<link rel="import" href="components/group/appsco-group-add-resource.html">
 <link rel="import" href="components/group/appsco-resource-remove-from-group.html">
 <link rel="import" href="components/group/appsco-manage-group-page-actions.html">
 
@@ -1278,6 +1279,12 @@
                 authorization-token="[[ authorizationToken ]]"
                 groups-api="[[ _companyGroupsApi ]]"
                 on-groups-added-to-resources="_onGroupsAddedToResources"></appsco-resource-add-groups>
+
+        <appsco-group-add-resource
+                id="appscoGroupAddResource"
+                group="[[ _group ]]"
+                authorization-token="[[ authorizationToken ]]"
+                on-resources-added-to-group="_onResourcesAddedToGroup"></appsco-group-add-resource>
 
         <appsco-resource-remove-from-group
                 id="appscoResourceRemoveFromGroup"
@@ -4179,6 +4186,28 @@
                 this._notify('Unable to verify ' + domain.domain + ' domain - please wait until the DNS record change is propagated.', true);
             },
 
+            _onIdPSettingsSaved: function(event) {
+                this._notify('IdP settings for ' + event.detail.domain.domain + ' domain was successfully saved.');
+            },
+
+            _onDeactivateDomainIdPSettings: function(event) {
+                this.$.appscoDeactivateIdPSettings.setDomain(event.detail.domain);
+                this.$.appscoDeactivateIdPSettings.open();
+            },
+
+            _onIdPSettingsDeactivated: function(event) {
+                var domain = event.detail.domain;
+
+                this.$.appscoCompanyPage.modifyDomain(domain);
+                this._notify('IdP settings for ' + domain.domain + ' domain was successfully deactivated.');
+            },
+            /**
+             * Company page END
+             */
+
+            /**
+             * Groups page START
+             */
             _onShowGroupsPageActions: function() {
                 this.$.appscoCompanyPageActions.showGroupsPageActions();
             },
@@ -4259,28 +4288,217 @@
                 }
             },
 
-            // TODO
+            _shareToGroup: function(items, type) {
+
+                if (items.length > 0) {
+                    this.$.appscoShareToGroupDialog.setItems(items);
+                    this.$.appscoShareToGroupDialog.setType(type);
+                    this.$.appscoShareToGroupDialog.open();
+                }
+            },
+
+            _onShareResourcesToGroup: function() {
+                var selectedResources = this.$.appscoApplicationsPage.getSelectedApplications();
+
+                this._shareToGroup(selectedResources, 'resource');
+            },
+
+            _onAddGroupsToCompanyRoles: function() {
+                var selectedRoles = this.$.appscoDirectoryPage.getSelectedAccounts();
+
+                this._shareToGroup(selectedRoles, 'account');
+            },
+
+            _handleResourcesAddedToGroupResponse: function(groups, items, resourceType) {
+                var length = items.length,
+                    oneItem = (length === 1);
+
+                if (this.$.appscoGroupsPage.$) {
+                    this.$.appscoGroupsPage.removeGroupItems(group, [item], resourceType);
+                }
+
+                if (this.$.appscoManageGroupPage.$) {
+                    this.$.appscoManageGroupPage.addGroupItems(groups, items, resourceType);
+                }
+
+                if (this.$.appscoGroupsPage.$) {
+                    this.$.appscoGroupsPage.recalculateTotals(groups);
+                }
+
+                switch (resourceType) {
+                    case 'resource':
+
+                        if (oneItem) {
+                            this._companyApplication = items[0];
+                        }
+
+                        this._notify('Selected resources were successfully shared to groups.');
+                        this._modifyCompanyApplications(items);
+                        this._reloadCompanyHomePageApplications();
+                        this._reloadHomePageApplications();
+                        this._notifyAccountLog();
+                        this._notifyReloadApplications();
+                        this._notifyReloadAccounts();
+
+                        break;
+
+                    case 'account':
+
+                        if (oneItem) {
+                            this._role = items[0];
+                        }
+
+                        if (this.$.appscoDirectoryPage.$) {
+                            this.$.appscoDirectoryPage.modifyAccounts(items);
+                        }
+
+                        for (var i = 0; i < length; i++) {
+                            if (items[i].account.email === this.account.email) {
+                                this._reloadHomePageApplications();
+                                this._reloadCompanyHomePageApplications();
+                                this._reloadContactHomePageApplications();
+                                break;
+                            }
+                        }
+
+                        this._notify('Selected users were successfully added to groups.');
+                        this._notifyAccountLog();
+                        this._notifyReloadApplications();
+                        this._notifyReloadAccounts();
+
+                        break;
+
+                    case 'contact':
+
+                        this._notify('Selected contacts were successfully added to groups.');
+
+                        if (this.$.appscoContactsPage.$) {
+                            this.$.appscoContactsPage.modifyContacts(items);
+                            this.$.appscoContactsPage.removeSelectedContacts([item]);
+                        }
+
+                        break;
+
+                    default:
+                        return false;
+                }
+            },
+
+            _onGroupsAddedToResources: function(event) {
+                this._handleResourcesAddedToGroupResponse(event.detail.groups, event.detail.items, event.detail.resourceType);
+            },
+
             _onAddItemToGroupAction: function(event) {
-                var action = event.detail.action;
+                var addToGroupComponent = this.$.appscoGroupAddResource,
+                    action = event.detail.action;
+
+                addToGroupComponent.setType(action);
+
+                switch (action) {
+                    case 'resource':
+                        addToGroupComponent.setListItemsApi(this._companyApplicationsApi);
+                        break;
+
+                    case 'account':
+                        addToGroupComponent.setListItemsApi(this._companyRolesApi);
+                        break;
+
+                    case 'contact':
+                        addToGroupComponent.setListItemsApi(this._companyContactsApi);
+                        break;
+
+                    default:
+                        return false;
+                }
+
+                addToGroupComponent.open();
             },
 
-            _onIdPSettingsSaved: function(event) {
-                this._notify('IdP settings for ' + event.detail.domain.domain + ' domain was successfully saved.');
+            _onResourcesAddedToGroup: function(event) {
+                this._handleResourcesAddedToGroupResponse([event.detail.group], event.detail.items, event.detail.resourceType);
             },
 
-            _onDeactivateDomainIdPSettings: function(event) {
-                this.$.appscoDeactivateIdPSettings.setDomain(event.detail.domain);
-                this.$.appscoDeactivateIdPSettings.open();
+            _removeResourceFromGroup: function(group, item, type) {
+                this.$.appscoResourceRemoveFromGroup.setGroup(group);
+                this.$.appscoResourceRemoveFromGroup.setItem(item);
+                this.$.appscoResourceRemoveFromGroup.setType(type);
+                this.$.appscoResourceRemoveFromGroup.open();
             },
 
-            _onIdPSettingsDeactivated: function(event) {
-                var domain = event.detail.domain;
+            _onRemoveCompanyRoleFromGroup: function(event) {
+                this._removeResourceFromGroup(event.detail.group, event.detail.role, 'account');
+            },
 
-                this.$.appscoCompanyPage.modifyDomain(domain);
-                this._notify('IdP settings for ' + domain.domain + ' domain was successfully deactivated.');
+            _onRemoveCompanyContactFromGroup: function(event) {
+                this._removeResourceFromGroup(event.detail.group, event.detail.contact, 'contact');
+            },
+
+            _onResourceRemovedFromGroup: function(event) {
+                var item = event.detail.item,
+                    group = event.detail.group,
+                    resourceType = event.detail.resourceType;
+
+                if (this.$.appscoGroupsPage.$) {
+                    this.$.appscoGroupsPage.removeGroupItems(group, [item], resourceType);
+                }
+
+                if (this.$.appscoManageGroupPage.$) {
+                    this.$.appscoManageGroupPage.removeGroupItems(group, [item], resourceType);
+                }
+
+                switch (resourceType) {
+                    case 'resource':
+
+                        this._notify(item.title + ' was successfully removed from ' + group.name + ' group.');
+
+                        this._modifyCompanyApplications([item]);
+                        this._reloadCompanyHomePageApplications();
+                        this._reloadHomePageApplications();
+                        this._notifyAccountLog();
+                        this._notifyReloadApplications();
+                        this._notifyReloadAccounts();
+
+                        break;
+
+                    case 'account':
+
+                        this._notify(item.account.display_name + ' was successfully removed from ' + group.name + ' group.');
+
+                        if (this.$.appscoDirectoryPage.$) {
+                            this.$.appscoDirectoryPage.modifyAccounts([item]);
+                        }
+
+                        for (var i = 0; i < length; i++) {
+                            if (item.account.email === this.account.email) {
+                                this._reloadHomePageApplications();
+                                this._reloadCompanyHomePageApplications();
+                                break;
+                            }
+                        }
+
+                        this._notifyAccountLog();
+                        this._notifyReloadApplications();
+                        this._notifyReloadAccounts();
+
+                        break;
+
+                    case 'contact':
+
+                        this._notify(item.account.display_name + ' was successfully removed from ' + group.name + ' group.');
+
+                        if (this.$.appscoContactsPage.$) {
+                            this.$.appscoContactsPage.modifyContacts([item]);
+                            this.$.appscoContactsPage.removeSelectedContacts([item]);
+                        }
+
+                        break;
+
+                    default:
+                        return false;
+                }
             },
             /**
-             * Company page END
+             * Groups page END
              */
 
             /**
@@ -4682,180 +4900,6 @@
                             'Content-Type': 'application/x-www-form-urlencoded'
                         }
                     });
-                }
-            },
-
-            _shareToGroup: function(items, type) {
-
-                if (items.length > 0) {
-                    this.$.appscoShareToGroupDialog.setItems(items);
-                    this.$.appscoShareToGroupDialog.setType(type);
-                    this.$.appscoShareToGroupDialog.open();
-                }
-            },
-
-            _onShareResourcesToGroup: function() {
-                var selectedResources = this.$.appscoApplicationsPage.getSelectedApplications();
-
-                this._shareToGroup(selectedResources, 'resource');
-            },
-
-            _onAddGroupsToCompanyRoles: function() {
-                var selectedRoles = this.$.appscoDirectoryPage.getSelectedAccounts();
-
-                this._shareToGroup(selectedRoles, 'account');
-            },
-
-            _onGroupsAddedToResources: function(event) {
-                var groups = event.detail.groups,
-                    items = event.detail.items,
-                    length = items.length,
-                    oneItem = (length === 1),
-                    resourceType = event.detail.resourceType;
-
-                if (this.$.appscoManageGroupPage.$) {
-                    this.$.appscoManageGroupPage.addGroupItems(groups, items, resourceType);
-                }
-
-                if (this.$.appscoGroupsPage.$) {
-                    this.$.appscoGroupsPage.recalculateTotals(groups);
-                }
-
-                switch (resourceType) {
-                    case 'resource':
-
-                        if (oneItem) {
-                            this._companyApplication = items[0];
-                        }
-
-                        this._notify('Selected resources were successfully shared to groups.');
-                        this._modifyCompanyApplications(items);
-                        this._reloadCompanyHomePageApplications();
-                        this._reloadHomePageApplications();
-                        this._notifyAccountLog();
-                        this._notifyReloadApplications();
-                        this._notifyReloadAccounts();
-
-                        break;
-
-                    case 'account':
-
-                        if (oneItem) {
-                            this._role = items[0];
-                        }
-
-                        if (this.$.appscoDirectoryPage.$) {
-                            this.$.appscoDirectoryPage.modifyAccounts(items);
-                        }
-
-                        for (var i = 0; i < length; i++) {
-                            if (items[i].account.email === this.account.email) {
-                                this._reloadHomePageApplications();
-                                this._reloadCompanyHomePageApplications();
-                                this._reloadContactHomePageApplications();
-                                break;
-                            }
-                        }
-
-                        this._notify('Selected accounts were successfully added to groups.');
-                        this._notifyAccountLog();
-                        this._notifyReloadApplications();
-                        this._notifyReloadAccounts();
-
-                        break;
-
-                    case 'contact':
-
-                        this._notify('Selected contacts were successfully added to groups.');
-
-                        if (this.$.appscoContactsPage.$) {
-                            this.$.appscoContactsPage.modifyContacts(items);
-                        }
-
-                        break;
-
-                    default:
-                        return false;
-                }
-            },
-
-            _removeResourceFromGroup: function(group, item, type) {
-                this.$.appscoResourceRemoveFromGroup.setGroup(group);
-                this.$.appscoResourceRemoveFromGroup.setItem(item);
-                this.$.appscoResourceRemoveFromGroup.setType(type);
-                this.$.appscoResourceRemoveFromGroup.open();
-            },
-
-            _onRemoveCompanyRoleFromGroup: function(event) {
-                this._removeResourceFromGroup(event.detail.group, event.detail.role, 'account');
-            },
-
-            _onRemoveCompanyContactFromGroup: function(event) {
-                this._removeResourceFromGroup(event.detail.group, event.detail.contact, 'contact');
-            },
-
-            _onResourceRemovedFromGroup: function(event) {
-                var item = event.detail.item,
-                    group = event.detail.group,
-                    resourceType = event.detail.resourceType;
-
-                if (this.$.appscoGroupsPage.$) {
-                    this.$.appscoGroupsPage.removeGroupItems(group, [item], resourceType);
-                }
-
-                if (this.$.appscoManageGroupPage.$) {
-                    this.$.appscoManageGroupPage.removeGroupItems(group, [item], resourceType);
-                }
-
-                switch (resourceType) {
-                    case 'resource':
-
-                        this._notify(item.title + ' was successfully removed from ' + group.name + ' group.');
-
-                        this._modifyCompanyApplications([item]);
-                        this._reloadCompanyHomePageApplications();
-                        this._reloadHomePageApplications();
-                        this._notifyAccountLog();
-                        this._notifyReloadApplications();
-                        this._notifyReloadAccounts();
-
-                        break;
-
-                    case 'account':
-
-                        this._notify(item.account.display_name + ' was successfully removed from ' + group.name + ' group.');
-
-                        if (this.$.appscoDirectoryPage.$) {
-                            this.$.appscoDirectoryPage.modifyAccounts([item]);
-                        }
-
-                        for (var i = 0; i < length; i++) {
-                            if (item.account.email === this.account.email) {
-                                this._reloadHomePageApplications();
-                                this._reloadCompanyHomePageApplications();
-                                break;
-                            }
-                        }
-
-                        this._notifyAccountLog();
-                        this._notifyReloadApplications();
-                        this._notifyReloadAccounts();
-
-                        break;
-
-                    case 'contact':
-
-                        this._notify(item.account.display_name + ' was successfully removed from ' + group.name + ' group.');
-
-                        if (this.$.appscoContactsPage.$) {
-                            this.$.appscoContactsPage.modifyContacts([item]);
-                            this.$.appscoContactsPage.removeSelectedContacts([item]);
-                        }
-
-                        break;
-
-                    default:
-                        return false;
                 }
             },
 

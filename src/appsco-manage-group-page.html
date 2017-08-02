@@ -12,6 +12,7 @@
 <link rel="import" href="components/group/appsco-manage-group-components-page.html">
 <link rel="import" href="components/group/appsco-group-roles-page.html">
 <link rel="import" href="components/group/appsco-group-contacts-page.html">
+<link rel="import" href="components/group/appsco-group-resources-page.html">
 
 <dom-module id="appsco-manage-group-page">
     <template>
@@ -148,11 +149,13 @@
                                 group="[[ group ]]"
                                 group-roles-api="[[ _groupRolesApi ]]"
                                 group-contacts-api="[[ _groupContactsApi ]]"
+                                group-resources-api="[[ _groupResourcesApi ]]"
                                 authorization-token="[[ authorizationToken ]]"
                                 on-group-roles-loaded="_onPageLoaded"
                                 on-empty-load="_onPageLoaded"
                                 on-manage-group-roles="_onManageGroupRoles"
-                                on-manage-group-contacts="_onManageGroupContacts">
+                                on-manage-group-contacts="_onManageGroupContacts"
+                                on-manage-group-resources="_onManageGroupResources">
                         </appsco-manage-group-components-page>
 
                         <appsco-group-roles-page
@@ -172,6 +175,15 @@
                                 authorization-token="[[ authorizationToken ]]"
                                 on-back="_onResourceBack">
                         </appsco-group-contacts-page>
+
+                        <appsco-group-resources-page
+                                id="appscoGroupResourcesPage"
+                                name="appsco-group-resources-page"
+                                group="[[ group ]]"
+                                group-resources-api="[[ _groupResourcesApi ]]"
+                                authorization-token="[[ authorizationToken ]]"
+                                on-back="_onResourceBack">
+                        </appsco-group-resources-page>
 
                     </neon-animated-pages>
                 </div>
@@ -231,6 +243,11 @@
                 _groupContactsApi: {
                     type: String,
                     computed: '_computeGroupContactApi(group)'
+                },
+
+                _groupResourcesApi: {
+                    type: String,
+                    computed: '_computeGroupResourcesApi(group)'
                 },
 
                 /**
@@ -372,6 +389,10 @@
                 return group.meta ? group.meta.contacts + '?extended=1' : '';
             },
 
+            _computeGroupResourcesApi: function(group) {
+                return group.meta ? group.meta.applications + '?extended=1' : '';
+            },
+
             _onPageLoaded: function() {
                 this.pageLoaded = true;
                 this.fire('page-loaded');
@@ -389,6 +410,10 @@
                 this._selected = 'appsco-group-contacts-page';
             },
 
+            _showGroupResourcesPage: function() {
+                this._selected = 'appsco-group-resources-page';
+            },
+
             _addGroupRoles: function(roles) {
                 this.$.appscoManageGroupComponentsPage.addGroupRoles(roles);
                 this.$.appscoGroupRolesPage.addGroupRoles(roles);
@@ -404,16 +429,26 @@
                 this.$.appscoGroupContactsPage.addGroupContacts(contacts);
             },
 
+            _addGroupResources: function(resources) {
+                this.$.appscoManageGroupComponentsPage.addGroupResources(resources);
+                this.$.appscoGroupResourcesPage.addGroupResources(resources);
+            },
+
             _removeGroupContacts: function(contacts) {
                 this.$.appscoManageGroupComponentsPage.removeGroupContacts(contacts);
                 this.$.appscoGroupContactsPage.removeGroupContacts(contacts);
+            },
+
+            _removeGroupResources: function(resources) {
+                this.$.appscoManageGroupComponentsPage.removeGroupResources(resources);
+                this.$.appscoGroupResourcesPage.removeGroupResources(resources);
             },
 
             _addGroupItems: function(items, resourceType) {
 
                 switch (resourceType) {
                     case 'resource':
-
+                        this._addGroupResources(items);
                         break;
 
                     case 'account':
@@ -433,7 +468,7 @@
 
                 switch (resourceType) {
                     case 'resource':
-
+                        this._removeGroupResources(items);
                         break;
 
                     case 'account':
@@ -507,6 +542,10 @@
 
             _onManageGroupContacts: function() {
                 this._showGroupContactsPage();
+            },
+
+            _onManageGroupResources: function() {
+                this._showGroupResourcesPage();
             }
 
         });

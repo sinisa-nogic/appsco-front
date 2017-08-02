@@ -9,8 +9,8 @@
 <link rel="import" href="../../../bower_components/neon-animation/animations/fade-out-animation.html">
 <link rel="import" href="../../../bower_components/iron-a11y-keys/iron-a11y-keys.html">
 
-<link rel="import" href="../components/appsco-loader.html">
-<link rel="import" href="../components/appsco-form-error.html">
+<link rel="import" href="../../components/components/appsco-loader.html">
+<link rel="import" href="../../components/components/appsco-form-error.html">
 
 <dom-module id="appsco-company-add-group">
     <template>
@@ -37,9 +37,7 @@
             :host .buttons paper-button[dialog-dismiss] {
                 @apply(--paper-dialog-dismiss-button);
             }
-            .emphasized {
-                font-weight: 500;
-            }
+
         </style>
 
         <paper-dialog id="dialog"
@@ -49,7 +47,7 @@
                       on-iron-overlay-opened="_onDialogOpened"
                       on-iron-overlay-closed="_onDialogClosed">
 
-            <h2>Add group</h2>
+            <h2>Create group</h2>
 
             <appsco-loader active="[[ _loader ]]"
                            loader-alt="Appsco is processing request"
@@ -60,17 +58,21 @@
 
                     <appsco-form-error message="[[ _error ]]"></appsco-form-error>
 
-                    <form is="iron-form"
+                    <p>
+                        Enter the group name and click "ADD" to create it.
+                    </p>
+
+                     <form is="iron-form"
                           id="form"
                           method="POST"
-                          action="[[ addGroupApi ]]"
+                          action="[[ companyGroupsApi ]]"
                           headers="[[ _headers ]]"
                           on-iron-form-error="_onFormError"
                           on-iron-form-response="_onFormResponse">
 
                         <div class="input-container">
                             <paper-input id="groupName"
-                                         label="Name"
+                                         label="New group name"
                                          name="company_group[name]"
                                          required
                                          auto-validate
@@ -106,9 +108,16 @@
                     type: String
                 },
 
-                addGroupApi: {
+                companyGroupsApi: {
                     type: String,
                     value: ''
+                },
+
+                apiErrors: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    }
                 },
 
                 /**
@@ -239,7 +248,7 @@
              * @private
              */
             _onFormError: function(event) {
-                this._showError(event.detail.request.response.message);
+                this._showError(this.apiErrors.getError(event.detail.request.response.code));
                 this._hideLoader();
             },
 

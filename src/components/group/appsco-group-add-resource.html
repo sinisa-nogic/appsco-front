@@ -12,20 +12,22 @@
 <link rel="import" href="../components/appsco-loader.html">
 <link rel="import" href="../components/appsco-form-error.html">
 <link rel="import" href="../components/appsco-search.html">
-<link rel="import" href="appsco-group-card.html">
+<link rel="import" href="../application/appsco-account-card.html">
+<link rel="import" href="../application/appsco-application-card.html">
 
 <!--
-`appsco-resource-add-groups`
-Provides functionality of adding resource item to groups.
+`appsco-group-add-resource`
+Provides functionality of adding resource items to group.
 
-    <appsco-resource-add-groups items="[]"
-                                authorization-token="" 
-                                groups-api=""
-                                size=""></appsco-resource-add-groups>
+    <appsco-group-add-resource group="{}"
+                               groups-api=""
+                               authorization-token=""
+                               resource-type=""
+                               size=""></appsco-group-add-resource>
 
 -->
 
-<dom-module id="appsco-resource-add-groups">
+<dom-module id="appsco-group-add-resource">
     <template>
         <style>
             :host {
@@ -50,28 +52,31 @@ Provides functionality of adding resource item to groups.
             .dialog-container {
                 padding-bottom: 20px;
             }
-            .group-list {
+            .item-list {
                 @apply(--layout-horizontal);
                 @apply(--layout-wrap);
                 padding: 2px;
                 margin-right: -8px;
             }
-            appsco-group-card {
+            appsco-account-card, appsco-application-card {
                 margin-right: 6px;
                 margin-bottom: 6px;
             }
-            .selected-group {
+            .selected-item {
                 --group-card: {
                     padding-right: 10px;
                     width: 136px;
                 };
             }
             :host .message {
+                @apply(--paper-font-body2);
                 margin: 0;
                 color: var(--secondary-text-color);
                 font-style: italic;
-                @apply(--paper-font-body2);
                 @apply(--info-message);
+            }
+            :host .message:first-letter {
+                text-transform: capitalize;
             }
             :host .buttons paper-button {
                 @apply(--paper-dialog-button);
@@ -81,12 +86,6 @@ Provides functionality of adding resource item to groups.
             }
             :host .buttons paper-button[dialog-dismiss] {
                 @apply(--paper-dialog-dismiss-button);
-            }
-            .link-button {
-                padding: 0;
-                margin: 0 0 0 5px;
-                min-width: initial;
-                @apply(--link-button);
             }
         </style>
 
@@ -107,43 +106,57 @@ Provides functionality of adding resource item to groups.
             <paper-dialog-scrollable>
                 <div class="dialog-container">
 
-                    <div class="group-list">
+                    <div class="item-list">
 
                         <appsco-form-error message="[[ _error ]]"></appsco-form-error>
 
-                        <template is="dom-repeat" items="[[ _selectedGroups ]]">
-                            <appsco-group-card class="selected-group"
-                                               group="[[ item ]]"
-                                               remove-action
-                                               on-selected="_onRemoveSelectedGroup"></appsco-group-card>
+                        <template is="dom-repeat" items="[[ _selectedItems ]]">
+
+                            <template is="dom-if" if="[[ _isResourceTypeApplication ]]">
+                                <appsco-application-card class="selected-item"
+                                                         application="[[ item ]]"
+                                                         remove-action
+                                                         on-selected="_onRemoveSelectedItem"></appsco-application-card>
+                            </template>
+
+                            <template is="dom-if" if="[[ !_isResourceTypeApplication ]]">
+                                <appsco-account-card class="selected-item"
+                                                     account="[[ item.account ]]"
+                                                     remove-action
+                                                     on-selected="_onRemoveSelectedItem"></appsco-account-card>
+                            </template>
+
                         </template>
                     </div>
 
                     <appsco-search id="appscoSearch"
-                                   label="Search groups"
+                                   label="Search [[ _resourceTypeTitle ]]s"
                                    float-label
                                    on-search="_onSearch"
                                    on-search-clear="_onSearchClear"></appsco-search>
 
-                    <div class="group-list">
+                    <div class="item-list">
 
                         <appsco-loader active="[[ _searchLoader ]]"
                                        loader-alt="Appsco is processing request"
                                        multi-color></appsco-loader>
 
                         <template is="dom-repeat" items="[[ _searchList ]]">
-                            <appsco-group-card group="[[ item ]]"
-                                                 on-selected="_onGroupSelected"></appsco-group-card>
+                            <template is="dom-if" if="[[ _isResourceTypeApplication ]]">
+                                <appsco-application-card application="[[ item ]]"
+                                                         on-selected="_onItemSelected"></appsco-application-card>
+                            </template>
+
+                            <template is="dom-if" if="[[ !_isResourceTypeApplication ]]">
+                                <appsco-account-card account="[[ item.account ]]"
+                                                     on-selected="_onItemSelected"></appsco-account-card>
+                            </template>
+
                         </template>
 
                         <template is="dom-if" if="[[ _message ]]">
                             <p class="message">
                                 [[ _message ]]
-
-                                <template is="dom-if" if="[[ _showCreateNewGroupAction ]]">
-                                    <paper-button class="link-button"
-                                                  on-tap="_onCreateGroupAction">Create it</paper-button>
-                                </template>
                             </p>
                         </template>
                     </div>
@@ -152,7 +165,7 @@ Provides functionality of adding resource item to groups.
 
             <div class="buttons">
                 <paper-button dialog-dismiss>Cancel</paper-button>
-                <paper-button autofocus on-tap="_onAddGroupsToResourcesAction">[[ _computedButtonTitle ]]</paper-button>
+                <paper-button autofocus on-tap="_onAddResourcesToGroupAction">Add</paper-button>
             </div>
         </paper-dialog>
 
@@ -160,14 +173,11 @@ Provides functionality of adding resource item to groups.
     <script>
         Polymer({
 
-            is: 'appsco-resource-add-groups',
+            is: 'appsco-group-add-resource',
 
             properties: {
 
-                /**
-                 * Items to add groups to.
-                 */
-                items: {
+                group: {
                     type: Array,
                     value: function() {
                         return [];
@@ -175,17 +185,17 @@ Provides functionality of adding resource item to groups.
                 },
 
                 /**
-                 * Authorization token.
+                 * Groups API link
                  */
-                authorizationToken: {
+                listItemsApi: {
                     type: String,
                     value: ''
                 },
 
                 /**
-                 * Groups API link
+                 * Authorization token.
                  */
-                groupsApi: {
+                authorizationToken: {
                     type: String,
                     value: ''
                 },
@@ -203,24 +213,39 @@ Provides functionality of adding resource item to groups.
                     value: ''
                 },
 
+                /**
+                 * Items to add to groups.
+                 */
+                _items: {
+                    type: Array,
+                    value: function() {
+                        return [];
+                    }
+                },
+
                 _headers: {
                     type: Object,
                     computed: '_computeHeaders(authorizationToken)'
                 },
 
-                _computedTitle: {
+                _resourceTypeTitle: {
                     type: String,
-                    computed: '_computeTitle(resourceType)'
+                    computed: '_computeResourceTypeTitle(resourceType)'
                 },
 
-                _computedButtonTitle: {
+                _isResourceTypeApplication: {
                     type: String,
-                    computed: '_computeButtonTitle(resourceType)'
+                    computed: '_computeResourceTypeApplication(resourceType)'
+                },
+
+                _computedTitle: {
+                    type: String,
+                    computed: '_computeTitle(_resourceTypeTitle)'
                 },
 
                 /**
-                 * Applications which are shared.
-                 * This array is populated from sharing API response.
+                 * Items which are added to group.
+                 * This array is populated from adding API response.
                  */
                 _responseItems: {
                     type: Array,
@@ -240,28 +265,21 @@ Provides functionality of adding resource item to groups.
                 },
 
                 /**
-                 * Message to display if there is no search result.
+                 * Selected items from search list.
                  */
-                _message: {
-                    type: String
-                },
-
-                /**
-                 * Indicates if Create New Group action should be displayed.
-                 */
-                _showCreateNewGroupAction: {
-                    type: Boolean,
-                    value: false
-                },
-
-                /**
-                 * Selected groups from search list.
-                 */
-                _selectedGroups: {
+                _selectedItems: {
                     type: Array,
                     value: function() {
                         return [];
                     }
+                },
+
+                /**
+                 * Message to display if there is no search result.
+                 */
+                _message: {
+                    type: String,
+                    value: ''
                 },
 
                 /**
@@ -286,37 +304,6 @@ Provides functionality of adding resource item to groups.
                 }
             },
 
-            _computeHeaders: function (authorizationToken) {
-                return {
-                    'Authorization': 'token ' + authorizationToken,
-                    'Content-Type': 'application/x-www-form-urlencoded'
-                }
-            },
-
-            _computeTitle: function (resourceType) {
-                  switch (resourceType) {
-                      case 'resource':
-                          return 'Share to group';
-                      case 'account':
-                      case 'contact':
-                          return 'Add to group';
-                      default:
-                          return '';
-                  }
-            },
-
-            _computeButtonTitle: function (resourceType) {
-                switch (resourceType) {
-                    case 'resource':
-                        return 'Share';
-                    case 'account':
-                    case 'contact':
-                        return 'Add';
-                    default:
-                        return '';
-                }
-            },
-
             /**
              * Toggles dialog.
              */
@@ -338,12 +325,35 @@ Provides functionality of adding resource item to groups.
                 this.$.dialog.close();
             },
 
-            setItems: function(items) {
-                this.items = items;
+            setGroup: function(group) {
+                this.group = group;
             },
 
             setType: function(type) {
                 this.resourceType = type;
+            },
+
+            setListItemsApi: function(listApi) {
+                this.listItemsApi = listApi;
+            },
+
+            _computeHeaders: function (authorizationToken) {
+                return {
+                    'Authorization': 'token ' + authorizationToken,
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                }
+            },
+
+            _computeTitle: function(resourceType) {
+                return resourceType ? ('Add ' + resourceType + 's to group') : 'Add to group';
+            },
+
+            _computeResourceTypeTitle: function(resourceType) {
+                return ('account' === resourceType) ? 'user' : resourceType;
+            },
+
+            _computeResourceTypeApplication: function(resourceType) {
+                return 'resource' === resourceType;
             },
 
             /**
@@ -362,7 +372,7 @@ Provides functionality of adding resource item to groups.
              */
             _onDialogClosed: function() {
                 this._reset();
-                this.set('_selectedGroups', []);
+                this.set('_selectedItems', []);
             },
             
             _showDialogLoader: function() {
@@ -389,6 +399,44 @@ Provides functionality of adding resource item to groups.
                 this._error = '';
             },
 
+            _reset: function() {
+                this.$.appscoSearch.reset();
+                this.set('_searchList', []);
+                this._hideSearchLoader();
+                this._hideDialogLoader();
+                this._hideError();
+                this._message = '';
+            },
+
+            _handleSearchItemsResult: function(result, term) {
+                var items;
+
+                switch (this.resourceType) {
+                    case 'resource':
+                        items = result.applications;
+                        break;
+
+                    case 'account':
+                        items = result.company_roles;
+                        break;
+
+                    case 'contact':
+                        items = result.contacts;
+                        break;
+
+                    default:
+                        items = [];
+                }
+
+                if (items && items.length > 0) {
+                    this.set('_searchList', items);
+                }
+                else {
+                    this.set('_searchList', []);
+                    this._message = this._resourceTypeTitle + ' with name \'' + decodeURIComponent(term) + '\' does not exist.';
+                }
+            },
+
             /**
              * Gets groups by term.
              *
@@ -402,11 +450,9 @@ Provides functionality of adding resource item to groups.
                 this._showSearchLoader();
                 this._message = '';
                 this._hideError();
-                this._showCreateNewGroupAction = false;
 
                 if (searchLength === 0) {
                     this._message = '';
-                    this._showCreateNewGroupAction = false;
                     this._hideSearchLoader();
                     this.set('_searchList', []);
                     return false;
@@ -420,27 +466,18 @@ Provides functionality of adding resource item to groups.
                 }
 
                 var request = document.createElement('iron-request'),
-                    url = this.groupsApi + '?extended=1&limit=' + this.size + '&term=' + searchValue;
-
-                this._message = '';
-
-                var options = {
-                    url: url,
-                    method: 'GET',
-                    handleAs: 'json',
-                    headers: this._headers
-                };
+                    url = this.listItemsApi + '?extended=1&limit=' + this.size + '&term=' + searchValue,
+                    options = {
+                        url: url,
+                        method: 'GET',
+                        handleAs: 'json',
+                        headers: this._headers
+                    };
 
                 request.send(options).then(function() {
-                    var groups = request.response.company_groups;
 
-                    if (groups && groups.length > 0) {
-                        this.set('_searchList', groups);
-                    }
-                    else {
-                        this.set('_searchList', []);
-                        this._message = 'Group with name \'' + decodeURIComponent(searchValue) + '\' does not exist.';
-                        this._showCreateNewGroupAction = true;
+                    if (200 === request.status) {
+                        this._handleSearchItemsResult(request.response, searchValue);
                     }
 
                     this._hideSearchLoader();
@@ -451,77 +488,62 @@ Provides functionality of adding resource item to groups.
                 this._reset();
             },
 
-            _onCreateGroupAction: function() {
-                var name = this.$.appscoSearch.getValue(),
-                    request = document.createElement('iron-request'),
-                    url = this.groupsApi,
-                    options = {
-                        url: url,
-                        method: 'POST',
-                        handleAs: 'json',
-                        headers: this._headers,
-                        body: 'company_group[name]=' + encodeURIComponent(name)
-                    };
-                
-                this._showDialogLoader();
-
-                request.send(options).then(function() {
-                    var group = request.response;
-
-                    if (group && group.alias) {
-                        this.push('_selectedGroups', group);
-                        this._message = '';
-                    }
-
-                    this._showCreateNewGroupAction = false;
-                    this._hideDialogLoader();
-
-                    this.fire('group-added', {
-                        group: group
-                    });
-                    
-                }.bind(this), function() {
-                    this._hideDialogLoader();
-                    this._showError('Group with name \'' + name + '\' could not be created.');
-                }.bind(this));
-            },
-
             /**
              * Called after group has been selected from search list.
              *
              * @param {Object} event
              * @private
              */
-            _onGroupSelected: function(event) {
+            _onItemSelected: function(event) {
                 this._hideError();
-                this.push('_selectedGroups', event.model.item);
+                this.push('_selectedItems', event.model.item);
                 this.splice('_searchList', this._searchList.indexOf(event.model.item), 1);
             },
 
-            _onRemoveSelectedGroup: function(event) {
+            _onRemoveSelectedItem: function(event) {
                 this.push('_searchList', event.model.item);
-                this.splice('_selectedGroups', this._selectedGroups.indexOf(event.model.item), 1);
+                this.splice('_selectedItems', this._selectedItems.indexOf(event.model.item), 1);
             },
 
-            _addGroupsToResource: function(item) {
+            _onAddActionFinished: function() {
+
+                if (this._responseItems.length > 0) {
+
+                    /**
+                     * Fired when groups have been added to items.
+                     *
+                     * @event groups-added-to-resources
+                     */
+                    this.fire('resources-added-to-group', {
+                        group: this.group,
+                        items: this._responseItems,
+                        resourceType: this.resourceType
+                    });
+
+                    this.close();
+                }
+                else {
+                    this._showError('There was an error while adding ' + this.resourceType + 's to group. Please close the dialog and try again.');
+                }
+
+                this.set('_selectedItems', []);
+                this.set('_responseItems', []);
+                this._hideDialogLoader();
+            },
+
+            _addResourceToGroup: function(item) {
 
                 return new Promise(function(resolve, reject) {
-                    var groups = this._selectedGroups,
-                        length = groups.length - 1,
-                        request = document.createElement('iron-request'),
+                    var request = document.createElement('iron-request'),
                         options = {
                             url: item.self + '/groups',
                             method: 'POST',
                             handleAs: 'json',
                             headers: this._headers
                         },
-                        body = '';
+                        body;
 
-                    for (var i = 0; i <= length; i++) {
-                        var next = (i === length) ? '' : '&';
-                        body += 'groups[]=' + encodeURIComponent(groups[i].meta.self) + next;
-                    }
-
+                    body = this.group.meta ? 'groups[]=' + encodeURIComponent(this.group.meta.self) : '';
                     options.body = body;
 
                     request.send(options).then(function() {
@@ -534,9 +556,6 @@ Provides functionality of adding resource item to groups.
                                     break;
 
                                 case 'account':
-                                    resolve(request.response);
-                                    break;
-
                                 case 'contact':
                                     resolve(request.response);
                                     break;
@@ -545,46 +564,20 @@ Provides functionality of adding resource item to groups.
                     }.bind(this), function() {
 
                         if (404 === request.status) {
-                            reject('There was an error while sharing resources to groups. Not all ' + this.resourceType + 's were shared to groups.');
+                            reject('There was an error while adding resources to group. Not all ' + this.resourceType + 's were added to group.');
                         }
                     }.bind(this));
                 }.bind(this));
             },
 
-            _onAddActionFinished: function() {
+            _onAddResourcesToGroupAction: function() {
 
-                if (this._responseItems.length > 0) {
-
-                    /**
-                     * Fired when groups have been added to items.
-                     *
-                     * @event groups-added-to-resources
-                     */
-                    this.fire('groups-added-to-resources', {
-                        groups: this._selectedGroups,
-                        items: this._responseItems,
-                        resourceType: this.resourceType
-                    });
-
-                    this.close();
-                }
-                else {
-                    this._showError('There was an error while sharing ' + this.resourceType + 's to selected groups. Please close the dialog and try again.');
-                }
-
-                this.set('_selectedGroups', []);
-                this.set('_responseItems', []);
-                this._hideDialogLoader();
-            },
-
-            _onAddGroupsToResourcesAction: function() {
-
-                if (0 === this._selectedGroups.length) {
-                    this._showError('Please add at least one group to share ' + this.resourceType + 's to.');
+                if (0 === this._selectedItems.length) {
+                    this._showError('Please add at least one ' + this.resourceType + ' to add to group.');
                     return false;
                 }
 
-                var items = this.items,
+                var items = this._selectedItems,
                     length = items.length;
 
                 this._requests = length;
@@ -597,7 +590,7 @@ Provides functionality of adding resource item to groups.
 
                     (function(me) {
 
-                        me._addGroupsToResource(item).then(function(item) {
+                        me._addResourceToGroup(item).then(function(item) {
                             me.push('_responseItems', item);
                             me._requests--;
 
@@ -615,15 +608,6 @@ Provides functionality of adding resource item to groups.
 
                     })(this);
                 }
-            },
-
-            _reset: function() {
-                this.$.appscoSearch.reset();
-                this.set('_searchList', []);
-                this._hideSearchLoader();
-                this._hideDialogLoader();
-                this._hideError();
-                this._message = '';
             }
         });
     </script>

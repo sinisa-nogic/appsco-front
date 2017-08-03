@@ -166,33 +166,23 @@
                 }
             },
 
-            _onDownloadCertificate: function(event) {
-                event.stopPropagation();
-                var link = document.createElement('a');
-                var blob = new Blob([this.idpMetadata.cert.cert], {'type':'application/x-pem-file'});
-                link.href = window.URL.createObjectURL(blob);
-                link.download = 'certificate.pem';
+            _downloadData: function(url) {
+                var link = document.createElement("a");
+                link.href = url;
+                link.style.display = 'none';
+                document.body.appendChild(link);
                 link.click();
+                document.body.removeChild(link);
             },
 
-            /**
-             * "download" parameter only works with relative links, so to make it work
-             * url for XML received from server is stripped from origin if it is
-             * the same origin client app is running on. If it is not - original link is
-             * used in which case filename cannot be hinted.
-             *
-             * @param event
-             * @private
-             */
+            _onDownloadCertificate: function(event) {
+                event.preventDefault();
+                this._downloadData(this.idpMetadata.certificateUrl);
+            },
+
             _onDownloadMetadataXml: function(event) {
-                event.stopPropagation();
-                var link = document.createElement("a");
-                link.href = this.idpMetadata.metadataUrl;
-                if (window.location.origin == link.origin) {
-                    link.href = link.pathname;
-                }
-                link.download = 'IdP-Metadata.xml';
-                link.click();
+                event.preventDefault();
+                this._downloadData(this.idpMetadata.metadataUrl + '?download=1');
             }
         });
     </script>

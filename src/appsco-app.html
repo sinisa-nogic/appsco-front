@@ -74,7 +74,7 @@
 <link rel="import" href="applications/appsco-manage-resource-page-actions.html">
 <link rel="import" href="billing/appsco-billing-page-actions.html">
 
-<link rel="import" href="groups/appsco-groups-page-actions.html">
+<link rel="import" href="components/group/appsco-groups-page-actions.html">
 
 <link rel="import" href="directory/appsco-directory-page-actions.html">
 <link rel="import" href="directory/appsco-manage-account-page-actions.html">
@@ -838,6 +838,7 @@
                             authorization-token="[[ authorizationToken ]]"
                             groups-api="[[ _companyGroupsApi ]]"
                             on-edit-company-group="_onEditCompanyGroupAction"
+                            on-info-edit-group="_onEditCompanyGroupAction"
                     ></appsco-groups-page>
 
 
@@ -3568,6 +3569,12 @@
                 }
             },
 
+            _reloadCompanyContacts: function() {
+                if (this.$.appscoContactsPage.$) {
+                    this.$.appscoContactsPage.reloadContacts();
+                }
+            },
+
             _reloadCompanyInvitations: function() {
                 if (this.$.appscoDirectoryPage.$) {
                     this.$.appscoDirectoryPage.reloadInvitations();
@@ -4287,6 +4294,10 @@
                 if (this.$.appscoGroupsPage.$) {
                     this.$.appscoGroupsPage.removeGroup(group);
                 }
+
+                this._reloadCompanyApplications();
+                this._reloadCompanyAccounts();
+                this._reloadCompanyContacts();
             },
 
             _shareToGroup: function(items, type) {
@@ -4313,10 +4324,6 @@
             _handleResourcesAddedToGroupResponse: function(groups, items, resourceType) {
                 var length = items.length,
                     oneItem = (length === 1);
-
-                if (this.$.appscoGroupsPage.$) {
-                    this.$.appscoGroupsPage.removeGroupItems(group, [item], resourceType);
-                }
 
                 if (this.$.appscoManageGroupPage.$) {
                     this.$.appscoManageGroupPage.addGroupItems(groups, items, resourceType);
@@ -4713,6 +4720,7 @@
                     case 'company':
                     case 'company-account':
                     case 'contact-home':
+                    case 'groups':
 
                         if (fromPage.$) {
                             fromPage.resetPage();
@@ -4757,6 +4765,14 @@
 
                         if (toPage.$) {
                             toPage.reloadStatistics();
+                        }
+
+                        break;
+
+                    case 'groups':
+
+                        if (toPage.$) {
+                            toPage.setDefaultGroup();
                         }
 
                         break;

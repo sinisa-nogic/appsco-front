@@ -49,7 +49,7 @@ Custom property | Description | Default
             }
             appsco-company-group-item {
                 width: 100%;
-                margin: 0 0 5px 0;
+                margin: 0 0 10px 0;
                 @apply(--appsco-company-group-item);
             }
             .groups-container {
@@ -137,7 +137,8 @@ Custom property | Description | Default
                                                    group="{{ item }}"
                                                    authorization-token="[[ authorizationToken ]]"
                                                    preview="[[ preview ]]"
-                                                   selectable="[[ selectable ]]"></appsco-company-group-item>
+                                                   selectable="[[ selectable ]]"
+                                                   on-group-selected="_onGroupSelectedAction"></appsco-company-group-item>
 
                     </template>
                 </div>
@@ -410,11 +411,11 @@ Custom property | Description | Default
                              * Fired when groups are loaded
                              *
                              * @event loaded
-                             * @param {Object} labels[]
+                             * @param {Array} groups[]
                              */
-                            //this.fire('loaded', {
-                            //    labels: groups
-                            //});
+                            this.fire('loaded', {
+                                groups: groups
+                            });
                         }
 
                     }.bind(this), (index + 1) * 30 );
@@ -422,7 +423,7 @@ Custom property | Description | Default
                 }.bind(this));
             },
 
-            _onGroupSelected: function(event) {
+            _onGroupSelectedAction: function(event) {
                 var group = event.detail.group,
                     groups = JSON.parse(JSON.stringify(this._groups)),
                     length = groups.length,
@@ -432,7 +433,7 @@ Custom property | Description | Default
                 for (var i = 0; i < length; i++) {
                     var currentGroup = groups[i];
 
-                    if (currentGroup.alias === group.alias) {
+                    if (currentGroup.alias === group.alias && group.selected) {
                         groups[i].selected = group.selected;
                     }
                     else {
@@ -443,7 +444,7 @@ Custom property | Description | Default
                 for (var j = 0; j < allLength; j++) {
                     var currentGroup = allGroups[j];
 
-                    if (currentGroup.alias === group.alias) {
+                    if (currentGroup.alias === group.alias && group.selected) {
                         allGroups[j].selected = group.selected;
                     }
                     else {
@@ -596,7 +597,6 @@ Custom property | Description | Default
             },
 
             search: function(term) {
-
                 this._groupsEmpty = false;
 
                 if (term.length < 3) {
@@ -748,9 +748,11 @@ Custom property | Description | Default
             },
 
             filterByTerm: function(term) {
+                var length = this._allGroups.length;
+
                 this._filterTerm = term;
 
-                if (0 === this._allGroups.length) {
+                if (0 === length) {
                     this._handleEmptyLoad();
                     return false;
                 }
@@ -764,17 +766,32 @@ Custom property | Description | Default
                 }
 
                 this._searchGroups(term).then(function(groups) {
+                    var groupsLength = groups.length;
+
                     this._hideLoadMoreAction();
                     this.set('_groups', []);
 
                     if (groups.length > 0) {
                         this._message = '';
 
-                        groups.forEach(function(group, index) {
-                            this.push('_groups', group);
+                        groups.forEach(function(elem, index) {
 
-                            if (index === (groups.length - 1)) {
+                            for (var i = 0; i < length; i++) {
+                                var group = this._allGroups[i];
 
+                                if (elem.alias === group.alias) {
+                                    this.push('_groups', group);
+                                    break;
+                                }
+                                else {
+
+                                    if (i === length - 1) {
+                                        this.push('_groups', elem);
+                                    }
+                                }
+                            }
+
+                            if (index === (groupsLength - 1)) {
                                 this._hideProgressBar();
                                 this.fire('filter-done');
                             }

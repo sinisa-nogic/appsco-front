@@ -21,35 +21,55 @@
             :host {
                 display: block;
 
-                --resource-width: 318px;
                 --info-width: 318px;
 
                 --groups-progress-bar: {
                     display: none;
                 };
+
+                --group-role-initials-background-color: var(--body-background-color-darker);
+                --group-contact-initials-background-color: var(--body-background-color-darker);
             }
-            :host .resource-header {
-                border-bottom: 1px solid var(--divider-color);
-            }
-            :host div[resource] {
-                height: 100%;
-                overflow: auto;
-            }
-            :host div[resource] > *, :host div[info] > * {
+            :host div[info] > * {
                 padding: 10px;
                 box-sizing: border-box;
             }
             :host div[content] > * {
                 padding: 0 10px 10px 10px;
             }
-            div[resource] > .resource-content {
-                padding-top: 20px;
-            }
             :host div[info] {
                 height: 100%;
             }
             .groups-container {
                 margin-top: 10px;
+            }
+            appsco-company-group-image {
+                --group-image-preview: {
+                    width: 32px;
+                    height: 32px;
+                    margin-right: 5px;
+                };
+
+                --group-image-background-color: var(--body-background-color-darker);
+            }
+            :host div[info] .group-info {
+                border-bottom: 1px solid var(--divider-color);
+                height: 50px;
+            }
+            :host .group-info .group-name {
+                @apply(--paper-font-subhead);
+                font-size: 18px;
+            }
+            :host div[info] .info-actions {
+                padding: 0;
+                position: absolute;
+                bottom: 0;
+                left: 0;
+                right: 0;
+            }
+            :host .edit-button {
+                @apply(--primary-button);
+                border-radius: 0;
             }
             :host .flex-horizontal {
                 @apply(--layout-horizontal);
@@ -62,11 +82,9 @@
                 @apply(--layout-flex);
             }
             :host([tablet-screen]) {
-                --resource-width: 250px;
                 --info-width: 250px;
             }
             :host([mobile-screen]) {
-                --resource-width: 100%;
                 --info-width: 100%;
             }
             :host([screen992]) {
@@ -84,15 +102,6 @@
                     width: 140px;
                 };
             }
-            :host div[info] .group-info {
-                border-bottom: 1px solid var(--divider-color);
-                height: 50px;
-            }
-            :host .group-info .group-name {
-                margin-left: 7px;
-                font-weight: normal;
-                font-size: 12px;
-            }
         </style>
 
         <iron-media-query query="(max-width: 992px)" query-matches="{{ screen992 }}"></iron-media-query>
@@ -100,7 +109,6 @@
         <iron-media-query query="(max-width: 600px)" query-matches="{{ mobileScreen }}"></iron-media-query>
 
         <appsco-content id="appscoContent">
-            <div class="flex-vertical" resource></div>
 
             <div content>
                 <div class="groups-container">
@@ -110,6 +118,8 @@
                                            size="100"
                                            hide-total
                                            selectable
+                                           on-loaded="_onGroupsLoaded"
+                                           on-empty-load="_onGroupsEmptyLoad"
                                            on-group-selected="_onGroupSelected"></appsco-company-groups>
                 </div>
             </div>
@@ -119,18 +129,7 @@
                 <div class="group-info flex-horizontal">
                     <appsco-company-group-image group="[[ group ]]" preview></appsco-company-group-image>
                     <span class="group-name flex">[[ group.name ]]</span>
-                    <span class="group-name">Group</span>
                 </div>
-
-                <appsco-company-group-roles
-                        id="appscoCompanyGroupRoles"
-                        authorization-token="[[ authorizationToken ]]"
-                        list-api="[[ _groupRolesApi ]]"
-                        size="10"
-                        load-more
-                        preview
-                        auto-load-active
-                        ></appsco-company-group-roles>
 
                 <appsco-company-group-resources
                         id="appscoCompanyGroupResources"
@@ -142,6 +141,16 @@
                         preview
                 ></appsco-company-group-resources>
 
+                <appsco-company-group-roles
+                        id="appscoCompanyGroupRoles"
+                        authorization-token="[[ authorizationToken ]]"
+                        list-api="[[ _groupRolesApi ]]"
+                        size="10"
+                        load-more
+                        preview
+                        auto-load-active
+                ></appsco-company-group-roles>
+
                 <appsco-company-group-contacts
                         id="appscoCompanyGroupContacts"
                         authorization-token="[[ authorizationToken ]]"
@@ -151,6 +160,14 @@
                         load-more
                         preview
                 ></appsco-company-group-contacts>
+
+                <div class="info-actions flex-horizontal">
+                    <paper-button
+                            class="edit-button flex"
+                            on-tap="_onGroupInfoEdit">
+                        Edit
+                    </paper-button>
+                </div>
             </div>
         </appsco-content>
 
@@ -280,6 +297,7 @@
             ],
 
             toggleInfo: function() {
+
                 if (this._groupExists) {
                     this.$.appscoContent.toggleSection('info');
                     this._infoShown = !this._infoShown;
@@ -293,6 +311,10 @@
 
             toggleResource: function() {
                 this.$.appscoContent.toggleSection('resource');
+            },
+
+            setDefaultGroup: function() {
+                this._setDefaultGroup();
             },
 
             _setDefaultGroup: function() {
@@ -332,7 +354,7 @@
             },
 
             resetGroupSelection: function() {
-                this.$.appscoCompanyGroups.reset();
+                this.$.appscoGroups.reset();
             },
 
             initializePage: function() {
@@ -345,18 +367,26 @@
                 this.hideInfo();
             },
 
+            _onGroupsLoaded: function() {
+                this._groupsLoaded = true;
+                this._setDefaultGroup();
+            },
+
+            _onGroupsEmptyLoad: function() {
+                this._groupsLoaded = true;
+            },
+
             _recalculateTotals: function(group) {
                 this.$.appscoGroups.recalculateTotals(group);
             },
 
             _resetPageActions: function() {
-                this._onSearchGroupsClear();
-                this.$.appscoCompanyGroups.selectAllGroups(false);
                 this.fire('reset-page-actions');
             },
 
             _resetPageLists: function(page) {
                 this.filterByTerm('', page);
+                this.$.appscoGroups.selectAllGroups(false);
             },
 
             _computeAccount: function(group) {
@@ -424,6 +454,12 @@
                     }
 
                 }.bind(this), 10);
+            },
+
+            _onGroupInfoEdit: function() {
+                this.fire('info-edit-group', {
+                    group: this.group
+                });
             },
 
             _showInfo: function() {

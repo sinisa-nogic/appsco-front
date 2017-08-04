@@ -54,6 +54,7 @@ Update company idP settings component.
             }
             paper-textarea {
                 height: 200px;
+                margin-top: 20px;
                 overflow-x: hidden;
                 overflow-y: auto;
                 outline: none;
@@ -123,11 +124,17 @@ Update company idP settings component.
                                attr-for-selected="value"
                                selected="{{ _idPConfig.integrationId }}">
                     <template is="dom-repeat" items="[[ _integrations ]]">
-                        <paper-item value="[[ item.id ]]">[[ item.name ]]</paper-item>
+                        <paper-item value="[[ item.id ]]" name="[[ item.name ]]">[[ item.name ]]</paper-item>
                     </template>
                 </paper-listbox>
             </paper-dropdown-menu>
 
+            <paper-input id="appId" label="App ID"
+                         name="saml_idp_config[appId]"
+                         value="{{ _idPConfig.idpAppId }}"
+                         required
+                         auto-validate
+                         error-message="Please type in app ID."></paper-input>
 
             <p class="info info-inner">Upload IdP metadata XML file:</p>
 
@@ -160,14 +167,6 @@ Update company idP settings component.
                          required
                          auto-validate
                          error-message="Please type in entity ID."></paper-input>
-
-            <paper-input label="App ID"
-                         name="saml_idp_config[appId]"
-                         value="{{ _idPConfig.idpEntityId }}"
-                         pattern="https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)"
-                         required
-                         auto-validate
-                         error-message="Please type in app ID."></paper-input>
 
             <paper-textarea label="Certificate"
                             name="saml_idp_config[cert]"
@@ -285,8 +284,16 @@ Update company idP settings component.
                 }
             },
 
+            observers: [
+                '_onIdPConfigIntegrationChanged(_idPConfig.integrationId)'
+            ],
+
             ready: function() {
                 this.$.uploadIdpMetadataField.set('i18n.addFiles.many', 'Upload file');
+            },
+
+            attached: function() {
+                this._clearForm();
             },
 
             setup: function() {
@@ -294,7 +301,7 @@ Update company idP settings component.
             },
 
             reset: function() {
-                this.$.form.reset();
+                this._clearForm();
                 this._hideError();
                 this._hideLoader();
                 this.$.uploadIdpMetadataField.files = [];
@@ -333,6 +340,10 @@ Update company idP settings component.
                 this._error = '';
             },
 
+            _clearForm: function() {
+                this.$.form.reset();
+            },
+
             _onDomainChanged: function(domain) {
 
                 if (domain && domain.samlIdpConfig) {
@@ -340,47 +351,34 @@ Update company idP settings component.
                 }
             },
 
+            _onIdPConfigIntegrationChanged: function(config) {
+
+                if (config) {
+                    this._hideError();
+                }
+            },
+
             _onUploadIdPMetadataBefore: function(event) {
-                var file = event.detail.file,
-                    uploadField = this.$.uploadIdpMetadataField,
-                    fileIndex = uploadField.files.indexOf(file);
+                var integration = this.$.integrationList.selectedItem;
 
                 // Prevent AJAX request
                 event.preventDefault();
+
+                if (!integration) {
+                    this._showError('Please select integration type before upload metadata XML file.');
+                    this.$.uploadIdpMetadataField.files = [];
+                    return false;
+                }
+
+                var file = event.detail.file,
+                    uploadField = this.$.uploadIdpMetadataField,
+                    fileIndex = uploadField.files.indexOf(file);
 
                 // Update UI
                 uploadField.set(['files', fileIndex, 'progress'], 100);
                 uploadField.set(['files', fileIndex, 'complete'], true);
 
                 this._parseIdPMetadataXMLFile(file);
-            },
-
-            _fillIdPMetadataFromXML: function(xmlDocument) {
-                var idpSSODescriptor = xmlDocument.getElementsByTagName('IDPSSODescriptor')[0],
-                    keyDescriptor = idpSSODescriptor.childNodes[0],
-                    certificate = keyDescriptor.getElementsByTagName('X509Certificate')[0].childNodes[0].nodeValue,
-                    singleSignOnServices = idpSSODescriptor.getElementsByTagName('SingleSignOnService'),
-                    length = singleSignOnServices.length,
-                    signInURL,
-                    config = JSON.parse(JSON.stringify(this._idPConfig));
-
-                for (var i = 0; i < length; i++) {
-                    var singleSignOnService = singleSignOnServices[i];
-
-                    if (-1 != singleSignOnService.getAttribute('Binding').indexOf('HTTP-Redirect')) {
-                        signInURL = singleSignOnService.getAttribute('Location');
-                        break;
-                    }
-                }
-
-                config.idpSSOUrl = signInURL;
-                config.idpEntityId = signInURL;
-                config.cert = '-----BEGIN CERTIFICATE-----\n' +
-                                    certificate +
-                                    '\n-----END CERTIFICATE-----';
-
-                this.set('_idPConfig', {});
-                this.set('_idPConfig', config);
             },
 
             _parseIdPMetadataXMLFile: function(file) {
@@ -396,6 +394,41 @@ Update company idP settings component.
                 })(this);
 
                 reader.readAsText(file);
+            },
+
+            _fillIdPMetadataFromXML: function(xmlDocument) {
+                var idpEntityDescriptor = xmlDocument.getElementsByTagName('EntityDescriptor')[0],
+                    entityId = idpEntityDescriptor.getAttribute('entityID'),
+                    idpSSODescriptor = xmlDocument.getElementsByTagName('IDPSSODescriptor')[0],
+                    certificateDOM = idpSSODescriptor.getElementsByTagName('X509Certificate')[0],
+                    certificate = certificateDOM.childNodes[0].nodeValue,
+                    singleSignOnServices = idpSSODescriptor.getElementsByTagName('SingleSignOnService'),
+                    length = singleSignOnServices.length,
+                    signInURL;
+
+                for (var i = 0; i < length; i++) {
+                    var singleSignOnService = singleSignOnServices[i];
+
+                    if (-1 != singleSignOnService.getAttribute('Binding').indexOf('HTTP-Redirect')) {
+                        signInURL = singleSignOnService.getAttribute('Location');
+                        break;
+                    }
+                }
+
+                this._setIdPConfig(signInURL, entityId, certificate);
+            },
+
+            _setIdPConfig: function(signInURL, entityId, certificate) {
+                var config = JSON.parse(JSON.stringify(this._idPConfig));
+
+                config.idpSSOUrl = signInURL;
+                config.idpEntityId = entityId;
+                config.cert = '-----BEGIN CERTIFICATE-----\n' +
+                    certificate +
+                    '\n-----END CERTIFICATE-----';
+
+                this.set('_idPConfig', {});
+                this.set('_idPConfig', config);
             },
 
             _onIdPIntegrationsError: function() {

@@ -157,7 +157,8 @@
                                               application="[[ application ]]"
                                               authorization-token="[[ authorizationToken ]]"
                                               size="5"
-                                              preview></appsco-application-assignees>
+                                              preview
+                                              auto-load></appsco-application-assignees>
 
                 <div class="info">
                         Created by: [[ application.added_by.display_name ]]
@@ -196,6 +197,7 @@
                                 company-idp-saml-metadata-api="[[ companyIdpSamlMetadataApi ]]"
                                 groups-api="[[ _groupsApi ]]"
                                 authorization-token="[[ authorizationToken ]]"
+                                api-errors="[[ apiErrors ]]"
                                 on-application-settings="_onResourceSettings"
                                 on-all-assignees="_onAllAssignees"
                                 on-all-log="_onAllLog"
@@ -228,9 +230,11 @@
                                 name="appsco-application-assignees-page"
                                 application="{{ application }}"
                                 authorization-token="[[ authorizationToken ]]"
+                                api-errors="[[ apiErrors ]]"
                                 on-assignee-claims="_onAssigneeClaims"
                                 on-back="_onResourceBack"
                                 account="[[ account ]]"
+                                on-assignees-empty="_pageLoaded"
                                 on-assignees-loaded="_pageLoaded"
                         ></appsco-application-assignees-page>
 
@@ -598,6 +602,19 @@
 
             searchAssignees: function(term) {
                 this.$.appscoApplicationAssigneesPage.searchAssignees(term);
+            },
+
+            removeApplicationAssignee: function(application, assignee) {
+
+                if (application.alias === this.application.alias) {
+                    this._removeAssignee(assignee);
+                }
+            },
+
+            _removeAssignee: function(assignee) {
+                this.$.appscoApplicationAssignees.removeAssignee(assignee);
+                this.$.appscoManageApplicationComponentsPage.removeAssignee(assignee);
+                this.$.appscoApplicationAssigneesPage.removeAssignee(assignee);
             },
 
             _onAssigneeClaims: function(event) {

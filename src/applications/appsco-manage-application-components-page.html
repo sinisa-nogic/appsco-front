@@ -168,8 +168,10 @@
                     <appsco-application-assignees id="appscoApplicationAssignees"
                                                   application="[[ application ]]"
                                                   authorization-token="[[ authorizationToken ]]"
+                                                  api-errors="[[ apiErrors ]]"
                                                   size="5"
-                                                  preview></appsco-application-assignees>
+                                                  preview
+                                                  auto-load></appsco-application-assignees>
                 </div>
 
                 <div class="card-actions">
@@ -285,6 +287,13 @@
                     value: ''
                 },
 
+                apiErrors: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    }
+                },
+
                 /**
                  * Computed headers.
                  * It contains authorization token.
@@ -369,6 +378,18 @@
                 Polymer.NeonSharedElementAnimatableBehavior
             ],
 
+            load: function () {
+                this._loadGroups();
+            },
+
+            reloadAssignees: function() {
+                this.$.appscoApplicationAssignees.reload();
+            },
+
+            removeAssignee: function(assignee) {
+                this.$.appscoApplicationAssignees.removeAssignee(assignee);
+            },
+
             /**
              * Computes authorization headers.
              *
@@ -380,10 +401,6 @@
                 return {
                     'Authorization': 'token ' + authorizationToken
                 }
-            },
-
-            load: function () {
-                this._loadGroups();
             },
 
             _loadGroups: function() {
@@ -452,10 +469,6 @@
             _onManageGroups: function(event) {
                 this._setSharedElement(event.target);
                 this.fire('manage-groups');
-            },
-
-            reloadAssignees: function() {
-                this.$.appscoApplicationAssignees.reload();
             }
 
         });

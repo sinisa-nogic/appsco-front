@@ -8,12 +8,17 @@
 
 <link rel="import" href="appsco-application-assignee.html">
 
-
 <!--
 `appsco-application-assignees`
 Contains info about application assignees (accounts to whom app is shared).
 
-    <appsco-application-assignees application="{}">
+    <appsco-application-assignees application="{}"
+                                  authorization-token=""
+                                  size=""
+                                  api-errors="{}"
+                                  load-more
+                                  preview
+                                  auto-load>
     </appsco-application-assignees>
 
 @demo demo/company/appsco-application-assignees.html
@@ -23,22 +28,22 @@ Contains info about application assignees (accounts to whom app is shared).
     <template>
         <style>
             :host {
-            @apply(--layout-vertical);
-            @apply(--layout-center);
+                @apply(--layout-vertical);
+                @apply(--layout-center);
                 position: relative;
                 color: var(--primary-text-color);
             }
-            :host paper-progress {
-                width: 100%;
-            }
             :host .progress {
                 height: 6px;
+            }
+            :host paper-progress {
+                width: 100%;
             }
             :host .info-total {
                 margin-bottom: 10px;
             }
             :host .total {
-            @apply(--paper-font-caption);
+                @apply(--paper-font-caption);
                 opacity: 0.6;
             }
             :host .assignees {
@@ -62,38 +67,38 @@ Contains info about application assignees (accounts to whom app is shared).
                 width: 120px;
                 margin: 20px auto 0;
                 text-align: center;
-            @apply(--load-more-button);
+                @apply(--load-more-button);
             }
             :host .message {
                 width: 100%;
                 color: var(--secondary-text-color);
                 font-style: italic;
-            @apply(--paper-font-body2);
-            @apply(--info-message);
+                @apply(--paper-font-body2);
+                @apply(--info-message);
             }
             :host appsco-application-assignee {
                 width: 100%;
                 margin: 0 0 10px 0;
-            @apply(--appsco-application-assignee);
+                @apply(--appsco-application-assignee);
             }
             :host([preview]) {
-            @apply(--layout-flex-none);
+                @apply(--layout-flex-none);
                 display: block;
             }
             :host([preview]) appsco-application-assignee {
                 width: auto;
                 margin: 0 2px 0 0;
-            @apply(--appsco-application-assignee-preview);
+                @apply(--appsco-application-assignee-preview);
             }
         </style>
 
         <iron-ajax id="getAssigneesCall"
-                   url="[[ _computedAction ]]"
-                   headers="[[ _computedHeaders ]]"
+                   url="[[ _listApi ]]"
+                   headers="[[ _headers ]]"
                    method="GET"
                    handle-as="json"
-                   on-response="_handleResponse"
-                   on-error="_handleError">
+                   on-response="_onResponse"
+                   on-error="_onError">
         </iron-ajax>
 
         <div class="assignees">
@@ -124,9 +129,8 @@ Contains info about application assignees (accounts to whom app is shared).
         <template is="dom-if" if="[[ loadMore ]]">
             <div class="load-more-box" hidden$="[[ !_loadMore ]]">
                 <paper-progress id="loadMoreProgress" indeterminate></paper-progress>
-                <paper-button on-tap="_loadMoreAssignees"
-                              id="loadMore"
-                              class="load-more-button">Load More</paper-button>
+                <paper-button class="load-more-button"
+                              on-tap="_onLoadMoreAction">Load More</paper-button>
             </div>
         </template>
 
@@ -152,8 +156,7 @@ Contains info about application assignees (accounts to whom app is shared).
                     type: Object,
                     value: function() {
                         return {};
-                    },
-                    observer: '_onApplicationChanged'
+                    }
                 },
 
                 authorizationToken: {
@@ -187,31 +190,47 @@ Contains info about application assignees (accounts to whom app is shared).
                 },
 
                 /**
-                 * Next page of assignees to load.
+                 * Indicates if assignees should be loaded on API change or manually by calling 'load' method.
                  */
-                _nextPage: {
-                    type: Number,
-                    value: 1
+                autoLoad: {
+                    type: Boolean,
+                    value: false
+                },
+
+                apiErrors: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    }
                 },
 
                 /**
-                 * Computed action.
+                 * API link to load list from.
                  */
-                _computedAction: {
-                    type: String
+                _listApi: {
+                    type: String,
+                    computed: '_computeListApi(application, size)'
                 },
 
                 /**
                  * Computed headers.
                  */
-                _computedHeaders: {
+                _headers: {
                     type: Object,
-                    computed: "_computeHeaders(authorizationToken)"
+                    computed: '_computeHeaders(authorizationToken)'
                 },
 
-                _searchAssigneesApi: {
+                _searchListApi: {
                     type: String,
-                    computed: '_computeSearchAssigneesApi(application)'
+                    computed: '_computeSearchListApi(application)'
+                },
+
+                /**
+                 * Next page of assignees to load.
+                 */
+                _nextListPageApiUrl: {
+                    type: String,
+                    value: ''
                 },
 
                 /**
@@ -232,7 +251,8 @@ Contains info about application assignees (accounts to whom app is shared).
                 },
 
                 _totalAssignees: {
-                    type: Number
+                    type: Number,
+                    value: 0
                 },
 
                 _loadMore: {
@@ -240,35 +260,94 @@ Contains info about application assignees (accounts to whom app is shared).
                     value: false
                 },
 
-                /**
-                 * Message to display instead of subscribers.
-                 */
                 _message: {
-                    type: String
+                    type: String,
+                    value: ''
                 }
             },
 
-            attached: function() {
-                this._computedAction = this.application.meta ? this.application.meta.subscribers + '?page=1' + '&limit=' + this.size + '&extended=1' : '';
+            observers: [
+                '_onListApiChanged(_listApi, autoLoad)'
+            ],
+
+            load: function() {
+                this._clearList();
+                this._hideMessage();
+                this._showProgressBar();
+                this._generateNewRequest();
+            },
+
+            reload: function() {
                 this.load();
             },
 
-            _onApplicationChanged: function(application, applicationOld) {
+            removeAssignee: function(assignee) {
+                var assignees = this._assignees,
+                    length = assignees.length,
+                    allAssignees = this._allAssignees,
+                    allLength = allAssignees.length;
 
-                if (application && applicationOld && application.self != applicationOld.self) {
-                    this._computedAction = application.meta ? application.meta.subscribers + '?page=1' + '&limit=' + this.size + '&extended=1' : '';
-                    this.load();
+                for (var i = 0; i < length; i++) {
+
+                    if (assignee.alias === assignees[i].alias) {
+                        this.splice('_assignees', i, 1);
+                        break;
+                    }
+                }
+
+                for (var j = 0; j < allLength; j++) {
+
+                    if (assignee.alias === allAssignees[j].alias) {
+                        this.splice('_allAssignees', j, 1);
+                        break;
+                    }
+                }
+
+                this._totalAssignees--;
+                this._setLoadMoreAction();
+
+                if (0 === this._assignees.length) {
+                    this._handleEmptyLoad();
                 }
             },
 
-            /**
-             * Computes Get Assignees API.
-             *
-             * @param {Object} application
-             * @private
-             */
-            _computeAction: function() {
-                this._computedAction = this.application.meta ? this.application.meta.subscribers + '?page=' + this._nextPage + '&limit=' + this.size + '&extended=1' : '';
+            search: function(term) {
+
+                if (term.length < 3) {
+                    this._hideMessage();
+                    this.set('_assignees', JSON.parse(JSON.stringify(this._allAssignees)));
+                    this.fire('filter-done');
+                    this._setLoadMoreAction();
+                    return false;
+                }
+
+                this.set('_assignees', []);
+                this._hideMessage();
+                this._hideLoadMoreAction();
+
+                this._searchAssignees(term).then(function(assignees) {
+                    var length = assignees.length;
+
+                    if (length > 0) {
+                        assignees.forEach(function(assignee, index) {
+                            this.push('_assignees', assignee);
+
+                            if (index === (length - 1)) {
+                                this._hideProgressBar();
+                                this.fire('assignees-loaded');
+                            }
+
+                        }.bind(this));
+
+                    }
+                    else {
+                        this._showMessage('There are no assignees with asked term.');
+                        this.fire('assignees-empty');
+                    }
+
+                }.bind(this), function(message) {
+                    this._showMessage(message);
+                }.bind(this));
             },
 
             /**
@@ -284,8 +363,47 @@ Contains info about application assignees (accounts to whom app is shared).
                 }
             },
 
-            _computeSearchAssigneesApi: function(application) {
-                return application.meta ? application.meta.subscribers + '?page=1&limit=100&extended=1' : '';
+            _computeListApi: function(application, size) {
+
+                for (key in application) {
+                    return (application.meta && size) ? application.meta.subscribers + '?page=1' + '&limit=' + this.size + '&extended=1' : '';
+                }
+
+                return '';
+            },
+
+            _computeSearchListApi: function(application) {
+
+                for (key in application) {
+                    return application.meta ? application.meta.subscribers + '?page=1&limit=100&extended=1' : '';
+                }
+
+                return '';
+            },
+
+            _clearList: function() {
+                this.set('_assignees', []);
+                this.set('_allAssignees', []);
+                this._nextListPageApiUrl = '';
+                this._totalAssignees = 0;
+            },
+
+            _showMessage: function(message) {
+                this._message = message;
+            },
+
+            _hideMessage: function() {
+                this._message = '';
+            },
+
+            _showProgressBar: function() {
+                this.$.progress.hidden = false;
+            },
+
+            _hideProgressBar: function() {
+                setTimeout(function() {
+                    this.$.progress.hidden = true;
+                }.bind(this), 500);
             },
 
             _showLoadMoreAction: function() {
@@ -310,36 +428,25 @@ Contains info about application assignees (accounts to whom app is shared).
 
             },
 
-            /**
-             * Triggers ajax request in order to get notifications.
-             */
-            load: function() {
-                this.$.progress.hidden = false;
-                this.set('_assignees', []);
-                this.set('_allAssignees', []);
-                this._message = '';
-                this._nextPage = 1;
-                this._totalAssignees = 0;
-
-                this._abortPreviousRequest();
-                this.$.getAssigneesCall.generateRequest();
+            _setLoadMoreAction: function() {
+                (this.loadMore && this._allAssignees.length < this._totalAssignees) ?
+                    this._showLoadMoreAction() :
+                    this._hideLoadMoreAction();
             },
 
-            reload: function() {
-                this.load();
+            _setListApiRequestUrl: function(url) {
+                this.$.getAssigneesCall.url = url;
             },
 
-            _loadMoreAssignees: function() {
-                this._showLoadMoreProgressBar();
-                this._computeAction();
-
-                this._abortPreviousRequest();
-                this.$.getAssigneesCall.generateRequest();
+            _handleEmptyLoad: function() {
+                this._hideProgressBar();
+                this._hideLoadMoreProgressBar();
+                this.fire('assignees-empty');
             },
 
             /**
              * Aborts previous request in order to get only one and valid response (from next request)
-             * 
+             *
              * @private
              */
             _abortPreviousRequest: function() {
@@ -349,18 +456,31 @@ Contains info about application assignees (accounts to whom app is shared).
                 }
             },
 
+            _generateNewRequest: function() {
+                this._abortPreviousRequest();
+                this.$.getAssigneesCall.generateRequest();
+            },
+
+            _onLoadMoreAction: function() {
+                this._showLoadMoreProgressBar();
+                this._setListApiRequestUrl(this._nextListPageApiUrl);
+                this._generateNewRequest();
+            },
+
             /**
              * Handles error on get assignees API request.
              * @param {Object} event Event from error response.
              *
              * @private
              */
-            _handleError: function(event) {
+            _onError: function(event) {
+
                 if (!event.detail.request.aborted) {
-                    this._message = 'We couldn\'t load assignees at the moment. Please try again in a minute. If error continues contact us.';
+                    this._showMessage(this.apiErrors.getError(event.detail.request.response.code));
                 }
+
                 this._totalAssignees = 0;
-                this._handleEmpty();
+                this._handleEmptyLoad();
             },
 
             /**
@@ -369,152 +489,87 @@ Contains info about application assignees (accounts to whom app is shared).
              *
              * @private
              */
-            _handleResponse: function(event) {
+            _onResponse: function(event) {
                 var response = event.detail.response;
 
-                if (!response) {
-                    this._hideProgressBar();
-                    this._hideLoadMoreProgressBar();
-                    return false;
-                }
+                if (response && response.accounts) {
+                    var assignees = response.accounts,
+                        meta = response.meta;
 
-                var assignees = response.accounts,
-                        currentLength = this._assignees.length,
-                        total = response.meta.total;
+                    this._hideMessage();
 
-                if (!this._loadMore) {
-                    this.set('_assignees', []);
-                    this.set('_allAssignees', []);
-                }
+                    this._totalAssignees = meta.total;
+                    this._nextListPageApiUrl = meta.next + '&limit=' + this.size;
 
-                this._hideLoadMoreAction();
-
-                this._totalAssignees = total;
-
-                if (assignees && assignees.length > 0) {
-
-                    this._nextPage += 1;
-
-                    assignees.forEach(function(assignee, index) {
-
-                        setTimeout( function() {
-
-                            this.push('_assignees', assignee);
-                            this.push('_allAssignees', assignee);
-
-                            if (index === (assignees.length - 1)) {
-                                this._hideProgressBar();
-                                this._hideLoadMoreProgressBar();
-                                this._setLoadMoreAction();
-                                this.fire('assignees-loaded');
-                            }
-
-                        }.bind(this), (index + 1) * 30 );
-
-                    }.bind(this));
-
-                }
-                else if (assignees && !assignees.length) {
-
-                    if (!currentLength) {
-                        this._message = 'You haven\'t shared this resource to anyone yet.';
+                    if (0 === meta.total) {
+                        this._handleEmptyLoadLoad();
+                        return false;
                     }
 
-                    this._hideLoadMoreAction();
-                    this._handleEmpty();
-                }
-                else if (!currentLength) {
-                    this._message = 'We couldn\'t load assignees at the moment.';
-                    this._hideLoadMoreAction();
-                    this._handleEmpty();
+                    if (assignees && assignees.length > 0) {
+                        var assigneesCount = assignees.length - 1;
+
+                        assignees.forEach(function(el, index) {
+
+                            setTimeout( function() {
+
+                                this.push('_assignees', el);
+                                this.push('_allAssignees', el);
+
+                                if (index == assigneesCount) {
+                                    this._hideProgressBar();
+                                    this._hideLoadMoreProgressBar();
+                                    this._setLoadMoreAction();
+
+                                    this.fire('assignees-loaded', {
+                                        assignees: assignees
+                                    });
+                                }
+
+                            }.bind(this), (index + 1) * 30 );
+
+                        }.bind(this));
+
+                    }
+                    else {
+                        (assignees && !assignees.length) ?
+                            this._showMessage('You haven\'t shared this resource to anyone yet.') :
+                            this._showMessage('We couldn\'t load assignees at the moment. Please contact AppsCo support.');
+                        
+                        this._hideLoadMoreAction();
+                        this._handleEmptyLoad();
+                    }
                 }
             },
 
-            _setLoadMoreAction: function() {
-                this._allAssignees.length < this._totalAssignees ? this._showLoadMoreAction() : this._hideLoadMoreAction();
+            _onListApiChanged: function(api, auto) {
+
+                if (api && auto) {
+                    this.load();
+                }
             },
 
             _searchAssignees: function(term) {
 
                 return new Promise(function(resolve, reject) {
                     var request = document.createElement('iron-request'),
-                            options = {
-                                url: this._searchAssigneesApi + '&term=' + term,
-                                method: 'GET',
-                                handleAs: 'json',
-                                headers: this._computedHeaders
-                            };
+                        options = {
+                            url: this._searchListApi + '&term=' + term,
+                            method: 'GET',
+                            handleAs: 'json',
+                            headers: this._headers
+                        };
 
                     request.send(options).then(function() {
 
-                        if (request.response) {
+                        if (200 === request.status) {
                             resolve(request.response.accounts);
                         }
 
                     }, function() {
-
-                        if (request.response) {
-                            reject(request.response.message);
-                        }
-                        else {
-                            reject('There was an error in searching assignees with given term. Please contact AppsCo support.');
-                        }
+                        reject(this.apiErrors.getError(request.response.code));
                     });
                 }.bind(this));
-            },
-
-            search: function(term) {
-
-                if (term.length < 3) {
-                    this._message = '';
-                    this.set('_assignees', JSON.parse(JSON.stringify(this._allAssignees)));
-                    this.fire('filter-done');
-                    this._setLoadMoreAction();
-                    return false;
-                }
-
-                this._searchAssignees(term).then(function(assignees) {
-                    this._hideLoadMoreAction();
-                    this.set('_assignees', []);
-
-                    if (assignees.length > 0) {
-                        this._message = '';
-
-                        assignees.forEach(function(assignee, index) {
-                            this.push('_assignees', assignee);
-
-                            if (index === (assignees.length - 1)) {
-
-                                this._hideProgressBar();
-                                this.fire('assignees-loaded');
-                            }
-
-                        }.bind(this));
-
-                    }
-                    else {
-                        this._message = 'There are no assignees with asked term.';
-                    }
-
-                }.bind(this), function(message) {
-                    this.set('_assignees', []);
-                    this._hideLoadMoreAction();
-                    this._message = message;
-                }.bind(this));
-            },
-
-            _handleEmpty: function() {
-                this._hideProgressBar();
-                this._hideLoadMoreProgressBar();
-                this.fire('assignees-empty');
-            },
-
-            _hideProgressBar: function() {
-
-                setTimeout(function() {
-                    this.$.progress.hidden = true;
-                }.bind(this), 500);
-
             }
         });
     </script>

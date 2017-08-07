@@ -424,7 +424,7 @@ Used to update company resource - configuration fields and claims.
             reset: function() {
                 var resource = JSON.parse(JSON.stringify(this.resource));
 
-                if (this._resourceClaimsActiveForm.$) {
+                if (this._resourceClaimsActiveForm && this._resourceClaimsActiveForm.$) {
                     this._resourceClaimsActiveForm.reset();
                 }
 
@@ -447,11 +447,8 @@ Used to update company resource - configuration fields and claims.
                 this._claimTypeIndividual = (resource.self && ('individual' === resource.claim_type));
             },
 
-            _onAuthTypeChanged: function(type) {
-
-                if (type) {
-                    this.set('_resourceClaimsActiveForm', Polymer.dom(this.root).querySelector('[data-claims]'));
-                }
+            _onAuthTypeChanged: function() {
+                this.set('_resourceClaimsActiveForm', Polymer.dom(this.root).querySelector('[data-claims]'));
             },
 
             _computeHeaders: function(authorizationToken) {
@@ -538,11 +535,11 @@ Used to update company resource - configuration fields and claims.
 
             _onConfigurationFormResponse: function(event) {
 
-                if (this._claimTypeIndividual) {
-                    this._resourceSettingsSaved(event.detail.response);
+                if (this._resourceClaimsActiveForm) {
+                    this._submitClaimsForm();
                 }
                 else {
-                    this._submitClaimsForm();
+                    this._resourceSettingsSaved(event.detail.response);
                 }
             },
 
@@ -615,16 +612,16 @@ Used to update company resource - configuration fields and claims.
             _onSaveAction: function() {
                 this._hideError();
 
-                if (this._claimTypeIndividual) {
-                    this._submitConfigurationForm();
-                }
-                else {
+                if (this._resourceClaimsActiveForm) {
                     var claimsForm = this._resourceClaimsActiveForm,
                         claimsFormValid = claimsForm.isValid();
 
                     if (claimsFormValid) {
                         this._submitConfigurationForm();
                     }
+                }
+                else {
+                    this._submitConfigurationForm();
                 }
 
             },

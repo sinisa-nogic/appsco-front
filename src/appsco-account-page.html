@@ -246,11 +246,10 @@
                         <appsco-account-2fa-manage
                                 name="appsco-account-2fa-manage"
                                 account="{{ account }}"
-                                two-fa-api="[[ twoFaApi ]]"
                                 two-fa-codes-api="[[ twoFaCodesApi ]]"
                                 authorization-token="[[ authorizationToken ]]"
+                                api-errors="[[ apiErrors ]]"
                                 on-back="_onResourceBack"
-                                on-twofa-disabled="_onTwoFaDisabled"
                         ></appsco-account-2fa-manage>
 
                         <appsco-account-notifications-page
@@ -511,7 +510,6 @@
 
             listeners: {
                 'twofa-enabled': 'reloadLog',
-                'twofa-disabled': 'reloadLog',
                 'settings-saved': 'reloadLog',
                 'token-generated': 'reloadLog',
                 'password-changed': 'reloadLog',
@@ -526,6 +524,12 @@
                     this.updateStyles();
                 }
 
+            },
+
+            setupAfterTwoFaDisabled: function () {
+                this._showAccountComponentsPage();
+                this.$.appscoAccountComponentsPage.load2FaApi();
+                this.reloadLog();
             },
 
             _updateScreen: function(medium, tablet, mobile) {
@@ -594,11 +598,6 @@
             },
 
             _onTwoFaEnabled: function () {
-                this._showAccountComponentsPage();
-                this.$.appscoAccountComponentsPage.load2FaApi();
-            },
-
-            _onTwoFaDisabled: function () {
                 this._showAccountComponentsPage();
                 this.$.appscoAccountComponentsPage.load2FaApi();
             },

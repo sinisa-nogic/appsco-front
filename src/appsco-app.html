@@ -98,6 +98,7 @@
 <link rel="import" href="components/account/company/appsco-account-remove-orgunit.html">
 <link rel="import" href="components/account/company/appsco-account-remove-group.html">
 <link rel="import" href="components/account/company/appsco-account-remove.html">
+<link rel="import" href="account/appsco-account-disable-2fa.html">
 <link rel="import" href="components/contact/appsco-contact-remove-group.html">
 
 <link rel="import" href="auditlog/appsco-audit-log-page-actions.html">
@@ -1345,6 +1346,12 @@
                 api-errors="[[ _apiErrors ]]"
                 on-idp-settings-deactivated="_onIdPSettingsDeactivated"></appsco-deactivate-idp-settings>
 
+        <appsco-account-disable-2fa
+                id="appscoAccountDisableTwoFa"
+                two-fa-api="[[ api.twoFA ]]"
+                authorization-token="[[ authorizationToken ]]"
+                api-errors="[[ _apiErrors ]]"></appsco-account-disable-2fa>
+
         <template is="dom-if" if="[[ api.me ]]">
             <iron-ajax auto
                        id = "getAccountRequest"
@@ -1767,6 +1774,7 @@
                 'enable-advanced-settings': '_onEnableAccountAdvancedSettings',
                 'disable-advanced-settings': '_onDisableAccountAdvancedSettings',
                 'twofa-enabled': '_onTwoFaEnabled',
+                'disable-twofa': '_onDisableTwoFaAction',
                 'twofa-disabled': '_onTwoFaDisabled',
                 'revoke-authorized-application': '_onRevokeAuthorizedApplication',
                 'token-generated': '_onTokenGenerated'
@@ -2817,10 +2825,25 @@
                 this._notifyReloadAccounts();
             },
 
-            _onTwoFaDisabled: function() {
-                this._notify("Two-factor authentication disabled.");
+            _onDisableTwoFaAction: function() {
+                this.$.appscoAccountDisableTwoFa.open();
+            },
 
+            _setupAfterTwoFaDisabled: function() {
+
+                if (this.$.appscoAccountPage.$) {
+                    this.$.appscoAccountPage.setupAfterTwoFaDisabled();
+                }
+
+                if (this.$.appscoCompanyAccountPage.$) {
+                    this.$.appscoCompanyAccountPage.setupAfterTwoFaDisabled();
+                }
+            },
+
+            _onTwoFaDisabled: function() {
                 this._notifyReloadAccounts();
+                this._setupAfterTwoFaDisabled();
+                this._notify('Two-factor authentication disabled successfully.');
             },
 
             _onReloadAccountLog: function() {

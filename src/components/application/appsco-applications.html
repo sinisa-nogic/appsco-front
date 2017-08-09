@@ -288,6 +288,11 @@ Custom property | Description | Default
                     value: ''
                 },
 
+                _loaders: {
+                    type: Array,
+                    value: function() { return []; }
+                },
+
                 /**
                  * Search term.
                  */
@@ -316,13 +321,6 @@ Custom property | Description | Default
                                 }
                             }
                         }
-                    }
-                },
-
-                _iconsPushList: {
-                    type: Array,
-                    value: function() {
-                        return [];
                     }
                 }
             },
@@ -363,21 +361,13 @@ Custom property | Description | Default
 
             _loadApplications: function() {
                 if (this.account.personal_dashboard_allowed || this.isOnCompany == true) {
-                    var iconsPushList = this._iconsPushList;
-
-                    if (iconsPushList.length > 0) {
-                        for (var c in iconsPushList) {
-                            clearTimeout(iconsPushList[c]);
-                        }
-                    }
+                    this._clearApplications();
 
                     this.$$('#paperProgress').hidden = false;
                     this._loadMore = false;
 
                     this._currentUrl = this.applicationsApi + '?page=1&extended=1&limit=' + this.size;
-
-                    this.set('_applications', []);
-                    this.set('_allApplications', []);
+                    this._clearApplications();
                 }
             },
 
@@ -406,6 +396,19 @@ Custom property | Description | Default
                 this._hideProgressBar();
             },
 
+            _clearApplications: function() {
+                this._clearLoaders();
+                this.set('_allApplications', []);
+                this.set('_applications', []);
+            },
+
+            _clearLoaders: function() {
+                for (var idx in this._loaders) {
+                    clearTimeout(this._loaders[idx]);
+                }
+                this.set('_loaders', []);
+            },
+
             _onResponse: function(e) {
                 if (!e.detail.response) {
                     return false;
@@ -428,9 +431,10 @@ Custom property | Description | Default
                 this._applicationsEmpty = false;
                 this._message = '';
 
+                this._clearApplications();
                 icons.forEach(function(el, index) {
 
-                    var iconPushItem = setTimeout( function() {
+                    this._loaders.push(setTimeout( function() {
 
                         if (this.company) {
                             el.selected = false;
@@ -463,13 +467,9 @@ Custom property | Description | Default
                             if (this._filterOrgunit.selected) {
                                 this._filterApplicationsByOrgunit();
                             }
-
-                            this._iconsPushList = [];
                         }
 
-                    }.bind(this), (index + 1) * 30 );
-
-                    this._iconsPushList.push(iconPushItem);
+                    }.bind(this), (index + 1) * 30 ));
 
                 }.bind(this));
             },
@@ -611,10 +611,8 @@ Custom property | Description | Default
 
                 }
 
-                this.set('_applications', []);
+                this._clearApplications();
                 this.set('_applications', _applications);
-
-                this.set('_allApplications', []);
                 this.set('_allApplications', allApplications);
             },
 
@@ -950,8 +948,7 @@ Custom property | Description | Default
             loadResourcesForGroup: function(group) {
                 this._showProgressBar();
                 this._loadMore = false;
-                this.set('_applications', []);
-                this.set('_allApplications', []);
+                this._clearApplications();
                 this.set('_searchedApplications', []);
 
                 this._currentUrl = group.meta.applications + '?page=1&extended=1&limit=' + this.size;

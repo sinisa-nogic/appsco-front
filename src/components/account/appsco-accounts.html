@@ -282,6 +282,11 @@ Custom property | Description | Default
                     }
                 },
 
+                _loaders: {
+                    type: Array,
+                    value: function() { return []; }
+                },
+
                 /**
                  * Animation for loader appearance.
                  */
@@ -382,12 +387,27 @@ Custom property | Description | Default
                 this._hideLoadMoreProgressBar();
             },
 
+            clearAccounts: function() {
+                this._clearLoaders();
+                this.set('_allAccounts', []);
+                this.set('_accounts', []);
+            },
+
+            _clearLoaders: function() {
+                for (var idx in this._loaders) {
+                    clearTimeout(this._loaders[idx]);
+                }
+                this.set('_loaders', []);
+            },
+
+
             _onResponse: function(event) {
                 var response = event.detail.response,
                     companyRoles = response.company_roles.reverse(),
                     meta = response.meta,
                     accountsCount = companyRoles.length - 1,
-                    allLength = this._allAccounts.length;
+                    allLength = this._allAccounts.length,
+                    selected = [];
 
                 this._totalAccounts = meta.total;
                 this._next = meta.next + "&limit=" + this.size;
@@ -401,24 +421,21 @@ Custom property | Description | Default
                 this._accountsEmpty = false;
                 this._message = '';
 
+                for (var i = 0; i < allLength; i++) {
+                    if (this._allAccounts[i].selected) {
+                        selected.push(this._allAccounts[i].self);
+                    }
+                }
+
+                this.clearAccounts();
                 companyRoles.forEach(function (el, index) {
-
-                    for (var i = 0; i < allLength; i++) {
-
-                        if (el.self === this._allAccounts[i].self) {
-                            el.selected = this._allAccounts[i].selected;
-                            break;
-                        }
-                        else if (i === allLength - 1) {
-                            el.selected = false;
-                            this.push('_allAccounts', el);
-                        }
+                    if (selected.indexOf(el.self) > -1) {
+                        el.selected = true;
                     }
 
-                    setTimeout(function() {
-
+                    this._loaders.push(setTimeout(function() {
+                        this.push('_allAccounts', el);
                         this.push('_accounts', el);
-//                        this.push('_allAccounts', el);
 
                         if (index == accountsCount) {
 
@@ -445,7 +462,7 @@ Custom property | Description | Default
                             });
                         }
 
-                    }.bind(this), (index + 1) * 30);
+                    }.bind(this), (index + 1) * 30));
 
                 }.bind(this));
             },
@@ -614,10 +631,8 @@ Custom property | Description | Default
 
                 }
 
-                this.set('_accounts', []);
+                this.clearAccounts();
                 this.set('_accounts', _accounts);
-
-                this.set('_allAccounts', []);
                 this.set('_allAccounts', allAccounts);
             },
 
@@ -719,10 +734,8 @@ Custom property | Description | Default
 
                 }
 
-                this.set('_accounts', []);
+                this.clearAccounts();
                 this.set('_accounts', _accounts);
-
-                this.set('_allAccounts', []);
                 this.set('_allAccounts', allAccounts);
             },
 

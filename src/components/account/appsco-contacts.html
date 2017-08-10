@@ -219,6 +219,11 @@
                     value: ''
                 },
 
+                _loaders: {
+                    type: Array,
+                    value: function() { return []; }
+                },
+
                 /**
                  * Animation for loader appearance.
                  */
@@ -297,12 +302,26 @@
                 this._hideLoadMoreProgressBar();
             },
 
+            clearContacts: function() {
+                this._clearLoaders();
+                this.set('_allContacts', []);
+                this.set('_contacts', []);
+            },
+
+            _clearLoaders: function() {
+                for (var idx in this._loaders) {
+                    clearTimeout(this._loaders[idx]);
+                }
+                this.set('_loaders', []);
+            },
+
             _onResponse: function(event) {
                 var response = event.detail.response,
                     contacts = response.contacts,
                     meta = response.meta,
                     contactsCount = contacts.length - 1,
-                    allLength = this._allContacts.length;
+                    allLength = this._allContacts.length,
+                    selected = [];
 
                 this._totalContacts = meta.total;
                 this._next = meta.next + "&limit=" + this.size;
@@ -315,22 +334,22 @@
                 this._hasContacts = true;
                 this._message = '';
 
+                for (var i = 0; i < allLength; i++) {
+                    if (this._allContacts[i].selected) {
+                        selected.push(this._allContacts[i].self);
+                    }
+                }
+
+                this.clearContacts();
                 contacts.forEach(function(el, index) {
 
-                    for (var i = 0; i < allLength; i++) {
-
-                        if (el.self === this._allContacts[i].self) {
-                            el.selected = this._allContacts[i].selected;
-                            break;
-                        }
-                        else if (i === allLength - 1) {
-                            el.selected = false;
-                            this.push('_allContacts', el);
-                        }
+                    if (selected.indexOf(el.self) > -1) {
+                        el.selected = true;
                     }
 
-                    setTimeout( function() {
+                    this._loaders.push(setTimeout( function() {
                         this.push('_contacts', el);
+                        this.push('_allContacts', el);
 
                         if (index === contactsCount) {
 
@@ -357,7 +376,7 @@
                             });
                         }
 
-                    }.bind(this), (index + 1) * 30 );
+                    }.bind(this), (index + 1) * 30 ));
 
                 }.bind(this));
             },
@@ -427,10 +446,8 @@
 
                 }
 
-                this.set('_contacts', []);
+                this.clearContacts();
                 this.set('_contacts', _contacts);
-
-                this.set('_allContacts', []);
                 this.set('_allContacts', allContacts);
             },
 
@@ -508,10 +525,9 @@
                 for (var j = 0; j < _allLength; j++) {
                     _allContacts[j].selected = selected;
                 }
-                this.set('_contacts', []);
-                this.set('_contacts', _contacts);
 
-                this.set('_allContacts', []);
+                this.clearContacts();
+                this.set('_contacts', _contacts);
                 this.set('_allContacts', _allContacts);
             },
 

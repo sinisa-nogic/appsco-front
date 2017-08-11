@@ -30,6 +30,9 @@
             .page-close-action {
                 @apply(--page-close-action);
             }
+            .message {
+                @apply(--info-message);
+            }
             .emphasized {
                 font-weight: 500;
             }
@@ -43,18 +46,28 @@
                     on-tap="_onClosePageAction"></paper-icon-button>
 
             <div class="card-content">
-                <p>Enter information provided by the identity provider.</p>
-                <p>
-                    Please remember the following URL:
-                    <span class="emphasized">https://appsco.com/force/login</span>.
-                    As administrator you can use this URL to login with your AppsCo username and password
-                    in case there is an issue with the IdP login.
-                </p>
+                <template is="dom-if" if="[[ _showDomains ]]">
+                    <p>Enter information provided by the identity provider.</p>
+                    <p>
+                        Please remember the following URL:
+                        <span class="emphasized">https://appsco.com/force/login</span>.
+                        As administrator you can use this URL to login with your AppsCo username and password
+                        in case there is an issue with the IdP login.
+                    </p>
 
-                <appsco-company-idp-domains id="appscoCompanyIdPDomains"
-                                            domains-api="[[ domainsApi ]]"
-                                            authorization-token="[[ authorizationToken ]]"
-                                            size="100"></appsco-company-idp-domains>
+                    <appsco-company-idp-domains id="appscoCompanyIdPDomains"
+                                                domains-api="[[ domainsApi ]]"
+                                                authorization-token="[[ authorizationToken ]]"
+                                                size="100"
+                                                on-loaded="_onCompanyIdPDomainsLoaded"
+                                                on-empty-load="_onCompanyIdPDomainsEmptyLoad"></appsco-company-idp-domains>
+                </template>
+
+                <template is="dom-if" if="[[ _showMessage ]]">
+                    <p class="message">
+                        There are no verified domains. Only verified domains can be set up with external IDP functionality.
+                    </p>
+                </template>
             </div>
         </paper-card>
 
@@ -68,17 +81,42 @@
             properties: {
 
                 authorizationToken: {
-                    type: String
+                    type: String,
+                    value: ''
                 },
 
                 domainsApi: {
                     type: String,
                     value: ''
+                },
+
+                _showDomains: {
+                    type: Boolean,
+                    value: true
+                },
+
+                _showMessage: {
+                    type: Boolean,
+                    value: false
                 }
             },
 
+            reloadDomains: function() {
+                this.$$('#appscoCompanyIdPDomains').reloadDomains();
+            },
+
             modifyDomain: function(domain) {
-                this.$.appscoCompanyIdPDomains.modifyDomain(domain);
+                this.$$('#appscoCompanyIdPDomains').modifyDomain(domain);
+            },
+
+            _onCompanyIdPDomainsLoaded: function() {
+                this._showDomains = true;
+                this._showMessage = false;
+            },
+
+            _onCompanyIdPDomainsEmptyLoad: function() {
+                this._showDomains = false;
+                this._showMessage = true;
             },
 
             _onClosePageAction: function() {

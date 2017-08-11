@@ -142,10 +142,12 @@ Example:
                     <span class="info-value">[[ assignee.email ]]</span>
                 </div>
 
-                <div class="assignee-info assignee-security-info">
-                    <span class="info-label">Security</span>
-                    <span class="info-value">Score: [[ assignee.application_security.score ]]</span>
-                </div>
+                <template is="dom-if" if="[[ _securityScorePermission ]]">
+                    <div class="assignee-info assignee-security-info">
+                        <span class="info-label">Security</span>
+                        <span class="info-value">Score: [[ assignee.application_security.score ]]</span>
+                    </div>
+                </template>
 
                 <div class="actions">
                     <template is="dom-if" if="[[ _individualClaims ]]">
@@ -200,6 +202,11 @@ Example:
                     computed: '_computeIndividualClaims(application)'
                 },
 
+                _securityScorePermission: {
+                    type: Boolean,
+                    computed: '_computeSecurityScorePermission(application)'
+                },
+
                 /**
                  * Animation for loader appearance.
                  */
@@ -236,6 +243,10 @@ Example:
 
             _computeIndividualClaims: function(application) {
                 return application.claim_type === 'individual';
+            },
+
+            _computeSecurityScorePermission: function(application) {
+                return (-1 < ['unpw', 'item'].indexOf(application.auth_type));
             },
 
             _onAssigneeAction: function() {

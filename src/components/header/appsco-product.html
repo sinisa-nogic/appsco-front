@@ -325,7 +325,6 @@ Custom property | Description | Default
             setProduct: function(product) {
                 var products = JSON.parse(JSON.stringify(this._products)),
                     length = products.length;
-
                 this.set('_productToSelect', product);
 
                 if (length > 0) {
@@ -337,6 +336,10 @@ Custom property | Description | Default
                             // couldn't set proper selected value when '_selectedProduct' is changed
                             setTimeout(function() {
                                 this.set('_selectedProduct', products[i]);
+                                var productList = this.$$('#productList');
+                                var selected = productList.selected;
+                                productList.selected = undefined;
+                                productList.selected = selected;
                             }.bind(this), 30);
 
                             break;
@@ -450,6 +453,8 @@ Custom property | Description | Default
                         }
                     }
 
+                    products.sort(this._compareCompaniesByName);
+
                     this.set('_products', []);
                     this.set('_products', products);
 
@@ -463,6 +468,16 @@ Custom property | Description | Default
                     this.setProduct(this._productToSelect);
                 }
 
+            },
+
+            _compareCompaniesByName: function(companyA, companyB) {
+                if (!companyA.company || !companyB.company) {
+                    return -1;
+                } else {
+                    companyA = companyA.company.company.name.toLowerCase();
+                    companyB = companyB.company.company.name.toLowerCase();
+                    return companyA < companyB ? -1 : companyA > companyB ? 1 : 0;
+                }
             },
 
             _createNewBusinessProduct: function(company) {

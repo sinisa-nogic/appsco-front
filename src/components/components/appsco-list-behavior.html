@@ -1,0 +1,1220 @@
+<link rel="import" href="../../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../../bower_components/neon-animation/neon-animation-runner-behavior.html">
+<link rel="import" href="../../../bower_components/neon-animation/animations/cascaded-animation.html">
+<link rel="import" href="../../../bower_components/neon-animation/animations/slide-from-left-animation.html">
+
+<script>
+
+    /**
+     * @polymerBehavior
+     */
+    Polymer.AppscoListBehavior = {
+
+        properties: {
+
+            type: {
+                type: String,
+                value: ''
+            },
+
+            authorizationToken: {
+                type: String,
+                value: ''
+            },
+
+            listApi: {
+                type: String,
+                value: ''
+            },
+
+            size: {
+                type: Number,
+                value: 10
+            },
+
+            loadMore: {
+                type: Boolean,
+                value: false
+            },
+
+            apiErrors: {
+                type: Object,
+                value: function() {
+                    return {};
+                }
+            },
+
+            selectable: {
+                type: Boolean,
+                value: false
+            },
+
+            _headers: {
+                type: Object,
+                computed: '_computeHeaders(authorizationToken)'
+            },
+
+            _listApi: {
+                type: String,
+                computed: '_computeListApi(listApi, size)',
+                observer: '_onListApiChanged'
+            },
+
+            _nextListPageApi: {
+                type: String,
+                value: ''
+            },
+
+            _searchListApi: {
+                type: String,
+                computed: '_computeSearchListApi(listApi, _filterTerm)'
+            },
+
+            _loadMore: {
+                type: Boolean,
+                value: false
+            },
+
+            _listItems: {
+                type: Array,
+                value: function () {
+                    return [];
+                },
+                notify: true
+            },
+
+            _allListItems: {
+                type: Array,
+                value: function () {
+                    return [];
+                }
+            },
+
+            _searchedListItems: {
+                type: Array,
+                value: function () {
+                    return [];
+                }
+            },
+
+            _listEmpty: {
+                type: Boolean,
+                value: false
+            },
+
+            _message: {
+                type: String,
+                value: ''
+            },
+
+            _totalListItems: {
+                type: Number,
+                value: 0
+            },
+
+            _renderedIndex: {
+                type: Number,
+                value: -1
+            },
+
+            _filterTerm: {
+                type: String,
+                value: ''
+            },
+
+            _filterOrgunit: {
+                type: Object,
+                value: function() {
+                    return {};
+                }
+            },
+
+            _filterGroup: {
+                type: Object,
+                value: function() {
+                    return {};
+                }
+            },
+
+            _listLoaders: {
+                type: Array,
+                value: function() {
+                    return [];
+                }
+            },
+
+            animationConfig: {
+                value: function() {
+                    return {
+                        'entry': {
+                            name: 'cascaded-animation',
+                            animation: 'slide-from-left-animation',
+                            nodes: [],
+                            nodeDelay: 50,
+                            timing: {
+                                duration: 300
+                            }
+                        }
+                    }
+                }
+            }
+        },
+
+        behaviors: [
+            Polymer.NeonAnimationRunnerBehavior
+        ],
+
+        attached: function() {
+            this.fire('at-ev');
+        },
+
+        reset: function() {
+            this._hideMessage();
+            this.resetAllItems();
+            this._listEmpty = false;
+            this.set('_listItems', JSON.parse(JSON.stringify(this._allListItems)));
+            this.set('_searchedListItems', []);
+            this._filterTerm = '';
+            this._filterOrgunit = {};
+            this._filterGroup = {};
+        },
+
+        reloadItems: function() {
+            this._loadItems();
+        },
+
+        getFirstItem: function() {
+            return (0 < this._listItems.length) ? this._listItems[0] : {};
+        },
+
+        getAllItems: function() {
+            return this._listItems;
+        },
+
+        getFirstSelectedItem: function() {
+            var items = JSON.parse(JSON.stringify(this._listItems)),
+                length = items.length;
+
+            for (var i = 0; i < length; i++) {
+                if (items[i].selected) {
+                    return items[i];
+                }
+            }
+
+            return {};
+        },
+
+        getSelectedItems: function() {
+            var allListItems = JSON.parse(JSON.stringify(this._allListItems)),
+                allLength = allListItems.length,
+                selectedItems = [];
+
+            for (var i = 0; i < allLength; i++) {
+                if (allListItems[i].selected) {
+                    selectedItems.push(allListItems[i]);
+                }
+            }
+
+            return selectedItems;
+        },
+
+        getTotalCount: function() {
+            return this._totalItems;
+        },
+
+        addItems: function(items) {
+            var length = items.length,
+                currentItems = JSON.parse(JSON.stringify(this._listItems)),
+                allListItems = JSON.parse(JSON.stringify(this._allListItems)),
+                allLength = allListItems.length;
+
+            this._listEmpty = false;
+            this._renderedIndex = length - 1;
+            this._hideMessage();
+
+            for (var i = 0; i < length; i++) {
+                var item = items[i];
+
+                if (0 === allLength) {
+                    item.active = false;
+                    item.selected = false;
+                    currentItems.push(item);
+                    allListItems.push(item);
+                    this._totalItems++;
+                }
+                else {
+
+                    for (var j = 0; j < allLength; j++) {
+
+                        if (allListItems[j].self === item.self) {
+                            break;
+                        }
+                        else if (j === allLength - 1) {
+                            item.active = false;
+                            item.selected = false;
+                            currentItems.unshift(item);
+                            allListItems.unshift(item);
+                            this._totalItems++;
+                        }
+
+                    }
+                }
+            }
+
+            this.set('_listItems', []);
+            this.set('_listItems', currentItems);
+
+            this.set('_allListItems', []);
+            this.set('_allListItems', allListItems);
+        },
+
+        modifyItems: function(items) {
+            var currentItems = JSON.parse(JSON.stringify(this._listItems)),
+                length = currentItems.length,
+                allListItems = JSON.parse(JSON.stringify(this._allListItems)),
+                allLength = allListItems.length,
+                lengthModify = items.length;
+
+            for (var i = 0; i < lengthModify; i++) {
+                var item = items[i];
+
+                for (var j = 0; j < length; j++) {
+                    if (item.self === currentItems[j].self) {
+                        currentItems[j] = item;
+                        break;
+                    }
+                }
+
+                for (var k = 0; k < allLength; k++) {
+                    if (item.self === allListItems[k].self) {
+                        item.active = allListItems[k].active;
+                        item.selected = allListItems[k].selected;
+                        allListItems[k] = item;
+                        break;
+                    }
+                }
+
+            }
+
+            this.set('_listItems', []);
+            this.set('_listItems', currentItems);
+
+            this.set('_allListItems', []);
+            this.set('_allListItems', allListItems);
+        },
+
+        removeItems: function(items) {
+            var currentItems = JSON.parse(JSON.stringify(this._listItems)),
+                length = currentItems.length,
+                allListItems = JSON.parse(JSON.stringify(this._allListItems)),
+                allLength = allListItems.length,
+                lengthModify = items.length;
+
+            for (var i = 0; i < lengthModify; i++) {
+                var item = items[i];
+
+                for (var j = 0; j < length; j++) {
+                    if (item.self === currentItems[j].self) {
+                        currentItems.splice(j, 1);
+                        j--;
+                        break;
+                    }
+                }
+
+                for (var k = 0; k < allLength; k++) {
+                    if (item.self === allListItems[k].self) {
+                        allListItems.splice(k, 1);
+                        k--;
+                        break;
+                    }
+                }
+
+                this._totalItems--;
+
+            }
+
+
+            this.set('_listItems', []);
+            this.set('_listItems', currentItems);
+
+            this.set('_allListItems', []);
+            this.set('_allListItems', allListItems);
+
+            this.fire('items-removed', {
+                items: items
+            });
+
+            if (0 === this._listItems.length) {
+                this._showMessage('You have removed all ' + this.type + 's from company.');
+                this._handleEmptyLoad();
+            }
+        },
+
+        deactivateItem: function(item) {
+            var items = JSON.parse(JSON.stringify(this._listItems)),
+                length = items.length,
+                allListItems = JSON.parse(JSON.stringify(this._allListItems)),
+                allLength = allListItems.length;
+
+            for (var i = 0; i < length; i++) {
+                if (item.self === items[i].self) {
+                    items[i].active = false;
+                    break;
+                }
+            }
+
+            for (var j = 0; j < allLength; j++) {
+                if (item.self === allListItems[j].self) {
+                    allListItems[j].active = false;
+                    break;
+                }
+            }
+
+            this.set('_listItems', []);
+            this.set('_listItems', items);
+
+            this.set('_allListItems', []);
+            this.set('_allListItems', allListItems);
+        },
+
+        selectAllItems: function() {
+            var items = JSON.parse(JSON.stringify(this._listItems)),
+                length = items.length,
+                allListItems = JSON.parse(JSON.stringify(this._allListItems)),
+                allLength = allListItems.length;
+
+            for (var i = 0; i < length; i++) {
+                items[i].selected = true;
+            }
+
+            for (var j = 0; j < allLength; j++) {
+                allListItems[j].selected = true;
+            }
+
+            this.set('_listItems', []);
+            this.set('_listItems', items);
+
+            this.set('_allListItems', []);
+            this.set('_allListItems', allListItems);
+        },
+
+        deselectAllItems: function() {
+            var items = JSON.parse(JSON.stringify(this._listItems)),
+                length = items.length,
+                allListItems = JSON.parse(JSON.stringify(this._allListItems)),
+                allLength = allListItems.length;
+
+            for (var i = 0; i < length; i++) {
+                items[i].selected = false;
+            }
+
+            for (var j = 0; j < allLength; j++) {
+                allListItems[j].selected = false;
+            }
+
+            this.set('_listItems', []);
+            this.set('_listItems', items);
+
+            this.set('_allListItems', []);
+            this.set('_allListItems', allListItems);
+        },
+
+        resetAllItems: function() {
+            var items = JSON.parse(JSON.stringify(this._listItems)),
+                length = items.length,
+                allListItems = JSON.parse(JSON.stringify(this._allListItems)),
+                allLength = allListItems.length;
+
+            for (var i = 0; i < length; i++) {
+                items[i].active = false;
+                items[i].selected = false;
+            }
+
+            for (var j = 0; j < allLength; j++) {
+                allListItems[j].active = false;
+                allListItems[j].selected = false;
+            }
+
+            this.set('_listItems', []);
+            this.set('_listItems', items);
+
+            this.set('_allListItems', []);
+            this.set('_allListItems', allListItems);
+        },
+
+        setOrgunit: function(orgunit) {
+            var items = JSON.parse(JSON.stringify(this._listItems)),
+                length = items.length,
+                allListItems = JSON.parse(JSON.stringify(this._allListItems)),
+                allLength = allListItems.length;
+
+            for (var i = 0; i < length; i++) {
+                var orgunits = items[i].org_units,
+                    length = orgunits.length;
+
+                for (var j = 0; j < length; j++) {
+
+                    if (orgunit.alias === orgunits[j].alias) {
+                        items[i].org_units[j].name = orgunit.name;
+                        break;
+                    }
+                }
+            }
+
+            for (var j = 0; j < allLength; j++) {
+                var orgunits = allListItems[j].org_units,
+                    length = orgunits.length;
+
+                for (var k = 0; k < length; k++) {
+                    if (orgunit.alias === orgunits[k].alias) {
+                        allListItems[j].org_units[k].name = orgunit.name;
+                        break;
+                    }
+                }
+            }
+
+            this.set('_listItems', []);
+            this.set('_listItems', items);
+
+            this.set('_allListItems', []);
+            this.set('_allListItems', allListItems);
+        },
+
+        filterByTerm: function(term) {
+            this._filterTerm = term;
+            this._filterByTerm();
+        },
+
+        filterByOrgunit: function(orgunitData) {
+            this._filterOrgunit = orgunitData;
+            this._filterByOrgunit();
+        },
+
+        filterByGroup: function(group) {
+            this._filterGroup = group;
+            this._filterByGroup();
+        },
+
+        _computeHeaders: function (authorizationToken) {
+            return {
+                'Authorization': 'token ' + authorizationToken
+            }
+        },
+
+        _computeListApi: function(listApi, size) {
+            return (listApi && size) ? (listApi + '?page=1&extended=1&limit=' + size) : '';
+        },
+
+        _computeSearchListApi: function(listApi, term) {
+            return listApi ? listApi + '?page=1&limit=100&extended=1&term=' + term : '';
+        },
+
+        _setLoadMoreAction: function() {
+            this._loadMore = (this.loadMore && this._allListItems.length < this._totalItems);
+        },
+
+        _hideLoadMoreAction: function() {
+            this._loadMore = false;
+        },
+
+        _showProgressBar: function() {
+            this.$$('#paperProgress').hidden = false;
+        },
+
+        _hideProgressBar: function() {
+
+            setTimeout(function() {
+                this.$$('#paperProgress').hidden = true;
+            }.bind(this), 300);
+
+        },
+
+        _showLoadMoreProgressBar: function() {
+            this.$$('#loadMoreProgress').hidden = false;
+        },
+
+        _hideLoadMoreProgressBar: function() {
+
+            setTimeout(function() {
+                this.$$('#loadMoreProgress').hidden = true;
+            }.bind(this), 300);
+
+        },
+
+        _showMessage: function(message) {
+            this._message = message;
+        },
+
+        _hideMessage: function() {
+            this._message = '';
+        },
+
+        _setListApiRequestUrl: function(url) {
+            this.$.getListApiRequest.url = url;
+        },
+
+        _abortPreviousRequest: function() {
+            var getListApiRequest = this.$.getListApiRequest;
+
+            if (getListApiRequest.lastRequest) {
+                getListApiRequest.lastRequest.abort();
+            }
+        },
+
+        _generateNewRequest: function() {
+            this._abortPreviousRequest();
+            this.$.getListApiRequest.generateRequest();
+        },
+
+        _clearListItems: function() {
+            this._clearListLoaders();
+            this.set('_allListItems', []);
+            this.set('_listItems', []);
+        },
+
+        _clearListLoaders: function() {
+            
+            for (var idx in this._listLoaders) {
+                clearTimeout(this._listLoaders[idx]);
+            }
+
+            this.set('_listLoaders', []);
+        },
+
+        _handleEmptyLoad: function() {
+            this._hideProgressBar();
+            this._hideLoadMoreProgressBar();
+            this._listEmpty = true;
+
+            /**
+             * Fired when there are no items.
+             *
+             * @event empty-load
+             */
+            this.fire('list-empty');
+        },
+
+        _loadItems: function() {
+            this._clearListItems();
+            this._showProgressBar();
+            this._hideLoadMoreAction();
+            this._generateNewRequest();
+        },
+
+        _onListApiChanged: function(listApi) {
+
+            if (listApi) {
+                this._loadItems();
+            }
+        },
+
+        _onLoadMoreAction: function() {
+            this._showLoadMoreProgressBar();
+            this._setListApiRequestUrl(this._nextListPageApi);
+            this._generateNewRequest();
+        },
+
+        _onGetListError: function(event) {
+
+            if (!event.detail.request.aborted) {
+                this._showMessage(this.apiErrors.getError(event.detail.request.response.code));
+            }
+
+            this._totalItems = 0;
+            this._handleEmptyLoad();
+        },
+
+        _onGetListResponse: function(event) {
+            var response = event.detail.response,
+                meta = response.meta,
+                itemList;
+
+            switch (this.type) {
+                case 'resource':
+                    itemList = response.applications ? response.applications : [];
+                    break;
+
+                case 'account':
+                    itemList = response.company_roles ? response.company_roles : [];
+                    break;
+
+                case 'contact':
+                    itemList = response.contacts ? response.contacts : [];
+                    break;
+
+                case 'group':
+                    itemList = response.company_groups ? response.company_groups : [];
+                    break;
+
+                default:
+                    itemList = [];
+            }
+
+            this._loadMore ? this._clearListLoaders() : this._clearListItems();
+
+            if (itemList) {
+                this._hideMessage();
+                this._totalItems = meta.total;
+                this._nextListPageApi = meta.next + '&limit=' + this.size;
+
+                if (0 === meta.total) {
+                    this._showMessage('There are no ' + this.type + 's in company.');
+                    this._handleEmptyLoad();
+                    return false;
+                }
+
+                if (itemList && itemList.length > 0) {
+                    var itemListCount = itemList.length - 1;
+
+                    this._listEmpty = false;
+
+                    itemList.forEach(function(el, index) {
+
+                        this._listLoaders.push(setTimeout(function() {
+                            el.active = false;
+                            el.selected = false;
+
+                            this.push('_listItems', el);
+                            this.push('_allListItems', el);
+
+                            if (index == itemListCount) {
+                                this._hideProgressBar();
+                                this._hideLoadMoreProgressBar();
+                                this._setLoadMoreAction();
+
+                                /**
+                                 * Fired when items are loaded
+                                 *
+                                 * @event loaded
+                                 * @param {Object} items[]
+                                 */
+                                this.fire('list-loaded', {
+                                    items: itemList
+                                });
+                            }
+
+                        }.bind(this), (index + 1) * 30 ));
+
+                    }.bind(this));
+
+                }
+                else {
+                    (itemList && !itemList.length) ?
+                        this._showMessage('There are no ' + this.type + 's in company.') :
+                        this._showMessage('We couldn\'t load ' + this.type + 's at the moment. Please contact AppsCo support.');
+
+                    this._hideLoadMoreAction();
+                    this._handleEmptyLoad();
+                }
+            }
+        },
+
+        _onListItemAction: function(event) {
+            var items = JSON.parse(JSON.stringify(this._listItems)),
+                length = items.length,
+                allListItems = JSON.parse(JSON.stringify(this._allListItems)),
+                allLength = allListItems.length,
+                selectedListItem = event.detail.item;
+
+            for (var i = 0; i < length; i++) {
+                items[i].active =
+                    (selectedListItem.self === items[i].self) ?
+                        selectedListItem.active : false;
+            }
+
+            for (var j = 0; j < allLength; j++) {
+                allListItems[j].active =
+                    (selectedListItem.self === allListItems[j].self) ?
+                        selectedListItem.active : false;
+            }
+
+            this.set('_listItems', []);
+            this.set('_listItems', items);
+
+            this.set('_allListItems', []);
+            this.set('_allListItems', allListItems);
+        },
+
+        _onSelectListItemAction: function(event) {
+            var items = JSON.parse(JSON.stringify(this._listItems)),
+                length = items.length,
+                allListItems = JSON.parse(JSON.stringify(this._allListItems)),
+                allLength = allListItems.length,
+                selectedListItem = event.detail.item;
+
+            for (var i = 0; i < length; i++) {
+                if (selectedListItem.self === items[i].self) {
+                    items[i].selected = selectedListItem.selected;
+                    break;
+                }
+            }
+
+            for (var j = 0; j < allLength; j++) {
+                if (selectedListItem.self === allListItems[j].self) {
+                    allListItems[j].selected = selectedListItem.selected;
+                    break;
+                }
+            }
+
+            this.set('_listItems', []);
+            this.set('_listItems', items);
+
+            this.set('_allListItems', []);
+            this.set('_allListItems', allListItems);
+        },
+
+        _setSearchListItemsResult: function() {
+            this._listEmpty = (0 === this._searchedListItems.length);
+
+            if (this._listEmpty) {
+                this._showMessage('There are no ' + this.type + 's with asked term.');
+            }
+            else {
+                this.set('_listItems', this._searchedListItems);
+                this._hideLoadMoreAction();
+                this._hideMessage();
+            }
+        },
+
+        _getItems: function(url) {
+
+            return new Promise(function(resolve, reject) {
+                var request = document.createElement('iron-request'),
+                    options = {
+                        url: url,
+                        method: 'GET',
+                        handleAs: 'json',
+                        headers: this._headers
+                    };
+
+                request.send(options).then(function() {
+
+                    if (request.response) {
+
+                        switch (this.type) {
+                            case 'resource':
+                                resolve(request.response.applications);
+                                break;
+
+                            case 'account':
+                                resolve(request.response.company_roles);
+                                break;
+
+                            case 'contact':
+                                resolve(request.response.contacts);
+                                break;
+
+                            case 'group':
+                                resolve(request.response.company_groups);
+                                break;
+
+                            default:
+                                reject('Something went wrong. Please contact AppsCo support.');
+                        }
+                    }
+
+                }.bind(this), function() {
+                    reject(request.response.message);
+                });
+            }.bind(this));
+        },
+
+        _getFilterItemsByGroupApi: function(group) {
+            var url = '';
+
+            switch (this.type) {
+                case 'resource':
+                    url = group.meta.applications;
+                    break;
+
+                case 'account':
+                    url = group.meta.company_roles;
+                    break;
+
+                case 'contact':
+                    url = group.meta.contacts;
+                    break;
+
+                case 'group':
+                    url = group.meta.company_groups;
+                    break;
+
+                default:
+                    return '';
+            }
+
+            return (url + '?page=1&extended=1&limit=' + this.size);
+        },
+
+        _filterByGroup: function() {
+            var group = this._filterGroup,
+                allListItems = JSON.parse(JSON.stringify(this._allListItems)),
+                allLength = allListItems.length,
+                filterTermLength = this._filterTerm.length;
+
+            this._hideMessage();
+            this._showProgressBar();
+            this._hideLoadMoreAction();
+            this._clearListLoaders();
+            this.set('_listItems', []);
+
+            if (!group.active) {
+                this._listEmpty = false;
+
+                if (this._filterTerm && 3 <= filterTermLength) {
+                    var searchedListItems = this._searchedListItems,
+                        searchedListItemsLength = searchedListItems.length;
+
+                    for (var i = 0; i < searchedListItemsLength; i++) {
+                        var searchedListItem = searchedListItems[i];
+
+                        for (var j = 0; j < allLength; j++) {
+                            var item = allListItems[j];
+
+                            if (searchedListItem.self === item.self) {
+                                this.push('_listItems', item);
+                                break;
+                            }
+                        }
+                    }
+
+                    if (0 === this._listItems.length) {
+                        this._showMessage('There are no ' + this.type + 's with asked term.');
+                        this._handleEmptyLoad();
+                    }
+                }
+                else {
+                    this.set('_listItems', allListItems);
+                    this._setLoadMoreAction();
+                }
+
+                this.set('_filterGroup', {});
+                this.fire('filter-done');
+                return false;
+            }
+
+            this._getItems(this._getFilterItemsByGroupApi(group)).then(function(items) {
+                var itemsLength = items.length,
+                    searchedListItems = this._searchedListItems,
+                    searchedListItemsLength = searchedListItems.length,
+                    responseListItems = [],
+                    responseListItemsLength;
+
+                if (0 === itemsLength) {
+                    this._showMessage('There are no ' + this.type + 's in ' + group.name + ' group.');
+                    this._handleEmptyLoad();
+                    return false;
+                }
+
+                this._listEmpty = false;
+
+                if (this._filterTerm && 3 <= filterTermLength) {
+
+                    items.forEach(function(item, index) {
+
+                        for (var i = 0; i < searchedListItemsLength; i++) {
+                            var searchedListItem = searchedListItems[i];
+
+                            for (var j = 0; j < allLength; j++) {
+                                var aItem = allListItems[j];
+
+                                if (searchedListItem.self === item.self && searchedListItem.self === aItem.self) {
+                                    responseListItems.push(aItem);
+                                    break;
+                                }
+                            }
+                        }
+
+                        if (index === itemsLength - 1) {
+                            this._hideProgressBar();
+                            this.fire('filter-done');
+                        }
+
+                    }.bind(this));
+
+                    responseListItemsLength = responseListItems.length;
+
+                    if (0 === responseListItemsLength) {
+                        this._showMessage('There are no ' + this.type + 's with asked term in ' + group.name + ' group.');
+                        this._handleEmptyLoad();
+                        return false;
+                    }
+
+                    for (var k = 0; k < responseListItemsLength; k++) {
+                        var responseListItem = responseListItems[k],
+                            groups = responseListItem.groups,
+                            groupsLength = groups.length;
+
+                        for (var j = 0; j < groupsLength; j++) {
+
+                            if (groups[j].alias === group.alias) {
+                                this.push('_listItems', responseListItem);
+                                break;
+                            }
+
+                        }
+
+                        if (k === responseListItemsLength - 1) {
+                            this._hideProgressBar();
+                        }
+                    }
+                }
+                else {
+
+                    items.forEach(function(item, index) {
+
+                        for (var i = 0; i < allLength; i++) {
+                            var currentListItem = allListItems[i];
+
+                            if (item.self === currentListItem.self) {
+                                this.push('_listItems', currentListItem);
+                                break;
+                            }
+                            else {
+
+                                if (i === allLength - 1) {
+                                    this.push('_listItems', item);
+                                }
+                            }
+                        }
+
+                        if (index === itemsLength - 1) {
+                            this._hideProgressBar();
+                            this.fire('filter-done');
+                        }
+
+                    }.bind(this));
+                }
+            }.bind(this));
+        },
+
+        _filterByTerm: function() {
+            var term = this._filterTerm,
+                length = this._allListItems.length,
+                filterOrgunit = this._filterOrgunit,
+                filterGroup = this._filterGroup;
+
+            if (term.length < 3) {
+                this.set('_searchedListItems', []);
+
+                if (filterOrgunit.selected) {
+                    this._filterByOrgunit();
+                }
+                else if (filterGroup.active) {
+                    this._filterByGroup();
+                }
+                else {
+                    this._hideMessage();
+                    this._listEmpty = false;
+                    this.set('_listItems', JSON.parse(JSON.stringify(this._allListItems)));
+                    this._setLoadMoreAction();
+                }
+
+                this.fire('filter-done');
+                return false;
+            }
+
+            this._showProgressBar();
+            this._hideLoadMoreAction();
+
+            this._getItems(this._searchListApi).then(function(items) {
+                var itemsLength = items.length;
+
+                this.set('_searchedListItems', items);
+                this._setSearchListItemsResult();
+
+                if (this._listEmpty) {
+                    this.set('_searchedListItems', []);
+                    this.fire('filter-done');
+                    return false;
+                }
+
+                if (filterOrgunit.selected) {
+                    this._filterByOrgunit();
+                }
+                else if (filterGroup.active) {
+                    this._filterByGroup();
+                }
+                else {
+                    this.set('_listItems', []);
+
+                    items.forEach(function(elem, index) {
+
+                        for (var i = 0; i < length; i++) {
+                            var item = this._allListItems[i];
+
+                            if (elem.self === item.self) {
+                                this.push('_listItems', item);
+                                break;
+                            }
+                            else {
+
+                                if (i === length - 1) {
+                                    this.push('_listItems', elem);
+                                }
+                            }
+                        }
+
+                        if (index === itemsLength - 1) {
+                            this._hideProgressBar();
+                            this.fire('filter-done');
+                        }
+
+                    }.bind(this));
+                }
+
+            }.bind(this));
+        },
+
+        _filterByOrgunit: function() {
+            var filterOrgunit = this._filterOrgunit,
+                orgunit = filterOrgunit.orgUnit,
+                selected = filterOrgunit.selected,
+                allListItems = JSON.parse(JSON.stringify(this._allListItems)),
+                allLength = allListItems.length,
+                filterTermLength = this._filterTerm.length;
+
+            this._showProgressBar();
+            this._hideMessage();
+            this._listEmpty = false;
+            this.set('_listItems', []);
+
+            if (!selected) {
+                this._setLoadMoreAction();
+
+                if (this._filterTerm && 3 <= filterTermLength) {
+                    var searchedListItems = this._searchedListItems,
+                        searchedListItemsLength = searchedListItems.length;
+
+                    for (var i = 0; i < searchedListItemsLength; i++) {
+                        var searchedListItem = searchedListItems[i];
+
+                        for (var j = 0; j < allLength; j++) {
+                            var res = allListItems[j];
+
+                            if (searchedListItem.self === res.self) {
+                                this.push('_listItems', allListItems[j]);
+                                break;
+                            }
+                        }
+                    }
+
+                    if (0 === this._listItems.length) {
+                        this._showMessage('There are no ' + this.type + 's with asked term.');
+                        this._handleEmptyLoad();
+                    }
+                }
+                else {
+                    this.set('_listItems', allListItems);
+                }
+
+                this.set('_filterOrgunit', {});
+                this.fire('filter-done');
+            }
+            else {
+                var searchedListItemsLength = this._searchedListItems.length,
+                    listItemsWithSelectedOrgunit = [];
+
+                this._hideLoadMoreAction();
+
+                for (var i = 0; i < allLength; i++) {
+                    var item = this._allListItems[i],
+                        orgunits = item.org_units,
+                        orgunitsLength = orgunits.length;
+
+                    for (var j = 0; j < orgunitsLength; j++) {
+
+                        if (orgunits[j].alias === orgunit.alias) {
+                            listItemsWithSelectedOrgunit.push(item);
+                            break;
+                        }
+
+                    }
+
+                    if (i === allLength -1) {
+                        this._hideProgressBar();
+                    }
+                }
+
+                if (this._filterTerm && 3 <= filterTermLength) {
+                    var searchedListItems = this._searchedListItems,
+                        responseListItems = [],
+                        responseListItemsLength;
+
+                    for (var i = 0; i < searchedListItemsLength; i++) {
+                        var item = searchedListItems[i];
+
+                        for (var j = 0; j < allLength; j++) {
+                            var res = allListItems[j];
+
+                            if (item.self === res.self) {
+                                responseListItems.push(res);
+                                break;
+                            }
+                            else {
+
+                                if (j === allLength - 1) {
+                                    responseListItems.push(item);
+                                }
+                            }
+                        }
+                    }
+
+                    responseListItemsLength = responseListItems.length;
+
+                    for (var k = 0; k < responseListItemsLength; k++) {
+                        var item = responseListItems[k],
+                            orgunits = item.org_units,
+                            orgunitsLength = orgunits.length;
+
+                        for (var j = 0; j < orgunitsLength; j++) {
+
+                            if (orgunits[j].alias === orgunit.alias) {
+                                this.push('_listItems', item);
+                                break;
+                            }
+
+                        }
+
+                        if (k === responseListItemsLength -1) {
+                            this._hideProgressBar();
+                        }
+                    }
+                }
+                else {
+                    this.set('_listItems', listItemsWithSelectedOrgunit);
+                }
+
+                if (0 === this._listItems.length) {
+
+                    (0 < listItemsWithSelectedOrgunit.length) ?
+                        this._showMessage('There are no ' + this.type + 's with asked term in ' + orgunit.name +' organization unit.') :
+                        this._showMessage('There are no ' + this.type + 's in ' + orgunit.name +' organization unit.');
+
+                    this._handleEmptyLoad();
+                }
+
+                this.fire('filter-done');
+            }
+        },
+
+        _onItemsDomChange: function() {
+            var index = this._renderedIndex;
+
+            if (-1 != index && this.company) {
+
+                this.animationConfig.entry.nodes = [];
+
+                for (var i = 0; i <= index; i++) {
+                    var addedItem = this.$$('#appscoListItem_' + i);
+                    this.animationConfig.entry.nodes.push(addedItem);
+                }
+
+                this.playAnimation('entry');
+
+                this._renderedIndex = -1;
+            }
+
+        }
+    }
+</script>

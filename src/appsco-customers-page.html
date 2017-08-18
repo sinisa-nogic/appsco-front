@@ -5,14 +5,14 @@
 <link rel="import" href="../bower_components/neon-animation/neon-animatable-behavior.html">
 <link rel="import" href="../bower_components/iron-flex-layout/iron-flex-layout.html">
 <link rel="import" href="../bower_components/iron-media-query/iron-media-query.html">
+<link rel="import" href="../bower_components/iron-icon/iron-icon.html">
+<link rel="import" href="../bower_components/iron-icons/social-icons.html">
+<link rel="import" href="../bower_components/paper-tabs/paper-tabs.html">
+<link rel="import" href="../bower_components/paper-tabs/paper-tab.html">
 
 <link rel="import" href="components/page/appsco-content.html">
-<link rel="import" href="components/components/appsco-search.html">
-<!--<link rel="import" href="components/customer/appsco-company-customers.html">-->
-<!--<link rel="import" href="components/customer/appsco-company-customer-roles.html">-->
-<!--<link rel="import" href="components/customer/appsco-company-customer-resources.html">-->
-<!--<link rel="import" href="components/customer/appsco-company-customer-contacts.html">-->
-<!--<link rel="import" href="components/customer/appsco-company-customer-image.html">-->
+<link rel="import" href="components/customer/appsco-customer-details.html">
+<link rel="import" href="components/account/appsco-account-log.html">
 
 <dom-module id="appsco-customers-page">
     <template>
@@ -23,12 +23,12 @@
 
                 --info-width: 318px;
 
-                --customers-progress-bar: {
-                    display: none;
+                --details-label: {
+                    font-size: 12px;
                 };
-
-                --customer-role-initials-background-color: var(--body-background-color-darker);
-                --customer-contact-initials-background-color: var(--body-background-color-darker);
+                --details-value: {
+                    font-size: 14px;
+                };
             }
             :host div[info] {
                 height: 100%;
@@ -42,36 +42,40 @@
                 margin-top: 10px;
                 overflow: auto;
             }
-            :host .info-content > * {
-                height: 78px;
-            }
-            :host .customer-items {
-                @apply(--layout-flex-none);
-            }
             :host div[content] > * {
                 padding: 0 10px 10px 10px;
-            }
-            .customers-container {
-                margin-top: 10px;
-            }
-            appsco-company-customer-image {
-                --customer-image-preview: {
-                    width: 32px;
-                    height: 32px;
-                    margin-right: 5px;
-                };
-
-                --customer-image-background-color: var(--body-background-color-darker);
             }
             :host div[info] .info-header {
                 border-bottom: 1px solid var(--divider-color);
                 height: 50px;
             }
+            :host .info-header .customer-icon {
+                width: 32px;
+                height: 32px;
+                margin-right: 5px;
+                --iron-icon-fill-color: var(--primary-text-color);
+            }
             :host .info-header .customer-name {
                 @apply(--paper-font-subhead);
                 font-size: 18px;
             }
-
+            :host .info-content {
+                height: calc(100% - 50px - 40px);
+                margin-top: 10px;
+            }
+            paper-tabs {
+                height: 32px;
+                @apply(--layout-flex-none);
+            }
+            .paper-tabs-pages {
+                @apply(--paper-tabs-pages);
+            }
+            .tab-content {
+                @apply(--paper-tabs-content-style);
+            }
+            .customers-container {
+                margin-top: 10px;
+            }
             :host div[info] .info-actions {
                 padding: 0;
                 position: absolute;
@@ -83,15 +87,15 @@
                 @apply(--primary-button);
                 border-radius: 0;
             }
+            :host .flex {
+                @apply(--layout-flex);
+            }
             :host .flex-horizontal {
                 @apply(--layout-horizontal);
                 @apply(--layout-center);
             }
             :host .flex-vertical {
                 @apply(--layout-vertical);
-            }
-            :host .flex {
-                @apply(--layout-flex);
             }
             :host([tablet-screen]) {
                 --info-width: 250px;
@@ -107,10 +111,10 @@
                     width: 140px;
                 };
 
-                --account-auth-type-info: {
+                --account-additional-info: {
                     width: 140px;
                 };
-                --account-auth-type-info-values: {
+                --account-additional-info-values: {
                     width: 140px;
                 };
             }
@@ -131,17 +135,45 @@
             <div class="flex-vertical" info>
 
                 <div class="info-header flex-horizontal">
-
+                    <iron-icon icon="social:domain"
+                               class="customer-icon"></iron-icon>
+                    <span class="customer-name flex">[[ customer.account.name ]]</span>
                 </div>
 
                 <div class="info-content flex-vertical">
+                    <paper-tabs id="paperTabs" selected="{{ _selectedTab }}">
+                        <paper-tab name="info">Info</paper-tab>
+                        <paper-tab name="log">Log</paper-tab>
+                    </paper-tabs>
 
+                    <neon-animated-pages
+                            selected="{{ _selectedTab }}"
+                            entry-animation="fade-in-animation"
+                            exit-animation="fade-out-animation"
+                            class="paper-tabs-pages">
 
+                        <div name="info" class="tab-content details">
+                            <appsco-customer-details customer="[[ customer ]]"></appsco-customer-details>
+                        </div>
 
+                        <div name="log" class="tab-content log">
+                            <appsco-account-log
+                                    id="accountLog"
+                                    log-api="[[ customer.meta.log ]]"
+                                    authorization-token="[[ authorizationToken ]]"
+                                    size="5"
+                                    short-view></appsco-account-log>
+                        </div>
+
+                    </neon-animated-pages>
                 </div>
 
                 <div class="info-actions flex-horizontal">
-
+                    <paper-button
+                            class="edit-button flex"
+                            on-tap="_onEditCustomer">
+                        Edit
+                    </paper-button>
                 </div>
             </div>
         </appsco-content>
@@ -153,6 +185,28 @@
             is: 'appsco-customers-page',
 
             properties: {
+
+                customer: {
+                    type: Object,
+                    value: function() {
+                        return {}
+                    },
+                    observer: '_onCustomerChanged'
+                },
+
+                authorizationToken: {
+                    type: String,
+                    value: ''
+                },
+
+                _selectedTab: {
+                    type: Number
+                },
+
+                _infoShown: {
+                    type: Boolean,
+                    value: false
+                },
 
                 mobileScreen: {
                     type: Boolean,
@@ -194,12 +248,6 @@
                             }
                         }
                     }
-                },
-
-
-                authorizationToken: {
-                    type: String,
-                    value: ''
                 }
             },
 
@@ -211,8 +259,21 @@
                 '_updateScreen(mobileScreen, tabletScreen, screen992)'
             ],
 
-            toggleInfo: function() {
+            initializePage: function() {
+                this._setDefaultCustomer();
+            },
 
+            resetPage: function() {
+                this.hideInfo();
+            },
+
+            toggleInfo: function() {
+                this.$.appscoContent.toggleSection('info');
+                this._infoShown = !this._infoShown;
+
+                if (this._infoShown) {
+                    this._selectedTab = 0;
+                }
             },
 
             hideInfo: function() {
@@ -224,14 +285,6 @@
                 this.$.appscoContent.toggleSection('resource');
             },
 
-
-
-            resetPage: function() {
-                this._resetPageActions();
-                this._resetPageLists();
-                this.hideInfo();
-            },
-
             _resetPageActions: function() {
                 this.fire('reset-page-actions');
             },
@@ -240,8 +293,8 @@
                 this.updateStyles();
             },
 
-            _onPageReadyChanged: function() {
-                this._onPageLoaded();
+            _setDefaultCustomer: function() {
+//                this.set('customer', this.$.appscoCustomers.getFirstItem());
             },
 
             _onPageLoaded: function() {
@@ -249,9 +302,21 @@
                 this.fire('page-loaded');
             },
 
-            _onPageAnimationFinished: function(event) {
-                this._resetPageActions();
-                this._resetPageLists(event.detail.fromPage.getAttribute('name'));
+            _loadLog: function() {
+                this.$.accountLog.loadLog();
+            },
+
+            _onCustomerChanged: function(customer) {
+
+                if (customer.meta && customer.meta.log) {
+                    this._loadLog();
+                }
+            },
+
+            _onEditCustomer: function() {
+                this.fire('edit-customer', {
+                    customer: this.customer
+                });
             }
         });
     </script>

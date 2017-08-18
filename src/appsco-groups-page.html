@@ -23,8 +23,8 @@
 
                 --info-width: 318px;
 
-                --groups-progress-bar: {
-                    display: none;
+                --list-container: {
+                    padding-top: 0;
                 };
 
                 --group-role-initials-background-color: var(--body-background-color-darker);
@@ -125,14 +125,13 @@
             <div content>
                 <div class="groups-container">
                     <appsco-company-groups id="appscoGroups"
-                                           groups-api="[[ groupsApi ]]"
+                                           type="group"
+                                           list-api="[[ groupsApi ]]"
                                            authorization-token="[[ authorizationToken ]]"
                                            size="100"
-                                           hide-total
-                                           selectable
-                                           on-loaded="_onGroupsLoaded"
-                                           on-empty-load="_onGroupsEmptyLoad"
-                                           on-group-selected="_onGroupSelected"></appsco-company-groups>
+                                           on-list-loaded="_onGroupsLoaded"
+                                           on-list-empty="_onGroupsEmptyLoad"
+                                           on-item="_onGroupAction"></appsco-company-groups>
                 </div>
             </div>
 
@@ -284,11 +283,6 @@
                     value: false
                 },
 
-                _groupAction: {
-                    type: Number,
-                    value: 0
-                },
-
                 _groupRolesApi: {
                     type: String,
                     computed: '_computeGroupRolesApi(group)'
@@ -318,6 +312,11 @@
                 if (this._groupExists) {
                     this.$.appscoContent.toggleSection('info');
                     this._infoShown = !this._infoShown;
+
+                    if (!this._infoShown) {
+                        this.$.appscoGroups.deactivateItem(this.group);
+                        this._setDefaultGroup();
+                    }
                 }
             },
 
@@ -335,16 +334,16 @@
             },
 
             _setDefaultGroup: function() {
-                this.set('group', this.$.appscoGroups.getFirstGroup());
+                this.set('group', this.$.appscoGroups.getFirstItem());
             },
 
             addGroup: function(group) {
-                this.$.appscoGroups.addGroup(group);
+                this.$.appscoGroups.addItems([group]);
                 this._setDefaultGroup();
             },
 
             removeGroup: function(group) {
-                this.$.appscoGroups.removeGroup(group);
+                this.$.appscoGroups.removeItems([group]);
                 this._setDefaultGroup();
             },
 
@@ -353,7 +352,7 @@
             },
 
             getSelectedGroups: function() {
-                return this.$.appscoGroups.getSelectedGroups();
+                return this.$.appscoGroups.getSelectedItems();
             },
 
             removeGroupItems: function(group, items, resourceType) {
@@ -364,7 +363,9 @@
                 }
             },
 
-            recalculateTotals: function(groups) {
+            recalculateTotals: function(groups, type) {
+                this._recalculateTotalsForDefaultGroup(type);
+
                 for (var idx in groups) {
                     this._recalculateTotals(groups[idx]);
                 }
@@ -393,6 +394,26 @@
                 this._groupsLoaded = true;
             },
 
+            _recalculateTotalsForDefaultGroup: function(type) {
+
+                switch (type) {
+                    case 'resource':
+                        this.$.appscoCompanyGroupResources.reloadResources();
+                        break;
+
+                    case 'account':
+                        this.$.appscoCompanyGroupRoles.reloadRoles();
+                        break;
+
+                    case 'contact':
+                        this.$.appscoCompanyGroupContacts.reloadContacts();
+                        break;
+
+                    default:
+                        return false;
+                }
+            },
+
             _recalculateTotals: function(group) {
                 this.$.appscoGroups.recalculateTotals(group);
             },
@@ -403,7 +424,7 @@
 
             _resetPageLists: function(page) {
                 this.filterByTerm('', page);
-                this.$.appscoGroups.selectAllGroups(false);
+                this.$.appscoGroups.resetAllItems();
             },
 
             _computeAccount: function(group) {
@@ -448,34 +469,20 @@
                 this.fire('page-loaded');
             },
 
-            _onGroupSelected: function(event) {
-                var group = event.detail.group;
+            _onGroupAction: function(event) {
 
-                clearTimeout(this._groupAction);
-
-                this._groupAction = setTimeout(function() {
-
-                    if (group.selected) {
-                        this._onViewInfo(event);
-                    }
-                    else {
-                        var selectedGroup = this.$.appscoGroups.getFirstSelectedGroup();
-
-                        if (!selectedGroup) {
-                            this.hideInfo();
-                            this._setDefaultGroup();
-                        }
-                        else if (group.self === this.group.self) {
-                            this._handleInfo(selectedGroup);
-                        }
-                    }
-
-                }.bind(this), 10);
+                if (event.detail.item.active) {
+                    this._onViewInfo(event);
+                }
+                else {
+                    this.hideInfo();
+                    this._setDefaultGroup();
+                }
             },
 
             _onGroupInfoEdit: function() {
                 this.fire('info-edit-group', {
-                    group: this.group
+                    item: this.group
                 });
             },
 
@@ -495,7 +502,7 @@
             },
 
             _onViewInfo: function(event) {
-                this._handleInfo(event.detail.group);
+                this._handleInfo(event.detail.item);
             },
 
             _removeGroupRoles: function(roles) {

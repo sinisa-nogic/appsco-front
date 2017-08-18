@@ -1,18 +1,21 @@
 <link rel="import" href="../../../bower_components/polymer/polymer.html">
-<link rel="import" href="../../../bower_components/iron-flex-layout/iron-flex-layout.html">
+<link rel="import" href="../../../bower_components/iron-icon/iron-icon.html">
+<link rel="import" href="../../../bower_components/iron-icons/iron-icons.html">
 <link rel="import" href="../../../bower_components/paper-button/paper-button.html">
 <link rel="import" href="../../../bower_components/neon-animation/neon-animation-runner-behavior.html">
 <link rel="import" href="../../../bower_components/neon-animation/animations/fade-in-animation.html">
 <link rel="import" href="../../../bower_components/neon-animation/animations/fade-out-animation.html">
-<link rel="import" href="../../../bower_components/paper-styles/typography.html">
 
 <link rel="import" href="appsco-account-image.html">
+<link rel="import" href="../components/appsco-list-item-behavior.html">
+<link rel="import" href="../components/appsco-list-item-styles.html">
 
 <!--
 `appsco-account-item`
 Account item is used to present account in form of an item.
 
-    <appsco-account-item>
+    <appsco-account-item item="[]"
+                         type="company-role">
     </appsco-account-item>
 
 ### Styling
@@ -21,141 +24,38 @@ Account item is used to present account in form of an item.
 
 Custom property | Description | Default
 ----------------|-------------|----------
-`--background-color` | Background color applied to the root element | `#fff`
-`--color` | Color applied to all the text | `#33`
-`--appsco-account-item` | Mixin for the root element | `{}`
+`--appsco-list-item` | Mixin for the list item | `{}`
+`--background-color` | Background color applied to list item element | `#fff`
+`--color` | Color applied to all the text | `#333`
 
 @demo demo/appsco-account-item.html
 -->
 
 <dom-module id="appsco-account-item">
     <template>
-        <style>
-            :host {
-                display: none;
-                color: var(--primary-text-color);
-            }
-            :host .item {
-                text-align: center;
-                width: 141px;
-                height: 156px;
-                overflow: hidden;
-            @apply(--shadow-elevation-2dp);
-                position: relative;
-                background-color: var(--background-color, #fff);
-                padding: 0 4px;
-                cursor: pointer;
-            @apply(--appsco-account-item);
-            }
-            :host .item:hover {
-            @apply(--shadow-elevation-4dp);
-            }
-            :host .account-title {
-                display: block;
-                height: 32px;
-                line-height: 16px;
-            @apply(--paper-font-common-base);
-                font-size: 14px;
-                font-weight: 400;
-                overflow: hidden;
-            }
-            :host .actions {
-            @apply(--layout-horizontal);
-            @apply(--layout-center);
-                position: absolute;
-                bottom: 2px;
-            }
-            :host paper-button {
-            @apply(--paper-font-common-base);
-            @apply(--paper-font-common-nowrap);
+        <style include="appsco-list-item-styles"></style>
 
-                padding: 4px;
-                font-size: 12px;
-                font-weight: 400;
-                letter-spacing: 0.018em;
-                line-height: 18px;
-                text-transform: uppercase;
-            }
-            :host paper-button[disabled] {
-                background: transparent;
-            }
-            :host([company][active]) .item {
-                background: var(--brand-color);
-                color: var(--brand-text-color);
-                transition: all 0.2s ease-in;
-            }
-            :host([company]) .item {
-                width: 100%;
-                height: 70px;
-                padding: 0 10px;
-                box-sizing: border-box;
-                border-radius: 3px;
-                text-align: left;
-            @apply(--layout-horizontal);
-            @apply(--layout-center);
-                transition: all 0.1s ease-out;
-            }
-            :host([company]) .account-info {
-            @apply(--layout-vertical);
-            @apply(--layout-start);
-                padding: 0 10px;
-            }
-            :host([company]) .account-basic-info {
-                width: 220px;
-            @apply(--account-basic-info);
-            }
-            :host([company]) .account-additional-info {
-                border-left: 1px solid var(--divider-color);
-            @apply(--account-additional-info);
-            }
-            :host([company]) .account-basic-info .info-label, :host([company]) .account-basic-info .info-value {
-                width: 220px;
-            @apply(--paper-font-common-nowrap);
-            @apply(--account-basic-info-values);
-            }
-            :host .account-additional-info .info {
-                @apply(--layout-horizontal);
-                @apply(--layout-center);
-            }
-            :host .account-additional-info .info-label {
-                color: var(--secondary-text-color);
-            }
-            :host([company]) .account-additional-info .info-label, :host([company]) .account-additional-info .info-value {
-                font-size: 13px;
-                line-height: 18px;
-                @apply(--paper-font-common-nowrap);
-                @apply(--account-additional-info-values);
-            }
-            :host([company]) .info-label {
-                font-size: 16px;
-                height: auto;
-                line-height: normal;
-            }
-            :host([company]) .info-value {
-                display: block;
-                font-size: 12px;
-            }
-            :host([company]) .actions {
-                right: 4px;
-                bottom: 4px;
-            }
-        </style>
+        <div class="item" on-tap="_onItemAction">
 
-        <div class="item" on-tap="_onAccountAction">
+            <div class="select-action"
+                 on-tap="_onSelectItemAction">
+                <appsco-account-image account="[[ item.account ]]"></appsco-account-image>
 
-            <appsco-account-image account="[[ account ]]"></appsco-account-image>
-
-            <div class="account-info account-basic-info">
-                <span class="info-label account-title">[[ account.display_name ]]</span>
-                <span class="info-value"
-                      hidden$="[[ !company ]]">[[ account.email ]]</span>
+                <div class="icon-action">
+                    <div class="iron-action-inner">
+                        <iron-icon icon="icons:check"></iron-icon>
+                    </div>
+                </div>
             </div>
 
+            <div class="item-info item-basic-info">
+                <span class="info-label item-title">[[ item.account.display_name ]]</span>
+                <span class="info-value">[[ item.account.email ]]</span>
+            </div>
 
-            <div class="account-info account-additional-info"
-                 hidden$="[[ !company ]]">
+            <div class="item-info item-additional-info">
 
-                <template is="dom-if" if="[[ !companyRole.security.two_factor ]]">
+                <template is="dom-if" if="[[ !item.security.two_factor ]]">
                     <div class="info">
                         <span class="info-label">Security:&nbsp;</span>
                         <span class="info-value">
@@ -167,8 +67,7 @@ Custom property | Description | Default
                 <template is="dom-if" if="[[ _orgUnits ]]">
                     <div class="info">
                         <span class="info-label">Organization units:&nbsp;</span>
-                        <span class="info-value"
-                              hidden$="[[ !company ]]">[[ _orgUnits ]]</span>
+                        <span class="info-value">[[ _orgUnits ]]</span>
                     </div>
                 </template>
 
@@ -181,7 +80,7 @@ Custom property | Description | Default
             </div>
 
             <div class="actions">
-                <paper-button on-tap="_onEdit">Edit</paper-button>
+                <paper-button on-tap="_onEditItemAction">Edit</paper-button>
             </div>
         </div>
 
@@ -192,168 +91,10 @@ Custom property | Description | Default
 
             is: 'appsco-account-item',
 
-            properties: {
-
-                /**
-                 * Indicates if user manages company accounts or not.
-                 */
-                company: {
-                    type: Boolean,
-                    value: false,
-                    reflectToAttribute: true
-                },
-
-                /**
-                 * [account](https://developers.appsco.com/api/dashboard/id/icons/id) that is to be rendered
-                 */
-                account: {
-                    type: Object,
-                    value: function() {
-                        return {};
-                    }
-                },
-
-                companyRole: {
-                    type: Object,
-                    value: function() {
-                        return {};
-                    },
-                    observer: '_onRoleChanged'
-                },
-
-                _orgUnits: {
-                    type: String,
-                    computed: '_computeOrganizationUnits(company, account)'
-                },
-
-                _groups: {
-                    type: String,
-                    computed: '_computeGroups(companyRole)'
-                },
-
-                active: {
-                    type: Boolean,
-                    value: false,
-                    reflectToAttribute: true
-                },
-
-                /**
-                 * Animation for loader appearance.
-                 */
-                animationConfig: {
-                    value: function() {
-                        return {
-                            'entry': {
-                                name: 'fade-in-animation',
-                                node: this,
-                                timing: {
-                                    duration: 200
-                                }
-                            },
-                            'exit': {
-                                name: 'fade-out-animation',
-                                node: this,
-                                timing: {
-                                    duration: 100
-                                }
-                            }
-                        }
-                    }
-                }
-            },
-
             behaviors: [
-                Polymer.NeonAnimationRunnerBehavior
-            ],
-
-            attached: function() {
-                this.style.display = 'inline-block';
-                this.playAnimation('entry');
-            },
-
-            _onRoleChanged: function(role) {
-                this.active = role.selected;
-            },
-
-            _computeOrganizationUnits: function(company, account) {
-
-                if (company && account.org_units && account.org_units.length > 0) {
-                    var result = '',
-                        orgUnits = account.org_units,
-                        length = orgUnits.length;
-
-                    for (var i = 0; i < length; i++) {
-                        result += orgUnits[i].name;
-                        result += (i === length -1) ? '' : ', ';
-                    }
-
-                    return result;
-                }
-
-                return '';
-
-            },
-
-            _computeGroups: function(role) {
-
-                if (role.group && role.group.length > 0) {
-                    var result = '',
-                        groups = role.group,
-                        length = groups.length;
-
-                    for (var i = 0; i < length; i++) {
-                        result += groups[i].name;
-                        result += (i === length -1) ? '' : ', ';
-                    }
-
-                    return result;
-                }
-
-                return '';
-
-            },
-
-            _onEdit: function (event) {
-                event.stopPropagation();
-
-                /**
-                 * Fired when `edit` is tapped.
-                 *
-                 * @event edit
-                 * @param {Object} account [account](https://developers.appsco.com/api/dashboard/id/icons/id)
-                 *                              for which event is fired
-                 */
-                this.fire('edit', {
-                    account: this.account,
-                    role: this.companyRole
-                });
-            },
-
-            _onAccountAction: function() {
-                this.active = !this.active;
-                this.companyRole.selected = this.active;
-
-                /**
-                 * Fired when whole item is tapped.
-                 *
-                 * @event account
-                 * @param {Object} account [account](https://developers.appsco.com/api/dashboard/id/icons/id)
-                 *                              for which event is fired
-                 */
-                this.fire('account', {
-                    account: this.account,
-                    role: this.companyRole
-                });
-            },
-
-            select: function() {
-                this.active = true;
-            },
-
-            deselect: function() {
-                this.active = false;
-            }
-
+                Polymer.NeonAnimationRunnerBehavior,
+                Polymer.AppscoListItemBehavior
+            ]
         });
     </script>
 </dom-module>

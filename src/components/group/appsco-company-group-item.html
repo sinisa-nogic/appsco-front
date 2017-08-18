@@ -1,13 +1,15 @@
 <link rel="import" href="../../../bower_components/polymer/polymer.html">
-<link rel="import" href="../../../bower_components/iron-flex-layout/iron-flex-layout.html">
+<link rel="import" href="../../../bower_components/iron-icon/iron-icon.html">
+<link rel="import" href="../../../bower_components/iron-icons/iron-icons.html">
 <link rel="import" href="../../../bower_components/paper-button/paper-button.html">
 <link rel="import" href="../../../bower_components/neon-animation/neon-animation-runner-behavior.html">
 <link rel="import" href="../../../bower_components/neon-animation/animations/fade-in-animation.html">
 <link rel="import" href="../../../bower_components/neon-animation/animations/fade-out-animation.html">
-<link rel="import" href="../../../bower_components/paper-styles/typography.html">
 <link rel="import" href="../../../bower_components/iron-ajax/iron-ajax.html">
 
 <link rel="import" href="appsco-company-group-image.html">
+<link rel="import" href="../components/appsco-list-item-behavior.html">
+<link rel="import" href="../components/appsco-list-item-styles.html">
 
 <!--
 `appsco-company-group-item`
@@ -34,119 +36,15 @@ Custom property | Description | Default
 
 <dom-module id="appsco-company-group-item">
     <template>
+        <style include="appsco-list-item-styles"></style>
+
         <style>
-            :host {
-                display: none;
-                color: var(--primary-text-color);
-                font-size: 14px;
-                -webkit-touch-callout: none;
-                -webkit-user-select: none;
-                -khtml-user-select: none;
-                -moz-user-select: none;
-                -ms-user-select: none;
-                user-select: none;
-            }
-            .item {
-                width: 100%;
-                height: 70px;
-                padding: 0 10px;
-                box-sizing: border-box;
-                overflow: hidden;
-                position: relative;
-                background-color: var(--background-color, #ffffff);
-                border-radius: 3px;
-                @apply(--shadow-elevation-2dp);
-                @apply(--layout-horizontal);
-                @apply(--layout-center);
-                transition: all 0.1s ease-out;
-                @apply(--appsco-company-group-item);
-            }
-            :host([active]) .item {
-                background: var(--brand-color);
-                color: var(--brand-text-color);
-                transition: all 0.2s ease-in;
-            }
-            .item:hover {
-                @apply(--shadow-elevation-4dp);
-            }
-            :host([selectable]) {
-                cursor: pointer;
-            }
-            :host([active]) {
+            :host([preview][active]) {
                 background-color: #e8e8e8;
             }
-            .group-title {
-                display: block;
-                height: 32px;
-                line-height: 16px;
-                @apply(--paper-font-common-base);
+            :host([preview]) .item-title {
                 font-size: 14px;
-                font-weight: 400;
-                overflow: hidden;
-            }
-            .group-title.preview {
-                font-size: 14px;
-            }
-            .actions {
-            @apply(--layout-horizontal);
-            @apply(--layout-center);
-                position: absolute;
-                right: 4px;
-                bottom: 4px;
-            }
-            paper-button {
-            @apply(--paper-font-common-base);
-            @apply(--paper-font-common-nowrap);
-
-                padding: 4px;
-                font-size: 12px;
-                font-weight: 400;
-                letter-spacing: 0.018em;
-                line-height: 18px;
-                text-transform: uppercase;
-            }
-            paper-button[disabled] {
-                background: transparent;
-            }
-            .group-info {
-                @apply(--layout-vertical);
-                @apply(--layout-start);
-                padding: 0 10px;
-            }
-            .group-basic-info {
-                width: 220px;
-                @apply(--group-basic-info);
-            }
-            .group-status-info {
-                border-left: 1px solid var(--divider-color);
-                @apply(--group-status-info);
-            }
-            .group-status-info .info {
-                @apply(--layout-horizontal);
-                @apply(--layout-center);
-            }
-            :host .group-status-info .info-label {
-                color: var(--secondary-text-color);
-            }
-            .group-basic-info .info-label, .group-basic-info .info-value {
-                width: 220px;
-                @apply(--paper-font-common-nowrap);
-                @apply(--group-basic-info-values);
-            }
-            .group-status-info .info-label, .group-status-info .info-value {
-                font-size: 13px;
-                line-height: 18px;
-                @apply(--paper-font-common-nowrap);
-                @apply(--group-status-info-values);
-            }
-            .info-label {
-                font-size: 16px;
-                height: auto;
-                line-height: normal;
-            }
-            .info-value {
-                display: block;
-                font-size: 12px;
+                cursor: pointer;
             }
         </style>
 
@@ -172,20 +70,35 @@ Custom property | Description | Default
                    on-response="_onGroupResourcesResponse"></iron-ajax>
 
         <template is="dom-if" if="[[ preview ]]">
-            <span class="info-label group-title preview">[[ group.name ]]</span>
+            <span class="info-label item-title">[[ item.name ]]</span>
         </template>
 
         <template is="dom-if" if="[[ !preview ]]">
             <div class="item">
 
-                <appsco-company-group-image group="[[ group ]]"></appsco-company-group-image>
+                <template is="dom-if" if="[[ selectable ]]">
+                    <div class="select-action"
+                         on-tap="_onSelectItemAction">
+                        <appsco-company-group-image group="[[ item ]]"></appsco-company-group-image>
 
-                <div class="group-info group-basic-info">
-                    <span class="info-label group-title">[[ group.name ]]</span>
+                        <div class="icon-action">
+                            <div class="iron-action-inner">
+                                <iron-icon icon="icons:check"></iron-icon>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+
+                <template is="dom-if" if="[[ !selectable ]]">
+                    <appsco-company-group-image group="[[ item ]]"></appsco-company-group-image>
+                </template>
+
+                <div class="item-info item-basic-info">
+                    <span class="info-label group-title">[[ item.name ]]</span>
                     <span class="info-value">Group</span>
                 </div>
 
-                <div class="group-info group-status-info">
+                <div class="item-info item-additional-info">
                     <div class="info">
                         <span class="info-label">Total resources:&nbsp;</span>
                         <span class="info-value">[[ _groupResourcesCount ]]</span>
@@ -201,7 +114,7 @@ Custom property | Description | Default
                 </div>
 
                 <div class="actions">
-                    <paper-button on-tap="_onEditAction">Edit</paper-button>
+                    <paper-button on-tap="_onEditItemAction">Edit</paper-button>
                 </div>
             </div>
         </template>
@@ -216,34 +129,9 @@ Custom property | Description | Default
             properties: {
 
                 /**
-                 * Group that is to be rendered
-                 */
-                group: {
-                    type: Object,
-                    value: function() {
-                        return {};
-                    },
-                    observer: '_onGroupChanged'
-                },
-
-                /**
                  * Indicates if group should be in preview mode rather then full detailed view.
                  */
                 preview: {
-                    type: Boolean,
-                    value: false
-                },
-
-                /**
-                 * Indicates if groups should be selectable.
-                 */
-                selectable: {
-                    type: Boolean,
-                    value: false,
-                    reflectToAttribute: true
-                },
-
-                active: {
                     type: Boolean,
                     value: false,
                     reflectToAttribute: true
@@ -261,17 +149,17 @@ Custom property | Description | Default
 
                 _groupRolesApiUrl: {
                     type: String,
-                    computed: '_computeGroupRolesApiUrl(group, preview)'
+                    computed: '_computeGroupRolesApiUrl(item)'
                 },
 
                 _groupResourcesApiUrl: {
                     type: String,
-                    computed: '_computeGroupResourcesApiUrl(group, preview)'
+                    computed: '_computeGroupResourcesApiUrl(item)'
                 },
 
                 _groupContactsApiUrl: {
                     type: String,
-                    computed: '_computeGroupContactsApiUrl(group, preview)'
+                    computed: '_computeGroupContactsApiUrl(item)'
                 },
 
                 _groupRolesCount: {
@@ -287,50 +175,22 @@ Custom property | Description | Default
                 _groupContactsCount: {
                     type: Number,
                     value: 0
-                },
-
-                /**
-                 * Animation for loader appearance.
-                 */
-                animationConfig: {
-                    value: function() {
-                        return {
-                            'entry': {
-                                name: 'fade-in-animation',
-                                node: this,
-                                timing: {
-                                    duration: 200
-                                }
-                            },
-                            'exit': {
-                                name: 'fade-out-animation',
-                                node: this,
-                                timing: {
-                                    duration: 100
-                                }
-                            }
-                        }
-                    }
                 }
             },
 
             behaviors: [
-                Polymer.NeonAnimationRunnerBehavior
+                Polymer.NeonAnimationRunnerBehavior,
+                Polymer.AppscoListItemBehavior
             ],
 
             listeners: {
-                'tap': '_onGroupAction'
+                'tap': '_onItemAction'
             },
 
             recalculateTotals: function() {
                 this.$.getGroupRolesApiRequest.generateRequest();
                 this.$.getGroupContactsApiRequest.generateRequest();
                 this.$.getGroupResourcesApiRequest.generateRequest();
-            },
-
-            attached: function() {
-                this.style.display = 'inline-block';
-                this.playAnimation('entry');
             },
 
             increaseGroupRolesCount: function(count) {
@@ -347,19 +207,15 @@ Custom property | Description | Default
                 }
             },
 
-            _computeGroupRolesApiUrl: function(group, preview) {
-                return (group.meta && !preview) ? group.meta.company_roles : '';
+            _computeGroupRolesApiUrl: function(group) {
+                return group.meta ? group.meta.company_roles : '';
             },
-            _computeGroupResourcesApiUrl: function (group, preview) {
-                return (group.meta && !preview) ? group.meta.applications : '';
-            },
-
-            _computeGroupContactsApiUrl: function(group, preview) {
-                return (group.meta && !preview) ? group.meta.contacts : '';
+            _computeGroupResourcesApiUrl: function (group) {
+                return group.meta ? group.meta.applications : '';
             },
 
-            _onGroupChanged: function(group) {
-                this.active = group.selected ? group.selected : false;
+            _computeGroupContactsApiUrl: function(group) {
+                return group.meta ? group.meta.contacts : '';
             },
 
             _onGroupRolesError: function() {
@@ -390,63 +246,7 @@ Custom property | Description | Default
                 var response = event.detail.response;
 
                 this._groupContactsCount = (response && response.meta) ? response.meta.total : 0;
-            },
-
-            _onGroupAction: function() {
-                this.active = !this.active;
-                this.group.selected = this.active;
-
-                /**
-                 * Fired when whole item is tapped.
-                 *
-                 * @event group
-                 * @param {Object} group
-                 */
-                this.fire('group-selected', {
-                    group: this.group
-                });
-            },
-
-            _onInfoAction: function(event) {
-                event.stopPropagation();
-
-                /**
-                 * Fired when `info` action is tapped.
-                 *
-                 * @event info
-                 * @param {Object} group
-                 */
-                this.fire('info', {
-                    group: this.group
-                });
-            },
-
-            _onRemoveAction: function(event) {
-                event.stopPropagation();
-
-                /**
-                 * Fired when `remove` action is tapped.
-                 *
-                 * @event remove
-                 * @param {Object} group
-                 */
-                this.fire('remove', {
-                    group: this.group
-                });
-            },
-
-            _onEditAction: function(event) {
-                event.stopPropagation();
-
-                /**
-                 * Fired when `edit` is tapped.
-                 * @event edit
-                 */
-                this.fire('edit-company-group', {
-                    group: this.group
-                });
             }
-
         });
     </script>
 </dom-module>

@@ -7,7 +7,6 @@
 <link rel="import" href="../bower_components/iron-media-query/iron-media-query.html">
 
 <link rel="import" href="components/page/appsco-content.html">
-<link rel="import" href="components/application/appsco-applications.html">
 <link rel="import" href="components/application/appsco-application-info.html">
 <link rel="import" href="components/application/appsco-application-analytics-security.html">
 <link rel="import" href="components/application/appsco-application-analytics-info.html">
@@ -16,6 +15,7 @@
 <link rel="import" href="components/application/company/appsco-application-assignees.html">
 <link rel="import" href="components/components/appsco-search.html">
 <link rel="import" href="components/group/appsco-company-groups.html">
+<link rel="import" href="components/application/company/appsco-company-resources.html">
 
 <dom-module id="appsco-resources-page">
     <template>
@@ -25,10 +25,6 @@
 
                 --resource-width: 318px;
                 --info-width: 318px;
-
-                --appsco-application-item: {
-                     color: var(--primary-text-color);
-                 };
 
                 --appsco-list-item-message: {
                     font-size: 14px;
@@ -44,10 +40,6 @@
                 --application-details-value: {
                     font-size: 14px;
                 };
-
-                --applications-container: {
-                     margin-right: -30px;
-                 };
 
                 --subscriber-initials-background-color: var(--body-background-color-darker);
             }
@@ -207,13 +199,12 @@
                                            on-search-clear="_onSearchGroupsClear"></appsco-search>
 
                             <appsco-company-groups id="appscoCompanyGroups"
-                                                   groups-api="[[ groupsApi ]]"
+                                                   list-api="[[ groupsApi ]]"
                                                    authorization-token="[[ authorizationToken ]]"
                                                    size="100"
+                                                   type="group"
                                                    preview
-                                                   hide-total
-                                                   selectable
-                                                   on-group-selected="_onGroupSelected"></appsco-company-groups>
+                                                   on-item="_onGroupSelected"></appsco-company-groups>
                         </div>
                     </neon-animated-pages>
 
@@ -222,37 +213,37 @@
             </div>
 
             <div content>
-                <appsco-applications
-                        id="appscoApplications"
+                <appsco-company-resources
+                        id="appscoResources"
+                        type="resource"
                         size="100"
                         load-more
-                        company
-                        is-on-company
+                        selectable
                         authorization-token="[[ authorizationToken ]]"
-                        applications-api="[[ companyApplicationsApi ]]"
-                        account ="[[ account ]]"
-                        on-info="_onViewApplicationInfo"
-                        on-edit="_onApplicationEdit"
-                        on-application="_onApplication"
-                        on-applications-removed="_onApplicationsRemoved"
-                        on-loaded="_pageLoaded"
-                        on-empty-load="_onApplicationsEmptyLoad"></appsco-applications>
+                        list-api="[[ companyResourcesApi ]]"
+                        api-errors="[[ _apiErrors ]]"
+                        on-item="_onResourceAction"
+                        on-select-item="_onResourceSelectAction"
+                        on-edit-item="_onResourceEditAction"
+                        on-items-removed="_onResourcesRemoved"
+                        on-list-loaded="_pageLoaded"
+                        on-list-empty="_onResourcesEmptyLoad"></appsco-company-resources>
             </div>
 
             <div class="flex-vertical" info>
 
                 <div class="application-info flex-horizontal">
                     <appsco-application-info class="flex"
-                                             application="[[ application ]]"
+                                             application="[[ resource ]]"
                                              company>
                     </appsco-application-info>
 
                     <appsco-application-analytics-security
-                            application="[[ application ]]"></appsco-application-analytics-security>
+                            application="[[ resource ]]"></appsco-application-analytics-security>
                 </div>
 
                 <appsco-application-assignees id="appscoApplicationAssignees"
-                                              application="[[ application ]]"
+                                              application="[[ resource ]]"
                                               authorization-token="[[ authorizationToken ]]"
                                               api-errors="[[ apiErrors ]]"
                                               size="5"
@@ -274,12 +265,12 @@
 
                         <div name="info" class="tab-content details">
                             <appsco-application-analytics-info
-                                    application="[[ application ]]"></appsco-application-analytics-info>
+                                    application="[[ resource ]]"></appsco-application-analytics-info>
                         </div>
 
                         <div name="log" class="tab-content log">
                             <appsco-application-log
-                                    application="[[ application ]]"
+                                    application="[[ resource ]]"
                                     authorization-token="[[ authorizationToken ]]"
                                     company>
                             </appsco-application-log>
@@ -292,13 +283,13 @@
                 <div class="info-actions flex-horizontal">
                     <paper-button
                             class="view-button flex"
-                            on-tap="_onApplicationInfoEdit">
+                            on-tap="_onResourceInfoEdit">
                         Edit
                     </paper-button>
 
                     <paper-button
                             class="share-button flex"
-                            on-tap="_onShareApplication">
+                            on-tap="_onShareResource">
                         Share
                     </paper-button>
                 </div>
@@ -315,7 +306,7 @@
 
             properties: {
 
-                application: {
+                resource: {
                     type: Object,
                     value: function() {
                         return {};
@@ -376,9 +367,9 @@
                 },
 
                 /**
-                 * Get company applications.
+                 * Get company resources.
                  */
-                companyApplicationsApi: {
+                companyResourcesApi: {
                     type: String,
                     value: ''
                 },
@@ -391,7 +382,7 @@
                     value: ''
                 },
 
-                _applicationAction: {
+                _resourceSelectAction: {
                     type: Number,
                     value: 0
                 },
@@ -477,27 +468,24 @@
             },
 
             initializePage: function() {
-                this.$.appscoApplications.initialize();
-                this.setDefaultApplication();
+                this.setDefaultResource();
             },
 
             resetPage: function() {
-                this.$.appscoApplications.reset();
-
-                this.set('_orgUnits', []);
-                this.$.getOrgunitsLink.generateRequest();
-                this.$.appscoCompanyGroups.selectAllGroups(false);
+                this.$.appscoResources.reset();
+                this._resetFilters();
+                this._resetPageActions();
                 this.hideInfo();
             },
 
-            removeApplicationAssignee: function(application, assignee) {
+            removeResourceAssignee: function(resource, assignee) {
 
-                if (application.alias === this.application.alias) {
+                if (resource.alias === this.resource.alias) {
                     this.$.appscoApplicationAssignees.removeAssignee(assignee);
                 }
             },
 
-            _onApplicationsEmptyLoad: function() {
+            _onResourcesEmptyLoad: function() {
                 this.hideInfo();
                 this._pageLoaded();
             },
@@ -511,16 +499,21 @@
             hideInfo: function() {
                 this.$.appscoContent.hideSection('info');
                 this._infoShown = false;
+                this.$.appscoResources.deactivateItem(this.resource);
             },
 
             toggleInfo: function() {
 
-                if (this.$.appscoApplications.getAllApplications().length > 0) {
+                if (this.$.appscoResources.getAllItems().length > 0) {
                     this.$.appscoContent.toggleSection('info');
                     this._infoShown = !this._infoShown;
 
                     if (this._infoShown) {
                         this._selectedTab = 0;
+                    }
+                    else {
+                        this.$.appscoResources.deactivateItem(this.resource);
+                        this.setDefaultResource();
                     }
                 }
 
@@ -528,6 +521,18 @@
 
             toggleResource: function() {
                 this.$.appscoContent.toggleSection('resource');
+            },
+
+            _showBulkActions: function() {
+                this.fire('show-bulk-actions');
+            },
+
+            _hideBulkActions: function() {
+                this.fire('hide-bulk-actions');
+            },
+
+            _resetPageActions: function() {
+                this.fire('reset-page-actions')
             },
 
             _onOrgunitsResponse: function(event) {
@@ -544,144 +549,137 @@
 
             modifyOrgunit: function(orgunit) {
                 this.$.appscoOrgunitTree.setOrgunit(orgunit);
-                this.$.appscoApplications.setOrgunit(orgunit);
+                this.$.appscoResources.setOrgunit(orgunit);
             },
 
             removeOrgunit: function(orgunit) {
                 this.$.appscoOrgunitTree.removeOrgunit(orgunit);
             },
 
-            addGroup: function (group) {
-                this.$.appscoCompanyGroups.addGroup(group);
+            addGroup: function(group) {
+                this.$.appscoCompanyGroups.addItems([group]);
             },
 
-            removeGroup: function (group) {
-                this.$.appscoCompanyGroups.removeGroup(group);
+            removeGroup: function(group) {
+                this.$.appscoCompanyGroups.removeItems([group]);
             },
 
-            _handleApplicationInfo: function(application) {
-                this.set('application', application);
+            _handleResourceInfo: function(resource) {
+                this.set('resource', resource);
 
                 if (!this._infoShown) {
                     this._showInfo();
                 }
             },
 
-            _onViewApplicationInfo: function(event) {
-                this._handleApplicationInfo(event.detail.application);
+            _onViewResourceInfo: function(event) {
+                this._handleResourceInfo(event.detail.item);
             },
 
-            _onApplicationEdit: function(event) {
-                this.set('application', event.detail.application);
-                this.fire('edit-application');
+            _onResourceEditAction: function(event) {
+                this.set('resource', event.detail.item);
+                this.fire('edit-resource');
             },
 
-            _onApplicationInfoEdit: function() {
-                this.fire('info-edit-application');
+            _onResourceInfoEdit: function() {
+                this.fire('info-edit-resource');
             },
 
-            _onApplication: function(event) {
-                var application = event.detail.application;
+            _onResourceAction: function(event) {
 
-                clearTimeout(this._applicationAction);
+                if (event.detail.item.active) {
+                    this._onViewResourceInfo(event);
+                }
+                else {
+                    this.hideInfo();
+                    this.setDefaultResource();
+                }
+            },
 
-                this._applicationAction = setTimeout(function() {
+            _onResourceSelectAction: function(event) {
+                var resource = event.detail.item;
 
-                    if (application.selected) {
-                        this._onViewApplicationInfo(event);
-                        this.fire('show-bulk-actions');
+                clearTimeout(this._resourceSelectAction);
+
+                this._resourceSelectAction = setTimeout(function() {
+
+                    if (resource.selected) {
+                        this._showBulkActions();
                     }
                     else {
-                        var selectedApplication = this.$.appscoApplications.getFirstSelectedApplication();
+                        var selectedResource = this.$.appscoResources.getFirstSelectedItem();
 
-                        if (!selectedApplication) {
-                            this.hideInfo();
-                            this.setDefaultApplication();
-                            this.fire('hide-bulk-actions');
+                        for (key in selectedResource) {
+                            return false;
                         }
-                        else if (application.self === this.application.self) {
-                            this._handleApplicationInfo(selectedApplication);
-                        }
+
+                        this._hideBulkActions();
                     }
 
                 }.bind(this), 10);
             },
 
-            _onShareApplication: function() {
-                this.fire('share-company-application', {
-                    application: this.application
+            _onShareResource: function() {
+                this.fire('share-company-resource', {
+                    resource: this.resource
                 });
             },
 
-            reloadApplications: function() {
-                this.$.appscoApplications.reloadApplications();
+            reloadResources: function() {
+                this.$.appscoResources.reloadItems();
             },
 
-            addApplications: function(applications) {
-                this.$.appscoApplications.addApplications(applications);
+            addResources: function(resources) {
+                this.$.appscoResources.addItems(resources);
 
-                if (!this.application) {
-                    this.set('application', applications[applications.length - 1]);
+                if (!this.resource) {
+                    this.set('resource', resources[resources.length - 1]);
                 }
             },
 
-            modifyApplications: function(applications) {
-                this.$.appscoApplications.modifyApplications(applications);
+            modifyResources: function(resources) {
+                this.$.appscoResources.modifyItems(resources);
             },
 
-            removeApplications: function(applications) {
-                this.$.appscoApplications.removeApplications(applications);
-                this.setDefaultApplication();
+            removeResources: function(resources) {
+                this.$.appscoResources.removeItems(resources);
+                this.setDefaultResource();
             },
 
-            removeApplication: function(application) {
-                this.$.appscoApplications.removeApplications(application);
+            getSelectedResources: function() {
+                return this.$.appscoResources.getSelectedItems();
             },
 
-            getSelectedApplications: function() {
-                return this.$.appscoApplications.getSelectedApplications();
+            _onResourcesRemoved: function() {
+                this._hideBulkActions();
+                this.setDefaultResource();
             },
 
-            _onApplicationsRemoved: function() {
-                this.fire('hide-bulk-actions');
-                this.setDefaultApplication();
+            setDefaultResource: function() {
+                this.set('resource', this.$.appscoResources.getFirstItem());
             },
 
-            setDefaultApplication: function() {
-                this.set('application', this.$.appscoApplications.getFirstApplication());
-            },
-
-            filterApplicationsByTerm: function(term) {
-                this.$.appscoApplications.filterByTerm(term);
+            filterResourcesByTerm: function(term) {
+                this.$.appscoResources.filterByTerm(term);
             },
 
             _onOrgunitSelected: function(event) {
-                this.$.appscoApplications.filterByOrgunit(event.detail);
+                this.$.appscoResources.filterByOrgunit(event.detail);
             },
 
             _onSelectedFilterChanged: function(filter) {
-                this._resetFilters(filter);
-            },
 
-            _resetFilters: function(filter) {
-
-                this.resetPage();
-
-                switch (filter) {
-                    case 0:
-                        this.$.appscoCompanyGroups.reset();
-                        this._onSearchGroupsClear();
-
-                        break;
-
-                    case 1:
-                        this.$.appscoOrgunitTree.reset();
-
-                        break;
+                if (this.pageLoaded) {
+                    this.resetPage();
                 }
             },
+
+            _resetFilters: function() {
+                this.$.appscoCompanyGroups.reset();
+                this.$.appscoOrgunitTree.reset();
+            },
             _searchGroups: function(term) {
-                this.$.appscoCompanyGroups.search(term);
+                this.$.appscoCompanyGroups.filterByTerm(term);
             },
 
             _onSearchGroups: function(event) {
@@ -694,13 +692,11 @@
             },
 
             _loadResourcesForGroup: function(group) {
-                this.$.appscoApplications.loadResourcesForGroup(group);
+                this.$.appscoResources.filterByGroup(group);
             },
 
             _onGroupSelected: function(event) {
-                var group = event.detail.group;
-
-                group.selected ? this._loadResourcesForGroup(group) : this.reloadApplications();
+                this._loadResourcesForGroup(event.detail.item);
             }
         });
     </script>

@@ -254,24 +254,11 @@ Custom property | Description | Default
                     value: ''
                 },
 
-                /**
-                 * Search term.
-                 */
-                _filterTerm: {
-                    type: String,
-                    value: ''
-                },
-
                 _searchedInvitations: {
                     type: Array,
                     value: function () {
                         return [];
                     }
-                },
-
-                _searchInvitationsApiUrl: {
-                    type: String,
-                    computed: '_computeSearchInvitationsApiUrl(invitationsApi, _filterTerm)'
                 },
 
                 /**
@@ -306,10 +293,6 @@ Custom property | Description | Default
                 return (invitationsApi && term) ? (invitationsApi + '?page=1&extended=1&limit=100&type=' + type + '&term=' + term) : '';
             },
 
-            _computeSearchInvitationsApiUrl: function(invitationsApi, term) {
-                return invitationsApi + '?extended=1&limit=100&term=' + term;
-            },
-
             _onInvitationsApiUrlChanged: function(url) {
 
                 if (url && url.length > 0) {
@@ -332,7 +315,7 @@ Custom property | Description | Default
             },
 
             _onError: function() {
-                this._message = 'We couldn\'t load invitations at the moment. Please try again in a minute.';
+                this._showMessage('We couldn\'t load invitations at the moment. Please contact AppsCo support.');
                 this._handleEmptyLoad();
             },
 
@@ -365,7 +348,7 @@ Custom property | Description | Default
                 }
 
                 this._invitationsEmpty = false;
-                this._message = '';
+                this._hideMessage();
 
                 invitations.forEach(function(el, index) {
 
@@ -422,11 +405,27 @@ Custom property | Description | Default
                 this._loadMore = false;
             },
 
+            _showMessage: function(message) {
+                this._message = message;
+            },
+
+            _hideMessage: function() {
+                this._message = '';
+            },
+
+            reset: function() {
+                this._hideMessage();
+                this._invitationsEmpty = false;
+                this.set('_invitations', JSON.parse(JSON.stringify(this._allInvitations)));
+                this.set('_searchedInvitations', []);
+                this._filterTerm = '';
+            },
+
             addInvitations: function(invitations) {
                 var length = invitations.length;
 
+                this._hideMessage();
                 this._invitationsEmpty = false;
-                this._message = '';
                 this._renderedIndex = length - 1;
 
                 for (var i = 0; i < length; i++) {
@@ -511,49 +510,6 @@ Custom property | Description | Default
 
             getTotalCount: function() {
                 return this._totalInvitations;
-            },
-
-            filterByTerm: function(term) {
-                this._filterTerm = term;
-
-                if (term.length < 3) {
-                    this._message = '';
-                    this.set('_invitations', JSON.parse(JSON.stringify(this._allInvitations)));
-                    this.fire('filter-done');
-                    this._setLoadMoreAction();
-                    return false;
-                }
-
-                this._searchInvitations().then(function(invitations) {
-                    this._hideLoadMoreAction();
-                    this.set('_invitations', []);
-
-                    if (invitations.length > 0) {
-                        this._message = '';
-
-                        invitations.forEach(function(invitation, index) {
-                            this.push('_invitations', invitation);
-
-                            if (index === (invitations.length - 1)) {
-
-                                this._hideProgressBar();
-                                this.fire('filter-done');
-                            }
-
-                        }.bind(this));
-
-                    }
-                    else {
-                        this._message = 'There are no invitations with asked term.';
-                        this.fire('filter-done');
-                    }
-
-                }.bind(this), function(message) {
-                    this.set('_invitations', []);
-                    this._hideLoadMoreAction();
-                    this._message = message;
-                    this.fire('filter-done');
-                }.bind(this));
             },
 
             _searchInvitations: function() {
@@ -641,7 +597,7 @@ Custom property | Description | Default
                     this.set('_searchedInvitations', []);
 
                     this._invitationsEmpty = false;
-                    this._message = '';
+                    this._hideMessage();
                     this.set('_invitations', JSON.parse(JSON.stringify(this._allInvitations)));
                     this._setLoadMoreAction();
 
@@ -653,7 +609,7 @@ Custom property | Description | Default
                 this._showProgressBar();
                 this._hideLoadMoreAction();
 
-                this._getInvitationsByTerm().then(function(invitations) {
+                this._searchInvitations().then(function(invitations) {
                     var invitationsLength = invitations.length;
 
                     this.set('_searchedInvitations', invitations);
@@ -688,40 +644,18 @@ Custom property | Description | Default
                 }.bind(this));
             },
 
-            _getInvitationsByTerm: function() {
-
-                return new Promise(function(resolve, reject) {
-                    var request = document.createElement('iron-request'),
-                            options = {
-                                url: this._searchInvitationsApiUrl,
-                                method: 'GET',
-                                handleAs: 'json',
-                                headers: this._computedHeaders
-                            };
-
-                    request.send(options).then(function() {
-                        if (request.response) {
-                            resolve(request.response.invitations.reverse());
-                        }
-
-                    }, function() {
-                        reject(request.response.message);
-                    });
-                }.bind(this));
-            },
-
             _setSearchInvitationsResult: function() {
                 this._invitationsEmpty = (0 === this._searchedInvitations.length);
 
                 if (this._invitationsEmpty) {
-                    this._message = 'There are no invitations with asked term.';
+                    this._showMessage('There are no invitations with asked term.');
                 }
                 else {
                     this.set('_invitations', this._searchedInvitations);
                     this._hideLoadMoreAction();
-                    this._message = '';
+                    this._hideMessage();
                 }
-            },
+            }
 
         });
     </script>

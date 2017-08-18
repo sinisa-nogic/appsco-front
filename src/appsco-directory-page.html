@@ -33,6 +33,10 @@
                     @apply(--paper-font-common-nowrap);
                 };
 
+                --list-container: {
+                    padding-top: 0;
+                };
+
                 --account-log-appsco-list-item: {
                     padding-top: 14px;
                     padding-bottom: 8px;
@@ -129,6 +133,7 @@
             }
             :host .account-name {
                 @apply(--paper-font-subhead);
+                @apply(--paper-font-common-nowrap);
                 font-size: 18px;
             }
             :host .flex-horizontal {
@@ -212,13 +217,13 @@
                                            on-search-clear="_onSearchGroupsClear"></appsco-search>
 
                             <appsco-company-groups id="appscoCompanyGroups"
-                                                   groups-api="[[ groupsApi ]]"
+                                                   list-api="[[ groupsApi ]]"
                                                    authorization-token="[[ authorizationToken ]]"
                                                    size="100"
+                                                   type="group"
                                                    preview
-                                                   hide-total
                                                    selectable
-                                                   on-group-selected="_onGroupSelected"></appsco-company-groups>
+                                                   on-item="_onGroupSelected"></appsco-company-groups>
                         </div>
 
                     </neon-animated-pages>
@@ -240,15 +245,17 @@
 
                     <appsco-accounts
                             id="appscoAccounts"
+                            type="account"
                             size="100"
                             load-more
-                            company
+                            selectable
                             authorization-token="[[ authorizationToken ]]"
-                            accounts-api="[[ companyDirectoryRolesApi ]]"
-                            on-edit="_onAccountEdit"
-                            on-account="_onAccount"
-                            on-loaded="_onAccountsLoaded"
-                            on-empty-load="_onAccountsEmptyLoad"></appsco-accounts>
+                            list-api="[[ companyDirectoryRolesApi ]]"
+                            on-item="_onAccountAction"
+                            on-select-item="_onAccountSelectAction"
+                            on-edit-item="_onAccountEditAction"
+                            on-list-loaded="_onAccountsLoaded"
+                            on-list-empty="_onAccountsEmptyLoad"></appsco-accounts>
                 </div>
 
             </div>
@@ -419,7 +426,7 @@
                     observer: '_onRoleChange'
                 },
 
-                _accountAction: {
+                _accountSelectAction: {
                     type: Number,
                     value: 0
                 },
@@ -549,26 +556,13 @@
                 }
             },
 
-            _onSelectedFilterChanged: function(filter) {
-                this._resetFilters(filter);
+            _onSelectedFilterChanged: function() {
+                this.resetPage();
             },
 
-            _resetFilters: function(filter) {
-
-                this.resetPage();
-
-                switch (filter) {
-                    case 0:
-                        this.$.appscoCompanyGroups.reset();
-                        this._onSearchGroupsClear();
-
-                        break;
-
-                    case 1:
-                        this.$.appscoOrgunitTree.reset();
-
-                        break;
-                }
+            _resetFilters: function() {
+                this.$.appscoCompanyGroups.reset();
+                this.$.appscoOrgunitTree.reset();
             },
 
             _onSubscriptionLimitInfoHandled: function(handled) {
@@ -595,6 +589,10 @@
                 if (this._infoShown) {
                     this._selectedTab = 0;
                 }
+                else {
+                    this.$.appscoAccounts.deactivateItem(this.role);
+                    this.setDefaultAccount();
+                }
             },
 
             toggleResource: function() {
@@ -603,7 +601,7 @@
 
             reloadAccounts: function() {
                 this._accountsLoaded = false;
-                this.$.appscoAccounts.reloadAccounts();
+                this.$.appscoAccounts.reloadItems();
             },
 
             setSubscription: function(subscription) {
@@ -612,19 +610,24 @@
             },
 
             addGroup: function(group) {
-                this.$.appscoCompanyGroups.addGroup(group);
+                this.$.appscoCompanyGroups.addItems([group]);
             },
 
             removeGroup: function (group) {
-                this.$.appscoCompanyGroups.removeGroup(group);
+                this.$.appscoCompanyGroups.removeItems([group]);
             },
 
             resetPage: function() {
                 this.set('selectedAccounts', []);
-                this.$.appscoAccounts.selectAllAccounts(false);
-                this.$.appscoCompanyGroups.selectAllGroups(false);
-                this._hideBulkActions();
+                this.$.appscoAccounts.reset();
+                this.$.appscoInvitations.reset();
+                this._resetFilters();
+                this._resetPageActions();
                 this.hideInfo();
+            },
+
+            _resetPageActions: function() {
+                this.fire('reset-page-actions');
             },
 
             _onRoleChange: function(role) {
@@ -677,11 +680,11 @@
             },
 
             _onViewInfo: function(event) {
-                this._handleAccountInfo(event.detail.role);
+                this._handleAccountInfo(event.detail.item);
             },
 
             setDefaultAccount: function() {
-                this.set('role', this.$.appscoAccounts.getFirstAccount());
+                this.set('role', this.$.appscoAccounts.getFirstItem());
             },
 
             _showBulkActions: function() {
@@ -692,8 +695,8 @@
                 this.fire('hide-bulk-actions');
             },
 
-            _onAccountEdit: function(event) {
-                var role = event.detail.role;
+            _onAccountEditAction: function(event) {
+                var role = event.detail.item;
 
                 this.set('role', role);
                 this.fire('edit-account', {
@@ -701,28 +704,35 @@
                 });
             },
 
-            _onAccount: function(event) {
-                var role = event.detail.role;
+            _onAccountAction: function(event) {
 
-                clearTimeout(this._accountAction);
+                if (event.detail.item.active) {
+                    this._onViewInfo(event);
+                }
+                else {
+                    this.hideInfo();
+                    this.setDefaultAccount();
+                }
+            },
 
-                this._accountAction = setTimeout(function() {
+            _onAccountSelectAction: function(event) {
+                var account = event.detail.item;
 
-                    if (role.selected) {
-                        this._onViewInfo(event);
+                clearTimeout(this._accountSelectAction);
+
+                this._accountSelectAction = setTimeout(function() {
+
+                    if (account.selected) {
                         this._showBulkActions();
                     }
                     else {
-                        var selectedAccount = this.$.appscoAccounts.getFirstSelectedAccount();
+                        var selectedAccount = this.$.appscoAccounts.getFirstSelectedItem();
 
-                        if (!selectedAccount) {
-                            this.hideInfo();
-                            this.setDefaultAccount();
-                            this._hideBulkActions();
+                        for (key in selectedAccount) {
+                            return false;
                         }
-                        else if (role.self === this.role.self && this.role.selected) {
-                            this._handleAccountInfo(selectedAccount);
-                        }
+
+                        this._hideBulkActions();
                     }
 
                 }.bind(this), 10);
@@ -739,7 +749,7 @@
                     return;
                 }
 
-                this._orgUnits = event.detail.response.orgunits
+                this._orgUnits = event.detail.response.orgunits;
             },
 
             _onDomainResponse: function(event) {
@@ -852,22 +862,22 @@
             },
 
             addAccounts: function(accounts) {
-                this.$.appscoAccounts.addAccounts(accounts);
+                this.$.appscoAccounts.addItems(accounts);
                 this._evaluateSubscriptionLicences();
             },
 
             modifyAccounts: function(accounts) {
-                this.$.appscoAccounts.modifyAccounts(accounts);
+                this.$.appscoAccounts.modifyItems(accounts);
             },
 
             removeAccounts: function(accounts) {
-                this.$.appscoAccounts.removeAccounts(accounts);
+                this.$.appscoAccounts.removeItems(accounts);
                 this.setDefaultAccount();
                 this._evaluateSubscriptionLicences();
             },
 
             getSelectedAccounts: function() {
-                return this.$.appscoAccounts.getSelectedAccounts();
+                return this.$.appscoAccounts.getSelectedItems();
             },
 
             filterDirectoryResourcesByTerm: function(term) {
@@ -880,7 +890,7 @@
             },
 
             _searchGroups: function(term) {
-                this.$.appscoCompanyGroups.search(term);
+                this.$.appscoCompanyGroups.filterByTerm(term);
             },
 
             _onSearchGroups: function(event) {
@@ -893,13 +903,11 @@
             },
 
             _loadCompanyRolesForGroup: function(group) {
-                this.$.appscoAccounts.loadCompanyRolesForGroup(group);
+                this.$.appscoAccounts.filterByGroup(group);
             },
 
             _onGroupSelected: function(event) {
-                var group = event.detail.group;
-
-                group.selected ? this._loadCompanyRolesForGroup(group) : this.reloadAccounts();
+                this._loadCompanyRolesForGroup(event.detail.item);
             }
         });
     </script>

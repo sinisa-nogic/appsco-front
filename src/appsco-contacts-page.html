@@ -26,10 +26,6 @@
                 --resource-width: 318px;
                 --info-width: 318px;
 
-                --contacts-progress-bar: {
-                    display: none;
-                };
-
                 --account-details-label: {
                     font-size: 12px;
                 };
@@ -43,6 +39,10 @@
                 };
 
                 --appsco-account-log-container: {
+                    padding-top: 0;
+                };
+
+                --list-container: {
                     padding-top: 0;
                 };
             }
@@ -161,13 +161,13 @@
                                    on-search-clear="_onSearchGroupsClear"></appsco-search>
 
                     <appsco-company-groups id="appscoCompanyGroups"
-                                           groups-api="[[ groupsApi ]]"
+                                           list-api="[[ groupsApi ]]"
                                            authorization-token="[[ authorizationToken ]]"
                                            size="100"
+                                           type="group"
                                            preview
-                                           hide-total
                                            selectable
-                                           on-group-selected="_onGroupSelected"></appsco-company-groups>
+                                           on-item="_onGroupSelected"></appsco-company-groups>
                 </div>
             </div>
 
@@ -194,14 +194,17 @@
                         <appsco-contacts
                                 id="appscoContacts"
                                 name="contacts"
+                                type="contact"
                                 size="100"
                                 load-more
+                                selectable
                                 authorization-token="[[ authorizationToken ]]"
-                                contacts-api="[[ companyContactsApi ]]"
-                                on-loaded="_onContactsLoaded"
-                                on-empty-load="_onContactsEmptyLoad"
-                                on-contact="_onContactAction"
-                                on-edit="_onEditContactAction"></appsco-contacts>
+                                list-api="[[ companyContactsApi ]]"
+                                on-list-loaded="_onContactsLoaded"
+                                on-list-empty="_onContactsEmptyLoad"
+                                on-item="_onContactAction"
+                                on-edit-item="_onEditContactAction"
+                                on-select-item="_onSelectContactAction"></appsco-contacts>
                     </neon-animated-pages>
                 </div>
             </div>
@@ -382,7 +385,7 @@
                     type: Number
                 },
 
-                _contactAction: {
+                _contactSelectAction: {
                     type: Number,
                     value: 0
                 }
@@ -417,6 +420,10 @@
                     if (this._infoShown) {
                         this._selectedTab = 0;
                     }
+                    else {
+                        this.$.appscoContacts.deactivateItem(this.contact);
+                        this._setDefaultContact();
+                    }
                 }
             },
 
@@ -430,24 +437,20 @@
             },
 
             _setDefaultContact: function() {
-                this.set('contact', this.$.appscoContacts.getFirstContact());
+                this.set('contact', this.$.appscoContacts.getFirstItem());
             },
 
             addContacts: function(contacts) {
-                this.$.appscoContacts.addContacts(contacts);
+                this.$.appscoContacts.addItems(contacts);
             },
 
             modifyContacts: function(contacts) {
-                this.$.appscoContacts.modifyContacts(contacts);
+                this.$.appscoContacts.modifyItems(contacts);
             },
 
             removeContacts: function(contacts) {
-                this.$.appscoContacts.removeContacts(contacts);
+                this.$.appscoContacts.removeItems(contacts);
                 this._setDefaultContact();
-            },
-
-            removeSelectedContacts: function(contacts) {
-                this.$.appscoContacts.removeSelectedContacts(contacts);
             },
 
             reloadContactsAndActions: function() {
@@ -481,29 +484,32 @@
                         break;
 
                     default:
-                        this.$.appscoContacts.filterByTerm(term);
-                        this.$.appscoInvitations.filterByTerm(term);
+                        return false;
                 }
             },
 
             selectAllContacts: function() {
                 this._selectAll = !this._selectAll;
-                this.$.appscoContacts.selectAll(this._selectAll);
-                if (!this._selectAll) {
+
+                if (this._selectAll) {
+                    this.$.appscoContacts.selectAllItems();
+                }
+                else {
+                    this.$.appscoContacts.deselectAllItems();
                     this._hideBulkActions();
                 }
             },
 
             getSelectedContacts: function() {
-                return this.$.appscoContacts.getSelectedContacts();
+                return this.$.appscoContacts.getSelectedItems();
             },
 
             addGroup: function(group) {
-                this.$.appscoCompanyGroups.addGroup(group);
+                this.$.appscoCompanyGroups.addItems([group]);
             },
 
-            removeGroup: function (group) {
-                this.$.appscoCompanyGroups.removeGroup(group);
+            removeGroup: function(group) {
+                this.$.appscoCompanyGroups.removeItems([group]);
             },
 
             resetGroupSelection: function() {
@@ -524,21 +530,21 @@
 
             resetPage: function() {
                 this._resetPageActions();
+                this._resetPageLists();
                 this._showContacts();
-                this._resetPageLists('all');
                 this.hideInfo();
             },
 
             _resetPageActions: function() {
                 this._onSearchGroupsClear();
-                this.$.appscoCompanyGroups.selectAllGroups(false);
+                this.$.appscoCompanyGroups.resetAllItems();
                 this.fire('reset-page-actions');
             },
 
-            _resetPageLists: function(page) {
+            _resetPageLists: function() {
                 this._selectAll = false;
-                this.$.appscoContacts.selectAll(this._selectAll);
-                this.filterByTerm('', page);
+                this.$.appscoContacts.reset();
+                this.$.appscoInvitations.reset();
             },
 
             _computeAccount: function(contact) {
@@ -574,7 +580,7 @@
             },
 
             _reloadContacts: function() {
-                this.$.appscoContacts.reloadContacts();
+                this.$.appscoContacts.reloadItems();
             },
 
             _onInvitationsLoaded: function() {
@@ -618,7 +624,7 @@
             },
 
             _searchGroups: function(term) {
-                this.$.appscoCompanyGroups.search(term);
+                this.$.appscoCompanyGroups.filterByTerm(term);
             },
 
             _onSearchGroups: function(event) {
@@ -631,37 +637,42 @@
             },
 
             _loadContactsForGroup: function(group) {
-                this.$.appscoContacts.loadContactsForGroup(group);
+                this.$.appscoContacts.filterByGroup(group);
             },
 
             _onGroupSelected: function(event) {
-                var group = event.detail.group;
-
-                group.selected ? this._loadContactsForGroup(group) : this._reloadContacts();
+                this._loadContactsForGroup(event.detail.item);
             },
 
             _onContactAction: function(event) {
-                var contact = event.detail.contact;
 
-                clearTimeout(this._contactAction);
+                if (event.detail.item.active) {
+                    this._onViewInfo(event);
+                }
+                else {
+                    this.hideInfo();
+                    this._setDefaultContact();
+                }
+            },
 
-                this._contactAction = setTimeout(function() {
+            _onSelectContactAction: function(event) {
+                var contact = event.detail.item;
+
+                clearTimeout(this._contactSelectAction);
+
+                this._contactSelectAction = setTimeout(function() {
 
                     if (contact.selected) {
-                        this._onViewInfo(event);
                         this._showBulkActions();
                     }
                     else {
-                        var selectedContact = this.$.appscoContacts.getFirstSelectedContact();
+                        var selectedContact = this.$.appscoContacts.getFirstSelectedItem();
 
-                        if (!selectedContact) {
-                            this.hideInfo();
-                            this._setDefaultContact();
-                            this._hideBulkActions();
+                        for (key in selectedContact) {
+                            return false;
                         }
-                        else if (contact.self === this.contact.self) {
-                            this._handleInfo(selectedContact);
-                        }
+
+                        this._hideBulkActions();
                     }
 
                 }.bind(this), 10);
@@ -670,7 +681,7 @@
             _onEditContactAction: function(event) {
 
                 this.fire('edit-contact', {
-                    contact: event.detail.contact
+                    contact: event.detail.item
                 });
             },
 
@@ -700,12 +711,12 @@
             },
 
             _onViewInfo: function(event) {
-                this._handleInfo(event.detail.contact);
+                this._handleInfo(event.detail.item);
             },
 
-            _onPageAnimationFinished: function(event) {
+            _onPageAnimationFinished: function() {
                 this._resetPageActions();
-                this._resetPageLists(event.detail.fromPage.getAttribute('name'));
+                this._resetPageLists();
             }
         });
 

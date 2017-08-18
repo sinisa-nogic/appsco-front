@@ -1,0 +1,141 @@
+<link rel="import" href="../../../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../../../bower_components/iron-image/iron-image.html">
+<link rel="import" href="../../../../bower_components/iron-icon/iron-icon.html">
+<link rel="import" href="../../../../bower_components/iron-icons/iron-icons.html">
+<link rel="import" href="../../../../bower_components/paper-button/paper-button.html">
+<link rel="import" href="../../../../bower_components/neon-animation/neon-animation-runner-behavior.html">
+<link rel="import" href="../../../../bower_components/neon-animation/animations/fade-in-animation.html">
+<link rel="import" href="../../../../bower_components/neon-animation/animations/fade-out-animation.html">
+
+<link rel="import" href="../../components/appsco-list-item-behavior.html">
+<link rel="import" href="../../components/appsco-list-item-styles.html">
+
+<!--
+`appsco-company-resource-item`
+Presents company resource in form of an item.
+
+    <appsco-company-resource-item item="{}"
+                                  type="resource">
+    </appsco-company-resource-item>
+
+### Styling
+
+`<appsco-company-resource-item>` provides the following custom properties and mixins for styling:
+
+Custom property | Description | Default
+----------------|-------------|----------
+`--appsco-list-item` | Mixin for list item | `{}`
+`--background-color` | Background color applied to the item | `#fff`
+`--color` | Color applied to text inside item | `#333`
+-->
+
+<dom-module id="appsco-company-resource-item">
+    <template>
+        <style include="appsco-list-item-styles"></style>
+
+        <style>
+            :host {
+                --icon-action-border-radius: 16px;
+            }
+        </style>
+
+        <div class="item" on-tap="_onItemAction">
+            <div class="select-action"
+                 on-tap="_onSelectItemAction">
+                <iron-image class="item-icon"
+                            placeholder="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAABGdBTUEAALGPC/xhBQAAAI5JREFUeAHt1YEJwCAQBEFN/60KYgMRbGMnHXjs5Ofa5x/h7wu//T3dAAqIL4BAPIChAAXEF0AgHoCfIAIIxBdAIB6AK4AAAvEFEIgH4AoggEB8AQTiAbgCCCAQXwCBeACuAAIIxBdAIB6AK4AAAvEFEIgH4AoggEB8AQTiAbgCCCAQXwCBeACuAAIIxBe4yV0EThqVC64AAAAASUVORK5CYII="
+                            sizing="cover"
+                            preload
+                            fade
+                            src="[[ _resourceIcon ]]"></iron-image>
+
+                <div class="icon-action">
+                    <div class="iron-action-inner">
+                        <iron-icon icon="icons:check"></iron-icon>
+                    </div>
+                </div>
+            </div>
+
+            <div class="item-info item-basic-info">
+                <span class="info-label item-title">[[ item.title ]]</span>
+                <span class="info-value">[[ _resourceType ]]</span>
+            </div>
+
+            <div class="item-info item-additional-info">
+                <template is="dom-if" if="[[ _orgUnits ]]">
+                    <div class="info">
+                        <span class="info-label">Organization units:&nbsp;</span>
+                        <span class="info-value">[[ _orgUnits ]]</span>
+                    </div>
+                </template>
+
+                <template is="dom-if" if="[[ _groups ]]">
+                    <div class="info">
+                        <span class="info-label">Groups:&nbsp;</span>
+                        <span class="info-value">[[ _groups ]]</span>
+                    </div>
+                </template>
+            </div>
+
+            <div class="actions">
+                <paper-button on-tap="_onEditItemAction">Edit</paper-button>
+            </div>
+        </div>
+
+    </template>
+
+    <script>
+        Polymer({
+
+            is: 'appsco-company-resource-item',
+
+            properties: {
+
+                _resourceIcon: {
+                    type: String,
+                    computed: '_computeResourceIcon(item)'
+                },
+
+                _resourceType: {
+                    type: String,
+                    computed: '_computeResourceType(item)'
+                }
+            },
+
+            behaviors: [
+                Polymer.NeonAnimationRunnerBehavior,
+                Polymer.AppscoListItemBehavior
+            ],
+
+            _computeResourceIcon: function(resource) {
+                return resource.application_url ? resource.application_url : '';
+            },
+
+            _computeResourceType: function(resource) {
+
+                switch (resource.auth_type) {
+                    case 'login':
+                        return 'Login';
+
+                    case 'cc':
+                        return 'Credit Card';
+
+                    case 'softwarelicence':
+                        return 'Software Licence';
+
+                    case 'passport':
+                        return 'Passport';
+
+                    case 'securenote':
+                        return 'Secure Note';
+
+                    case 'none':
+                        return 'Link';
+
+                    default:
+                        return 'Application';
+                }
+            }
+        });
+    </script>
+</dom-module>

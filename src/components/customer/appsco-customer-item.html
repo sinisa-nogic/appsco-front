@@ -1,0 +1,271 @@
+<link rel="import" href="../../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../../bower_components/iron-icon/iron-icon.html">
+<link rel="import" href="../../../bower_components/iron-icons/iron-icons.html">
+<link rel="import" href="../../../bower_components/paper-button/paper-button.html">
+<link rel="import" href="../../../bower_components/neon-animation/neon-animation-runner-behavior.html">
+<link rel="import" href="../../../bower_components/neon-animation/animations/fade-in-animation.html">
+<link rel="import" href="../../../bower_components/neon-animation/animations/fade-out-animation.html">
+<link rel="import" href="../../../bower_components/iron-ajax/iron-ajax.html">
+
+<link rel="import" href="../components/appsco-list-item-behavior.html">
+<link rel="import" href="../components/appsco-list-item-styles.html">
+<link rel="import" href="../account/appsco-account-image.html">
+
+<!--
+`appsco-customer-item`
+Presents customer in form of an item.
+
+    <appsco-customer-item item="{}"
+                          authorization-token=""
+                          preview>
+    </appsco-customer-item>
+
+### Styling
+
+`<appsco-customer-item>` provides the following custom properties and mixins for styling:
+
+Custom property | Description | Default
+----------------|-------------|----------
+`--background-color` | Background color applied to the root element | `#fff`
+`--color` | Color applied to all the text | `#33`
+`--appsco-customer-item` | Mixin applied to customer item element | `{}`
+`--group-basic-info` | Mixin applied to the basic info | `{}`
+`--group-status-info` | Mixin applied to the status info | `{}`
+`--group-basic-info-values` | Mixin applied to the basic info values | `{}`
+`--group-status-info-values` | Mixin applied to the status info values | `{}`
+
+-->
+
+<dom-module id="appsco-customer-item">
+    <template>
+        <style include="appsco-list-item-styles"></style>
+
+        <style>
+            :host .customer-icon-container {
+                width: 52px;
+                height: 52px;
+                margin: 0;
+                border-radius: 26px;
+                background-color: var(--customer-icon-background-color, --account-initials-background-color);
+                position: relative;
+            }
+            :host .customer-icon {
+                width: 24px;
+                height: 24px;
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                margin: auto;
+
+                --iron-icon-fill-color: var(--primary-text-color, #ffffff);
+            }
+        </style>
+
+        <iron-ajax id="getPartnerAdminsApiRequest"
+                   url="[[ _partnerAdminsApiUrl ]]"
+                   headers="[[ _headers ]]"
+                   auto
+                   on-error="_onPartnerAdminsError"
+                   on-response="_onPartnerAdminsResponse"></iron-ajax>
+
+        <iron-ajax id="getLicencesApiRequest"
+                   url="[[ _licencesApiUrl ]]"
+                   headers="[[ _headers ]]"
+                   auto
+                   on-error="_onLicencesError"
+                   on-response="_onLicencesResponse"></iron-ajax>
+
+        <div class="item">
+
+            <template is="dom-if" if="[[ selectable ]]">
+                <div class="select-action"
+                     on-tap="_onSelectItemAction">
+
+                    <div class="customer-icon-container">
+                        <iron-icon class="customer-icon"
+                                   icon="icons:social:domain"></iron-icon>
+                    </div>
+
+                    <div class="icon-action">
+                        <div class="iron-action-inner">
+                            <iron-icon icon="icons:check"></iron-icon>
+                        </div>
+                    </div>
+                </div>
+            </template>
+
+            <template is="dom-if" if="[[ !selectable ]]">
+                <div class="customer-icon-container">
+                    <iron-icon class="customer-icon"
+                               icon="icons:social:domain"></iron-icon>
+                </div>
+            </template>
+
+            <div class="item-info item-basic-info">
+                <span class="info-label group-title">[[ item.name ]]</span>
+                <span class="info-value">[[ item.contact_email ]]</span>
+            </div>
+
+            <div class="item-info item-additional-info">
+                <div class="info">
+                    <span class="info-label">Partner admins:&nbsp;</span>
+                    <span class="info-value">[[ _partnerAdminsCount ]]</span>
+                </div>
+                <div class="info">
+                    <span class="info-label">Licences:&nbsp;</span>
+                    <span class="info-value">[[ _licencesCount ]]</span>
+                </div>
+                <div class="info">
+                    <span class="info-label">Status:&nbsp;</span>
+                    <template is="dom-if" if="[[ item.active ]]">
+                        <span class="info-value">active</span>
+                    </template>
+
+                    <template is="dom-if" if="[[ !item.active ]]">
+                        <span class="info-value">trial</span>
+                    </template>
+                </div>
+            </div>
+
+            <div class="actions">
+                <paper-button on-tap="_onEditItemAction">Edit</paper-button>
+            </div>
+        </div>
+
+    </template>
+
+    <script>
+        Polymer({
+
+            is: 'appsco-customer-item',
+
+            properties: {
+
+                listApi: {
+                    type: String,
+                    value: ''
+                },
+
+                authorizationToken: {
+                    type: String,
+                    value: ''
+                },
+
+                _headers: {
+                    type: Object,
+                    computed: '_computeHeaders(authorizationToken)'
+                },
+
+                _partnerAdminsApiUrl: {
+                    type: String,
+                    computed: '_computePartnerAdminsApiUrl(item, listApi)'
+                },
+
+                _licencesApiUrl: {
+                    type: String,
+                    computed: '_computeLicencesApiUrl(item, listApi)'
+                },
+
+                _partnerAdminsCount: {
+                    type: Number,
+                    value: 0
+                },
+
+                _partnerAdminsLoaded: {
+                    type: Boolean,
+                    value: false
+                },
+
+                _licencesCount: {
+                    type: Number,
+                    value: 0
+                },
+
+                _licencesLoaded: {
+                    type: Boolean,
+                    value: false
+                }
+            },
+
+            behaviors: [
+                Polymer.NeonAnimationRunnerBehavior,
+                Polymer.AppscoListItemBehavior
+            ],
+
+            observers: [
+                '_listenForItemInfoLoad(_partnerAdminsLoaded, _licencesLoaded)'
+            ],
+
+            listeners: {
+                'tap': '_onItemAction'
+            },
+
+            attached: function() {
+
+                if (!this.item.partner) {
+                    this.item.partner = this.listApi;
+                }
+            },
+
+            reloadInfo: function() {
+                this.$.getPartnerAdminsApiRequest.generateRequest();
+                this.$.getLicencesApiRequest.generateRequest();
+            },
+
+            _computeHeaders: function(authorizationToken) {
+                return {
+                    'Authorization': 'token ' + authorizationToken
+                }
+            },
+
+            _computePartnerAdminsApiUrl: function(customer, listApi) {
+                return (customer.partner && listApi && customer.partner !== listApi) ?
+                    customer.partner :
+                    (customer.alias && listApi) ?
+                    (listApi + '/' + customer.alias + '/partner-admins') :
+                    '';
+            },
+
+            _computeLicencesApiUrl: function (customer, listApi) {
+                return (customer.partner && listApi && customer.partner !== listApi) ?
+                    customer.partner :
+                    (customer.alias && listApi) ?
+                        (listApi + '/' + customer.alias + '/licences') :
+                        '';
+            },
+
+            _onPartnerAdminsError: function() {
+                this._partnerAdminsCount = 0;
+                this._partnerAdminsLoaded = true;
+            },
+
+            _onPartnerAdminsResponse: function(event) {
+                var response = event.detail.response;
+
+                this._partnerAdminsCount = (response && response.meta) ? response.meta.total : 0;
+                this._partnerAdminsLoaded = true;
+            },
+
+            _onLicencesError: function() {
+                this._licencesCount = 0;
+                this._licencesLoaded = true;
+            },
+
+            _onLicencesResponse: function(event) {
+                var response = event.detail.response;
+
+                this._licencesCount = (response && response.appscoLicences) ? response.appscoLicences : 0;
+                this._licencesLoaded = true;
+            },
+
+            _listenForItemInfoLoad: function(partnerAdminsLoaded, licencesLoaded) {
+
+                if (partnerAdminsLoaded && licencesLoaded) {
+                    this._showItem();
+                }
+            }
+        });
+    </script>
+</dom-module>

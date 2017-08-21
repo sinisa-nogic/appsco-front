@@ -843,9 +843,11 @@
                     <appsco-customers-page
                             id="appscoCustomersPage"
                             name="customers"
-                            company-api="[[ _companyApi ]]"
+                            customers-api="[[ _companyCustomersApi ]]"
                             authorization-token="[[ authorizationToken ]]"
                             on-edit-customer="_onEditCustomerAction"
+                            on-show-bulk-actions="_onShowBulkActions"
+                            on-hide-bulk-actions="_onHideCustomersBulkActions"
                     ></appsco-customers-page>
 
                     <appsco-groups-page
@@ -954,6 +956,7 @@
                             id="appscoAuditLogPage"
                             name="audit-log"
                             authorization-token="[[ authorizationToken ]]"
+                            audit-log-api="[[ _companyAuditLogApi ]]"
                             company-api="[[ _companyApi ]]"></appsco-audit-log-page>
 
                     <appsco-statistics-page
@@ -1700,6 +1703,21 @@
                     value: ''
                 },
 
+                _companyAuditLogApi: {
+                    type: String,
+                    value: ''
+                },
+
+                _companyCustomersApi: {
+                    type: String,
+                    value: ''
+                },
+
+                _partnerApi: {
+                    type: String,
+                    value: ''
+                },
+
                 _subscription: {
                     type: Object,
                     value: function() {
@@ -2033,10 +2051,12 @@
             },
 
             _setCompanyApi: function(company) {
-                var companyApi = company.company.self;
+                var companyApi = company.company.self,
+                    partnerApi = companyApi.replace('companies', 'partners');
 
                 this._companyApi = companyApi;
                 this._companyIconsApi = company.icons;
+                this._partnerApi = partnerApi;
 
                 if (company.company_admin) {
                     this._companyApplicationsApi = companyApi + '/applications';
@@ -2050,6 +2070,8 @@
                     this._companyGroupsApi = companyApi + '/groups';
                     this._companyGroupApi = companyApi + '/group';
                     this._companySamlMetadataApi = companyApi + '/idp/saml/metadata';
+                    this._companyAuditLogApi = companyApi + '/log';
+                    this._companyCustomersApi = partnerApi + '/customers';
                 }
             },
 
@@ -4573,6 +4595,10 @@
 //
 //                this._showManagePage('manage-customer/' + customer.alias);
             },
+
+            _onHideCustomersBulkActions: function() {
+                this.$.appscoCustomersPageActions.hideBulkActions();
+            },
             /**
              * Customers page END
              */
@@ -4665,6 +4691,10 @@
 
                     case 'company-account':
                         this.$.appscoCompanyAccountPage.pageLoaded ? this._hideProgressBar() : this._showProgressBar();
+                        break;
+
+                    case 'customers':
+                        this.$.appscoCustomersPage.pageLoaded ? this._hideProgressBar() : this._showProgressBar();
                         break;
 
                     default:

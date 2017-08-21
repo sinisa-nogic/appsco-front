@@ -8,6 +8,7 @@
 <link rel="import" href="../../bower_components/app-localize-behavior/app-localize-behavior.html">
 
 <link rel="import" href="../components/components/appsco-date-format.html">
+<link rel="import" href="../components/components/appsco-list-item.html">
 <link rel="import" href="../components/account/appsco-account-image.html">
 
 <dom-module id="appsco-audit-log">
@@ -128,27 +129,37 @@
                             indeterminate></paper-progress>
 
             <template is="dom-if" if="[[ !_logEmpty ]]">
-                <div class="log-record log-header">
-                    <div class="account-info">Account</div>
-                    <div class="event">Event</div>
-                    <div class="ip-address">IP Address</div>
-                    <div class="date">Date</div>
-                </div>
 
-                <template is="dom-repeat"
-                          items="[[ _logList ]]">
-                    <div class="log-record">
-                        <div class="account-info">
-                            <appsco-account-image account="[[ item.account ]]"></appsco-account-image>
-                            <div class="account">[[ item.account.name ]]</div>
-                        </div>
-                        <div class="event">[[ item.event ]]</div>
-                        <div class="ip-address">[[ item.ip_address ]]</div>
-                        <div class="date">
-                            <appsco-date-format date="[[ item.date ]]"
-                                                options="[[ _dateFormat ]]"></appsco-date-format>
-                        </div>
+                <template is="dom-if" if="[[ preview ]]">
+                    <template is="dom-repeat"
+                              items="[[ _logList ]]">
+                        <appsco-list-item item="[[ _mapToListItem(item) ]]"></appsco-list-item>
+                    </template>
+                </template>
+
+                <template is="dom-if" if="[[ !preview ]]">
+                    <div class="log-record log-header">
+                        <div class="account-info">Account</div>
+                        <div class="event">Event</div>
+                        <div class="ip-address">IP Address</div>
+                        <div class="date">Date</div>
                     </div>
+
+                    <template is="dom-repeat"
+                              items="[[ _logList ]]">
+                        <div class="log-record">
+                            <div class="account-info">
+                                <appsco-account-image account="[[ item.account ]]"></appsco-account-image>
+                                <div class="account">[[ item.account.name ]]</div>
+                            </div>
+                            <div class="event">[[ item.event ]]</div>
+                            <div class="ip-address">[[ item.ip_address ]]</div>
+                            <div class="date">
+                                <appsco-date-format date="[[ item.date ]]"
+                                                    options="[[ _dateFormat ]]"></appsco-date-format>
+                            </div>
+                        </div>
+                    </template>
                 </template>
             </template>
         </div>
@@ -202,21 +213,14 @@
                     value: false
                 },
 
-                _loadMore: {
+                preview: {
                     type: Boolean,
                     value: false
                 },
 
-                _auditLogApi: {
-                    type: String,
-                    computed: '_computeAuditLogApi(auditLogApi)',
-                    observer: '_onAuditLogApiChanged'
-                },
-
-
-                _nextPageAuditLogApi: {
-                    type: String,
-                    value: ''
+                _loadMore: {
+                    type: Boolean,
+                    value: false
                 },
 
                 /**
@@ -226,6 +230,17 @@
                 _headers: {
                     type: Object,
                     computed: '_computeHeaders(authorizationToken)'
+                },
+
+                _auditLogApi: {
+                    type: String,
+                    computed: '_computeAuditLogApi(auditLogApi, size, _headers)',
+                    observer: '_onAuditLogApiChanged'
+                },
+
+                _nextPageAuditLogApi: {
+                    type: String,
+                    value: ''
                 },
 
                 /**
@@ -341,6 +356,11 @@
                 _filterTerm: {
                     type: String,
                     value: ''
+                },
+
+                _placeholder: {
+                    type: String,
+                    value: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIwAAACMCAMAAACZHrEMAAAAqFBMVEUAAAAnNEEnNEEnNEEnNEEnNEE8rPcnNEEnNEEnNUI8rPc8rPc8rPcnNEEnNEEnNEEnNEEnNEE8rPc8rPc8rPc8rPcnNEE8rPcnNEE8rPcnNEH///88rPeTmqAoPlDJzNBdZ3Hx8/WBiI+us7g0gLUuWno1QU1OtPjk5+kxbZg9TFtswfprc3w6oebX2ds3lNO8wMShpqxQWmWu3fye1vszeKfU7f6Nz/toHOtWAAAAGnRSTlMAnyC/EO+fYEDPYO26r4+AcFA9IIAQ388wUFlk1w8AAASsSURBVHjazNbdqqtADAXg+XEYvajam1JWkFYLIiIb2/d/uHPgwPam7kmM7p7vCRbJJBmzXR4r6z2w8N5WMTe/7FrbAqsKW1/N73DxFJAUTtGZg7m6AFtRH5gnix5CPmbmCK4M2CCU+5cnt9jM5vtG8VDx+8VxFmp2n2ZlFXZRZUbtfMFOLmdtWU7Y0SlTlSVgV2F7cbISuys3FscVOEDhzAZ5wCFCbsQiDhONkMWB7BFZ+qmZb/TtNjdTr0ijyNJ3M70xd70wjT5L37S0om16SRp9lqmlH7QTP40+y4MSHsI0+izHp4ncLPo00STkSOqIpUNSYhe7gJSxJZZ2REpw5gdZIWmSvlFFZtaVSBqJbURSaVadkfYktifSzqtNCkgbiG1AWlhr1AlpLxJ4Ie20vUnoSKDD1kZlFzDMJDCD4fKuURU4vkjgCxzVm3UHFhIBi+Pfx+PDWNFNWtxJ5I6F4Eb5T4bxzMLow8hLYz8bxrJGSR9GPlDlp8OUzAupDyO7lxFcI4mM4IqcudYvPeF0O3w+zPcTrsEkP5R8tfmnAN+NBG7gK+RdwpMEnhBwiVnS//QEYuLrq100dyyYn+EAvnEigWkEXzB/XcH3IKEH+K6ywe5IrANbvfwetHOtn24r2zIDiQ0ABJsGfLQB+JYPp/oW6C9CbiKA/+PNIJoKfA2JNeCrjAXfRGIT+KzxECCxHnxeFmYmoRkC3iBB16cOEgYiA4m0SFCFaY6bJXmYvhUVpoeIgUyjKIwijP4kDD0StGFef2g1t50GgSCABrSBPhj7aHDcGgPZkk0lFlr+/880PDhpaumc4pwvONnN7ly35ks6VAAiw0c84FiADHjgPI9ZLvOx/LfjMrxnz6sULsMDZnUPGigJu6VxYHnUVrb/meCpDEiu3GUyTTsJb4ZAwHkGCbm7TAFKFXeZEhRx7jKgvHWXWYPCHzXTvipOBloi7k97A5pF7jIv2kZDfDrIrECD0T1QPoHWq7tMAZrSMJ85VJRc2/WId4fkag0GGbB44r/eBox44ACB/3o5GH6xb4a/7Yf71m1D0xoK7l3bhApQ8IFpaI6dSHw1EEW6o1lo9QhHyaHtZCJZZJJMdK36GBfBcqvJROxvu/RRROw+OVg/aGo5Iw7zW69DlDPqhiytlLOHspdLUn/62+TUJ7lkP3s8pXFlJdRyjfgrpCJjlGvUYf5dKyVVUaM0Dj+MKakH1Cln15xUhcN1MsMCmKo46+S3V+O+m7VjFYdhIAigU22x2nCglTE+llRxkYBJlf//tbsikKQ4CVtand4XDCPBNnPdzMV2/f70VRwNrpu52dbP0WBhTnl+mKvHubh7PWVqcSvnlJng+tfyKud1If98qNvdurjfMo/0vN6rdbP+XuvsoP1iHV2yg3ZosI6CIitaRxEFbN0wisg6IWCYNAQMk4aAYdIQMEwaAoZJQ8AwaQg7sblh7BaDuQgRB+hsDmbFIVOy5tKEo5ZgTYUFFSaxhuRZywDlhAXVpvTvv+WdklUjRStRrIpEtBSpopWI1jQFOyAkhYeJxXYSnuBGeceNmFnhTFmCFQVhRR+Rac40QhzRWeREIvZGhFJNjh/wS1HnPv+ePgAAAABJRU5ErkJggg=='
                 }
             },
 
@@ -350,10 +370,6 @@
 
             attached: function() {
                 this.loadResources(this.resolveUrl('data/locales.json'));
-            },
-
-            _computeAuditLogApi: function(auditLogApi) {
-                return auditLogApi ? (auditLogApi + '?limit=' + this.size) : '';
             },
 
             /**
@@ -368,6 +384,10 @@
                     'Authorization': 'token ' + authorizationToken,
                     'Content-Type': 'application/x-www-form-urlencoded'
                 }
+            },
+
+            _computeAuditLogApi: function(auditLogApi, size, headers) {
+                return (auditLogApi && size && headers.Authorization) ? (auditLogApi + '?limit=' + size) : '';
             },
 
             _setLoadMoreAction: function() {
@@ -790,12 +810,24 @@
                         logItem.event = this.localize('application_username_copied', 'application', item.data.application.title);
                         break;
 
+                    case 'company_customer_added':
+                        logItem.event = this.localize('customer_added_to_company', 'customer', item.data.customer);
+                        break;
+
                     default:
 //                        console.log(item.type + ' not supported yet.');
                 }
 
                 return logItem;
 
+            },
+
+            _mapToListItem: function(item) {
+                return {
+                    icon: item.account.image ? item.account.image : this._placeholder,
+                    date: item.date,
+                    message: item.event
+                };
             },
 
             /**
@@ -896,7 +928,8 @@
             },
 
             loadLog: function() {
-                var itemPushList = this._itemPushList;
+                var itemPushList = this._itemPushList,
+                    getAuditLogRequest = this.$.ironAjaxLog;
 
                 if (itemPushList.length > 0) {
                     for (var i in itemPushList) {
@@ -907,8 +940,13 @@
                 this.set('_logList', []);
                 this.set('_wholeLogList', []);
 
-                this.$.ironAjaxLog.url = this._auditLogApi;
-                this.$.ironAjaxLog.generateRequest();
+                if (getAuditLogRequest.lastRequest) {
+                    getAuditLogRequest.lastRequest.abort();
+                }
+
+                getAuditLogRequest.url = this._auditLogApi;
+                getAuditLogRequest.headers = this._headers;
+                getAuditLogRequest.generateRequest();
             },
 
             reloadLog: function() {

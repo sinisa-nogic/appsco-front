@@ -15,7 +15,9 @@
 `appsco-company-group-item`
 Presents group in form of an item.
 
-    <appsco-company-group-item group="{}" preview>
+    <appsco-company-group-item item="{}"
+                               authorization-token=""
+                               preview>
     </appsco-company-group-item>
 
 ### Styling
@@ -39,7 +41,7 @@ Custom property | Description | Default
         <style include="appsco-list-item-styles"></style>
 
         <style>
-            :host([preview][active]) {
+            :host([preview][activated]) {
                 background-color: #e8e8e8;
             }
             :host([preview]) .item-title {
@@ -167,20 +169,39 @@ Custom property | Description | Default
                     value: 0
                 },
 
+                _groupRolesLoaded: {
+                    type: Boolean,
+                    value: false
+                },
+
                 _groupResourcesCount: {
                     type: Number,
                     value: 0
                 },
 
+                _groupResourcesLoaded: {
+                    type: Boolean,
+                    value: false
+                },
+
                 _groupContactsCount: {
                     type: Number,
                     value: 0
+                },
+
+                _groupContactsLoaded: {
+                    type: Boolean,
+                    value: false
                 }
             },
 
             behaviors: [
                 Polymer.NeonAnimationRunnerBehavior,
                 Polymer.AppscoListItemBehavior
+            ],
+
+            observers: [
+                '_listenForItemInfoLoad(_groupRolesLoaded, _groupResourcesLoaded, _groupContactsLoaded)'
             ],
 
             listeners: {
@@ -210,6 +231,7 @@ Custom property | Description | Default
             _computeGroupRolesApiUrl: function(group) {
                 return group.meta ? group.meta.company_roles : '';
             },
+
             _computeGroupResourcesApiUrl: function (group) {
                 return group.meta ? group.meta.applications : '';
             },
@@ -220,32 +242,45 @@ Custom property | Description | Default
 
             _onGroupRolesError: function() {
                 this._groupRolesCount = 0;
+                this._groupRolesLoaded = true;
             },
 
             _onGroupContactsError: function() {
-                this._groupRolesCount = 0;
+                this._groupContactsCount = 0;
+                this._groupContactsLoaded = true;
             },
 
             _onGroupResourcesError: function() {
-                this._groupRolesCount = 0;
+                this._groupResourcesCount = 0;
+                this._groupResourcesLoaded = true;
             },
 
             _onGroupRolesResponse: function(event) {
                 var response = event.detail.response;
 
                 this._groupRolesCount = (response && response.meta) ? response.meta.total : 0;
+                this._groupRolesLoaded = true;
             },
 
             _onGroupResourcesResponse: function(event) {
                 var response = event.detail.response;
 
                 this._groupResourcesCount = (response && response.meta) ? response.meta.total : 0;
+                this._groupResourcesLoaded = true;
             },
 
             _onGroupContactsResponse: function(event) {
                 var response = event.detail.response;
 
                 this._groupContactsCount = (response && response.meta) ? response.meta.total : 0;
+                this._groupContactsLoaded = true;
+            },
+
+            _listenForItemInfoLoad: function(rolesLoaded, resourcesLoaded, contactsLoaded) {
+
+                if (rolesLoaded && resourcesLoaded && contactsLoaded) {
+                    this._showItem();
+                }
             }
         });
     </script>

@@ -12,7 +12,8 @@
 
 <link rel="import" href="components/page/appsco-content.html">
 <link rel="import" href="components/customer/appsco-customer-details.html">
-<link rel="import" href="components/account/appsco-account-log.html">
+<link rel="import" href="components/customer/appsco-customers.html">
+<link rel="import" href="auditlog/appsco-audit-log.html">
 
 <dom-module id="appsco-customers-page">
     <template>
@@ -128,16 +129,28 @@
 
             <div content>
                 <div class="customers-container">
-
+                    <appsco-customers
+                            id="appscoCustomers"
+                            type="customer"
+                            size="100"
+                            load-more
+                            selectable
+                            authorization-token="[[ authorizationToken ]]"
+                            list-api="[[ customersApi ]]"
+                            on-list-loaded="_onCustomersLoaded"
+                            on-list-empty="_onCustomersEmptyLoad"
+                            on-item="_onCustomerAction"
+                            on-edit-item="_onEditCustomerAction"
+                            on-select-item="_onSelectCustomerAction"></appsco-customers>
                 </div>
             </div>
 
             <div class="flex-vertical" info>
 
                 <div class="info-header flex-horizontal">
-                    <iron-icon icon="social:domain"
+                    <iron-icon icon="icons:social:domain"
                                class="customer-icon"></iron-icon>
-                    <span class="customer-name flex">[[ customer.account.name ]]</span>
+                    <span class="customer-name flex">[[ customer.name ]]</span>
                 </div>
 
                 <div class="info-content flex-vertical">
@@ -157,12 +170,11 @@
                         </div>
 
                         <div name="log" class="tab-content log">
-                            <appsco-account-log
-                                    id="accountLog"
-                                    log-api="[[ customer.meta.log ]]"
-                                    authorization-token="[[ authorizationToken ]]"
-                                    size="5"
-                                    short-view></appsco-account-log>
+                            <appsco-audit-log id="accountLog"
+                                              authorization-token="[[ authorizationToken ]]"
+                                              audit-log-api="[[ _customerLogApi ]]"
+                                              size="5"
+                                              preview></appsco-audit-log>
                         </div>
 
                     </neon-animated-pages>
@@ -199,6 +211,16 @@
                     value: ''
                 },
 
+                customersApi: {
+                    type: String,
+                    value: ''
+                },
+
+                _customerLogApi: {
+                    type: String,
+                    computed: '_computeCustomerLogApi(customer)'
+                },
+
                 _selectedTab: {
                     type: Number
                 },
@@ -206,6 +228,11 @@
                 _infoShown: {
                     type: Boolean,
                     value: false
+                },
+
+                _customerSelectAction: {
+                    type: Number,
+                    value: 0
                 },
 
                 mobileScreen: {
@@ -265,6 +292,7 @@
 
             resetPage: function() {
                 this.hideInfo();
+                this.$.appscoCustomers.resetAllItems();
             },
 
             toggleInfo: function() {
@@ -273,6 +301,10 @@
 
                 if (this._infoShown) {
                     this._selectedTab = 0;
+                }
+                else {
+                    this.$.appscoCustomers.deactivateItem(this.customer);
+                    this._setDefaultCustomer();
                 }
             },
 
@@ -285,6 +317,10 @@
                 this.$.appscoContent.toggleSection('resource');
             },
 
+            _computeCustomerLogApi: function(customer) {
+                return customer.self ? (customer.self + '/log') : '';
+            },
+
             _resetPageActions: function() {
                 this.fire('reset-page-actions');
             },
@@ -294,7 +330,7 @@
             },
 
             _setDefaultCustomer: function() {
-//                this.set('customer', this.$.appscoCustomers.getFirstItem());
+                this.set('customer', this.$.appscoCustomers.getFirstItem());
             },
 
             _onPageLoaded: function() {
@@ -306,6 +342,32 @@
                 this.$.accountLog.loadLog();
             },
 
+            _showBulkActions: function() {
+                this.fire('show-bulk-actions');
+            },
+
+            _hideBulkActions: function() {
+                this.fire('hide-bulk-actions');
+            },
+
+            _showInfo: function() {
+                this.$.appscoContent.showSection('info');
+                this._infoShown = true;
+                this._selectedTab = 0;
+            },
+
+            _handleInfo: function(customer) {
+                this.set('customer', customer);
+
+                if (!this._infoShown) {
+                    this._showInfo();
+                }
+            },
+
+            _onViewInfo: function(event) {
+                this._handleInfo(event.detail.item);
+            },
+
             _onCustomerChanged: function(customer) {
 
                 if (customer.meta && customer.meta.log) {
@@ -313,9 +375,57 @@
                 }
             },
 
-            _onEditCustomer: function() {
+            _onCustomersLoaded: function() {
+                this._onPageLoaded();
+                this._setDefaultCustomer();
+            },
+
+            _onCustomersEmptyLoad: function() {
+                this._onPageLoaded();
+            },
+
+            _onCustomerAction: function(event) {
+
+                if (event.detail.item.activated) {
+                    this._onViewInfo(event);
+                }
+                else {
+                    this.hideInfo();
+                    this._setDefaultCustomer();
+                }
+            },
+
+            _onSelectCustomerAction: function(event) {
+                var customer = event.detail.item;
+
+                clearTimeout(this._customerSelectAction);
+
+                this._customerSelectAction = setTimeout(function() {
+
+                    if (customer.selected) {
+                        this._showBulkActions();
+                    }
+                    else {
+                        var selectedCustomer = this.$.appscoCustomers.getFirstSelectedItem();
+
+                        for (key in selectedCustomer) {
+                            return false;
+                        }
+
+                        this._hideBulkActions();
+                    }
+
+                }.bind(this), 10);
+            },
+
+            _onEditCustomerAction: function(event) {
+                this._onEditCustomer(event.detail.item);
+            },
+
+            _onEditCustomer: function(customer) {
+
                 this.fire('edit-customer', {
-                    customer: this.customer
+                    customer: customer ? customer : this.customer
                 });
             }
         });

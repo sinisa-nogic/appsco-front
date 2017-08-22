@@ -125,6 +125,7 @@
 <link rel="import" href="components/contact/appsco-delete-contacts.html">
 
 <link rel="import" href="components/customer/appsco-customers-page-actions.html">
+<link rel="import" href="components/customer/appsco-add-customer.html">
 
 <link rel="import" href="shared-styles.html">
 <link rel="import" href="webkit-scrollbar-style.html">
@@ -605,6 +606,7 @@
                                     name="customers"
                                     on-search="_onSearchCustomersAction"
                                     on-search-clear="_onSearchCustomersClearAction"
+                                    on-add-customer="_onAddCustomerAction"
                             ></appsco-customers-page-actions>
 
                             <appsco-audit-log-page-actions
@@ -1371,6 +1373,14 @@
                 two-fa-api="[[ api.twoFA ]]"
                 authorization-token="[[ authorizationToken ]]"
                 api-errors="[[ _apiErrors ]]"></appsco-account-disable-2fa>
+
+        <appsco-add-customer
+                id="appscoAddCustomer"
+                authorization-token="[[ authorizationToken ]]"
+                customers-api="[[ _companyCustomersApi ]]"
+                roles-api="[[ _companyRolesApi ]]"
+                api-errors="[[ _apiErrors ]]"
+                on-customer-added="_onCustomerAdded"></appsco-add-customer>
 
         <template is="dom-if" if="[[ api.me ]]">
             <iron-ajax auto
@@ -4613,6 +4623,24 @@
 
             _onSearchCustomersClearAction: function() {
                 this._searchCustomers('');
+            },
+
+            _onAddCustomerAction: function() {
+                this.$.appscoAddCustomer.open();
+            },
+
+            _addCustomer: function(customer) {
+
+                if (this.$.appscoCustomersPage.$) {
+                    this.$.appscoCustomersPage.addCustomer(customer);
+                }
+            },
+
+            _onCustomerAdded: function(event) {
+                var customer = event.detail.customer;
+
+                this._addCustomer(customer);
+                this._notify('New customer ' + customer.name + ' was successfully added.');
             },
             /**
              * Customers page END

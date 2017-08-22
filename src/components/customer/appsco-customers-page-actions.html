@@ -5,6 +5,7 @@
 <link rel="import" href="../../../bower_components/neon-animation/animations/fade-out-animation.html">
 
 <link rel="import" href="../page/appsco-page-global.html">
+<link rel="import" href="../customer/appsco-customers-actions.html">
 
 <dom-module id="appsco-customers-page-actions">
     <template>
@@ -24,8 +25,13 @@
         </style>
 
         <div class="page-actions">
+            <appsco-customers-actions id="appscoCustomersActions"
+                                      on-search-icon="_onSearchIcon"
+                                      on-close-search="_onCloseSearch"></appsco-customers-actions>
+
             <appsco-page-global info></appsco-page-global>
         </div>
+
     </template>
 
     <script>
@@ -34,6 +40,11 @@
             is: 'appsco-customers-page-actions',
 
             properties: {
+
+                _searchActive: {
+                    type: Boolean,
+                    value: false
+                },
 
                 animationConfig: {
                     value: function() {
@@ -64,7 +75,9 @@
 
             setupPage: function() {},
 
-            resetPage: function() {},
+            resetPage: function() {
+                this.$$('#appscoCustomersActions').reset();
+            },
 
             resetPageActions: function() {},
 
@@ -76,6 +89,47 @@
             // TODO - after customers actions component is implemented
             hideBulkActions: function() {
 //                this.$$('#appscoCustomersActions').hideBulkActions();
+            },
+
+            _showSearch: function() {
+                this.customStyle['--input-search-max-width'] = '100%';
+                this.customStyle['--paper-input-search-container-tablet'] = 'width: 100%;';
+                this.$$('#appscoCustomersActions').focusSearch();
+
+                this.updateStyles();
+            },
+
+            _closeSearch: function() {
+                this._searchActive = false;
+
+                this.customStyle['--input-search-max-width'] = '22px';
+
+                // Wait for animation to finish.
+                setTimeout(function() {
+                    this.customStyle['--paper-input-search-container-tablet'] = 'width: auto';
+                    this.updateStyles();
+                }.bind(this), 200);
+
+                this.updateStyles();
+            },
+
+            _onCloseSearch: function() {
+                this._searchActive = false;
+
+                this.customStyle['--input-search-max-width'] = '22px';
+
+                // Wait for animation to finish.
+                setTimeout(function() {
+                    this.customStyle['--paper-input-search-container-tablet'] = 'width: auto';
+                    this.updateStyles();
+                }.bind(this), 200);
+
+                this.updateStyles();
+            },
+
+            _onSearchIcon: function() {
+                this._searchActive = !this._searchActive;
+                this._searchActive ? this._showSearch() : this._closeSearch();
             }
         });
     </script>

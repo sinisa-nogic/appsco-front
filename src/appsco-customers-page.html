@@ -216,6 +216,11 @@
                     value: ''
                 },
 
+                customersExportApi: {
+                    type: String,
+                    value: ''
+                },
+
                 _customerLogApi: {
                     type: String,
                     computed: '_computeCustomerLogApi(customer)'
@@ -438,6 +443,28 @@
 
                 this.fire('edit-customer', {
                     customer: (customer && customer.alias) ? customer : this.customer
+                });
+            },
+
+            exportToCsv: function() {
+                var request = document.createElement('iron-request'),
+                    options = {
+                        url: this.customersExportApi,
+                        method: 'GET',
+                        handleAs: 'text',
+                        headers: {
+                            'Authorization': 'token ' + this.authorizationToken,
+                            'Content-Type': 'application/x-www-form-urlencoded'
+                        }
+                    };
+                request.send(options).then(function(response) {
+                    var href = "data:application/octet-stream," + encodeURIComponent(response.response);
+                    var link = document.createElement('a');
+                    link.href = href;
+                    link.setAttribute('download', 'customers.csv');
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
                 });
             }
         });

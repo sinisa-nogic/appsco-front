@@ -35,12 +35,57 @@
             :host .add-action {
                 @apply(--add-item-action);
             }
+            :host .import-action {
+                @apply(--import-action);
+            }
+            .item-action-list {
+                position: absolute;
+                top: 34px;
+                right: 0;
+                width: 200px;
+                @apply(--shadow-elevation-2dp);
+                opacity: 0;
+                visibility: hidden;
+                transform: scale(1, 0.6);
+                transform-origin: top center;
+                transition: all 0.1s linear;
+                @apply(--item-action-list);
+
+            }
+            :host([_import-actions-visible]) .item-action-list {
+                opacity: 1;
+                visibility: visible;
+                transform: scale(1, 1);
+                transform-origin: top center;
+                transition: all 0.2s linear;
+            }
+            .item-icon {
+                width: 18px;
+                height: 18px;
+                margin-right: 8px;
+            }
         </style>
 
         <div class="action action-search flex-none">
 
             <appsco-search id="appscoSearch"
                            label="Search customers"></appsco-search>
+        </div>
+
+        <div class="action flex-none">
+            <paper-button class="import-action"
+                          on-tap="_onImportAction">Import from CSV</paper-button>
+
+            <paper-listbox id="actionList"
+                           class="item-action-list"
+                           on-iron-select="_onImportActionItemSelect">
+
+                <template is="dom-repeat" items="[[ _actionList ]]">
+                    <paper-item value="[[ item.value ]]">
+                        <iron-icon icon="[[ item.icon ]]" class="item-icon"></iron-icon>
+                        [[ item.name ]]</paper-item>
+                </template>
+            </paper-listbox>
         </div>
 
         <div class="action flex-none">
@@ -56,6 +101,30 @@
             is: 'appsco-customers-actions',
 
             properties: {
+
+                _importActionsVisible: {
+                    type: Boolean,
+                    value: false,
+                    reflectToAttribute: true
+                },
+
+                _actionList: {
+                    type: Array,
+                    value: function() {
+                        return [
+                            {
+                                value: 'import-customers',
+                                name: 'Customers',
+                                icon: 'icons:social:domain'
+                            },
+                            {
+                                value: 'import-customer-resources',
+                                name: 'Resources',
+                                icon: 'icons:apps'
+                            }
+                        ]
+                    }
+                },
 
                 /**
                  * Animation config for bulk actions.
@@ -106,7 +175,23 @@
                  * @event add-customer
                  */
                 this.fire('add-customer');
+            },
+
+            _onImportAction: function() {
+                this._toggleActionList();
+            },
+
+            _toggleActionList: function() {
+                this._importActionsVisible = !this._importActionsVisible;
+            },
+
+            _onImportActionItemSelect: function(event) {
+                this.fire(event.detail.item.value);
+
+                this._importActionsVisible = false;
+                this.$$('#actionList').selected = -1;
             }
+
         });
     </script>
 </dom-module>

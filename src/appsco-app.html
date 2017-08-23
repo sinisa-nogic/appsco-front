@@ -127,6 +127,7 @@
 <link rel="import" href="components/customer/appsco-customers-page-actions.html">
 <link rel="import" href="components/customer/appsco-add-customer.html">
 <link rel="import" href="components/customer/appsco-import-customers.html">
+<link rel="import" href="components/customer/appsco-import-customer-resources.html">
 
 <link rel="import" href="shared-styles.html">
 <link rel="import" href="webkit-scrollbar-style.html">
@@ -610,6 +611,7 @@
                                     on-search-clear="_onSearchCustomersClearAction"
                                     on-add-customer="_onAddCustomerAction"
                                     on-import-customers="_onImportCustomersAction"
+                                    on-import-customer-resources="_onImportCustomerResources"
                             ></appsco-customers-page-actions>
 
                             <appsco-audit-log-page-actions
@@ -1195,6 +1197,14 @@
                 on-import-finished="_onAccountImportFinished">
         </appsco-import-accounts>
 
+        <appsco-import-customer-resources
+                id="appscoImportCustomerResources"
+                authorization-token="[[ authorizationToken ]]"
+                import-api="[[ _importCustomerResourcesApi ]]"
+                domain="[[ domain ]]"
+                on-import-finished="_onCustomerResourcesImportFinished">
+        </appsco-import-customer-resources>
+
         <appsco-account-orgunit
                 id="appscoAccountOrgunit"
                 authorization-token="[[ authorizationToken ]]"
@@ -1735,6 +1745,11 @@
                     value: ''
                 },
 
+                _importCustomerResourcesApi: {
+                    type: String,
+                    value: ''
+                },
+
                 _partnerApi: {
                     type: String,
                     value: ''
@@ -2099,6 +2114,7 @@
                     this._companySamlMetadataApi = companyApi + '/idp/saml/metadata';
                     this._companyAuditLogApi = companyApi + '/log';
                     this._companyCustomersApi = partnerApi + '/customers';
+                    this._importCustomerResourcesApi = partnerApi + '/customers/import-resources';
                 }
             },
 
@@ -3567,6 +3583,14 @@
                 this._notify('Account ' + event.detail.role.account.email + ' was successfully added.');
             },
 
+            _onCustomerResourcesImportFinished: function(event) {
+                var response = event.detail.response,
+                        message;
+                message = 'Customer resources imported. Number of failed imports: ' + response.numberOfFailed;
+                this._notify(message, true);
+                this._notifyAccountLog();
+            },
+
             _onAccountImportFinished: function(event) {
                 var response = event.detail.response,
                     message;
@@ -4649,6 +4673,10 @@
 
             _onSearchCustomersClearAction: function() {
                 this._searchCustomers('');
+            },
+
+            _onImportCustomerResources: function() {
+                this.$.appscoImportCustomerResources.toggle();
             },
 
             _onAddCustomerAction: function() {

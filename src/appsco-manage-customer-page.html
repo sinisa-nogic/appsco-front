@@ -1,0 +1,405 @@
+<link rel="import" href="../bower_components/polymer/polymer.html">
+<link rel="import" href="../bower_components/neon-animation/neon-animated-pages.html">
+<link rel="import" href="../bower_components/neon-animation/animations/fade-in-animation.html">
+<link rel="import" href="../bower_components/neon-animation/animations/fade-out-animation.html">
+<link rel="import" href="../bower_components/iron-media-query/iron-media-query.html">
+<link rel="import" href="../bower_components/iron-ajax/iron-ajax.html">
+<link rel="import" href="../bower_components/iron-icon/iron-icon.html">
+
+<link rel="import" href="components/page/appsco-content.html">
+
+<dom-module id="appsco-manage-customer-page">
+    <template>
+        <style include="webkit-scrollbar-style">
+            :host {
+                display: block;
+                color: var(--app-primary-color);
+
+                --resource-width: 300px;
+            }
+            div[resource] {
+                padding: 10px;
+                height: calc(100% - 32px - 20px - 10px);
+                overflow: auto;
+            }
+            div[content] {
+                height: 100%;
+            }
+            .resource-header {
+                padding: 20px 10px 30px;
+                border-bottom: 1px solid var(--divider-color);
+                position: relative;
+            }
+            appsco-account-image {
+                --account-image: {
+                    width: 96px;
+                    height: 96px;
+                    margin-left: auto;
+                    margin-right: auto;
+                };
+
+                --account-initials-background-color: var(--body-background-color-darker);
+                --account-initials-font-size: 24px;
+            }
+            .account-info {
+                margin-top: 10px;
+                font-size: 14px;
+            }
+            .account-info p {
+                margin: 4px 0;
+            }
+            div[resource] .resource-actions {
+                position: absolute;
+                bottom: 0;
+                left: 0;
+                right: 0;
+            }
+            :host .customer-components, :host .customer-components neon-animated-pages {
+                height: 100%;
+            }
+            .flex-horizontal {
+                @apply(--layout-horizontal);
+                @apply(--layout-center);
+            }
+            .flex-vertical {
+                @apply(--layout-vertical);
+            }
+            .flex {
+                @apply(--layout-flex);
+            }
+            :host([medium-screen]) {
+                --resource-width: 240px;
+            }
+            :host([mobile-screen]) {
+                --resource-width: 180px;
+            }
+            :host div[label] {
+                color: var(--secondary-text-color);
+                @apply(--paper-font-body1);
+                @apply(--application-details-label);
+                font-size: 12px;
+            }
+            .customer-icon {
+                width: 96px;
+                height: 96px;
+                margin-left: auto;
+                margin-right: auto;
+                background-color: var(--brand-color);
+                border-radius: 50%;
+                position: relative;
+            }
+            .customer-icon iron-icon {
+                width: 48px;
+                height: 48px;
+                position: absolute;
+                top: 0;
+                right: 0;
+                bottom: 0;
+                left: 0;
+                margin: auto;
+
+                --iron-icon-fill-color: #ffffff;
+            }
+            .account-name {
+                font-size: 14px;
+                font-weight: bold;
+                margin-bottom: 16px;
+            }
+            .delete-button {
+                @apply(--primary-button);
+                @apply(--danger-button);
+                border-radius: 0;
+            }
+        </style>
+
+        <iron-media-query query="(max-width: 1200px)" query-matches="{{ mediumScreen }}"></iron-media-query>
+        <iron-media-query query="(max-width: 800px)" query-matches="{{ tabletScreen }}"></iron-media-query>
+        <iron-media-query query="(max-width: 600px)" query-matches="{{ mobileScreen }}"></iron-media-query>
+
+        <iron-ajax id="ironAjaxGetCustomer"
+                   on-error="_onGetCustomerError"
+                   on-response="_onGetCustomerResponse"
+                   headers="[[ _headers ]]"></iron-ajax>
+
+        <appsco-content id="appscoContent" resource-active>
+
+            <div class="flex-vertical" resource>
+
+                <div class="resource-header">
+                    <div class="customer-icon">
+                        <iron-icon icon="icons:social:domain"></iron-icon>
+                    </div>
+                </div>
+
+                <div class="account-info">
+                    <div class="account-name">[[ customer.name ]]</div>
+                    <div label>Contact</div>
+                    <div class="account-email">[[ customer.contact_email ]]</div>
+                </div>
+
+                <div class="resource-actions flex-horizontal">
+                    <paper-button class="delete-button flex"
+                                  on-tap="_onDeleteCustomerAction">
+                        Delete
+                    </paper-button>
+                </div>
+
+            </div>
+
+            <div content>
+
+                <div class="customer-components">
+                    <neon-animated-pages class="flex"
+                                         selected="{{ _selected }}"
+                                         attr-for-selected="name">
+
+                    </neon-animated-pages>
+                </div>
+
+            </div>
+        </appsco-content>
+
+    </template>
+
+    <script>
+        Polymer({
+            is: 'appsco-manage-customer-page',
+
+            properties: {
+
+                route: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    }
+                },
+
+                customer: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    },
+                    observer: '_onCustomerChanged'
+                },
+
+                authorizationToken: {
+                    type: String,
+                    value: ''
+                },
+
+                customersApi: {
+                    type: String,
+                    value: '',
+                    observer: '_onCustomersApiChanged'
+                },
+
+                /**
+                 * Computed headers.
+                 * It contains authorization token.
+                 */
+                _headers: {
+                    type: Object,
+                    computed: '_computeHeaders(authorizationToken)'
+                },
+
+                /**
+                 * Indicates if it is medium screen size.
+                 * It uses iron-media-query.
+                 */
+                mediumScreen: {
+                    type: Boolean,
+                    value: false,
+                    reflectToAttribute: true
+                },
+
+                tabletScreen: {
+                    type: Boolean,
+                    value: false,
+                    reflectToAttribute: true
+                },
+
+                mobileScreen: {
+                    type: Boolean,
+                    value: false,
+                    reflectToAttribute: true
+                },
+
+                /**
+                 * Selected page.
+                 * It has value of component's 'name' attribute.
+                 */
+                _selected: {
+                    type: String,
+                    value: 'appsco-customer-components-page',
+                    notify: true
+                },
+
+                /**
+                 * Animation config.
+                 */
+                animationConfig: {
+                    value: function() {
+                        return {
+                            'entry': {
+                                name: 'fade-in-animation',
+                                node: this,
+                                timing: {
+                                    duration: 300
+                                }
+                            },
+                            'exit': {
+                                name: 'fade-out-animation',
+                                node: this,
+                                timing: {
+                                    duration: 200
+                                }
+                            }
+                        }
+                    }
+                },
+
+                pageLoaded: {
+                    type: Boolean,
+                    value: false
+                }
+            },
+
+            behaviors: [
+                Polymer.NeonAnimatableBehavior
+            ],
+
+            observers: [
+                '_updateScreen(mediumScreen, tabletScreen, mobileScreen)'
+            ],
+
+            attached: function() {
+
+                this.pageLoaded = false;
+
+                if (this.mobileScreen || this.tabletScreen || this.mediumScreen) {
+                    this.updateStyles();
+                }
+
+                this._getCustomer();
+
+            },
+
+            toggleResource: function() {
+                this.$.appscoContent.toggleSection('resource');
+            },
+
+            setCustomer: function(customer) {
+                this.set('customer', customer);
+            },
+
+            resetPage: function() {
+                this._showCustomerComponentsPage();
+            },
+
+            _pageLoaded: function() {
+                this.pageLoaded = true;
+                this.fire('page-loaded');
+            },
+
+            _updateScreen: function(medium, tablet, mobile) {
+                this.updateStyles();
+
+                if (mobile) {
+                    this.$.appscoContent.hideSection('resource');
+                }
+                else if (!this.$.appscoContent.resourceActive) {
+                    this.$.appscoContent.showSection('resource');
+                }
+            },
+
+            _computeLogApi: function(customer) {
+                return customer.meta ? customer.meta.log : '';
+            },
+
+            _computeGroupsApi: function(customer) {
+                return customer.meta ? customer.meta.groups + '?extended=1' : '';
+            },
+
+            _computeHeaders: function (authorizationToken) {
+                return {
+                    'Authorization': 'token ' + authorizationToken
+                }
+            },
+
+            _onPageLoaded: function() {
+                this.pageLoaded = true;
+                this.fire('page-loaded');
+            },
+
+            _onCustomersApiChanged: function() {
+                this._getCustomer();
+            },
+
+            _onCustomerChanged: function(customer) {
+
+            },
+
+            _getCustomer: function() {
+
+                if (!this.customer.self && this.customersApi && this._headers) {
+                    var customerApi = this.customersApi + this.route.path,
+                        getCustomerRequest = this.$.ironAjaxGetCustomer;
+
+                    if (getCustomerRequest.lastRequest) {
+                        getCustomerRequest.lastRequest.abort();
+                    }
+
+                    getCustomerRequest.url = customerApi;
+                    getCustomerRequest.generateRequest();
+                }
+            },
+
+            _onGetCustomerResponse: function(event) {
+
+                if (200 === event.detail.status && event.detail.response) {
+                    this.set('customer', event.detail.response);
+                }
+
+                this._onPageLoaded();
+            },
+
+            _onGetCustomerError: function(event) {
+
+                if (!event.detail.request.aborted) {
+                    this.fire('page-error');
+                }
+            },
+
+            _onDeleteCustomerAction: function() {
+                this.fire('delete-customer', {
+                    customer: this.customer
+                });
+            },
+
+            _onManageApplications: function() {
+                this._selected = 'appsco-customer-applications-page';
+            },
+
+            _onManageActivityLog: function() {
+                this._selected = 'appsco-account-log-page';
+            },
+
+            _onManageGroups: function() {
+                this._selected = 'appsco-customer-groups-page';
+            },
+
+            _onResourceBack: function() {
+                this._showCustomerComponentsPage();
+            },
+
+            _showCustomerComponentsPage: function() {
+                this._selected = 'appsco-customer-components-page';
+            },
+
+            reload: function() {
+
+            }
+
+        });
+    </script>
+</dom-module>

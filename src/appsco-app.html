@@ -126,6 +126,8 @@
 
 <link rel="import" href="components/customer/appsco-customers-page-actions.html">
 <link rel="import" href="components/customer/appsco-add-customer.html">
+<link rel="import" href="components/customer/appsco-manage-customer-page-actions.html">
+
 <link rel="import" href="components/customer/appsco-import-customers.html">
 
 <link rel="import" href="shared-styles.html">
@@ -597,6 +599,11 @@
                                     on-back="_showContactsPage"
                                     on-resource-section="_onResourceActionPage"></appsco-manage-contact-page-actions>
 
+                            <appsco-manage-customer-page-actions
+                                    name="manage-customer"
+                                    on-back="_showCustomersPage"
+                                    on-resource-section="_onResourceActionPage"></appsco-manage-customer-page-actions>
+
                             <appsco-manage-group-page-actions
                                     name="manage-group"
                                     on-back="_showGroupsPage"
@@ -904,6 +911,16 @@
                             on-page-error="_onError"
                             on-revoke-assignee="_onRevokeAssigneeAccess"
                     ></appsco-manage-contact-page>
+
+                    <appsco-manage-customer-page
+                            id="appscoManageCustomerPage"
+                            name="manage-customer"
+                            route="[[ subroute ]]"
+                            authorization-token="[[ authorizationToken ]]"
+                            customers-api="[[ _companyCustomersApi ]]"
+                            on-delete-customer="_onDeleteCustomerAction"
+                            on-page-error="_onError"
+                    ></appsco-manage-customer-page>
 
                     <appsco-manage-group-page
                             id="appscoManageGroupPage"
@@ -1949,6 +1966,9 @@
                     case 'manage-contact':
                         return 'Manage Contact';
 
+                    case 'manage-customer':
+                        return 'Manage Customer';
+
                     case 'manage-group':
                         return 'Manage Group';
 
@@ -2035,6 +2055,10 @@
 
             _showContactsPage: function() {
                 this._showPage('contacts');
+            },
+
+            _showCustomersPage: function() {
+                this._showPage('customers');
             },
 
             _showGroupsPage: function() {
@@ -4024,6 +4048,10 @@
                 deleteContact.toggle();
             },
 
+            _onDeleteCustomerAction: function(event) {
+
+            },
+
             _onContactDeleted: function(event) {
                 var contact = event.detail.contact;
 
@@ -4623,15 +4651,13 @@
             /**
              * Customers page START
              */
-            // TODO - when Manage Customer page is implemented
             _onEditCustomerAction: function(event) {
-//                var customer = event.detail.customer;
-//
-//                if (this.$.appscoManageCustomerPage.$) {
-//                    this.$.appscoManageCustomerPage.setCustomer(customer);
-//                }
-//
-//                this._showManagePage('manage-customer/' + customer.alias);
+                var customer = event.detail.customer;
+                if (this.$.appscoManageCustomerPage.$) {
+                    this.$.appscoManageCustomerPage.setCustomer(customer);
+                }
+
+                this._showManagePage('manage-customer/' + customer.alias);
             },
 
             _onHideCustomersBulkActions: function() {
@@ -4757,6 +4783,10 @@
                         this.$.appscoManageContactPage.pageLoaded ? this._hideProgressBar() : this._showProgressBar();
                         break;
 
+                    case 'manage-customer':
+                        this.$.appscoManageCustomerPage.pageLoaded ? this._hideProgressBar() : this._showProgressBar();
+                        break;
+
                     case 'manage-group':
                         this.$.appscoManageGroupPage.pageLoaded ? this._hideProgressBar() : this._showProgressBar();
                         break;
@@ -4826,6 +4856,7 @@
                         page === 'groups' ||
                         page === 'manage-account' ||
                         page === 'manage-contact' ||
+                        page === 'manage-customer' ||
                         page === 'manage-group' ||
                         page === 'statistics' ||
                         page === 'provisioning' ||
@@ -4917,6 +4948,7 @@
                     case 'contacts':
                     case 'manage-account':
                     case 'manage-contact':
+                    case 'manage-customer':
                     case 'manage-group':
                     case 'audit-log':
                     case 'provisioning-settings':

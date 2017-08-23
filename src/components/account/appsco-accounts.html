@@ -94,7 +94,51 @@ Custom property | Description | Default
 
             behaviors: [
                 Polymer.AppscoListBehavior
-            ]
+            ],
+
+            filterAccounts: function(filter) {
+                var filterApi = this.listApi + '?page=1&limit=100&extended=1',
+                    length = this._allListItems.length;
+
+                if ('all' !== filter) {
+                    filterApi += '&filter=' + filter;
+                }
+
+                this._getItems(filterApi).then(function(items) {
+                    var itemsLength = items.length;
+
+                    this._hideMessage();
+                    this._showProgressBar();
+                    this._hideLoadMoreAction();
+                    this._clearListLoaders();
+                    this.set('_listItems', []);
+
+                    items.forEach(function(elem, index) {
+
+                        for (var i = 0; i < length; i++) {
+                            var item = this._allListItems[i];
+
+                            if (elem.self === item.self) {
+                                this.push('_listItems', item);
+                                break;
+                            }
+                            else {
+
+                                if (i === length - 1) {
+                                    this.push('_listItems', elem);
+                                }
+                            }
+                        }
+
+                        if (index === itemsLength - 1) {
+                            this._hideProgressBar();
+                            this.fire('filter-done');
+                        }
+
+                    }.bind(this));
+
+                }.bind(this));
+            }
         });
     </script>
 </dom-module>

@@ -127,6 +127,8 @@
 <link rel="import" href="components/customer/appsco-remove-customer.html">
 <link rel="import" href="components/customer/appsco-customers-page-actions.html">
 <link rel="import" href="components/customer/appsco-add-customer.html">
+<link rel="import" href="components/customer/appsco-remove-customers.html">
+<link rel="import" href="components/customer/appsco-add-partner-admin-to-customers.html">
 <link rel="import" href="components/customer/appsco-manage-customer-page-actions.html">
 
 <link rel="import" href="components/customer/appsco-import-customers.html">
@@ -618,6 +620,8 @@
                                     on-search="_onSearchCustomersAction"
                                     on-search-clear="_onSearchCustomersClearAction"
                                     on-add-customer="_onAddCustomerAction"
+                                    on-remove-customers="_onRemoveCustomersAction"
+                                    on-add-partner-admin="_onAddPartnerAdminToCustomersAction"
                                     on-import-customers="_onImportCustomersAction"
                                     on-import-customer-resources="_onImportCustomerResources"
                                     on-export-customers="_onExportCustomersAction"
@@ -1423,6 +1427,24 @@
                 api-errors="[[ _apiErrors ]]"
                 on-customer-added="_onCustomerAdded"></appsco-add-customer>
 
+        <appsco-add-partner-admin-to-customers
+                id="appscoAddPartnerAdmin"
+                authorization-token="[[ authorizationToken ]]"
+                partner-admins-api="[[ _customerPartnerAdminsApi ]]"
+                roles-api="[[ _companyRolesApi ]]"
+                customers="[[ _selectedCustomers ]]"
+                api-errors="[[ _apiErrors ]]"
+                on-partner-admin-added="_onPartnerAdminAdded"></appsco-add-partner-admin-to-customers>
+
+        <appsco-remove-customers
+                id="appscoCustomersRemove"
+                customers="[[ _selectedCustomers ]]"
+                customers-api="[[ _companyCustomersApi ]]"
+                authorization-token="[[ authorizationToken ]]"
+                on-customers-removed="_onRemovedCustomers"
+                on-customers-remove-failed="_onRemovedCustomersFailed">
+        </appsco-remove-customers>
+
         <appsco-import-customers
                 id="appscoImportCustomers"
                 authorization-token="[[ authorizationToken ]]"
@@ -1653,6 +1675,16 @@
                 },
 
                 /**
+                 * Selected customers.
+                 */
+                _selectedCustomers: {
+                    type: Array,
+                    value: function() {
+                        return [];
+                    }
+                },
+
+                /**
                  * Selected integration for provisioning settings
                  */
                 _selectedIntegration: {
@@ -1774,6 +1806,11 @@
                 },
 
                 _companyCustomersApi: {
+                    type: String,
+                    value: ''
+                },
+
+                _customerPartnerAdminsApi: {
                     type: String,
                     value: ''
                 },
@@ -2159,6 +2196,7 @@
                     this._companySamlMetadataApi = companyApi + '/idp/saml/metadata';
                     this._companyAuditLogApi = companyApi + '/log';
                     this._companyCustomersApi = partnerApi + '/customers';
+                    this._customerPartnerAdminsApi = partnerApi + '/customers/partner-admins';
                 }
             },
 
@@ -4781,6 +4819,47 @@
                 this._addCustomer(customer);
                 this._notify('New customer ' + customer.name + ' was successfully added.');
             },
+
+            _onRemoveCustomersAction: function() {
+                var selectedCustomers = this.$.appscoCustomersPage.getSelectedCustomers();
+
+                if (selectedCustomers.length > 0) {
+                    this.set('_selectedCustomers', selectedCustomers);
+                    this.$.appscoCustomersRemove.toggle();
+                }
+                else {
+                    this._onHideCustomersBulkActions()
+                }
+            },
+
+            _onRemovedCustomers: function() {
+                $customersCount = this.$.appscoCustomersPage.removeCustomers(this._selectedCustomers);
+                this._onHideCustomersBulkActions();
+
+                this._notify($customersCount + ' customers were successfully removed from company.');
+            },
+
+            _onRemoveCustomersFailed: function() {
+                this.set('_selectedCustomers', []);
+                this._notify('An error occurred. Selected customers were not removed from company. Please try again.');
+            },
+
+            _onAddPartnerAdminToCustomersAction: function() {
+                var selectedCustomers = this.$.appscoCustomersPage.getSelectedCustomers();
+
+                if (selectedCustomers.length > 0) {
+                    this.set('_selectedCustomers', selectedCustomers);
+                    this.$.appscoAddPartnerAdmin.open();
+                }
+                else {
+                    this._onHideCustomersBulkActions()
+                }
+            },
+
+            _onPartnerAdminAdded: function(event) {
+                this._notify('Partner admin added successfully');
+            },
+
 
             _onImportCustomersAction: function() {
                 this.$.appscoImportCustomers.open();

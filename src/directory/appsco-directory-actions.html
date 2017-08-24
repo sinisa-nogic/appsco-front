@@ -10,6 +10,9 @@
 <link rel="import" href="../../bower_components/neon-animation/animations/cascaded-animation.html">
 <link rel="import" href="../../bower_components/neon-animation/animations/fade-in-animation.html">
 <link rel="import" href="../../bower_components/neon-animation/animations/fade-out-animation.html">
+<link rel="import" href="../../bower_components/paper-dropdown-menu/paper-dropdown-menu.html">
+<link rel="import" href="../../bower_components/paper-listbox/paper-listbox.html">
+<link rel="import" href="../../bower_components/paper-item/paper-item.html">
 
 <link rel="import" href="appsco-info-dropdown.html">
 <link rel="import" href="../components/components/appsco-search.html">
@@ -25,6 +28,12 @@
                 @apply(--layout-center);
                 @apply(--layout-end-justified);
                 @apply(--appsco-directory-actions);
+
+                --paper-dropdown-menu-button: {
+                    display: block;
+                    padding: 0 0 0 8px;
+                    @apply(--accounts-actions-paper-dropdown-menu-button);
+                };
             }
             paper-icon-button {
                 color: var(--account-action-icon-color);
@@ -32,6 +41,38 @@
             }
             appsco-search {
                 max-width: 200px;
+            }
+            paper-dropdown-menu {
+                width: 150px;
+                --paper-input-container-underline: {
+                    display: none;
+                };
+                --paper-input-container-underline-focus: {
+                    display: none;
+                };
+                --paper-dropdown-menu-ripple: {
+                    display: none;
+                };
+                --paper-input-container-input: {
+                    vertical-align: middle;
+                    cursor: pointer;
+                    @apply(--accounts-actions-paper-dropdown-menu-input);
+                };
+            }
+            :host paper-listbox {
+                min-width: 150px;
+                max-width: 230px;
+                overflow: hidden;
+                @apply(--paper-listbox);
+            }
+            :host paper-item {
+                min-height: 40px;
+                font-size: 14px;
+                cursor: pointer;
+                color: var(--primary-text-color);
+            }
+            :host paper-item:hover {
+                @apply(--paper-item-hover);
             }
             :host .action {
                 margin-right: 10px;
@@ -77,9 +118,22 @@
         </style>
 
         <div class="action action-search flex-none">
-
             <appsco-search id="appscoSearch"
                            label="Search accounts"></appsco-search>
+        </div>
+
+        <div class="action flex-none">
+            <paper-dropdown-menu horizontal-align="right"
+                                 no-label-float
+                                 on-iron-activate="_onFilterAction">
+                <paper-listbox id="filterList"
+                               class="dropdown-content"
+                               selected="0">
+                    <template is="dom-repeat" items="[[ _filterItems ]]">
+                        <paper-item value$="[[ item.value ]]" name$="[[ item.name ]]">[[ item.name ]]</paper-item>
+                    </template>
+                </paper-listbox>
+            </paper-dropdown-menu>
         </div>
 
         <div class="action bulk-action flex-none">
@@ -191,6 +245,29 @@
                     type: Boolean,
                     value: false,
                     observer: '_onBulkActionsChanged'
+                },
+
+                _filterItems: {
+                    type: Array,
+                    value: function () {
+                        return [
+                            {
+                                name: 'All users',
+                                value: 'all'
+                            },
+                            {
+                                name: 'Managed users',
+                                value: 'managed'
+                            },
+                            {
+                                name: 'Unmanaged users',
+                                value: 'unmanaged'
+                            },
+                            {
+                                name: 'Invitations',
+                                value: 'invitations'
+                            }];
+                    }
                 },
 
                 _selectedAll: {
@@ -349,6 +426,19 @@
                 this.fire('search-icon');
             },
 
+            _onFilterAction: function(event) {
+                /**
+                 * Fired when filter item is selected
+                 *
+                 * @event filter-roles
+                 * @param {Object} {filter: filter_id, name: filter_name}
+                 */
+                this.fire('filter-roles', {
+                    filter: event.detail.item.getAttribute('value'),
+                    name: event.detail.item.getAttribute('name')
+                });
+            },
+
             /**
              * Sets focus on search input field.
              */
@@ -439,8 +529,13 @@
 
             },
 
+            _resetFilter: function() {
+                this.$$('#filterList').selected = 0;
+            },
+
             reset: function() {
                 this.$.appscoSearch.reset();
+                this._resetFilter();
                 this.hideBulkActions();
             }
         });

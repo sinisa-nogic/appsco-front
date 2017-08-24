@@ -146,6 +146,9 @@
             :host .flex {
                 @apply(--layout-flex);
             }
+            :host *[hidden] {
+                display: none;
+            }
             :host([tablet-screen]) {
                 --resource-width: 250px;
                 --info-width: 250px;
@@ -234,7 +237,9 @@
             <div content>
 
                 <div class="directory-container">
+
                     <appsco-invitations
+                            hidden$="[[ !_invitationsVisible ]]"
                             id="appscoInvitations"
                             size="100"
                             authorization-token="[[ authorizationToken ]]"
@@ -244,6 +249,7 @@
                             on-empty-load="_onInvitationsEmptyLoad"></appsco-invitations>
 
                     <appsco-accounts
+                            hidden$="[[ !_accountsVisible ]]"
                             id="appscoAccounts"
                             type="account"
                             size="100"
@@ -474,6 +480,16 @@
                     observer: '_onSelectedFilterChanged'
                 },
 
+                _accountsVisible: {
+                    type: Boolean,
+                    value: true
+                },
+
+                _invitationsVisible: {
+                    type: Boolean,
+                    value: false
+                },
+
                 mobileScreen: {
                     type: Boolean,
                     value: false,
@@ -590,7 +606,7 @@
                     this._selectedTab = 0;
                 }
                 else {
-                    this.$.appscoAccounts.deactivateItem(this.role);
+                    this.$$('#appscoAccounts').deactivateItem(this.role);
                     this.setDefaultAccount();
                 }
             },
@@ -601,7 +617,7 @@
 
             reloadAccounts: function() {
                 this._accountsLoaded = false;
-                this.$.appscoAccounts.reloadItems();
+                this.$$('#appscoAccounts').reloadItems();
             },
 
             setSubscription: function(subscription) {
@@ -619,8 +635,8 @@
 
             resetPage: function() {
                 this.set('selectedAccounts', []);
-                this.$.appscoAccounts.reset();
-                this.$.appscoInvitations.reset();
+                this.$$('#appscoAccounts').reset();
+                this.$$('#appscoInvitations').reset();
                 this._resetFilters();
                 this._resetPageActions();
                 this.hideInfo();
@@ -684,7 +700,7 @@
             },
 
             setDefaultAccount: function() {
-                this.set('role', this.$.appscoAccounts.getFirstItem());
+                this.set('role', this.$$('#appscoAccounts').getFirstItem());
             },
 
             _showBulkActions: function() {
@@ -726,7 +742,7 @@
                         this._showBulkActions();
                     }
                     else {
-                        var selectedAccount = this.$.appscoAccounts.getFirstSelectedItem();
+                        var selectedAccount = this.$$('#appscoAccounts').getFirstSelectedItem();
 
                         for (key in selectedAccount) {
                             return false;
@@ -765,7 +781,7 @@
             _handleSubscriptionLimitReachedInfo: function() {
                 var subscription = this.subscription,
                     licencesTotal = subscription.quantity,
-                    accountsTotal = this.$.appscoAccounts.getTotalCount() + this.$.appscoInvitations.getTotalCount();
+                    accountsTotal = this.$$('#appscoAccounts').getTotalCount() + this.$$('#appscoInvitations').getTotalCount();
 
                 if (licencesTotal <= accountsTotal) {
                     this._showSubscriptionLimitReachedInfo(subscription);
@@ -840,7 +856,7 @@
 
             modifyOrgunit: function(orgunit) {
                 this.$.appscoOrgunitTree.setOrgunit(orgunit);
-                this.$.appscoAccounts.setOrgunit(orgunit);
+                this.$$('#appscoAccounts').setOrgunit(orgunit);
             },
 
             removeOrgunit: function(orgunit) {
@@ -848,45 +864,84 @@
             },
 
             addInvitations: function(invitations) {
-                this.$.appscoInvitations.addInvitations(invitations);
+                this.$$('#appscoInvitations').addInvitations(invitations);
                 this._evaluateSubscriptionLicences();
             },
 
             removeInvitations: function(invitations) {
-                this.$.appscoInvitations.removeInvitations(invitations);
+                this.$$('#appscoInvitations').removeInvitations(invitations);
                 this._evaluateSubscriptionLicences();
             },
 
             reloadInvitations: function() {
-                this.$.appscoInvitations.reloadInvitations();
+                this._invitationsLoaded = false;
+                this.$$('#appscoInvitations').reloadInvitations();
             },
 
             addAccounts: function(accounts) {
-                this.$.appscoAccounts.addItems(accounts);
+                this.$$('#appscoAccounts').addItems(accounts);
                 this._evaluateSubscriptionLicences();
             },
 
             modifyAccounts: function(accounts) {
-                this.$.appscoAccounts.modifyItems(accounts);
+                this.$$('#appscoAccounts').modifyItems(accounts);
             },
 
             removeAccounts: function(accounts) {
-                this.$.appscoAccounts.removeItems(accounts);
+                this.$$('#appscoAccounts').removeItems(accounts);
                 this.setDefaultAccount();
                 this._evaluateSubscriptionLicences();
             },
 
             getSelectedAccounts: function() {
-                return this.$.appscoAccounts.getSelectedItems();
+                return this.$$('#appscoAccounts').getSelectedItems();
             },
 
             filterDirectoryResourcesByTerm: function(term) {
-                this.$.appscoInvitations.filterByTerm(term);
-                this.$.appscoAccounts.filterByTerm(term);
+                this.$$('#appscoInvitations').filterByTerm(term);
+                this.$$('#appscoAccounts').filterByTerm(term);
+            },
+
+            filterAccounts: function(filter) {
+
+                switch (filter) {
+                    case 'all':
+                    case 'managed':
+                    case 'unmanaged':
+                        this.$$('#appscoAccounts').filterAccounts(filter);
+                        this._hideInvitations();
+                        this._showAccounts();
+                        break;
+                        
+                    case 'invitations':
+                        this.reloadInvitations();
+                        this._hideAccounts();
+                        this._showInvitations();
+                        break;
+
+                    default:
+                        return false;
+                }
+            },
+            
+            _showAccounts: function() {
+                this._accountsVisible = true;
+            },
+            
+            _hideAccounts: function() {
+                this._accountsVisible = false;
+            },
+            
+            _showInvitations: function() {
+                this._invitationsVisible = true;
+            },
+            
+            _hideInvitations: function() {
+                this._invitationsVisible = false;
             },
 
             _onOrgunitSelected: function(event) {
-                this.$.appscoAccounts.filterByOrgunit(event.detail);
+                this.$$('#appscoAccounts').filterByOrgunit(event.detail);
             },
 
             _searchGroups: function(term) {
@@ -903,7 +958,7 @@
             },
 
             _loadCompanyRolesForGroup: function(group) {
-                this.$.appscoAccounts.filterByGroup(group);
+                this.$$('#appscoAccounts').filterByGroup(group);
             },
 
             _onGroupSelected: function(event) {

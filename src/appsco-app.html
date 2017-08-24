@@ -126,6 +126,7 @@
 
 <link rel="import" href="components/customer/appsco-customers-page-actions.html">
 <link rel="import" href="components/customer/appsco-add-customer.html">
+<link rel="import" href="components/customer/appsco-import-customers.html">
 
 <link rel="import" href="shared-styles.html">
 <link rel="import" href="webkit-scrollbar-style.html">
@@ -607,6 +608,7 @@
                                     on-search="_onSearchCustomersAction"
                                     on-search-clear="_onSearchCustomersClearAction"
                                     on-add-customer="_onAddCustomerAction"
+                                    on-import-customers="_onImportCustomersAction"
                             ></appsco-customers-page-actions>
 
                             <appsco-audit-log-page-actions
@@ -1382,6 +1384,13 @@
                 api-errors="[[ _apiErrors ]]"
                 on-customer-added="_onCustomerAdded"></appsco-add-customer>
 
+        <appsco-import-customers
+                id="appscoImportCustomers"
+                authorization-token="[[ authorizationToken ]]"
+                import-api="[[ _importCustomersApi ]]"
+                domain="[[ domain ]]"
+                on-import-finished="_onCustomersImportFinished"></appsco-import-customers>
+
         <template is="dom-if" if="[[ api.me ]]">
             <iron-ajax auto
                        id = "getAccountRequest"
@@ -1728,6 +1737,11 @@
                 _partnerApi: {
                     type: String,
                     value: ''
+                },
+
+                _importCustomersApi: {
+                    type: String,
+                    computed: '_computeImportCustomersApi(_companyCustomersApi)'
                 },
 
                 _subscription: {
@@ -2088,11 +2102,15 @@
             },
 
             _computeCompanyImportResourcesApi: function(companyApplicationsApi) {
-                return companyApplicationsApi ? companyApplicationsApi + '/import' : '';
+                return companyApplicationsApi ? (companyApplicationsApi + '/import') : '';
             },
 
             _computeCompanyImportContactsApi: function(contactsApi) {
-                return contactsApi ? contactsApi + '/import' : '';
+                return contactsApi ? (contactsApi + '/import') : '';
+            },
+
+            _computeImportCustomersApi: function(customersApi) {
+                return customersApi ? (customersApi + '/import') : '';
             },
 
             _onGetAccountResponse: function(event) {
@@ -4636,11 +4654,38 @@
                 }
             },
 
+            _reloadCustomers: function() {
+
+                if (this.$.appscoCustomersPage.$) {
+                    this.$.appscoCustomersPage.reloadCustomers();
+                }
+            },
+
             _onCustomerAdded: function(event) {
                 var customer = event.detail.customer;
 
                 this._addCustomer(customer);
                 this._notify('New customer ' + customer.name + ' was successfully added.');
+            },
+
+            _onImportCustomersAction: function() {
+                this.$.appscoImportCustomers.open();
+            },
+
+            _onCustomersImportFinished: function(event) {
+                var response = event.detail.response,
+                    message;
+
+                message = response.numberOfCreated + ' customers created out of ' + response.total + '.'
+                    + ' Number of failed imports: ' + response.numberOfFailed + '.'
+                    + ' Number of existing companies: ' + response.numberOfExisting + '.';
+
+                if (0 < response.numberOfCreated) {
+                    this._reloadCustomers();
+                }
+
+                this._notifyAccountLog();
+                this._notify(message, true);
             },
             /**
              * Customers page END

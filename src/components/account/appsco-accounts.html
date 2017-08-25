@@ -96,35 +96,61 @@ Custom property | Description | Default
                 Polymer.AppscoListBehavior
             ],
 
-            filterAccounts: function(filter) {
-                var filterApi = this.listApi + '?page=1&limit=100&extended=1',
-                    length = this._allListItems.length;
+            filterByType: function(filter) {
+                this._filterType = filter;
+                this._filterByType();
+            },
 
-                if ('all' !== filter) {
-                    filterApi += '&filter=' + filter;
+            _filterByType: function() {
+                var filterApi = this.listApi + '?page=1&limit=100&extended=1',
+                    filterTerm = this._filterTerm,
+                    filterTermPresent = (filterTerm && 3 <= filterTerm.length),
+                    filterType = this._filterType;
+
+                this._hideMessage();
+                this._showProgressBar();
+                this._hideLoadMoreAction();
+                this._clearListLoaders();
+                this.set('_listItems', []);
+
+                if ('all' !== filterType) {
+                    filterApi += '&filter=' + filterType;
+                }
+
+                if (filterTermPresent) {
+                    filterApi += '&term=' + filterTerm;
                 }
 
                 this._getItems(filterApi).then(function(items) {
-                    var itemsLength = items.length;
+                    var itemsLength = items.length,
+                        allListItems = JSON.parse(JSON.stringify(this._allListItems)),
+                        allLength = allListItems.length;
 
-                    this._hideMessage();
-                    this._showProgressBar();
-                    this._hideLoadMoreAction();
-                    this._clearListLoaders();
-                    this.set('_listItems', []);
+                    if (0 === itemsLength) {
+                        var termMessage = filterTermPresent ? 'with asked term' : '';
+
+                        filterType = ('all' === filterType) ? '' : filterType;
+                        this._showMessage('There are no ' + filterType + ' ' + this.type + 's ' + termMessage + '.');
+                        this._handleEmptyLoad();
+                        this.fire('filter-done');
+                        return false;
+                    }
+
+                    this._listEmpty = false;
 
                     items.forEach(function(elem, index) {
 
-                        for (var i = 0; i < length; i++) {
-                            var item = this._allListItems[i];
 
-                            if (elem.self === item.self) {
-                                this.push('_listItems', item);
+                        for (var i = 0; i < allLength; i++) {
+                            var currentListItem = allListItems[i];
+
+                            if (elem.self === currentListItem.self) {
+                                this.push('_listItems', currentListItem);
                                 break;
                             }
                             else {
 
-                                if (i === length - 1) {
+                                if (i === allLength - 1) {
                                     this.push('_listItems', elem);
                                 }
                             }

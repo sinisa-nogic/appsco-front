@@ -581,6 +581,10 @@
                 this.$.appscoOrgunitTree.reset();
             },
 
+            _resetTypeFilter: function() {
+                this.fire('reset-type-filter');
+            },
+
             _onSubscriptionLimitInfoHandled: function(handled) {
 
                 if (handled) {
@@ -635,8 +639,7 @@
 
             resetPage: function() {
                 this.set('selectedAccounts', []);
-                this.$$('#appscoAccounts').reset();
-                this.$$('#appscoInvitations').reset();
+                this._resetPageLists();
                 this._resetFilters();
                 this._resetPageActions();
                 this.hideInfo();
@@ -644,6 +647,11 @@
 
             _resetPageActions: function() {
                 this.fire('reset-page-actions');
+            },
+
+            _resetPageLists: function() {
+                this.$$('#appscoAccounts').reset();
+                this.$$('#appscoInvitations').reset();
             },
 
             _onRoleChange: function(role) {
@@ -903,18 +911,20 @@
             },
 
             filterAccounts: function(filter) {
+                this._resetFilters();
 
                 switch (filter) {
                     case 'all':
                     case 'managed':
                     case 'unmanaged':
-                        this.$$('#appscoAccounts').filterAccounts(filter);
+                        this.$$('#appscoAccounts').filterByType(filter);
                         this._hideInvitations();
                         this._showAccounts();
                         break;
                         
                     case 'invitations':
-                        this.reloadInvitations();
+                        this._invitationsLoaded = false;
+                        this.$$('#appscoInvitations').filterInvitations();
                         this._hideAccounts();
                         this._showInvitations();
                         break;
@@ -942,6 +952,7 @@
 
             _onOrgunitSelected: function(event) {
                 this.$$('#appscoAccounts').filterByOrgunit(event.detail);
+                this._resetTypeFilter();
             },
 
             _searchGroups: function(term) {
@@ -963,6 +974,7 @@
 
             _onGroupSelected: function(event) {
                 this._loadCompanyRolesForGroup(event.detail.item);
+                this._resetTypeFilter();
             }
         });
     </script>

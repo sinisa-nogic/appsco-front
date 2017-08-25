@@ -2,6 +2,7 @@
 <link rel="import" href="../../../bower_components/iron-flex-layout/iron-flex-layout.html">
 <link rel="import" href="../../../bower_components/paper-button/paper-button.html">
 <link rel="import" href="../../../bower_components/iron-form/iron-form.html">
+<link rel="import" href="../../../bower_components/iron-ajax/iron-request.html">
 <link rel="import" href="../../../bower_components/paper-input/paper-input.html">
 <link rel="import" href="../../../bower_components/gold-email-input/gold-email-input.html">
 <link rel="import" href="../../../bower_components/paper-dialog/paper-dialog.html">
@@ -93,6 +94,9 @@
             .paper-item:hover {
                 @apply(--paper-item-hover);
             }
+            :host .info-box {
+                @apply(--info-box);
+            }
         </style>
 
         <iron-ajax id="getRolesApiRequest"
@@ -118,6 +122,13 @@
 
                 <appsco-form-error message="[[ _error ]]"></appsco-form-error>
 
+                <template is="dom-if" if="[[ _showInfo ]]">
+                    <div class="info-box">
+                        Customer with the same name already exists.
+                        If you want to add it anyway please continue.
+                    </div>
+                </template>
+
                  <form is="iron-form"
                       id="form"
                       method="POST"
@@ -133,7 +144,8 @@
                                      name="company_customer[name]"
                                      required
                                      auto-validate
-                                     error-message="Please enter customer's name."></paper-input>
+                                     error-message="Please enter customer's name."
+                                     on-value-changed="_onNameInputValueChanged"></paper-input>
                     </div>
 
                     <div class="input-container">
@@ -220,6 +232,11 @@
                     value: ''
                 },
 
+                checkIfCustomerExistsApi: {
+                    type: String,
+                    value: ''
+                },
+
                 _rolesApi: {
                     type: String,
                     computed: '_computeRolesApi(rolesApi)'
@@ -263,6 +280,11 @@
 
                 _error: {
                     type: String
+                },
+
+                _showInfo: {
+                    type: Boolean,
+                    value: false
                 },
 
                 /**
@@ -420,10 +442,18 @@
                 this._hideError();
                 this._target.reset();
                 this.set('_administrators', []);
+                this.set('_administratorsToDisplay', []);
                 this.set('_selectedAdministrator', {});
+                this._showInfo = false;
                 this._hideAdminList();
                 this.$.appscoSearchAdmins.reset();
                 Polymer.Gestures.remove(this, 'tap', this._handleDocumentClick.bind(this));
+            },
+
+            _onNameInputValueChanged: function(event) {
+                this.debounce('checkIfCustomerExists', function() {
+                    this._checkIfCustomerExists(event.detail.value);
+                }.bind(this), 500);
             },
 
             _onAddAction: function() {
@@ -437,6 +467,35 @@
              */
             _onEnterAction: function() {
                 this._onAddAction();
+            },
+
+            _checkIfCustomerExists: function(name) {
+
+                if (!name) {
+                    return false;
+                }
+
+                var request = document.createElement('iron-request'),
+                    options = {
+                        url: this.checkIfCustomerExistsApi,
+                        method: 'POST',
+                        handleAs: 'json',
+                        headers: this._headers,
+                        body: 'form[name]=' + encodeURIComponent(name)
+                    };
+
+                request.send(options).then(function() {
+
+                    if (200 === request.status) {
+                        this._showInfo = true;
+                    }
+
+                }.bind(this), function() {
+
+                    if (request.response && (1503648194 == request.response.code)) {
+                        this._showInfo = false;
+                    }
+                }.bind(this));
             },
 
             _submitForm: function() {
@@ -487,6 +546,7 @@
 
             _onRolesError: function() {
                 this.set('_administrators', []);
+                this.set('_administratorsToDisplay', []);
             },
 
             _onRolesResponse: function(event) {
@@ -496,16 +556,8 @@
                     this.set('_administrators', []);
                     return false;
                 }
-
-                var roles = response.company_roles,
-                    length = roles.length;
-
-                for (var i = 0; i < length; i++) {
-                    var role = roles[i];
-
-                    if (-1 != role.roles.indexOf('COMPANY_ROLE_ADMIN')) {
-                        this.push('_administrators', role);
-                    }
+                else if (response && response.company_roles) {
+                    this.set('_administrators', response.company_roles);
                 }
 
                 this.set('_administratorsToDisplay', this._administrators);

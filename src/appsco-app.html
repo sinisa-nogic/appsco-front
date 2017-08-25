@@ -124,6 +124,7 @@
 <link rel="import" href="components/contact/appsco-convert-contact.html">
 <link rel="import" href="components/contact/appsco-delete-contacts.html">
 
+<link rel="import" href="components/customer/appsco-remove-customer.html">
 <link rel="import" href="components/customer/appsco-customers-page-actions.html">
 <link rel="import" href="components/customer/appsco-add-customer.html">
 <link rel="import" href="components/customer/appsco-manage-customer-page-actions.html">
@@ -1332,6 +1333,12 @@
                 authorization-token="[[ authorizationToken ]]"
                 api-errors="[[ _apiErrors ]]"
                 on-group-removed="_onGroupRemoved"></appsco-company-remove-group>
+
+        <appsco-remove-customer
+                id="appscoRemoveCustomer"
+                authorization-token="[[ authorizationToken ]]"
+                api-errors="[[ _apiErrors ]]"
+                on-customer-removed="_onCustomerRemoved"></appsco-remove-customer>
 
         <appsco-resource-add-groups
                 id="appscoShareToGroupDialog"
@@ -4087,7 +4094,19 @@
             },
 
             _onDeleteCustomerAction: function(event) {
+                this.$.appscoRemoveCustomer.setCustomer(event.detail.customer);
+                this.$.appscoRemoveCustomer.open();
+            },
 
+            _onCustomerRemoved: function(event) {
+                var customer = event.detail.customer;
+
+                if (this.$.appscoCustomersPage.$) {
+                    this.$.appscoCustomersPage.removeCustomers([customer]);
+                }
+
+                this._showCustomersPage();
+                this._notify('Customer ' + customer.name + ' has been deleted from company.');
             },
 
             _onContactDeleted: function(event) {

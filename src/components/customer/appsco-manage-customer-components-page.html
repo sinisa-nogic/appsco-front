@@ -1,0 +1,243 @@
+<link rel="import" href="../../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../../bower_components/iron-flex-layout/iron-flex-layout.html">
+<link rel="import" href="../../../bower_components/neon-animation/neon-shared-element-animatable-behavior.html">
+<link rel="import" href="../../../bower_components/neon-animation/animations/hero-animation.html">
+<link rel="import" href="../../../bower_components/neon-animation/animations/cascaded-animation.html">
+<link rel="import" href="../../../bower_components/neon-animation/animations/fade-in-animation.html">
+<link rel="import" href="../../../bower_components/neon-animation/animations/fade-out-animation.html">
+<link rel="import" href="../../../bower_components/paper-card/paper-card.html">
+<link rel="import" href="../../../bower_components/paper-button/paper-button.html">
+<link rel="import" href="../../../bower_components/iron-media-query/iron-media-query.html">
+
+<link rel="import" href="appsco-customer-partner-admins.html">
+
+<dom-module id="appsco-manage-customer-components-page">
+    <template>
+        <style>
+            :host {
+                display: block;
+                overflow-y: auto;
+                font-size: 14px;
+                color: var(--primary-text-color);
+
+                --paper-button: {
+                     padding: 6px 0;
+                     margin: 0;
+                     border-radius: 0;
+                     width: 100%;
+                     color: var(--primary-text-color);
+                 };
+
+                --customer-resources-progress-bar: {
+                    top: -6px;
+                };
+
+                --customer-roles-progress-bar: {
+                    top: -6px;
+                };
+
+                --customer-contacts-progress-bar: {
+                    top: -6px;
+                };
+            }
+            :host > * {
+                width: calc(100% / 3 - 7px);
+                margin-bottom: 10px;
+                float: left;
+            }
+            paper-card {
+                 min-height: 170px;
+                 box-sizing: border-box;
+
+                --paper-card-content: {
+                     min-height: 90px;
+                     box-sizing: border-box;
+                 };
+                --paper-card-actions: {
+                     padding: 0;
+                     border-color: var(--divider-color);
+                 };
+                --paper-card-header-text: {
+                     padding: 8px 16px;
+                     font-size: 18px;
+                     color: var(--primary-text-color);
+                     border-bottom: 1px solid var(--divider-color);
+                 };
+            }
+            .card {
+                @apply(--layout-vertical);
+            }
+            .resources-partner-admins-container .card {
+                margin-right: 10px;
+                margin-bottom: 10px;
+            }
+            .partner-admins-container, .partner-admins-container {
+                margin-right: 10px;
+                margin-bottom: 10px;
+            }
+            :host([medium-screen]) {
+                @apply(--layout-flex-none);
+            }
+            :host([medium-screen]) > * {
+                width: calc(100% / 2 - 5px);
+            }
+            :host([medium-screen]) > .partner-admins-container {
+                margin-right: 0;
+            }
+            :host([tablet-screen]) > * {
+                width: 100%;
+                margin-right: 0;
+            }
+        </style>
+
+        <iron-media-query query="(max-width: 1200px)" query-matches="{{ mediumScreen }}"></iron-media-query>
+        <iron-media-query query="(max-width: 800px)" query-matches="{{ tabletScreen }}"></iron-media-query>
+
+        <div class="partner-admins-container">
+            <paper-card heading="Partner admins" class="card customer-roles">
+                <div class="card-content">
+                    <appsco-customer-partner-admins
+                            id="appscoCustomerPartnerAdmins"
+                            customer="[[ customer ]]"
+                            list-api="[[ customerPartnerAdminsApi ]]"
+                            authorization-token="[[ authorizationToken ]]"
+                            size="5"
+                            auto-load-active
+                            preview></appsco-customer-partner-admins>
+                </div>
+
+                <div class="card-actions">
+                    <paper-button on-tap="_onManageCustomerRoles">Manage</paper-button>
+                </div>
+            </paper-card>
+        </div>
+
+    </template>
+
+    <script>
+        Polymer({
+
+            is: 'appsco-manage-customer-components-page',
+
+            properties: {
+
+                customer: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    }
+                },
+
+                authorizationToken: {
+                    type: String,
+                    value: ''
+                },
+
+                customerPartnerAdminsApi: {
+                    type: String,
+                    value: ''
+                },
+
+                mediumScreen: {
+                    type: Boolean,
+                    value: false,
+                    reflectToAttribute: true
+                },
+
+                tabletScreen: {
+                    type: Boolean,
+                    value: false,
+                    reflectToAttribute: true
+                },
+
+                /**
+                 * Animation config with hero animation.
+                 */
+                animationConfig: {
+                    value: function() {
+                        return {
+                            'entry': [{
+                                name: 'cascaded-animation',
+                                animation: 'fade-in-animation',
+                                nodes: Polymer.dom(this.root).querySelectorAll('paper-card'),
+                                nodeDelay: 50,
+                                timing: {
+                                    delay: 200,
+                                    duration: 100
+                                }
+                            }],
+                            'exit': [{
+                                name: 'hero-animation',
+                                id: 'hero',
+                                fromPage: this
+                            }, {
+                                name: 'fade-out-animation',
+                                node: this,
+                                timing: {
+                                    duration: 500
+                                }
+                            }]
+                        }
+                    }
+                }
+            },
+
+            behaviors: [
+                Polymer.NeonSharedElementAnimatableBehavior
+            ],
+
+            observers: [
+                '_updateScreen(tabletScreen, mediumScreen)'
+            ],
+
+            attached: function() {
+
+                if (this.tabletScreen || this.mediumScreen) {
+                    this.updateStyles();
+                }
+            },
+
+            loadPage: function() {
+                this._loadRoles();
+            },
+
+            addPartnerAdmins: function(partnerAdmins) {
+                this.$.appscoCustomerPartnerAdmins.addPartnerAdmins(partnerAdmins);
+            },
+
+            removePartnerAdmins: function(partnerAdmins) {
+                this.$.appscoCustomerPartnerAdmins.removePartnerAdmins(partnerAdmins);
+            },
+
+            _loadRoles: function() {
+                this.$.appscoCustomerPartnerAdmins.loadRoles();
+            },
+
+            _updateScreen: function(tablet, medium) {
+                this.updateStyles();
+            },
+
+            _setSharedElement: function(target) {
+
+                while (target.tagName.toLowerCase() !== 'paper-card' && !target._templateInstance) {
+                    target = target.parentNode;
+                }
+
+                /**
+                 * Set hero animation element that is to be shared between pages.
+                 *
+                 * @type {{hero: *}}
+                 */
+                this.sharedElements = {
+                    'hero': target
+                };
+            },
+
+            _onManageCustomerRoles: function(event) {
+                this._setSharedElement(event.target);
+                this.fire('manage-customer-roles');
+            }
+        });
+    </script>
+</dom-module>
+

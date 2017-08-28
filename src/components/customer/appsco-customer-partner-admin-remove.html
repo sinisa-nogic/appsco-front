@@ -1,0 +1,245 @@
+<link rel="import" href="../../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../../bower_components/paper-button/paper-button.html">
+<link rel="import" href="../../../bower_components/iron-ajax/iron-request.html">
+<link rel="import" href="../../../bower_components/paper-dialog/paper-dialog.html">
+<link rel="import" href="../../../bower_components/paper-dialog-scrollable/paper-dialog-scrollable.html">
+<link rel="import" href="../../../bower_components/neon-animation/animations/fade-out-animation.html">
+<link rel="import" href="../../../bower_components/neon-animation/animations/scale-up-animation.html">
+
+<link rel="import" href="../components/appsco-loader.html">
+<link rel="import" href="../components/appsco-form-error.html">
+
+<!--
+`appsco-customer-partner-admin-remove`
+Shows dialog screen with confirmation for removal company resource from group.
+
+    <appsco-customer-partner-admin-remove group="{}"
+                                       item="{}"
+                                       resource-type=""
+                                       authorization-token=""
+                                       api-errors="{}">
+    </appsco-customer-partner-admin-remove>
+
+-->
+
+<dom-module id="appsco-customer-partner-admin-remove">
+    <template>
+        <style>
+            :host {
+                display: block;
+                position: relative;
+                @apply(--appsco-customer-partner-admin-remove);
+
+                --form-error-box: {
+                     margin-top: 0;
+                 };
+            }
+            :host paper-dialog {
+                width: 670px;
+                top: 20vh;
+                @apply(--appsco-paper-dialog);
+            }
+            :host paper-dialog-scrollable > * {
+                @apply(--paper-dialog-scrollable-child);
+            }
+            :host .buttons paper-button {
+                @apply(--paper-dialog-button);
+            }
+            :host .buttons paper-button[dialog-dismiss] {
+                @apply(--paper-dialog-dismiss-button);
+            }
+            :host appsco-loader {
+                @apply(--paper-dialog-appsco-loader);
+            }
+        </style>
+        <paper-dialog
+                with-backdrop
+                id="dialog"
+                entry-animation="scale-up-animation"
+                exit-animation="fade-out-animation"
+                on-iron-overlay-closed="_onDialogClosed">
+
+            <h2>Revoke partner admin role</h2>
+
+            <appsco-loader active="[[ _loader ]]"
+                           loader-alt="Appsco is processing request"
+                           multi-color></appsco-loader>
+
+            <paper-dialog-scrollable>
+                <div class="remove-container">
+                    <appsco-form-error message="[[ _error ]]"></appsco-form-error>
+
+                    <p>Please confirm revoking partner admin role.</p>
+
+                </div>
+            </paper-dialog-scrollable>
+
+            <div class="buttons">
+                <paper-button dialog-dismiss>Cancel</paper-button>
+                <paper-button autofocus on-tap="_onRevokeAction">Revoke</paper-button>
+            </div>
+        </paper-dialog>
+
+    </template>
+    <script>
+        Polymer({
+
+            is: 'appsco-customer-partner-admin-remove',
+
+            properties: {
+
+                customer: {
+                    type: Array,
+                    value: function() {
+                        return {};
+                    }
+                },
+
+                /**
+                 * Item to remove from customer.
+                 */
+                partnerAdminRole: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    }
+                },
+
+                /**
+                 * Authorization token.
+                 */
+                authorizationToken: {
+                    type: String,
+                    value: ''
+                },
+
+                apiErrors: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    }
+                },
+
+                _headers: {
+                    type: String,
+                    computed: '_computeHeaders(authorizationToken)'
+                },
+
+                _removePartnerAdminApi: {
+                    type: String,
+                    computed: '_computeRemovePartnerAdminApi(partnerAdminRole)'
+                },
+
+                _responseItems: {
+                    type: Array,
+                    value: function() {
+                        return [];
+                    }
+                },
+
+                _loader: {
+                    type: Boolean,
+                    value: false
+                },
+
+                /**
+                 * Error message.
+                 */
+                _error: {
+                    type: String
+                },
+
+                _requests: {
+                    type: Number,
+                    value: 0
+                }
+            },
+
+            setCustomer: function(customer) {
+                this.customer = customer;
+            },
+
+            setPartnerAdminRole: function(partnerAdminRole) {
+                this.partnerAdminRole = partnerAdminRole;
+            },
+
+            open: function () {
+                this.$.dialog.open();
+            },
+
+            close: function () {
+                this.$.dialog.close();
+            },
+
+            toggle: function () {
+                this.$.dialog.toggle();
+            },
+
+            _computeHeaders: function(authorizationToken) {
+                return {
+                    'Authorization': 'token ' + authorizationToken,
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                };
+            },
+
+            _showLoader: function() {
+                this._loader = true;
+            },
+
+            _hideLoader: function() {
+                this._loader = false;
+            },
+
+            _showError: function(message) {
+                this._error = message;
+            },
+
+            _hideError: function() {
+                this._error = '';
+            },
+
+            _onDialogClosed: function() {
+                this._hideError();
+                this._hideLoader();
+            },
+
+            _computeRemovePartnerAdminApi: function(partnerAdminRole) {
+                return (partnerAdminRole && partnerAdminRole.self) ? partnerAdminRole.self : null;
+            },
+
+            _onRevokeAction: function() {
+                var request = document.createElement('iron-request'),
+                    options = {
+                        url: this._removePartnerAdminApi,
+                        method: 'DELETE',
+                        handleAs: 'json',
+                        headers: this._headers
+                    };
+
+                if (!this._removePartnerAdminApi) {
+                    this._showError(this.apiErrors.getError(404));
+                    return false;
+                }
+
+                this._hideError();
+                this._showLoader();
+
+                request.send(options).then(function() {
+
+                    if (200 === request.status) {
+
+                        this.fire('partner-admin-removed-from-customer', {
+                            customer: this.customer,
+                            partnerAdmin: request.response
+                        });
+
+                        this.close();
+                    }
+                }.bind(this), function() {
+                    this._showError(this.apiErrors.getError(request.response.code));
+                    this._hideLoader();
+                }.bind(this));
+            }
+        });
+    </script>
+</dom-module>

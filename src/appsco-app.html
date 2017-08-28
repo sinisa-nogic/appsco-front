@@ -129,7 +129,9 @@
 <link rel="import" href="components/customer/appsco-add-customer.html">
 <link rel="import" href="components/customer/appsco-remove-customers.html">
 <link rel="import" href="components/customer/appsco-add-partner-admin-to-customers.html">
+<link rel="import" href="components/customer/appsco-add-partner-admin.html">
 <link rel="import" href="components/customer/appsco-manage-customer-page-actions.html">
+<link rel="import" href="components/customer/appsco-customer-partner-admin-remove.html">
 
 <link rel="import" href="components/customer/appsco-import-customers.html">
 <link rel="import" href="components/customer/appsco-import-customer-resources.html">
@@ -929,7 +931,9 @@
                             authorization-token="[[ authorizationToken ]]"
                             customers-api="[[ _companyCustomersApi ]]"
                             on-delete-customer="_onDeleteCustomerAction"
-                            on-page-error="_onError"
+                            on-page-error="_onError",
+                            on-remove-partner-admin-from-customer="_onRemovePartnerAdminFromCustomer"
+                            on-add-partner-admin="_onAddPartnerAdminAction"
                     ></appsco-manage-customer-page>
 
                     <appsco-manage-group-page
@@ -1363,6 +1367,12 @@
                 api-errors="[[ _apiErrors ]]"
                 on-resource-removed-from-group="_onResourceRemovedFromGroup"></appsco-resource-remove-from-group>
 
+        <appsco-customer-partner-admin-remove
+                id="appscoCustomerPartnerAdminRemove"
+                authorization-token="[[ authorizationToken ]]"
+                api-errors="[[ _apiErrors ]]"
+                on-partner-admin-removed-from-customer="_onPartnerAdminRemovedFromCustomer"></appsco-customer-partner-admin-remove>
+
         <appsco-add-contact
                 id="appscoAddContact"
                 authorization-token="[[ authorizationToken ]]"
@@ -1444,6 +1454,14 @@
                 on-customers-removed="_onRemovedCustomers"
                 on-customers-remove-failed="_onRemovedCustomersFailed">
         </appsco-remove-customers>
+
+        <appsco-add-partner-admin
+                id="appscoAddPartnerAdmin"
+                authorization-token="[[ authorizationToken ]]"
+                customers-api="[[ _companyCustomersApi ]]"
+                roles-api="[[ _companyRolesApi ]]"
+                api-errors="[[ _apiErrors ]]"
+                on-partner-admin-added="_onPartnerAdminAdded"></appsco-add-partner-admin>
 
         <appsco-import-customers
                 id="appscoImportCustomers"
@@ -4678,6 +4696,13 @@
                 this.$.appscoResourceRemoveFromGroup.open();
             },
 
+            _removePartnerAdminFromCustomer: function(customer, partnerAdmin) {
+                this.$.appscoCustomerPartnerAdminRemove.setCustomer(customer);
+                this.$.appscoCustomerPartnerAdminRemove.setPartnerAdminRole(partnerAdmin);
+                this.$.appscoCustomerPartnerAdminRemove.open();
+
+            },
+
             _onRemoveCompanyRoleFromGroup: function(event) {
                 this._removeResourceFromGroup(event.detail.group, event.detail.role, 'account');
             },
@@ -4688,6 +4713,21 @@
 
             _onRemoveCompanyResourceFromGroup: function(event) {
                 this._removeResourceFromGroup(event.detail.group, event.detail.resource, 'resource');
+            },
+
+            _onRemovePartnerAdminFromCustomer: function(event) {
+                this._removePartnerAdminFromCustomer(event.detail.customer, event.detail.partnerAdmin);
+            },
+
+            _onPartnerAdminRemovedFromCustomer: function(event) {
+                var partnerAdmin = event.detail.partnerAdmin,
+                    customer = event.detail.customer;
+
+                if (this.$.appscoManageCustomerPage.$) {
+                    this.$.appscoManageCustomerPage.removePartnerAdmins(customer, [partnerAdmin]);
+                }
+
+                this._notify('Partner admin role revoked');
             },
 
             _onResourceRemovedFromGroup: function(event) {
@@ -4799,11 +4839,21 @@
                 this.$.appscoCustomersPage.exportToCsv();
             },
 
+            _onAddPartnerAdminAction: function(event) {
+                var customer = event.detail.customer;
+                this.$.appscoAddPartnerAdmin.setCustomer(customer);
+                this.$.appscoAddPartnerAdmin.open();
+            },
+
             _addCustomer: function(customer) {
 
                 if (this.$.appscoCustomersPage.$) {
                     this.$.appscoCustomersPage.addCustomer(customer);
                 }
+            },
+
+            _addPartnerAdmin: function(customer, partnerAdmin) {
+                this.$.appscoManageCustomerPage.addPartnerAdmins(customer, [partnerAdmin]);
             },
 
             _reloadCustomers: function() {
@@ -4860,6 +4910,14 @@
                 this._notify('Partner admin added successfully');
             },
 
+
+            _onPartnerAdminAdded: function(event) {
+                var partnerAdmin = event.detail.partnerAdmin,
+                    customer = event.detail.customer;
+
+                this._addPartnerAdmin(customer, partnerAdmin);
+                this._notify('New partner admin was successfully added.');
+            },
 
             _onImportCustomersAction: function() {
                 this.$.appscoImportCustomers.open();

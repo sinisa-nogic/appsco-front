@@ -5,8 +5,12 @@
 <link rel="import" href="../bower_components/iron-media-query/iron-media-query.html">
 <link rel="import" href="../bower_components/iron-ajax/iron-ajax.html">
 <link rel="import" href="../bower_components/iron-icon/iron-icon.html">
+<link rel="import" href="../bower_components/paper-card/paper-card.html">
+<link rel="import" href="../bower_components/paper-button/paper-button.html">
 
 <link rel="import" href="components/page/appsco-content.html">
+<link rel="import" href="components/customer/appsco-manage-customer-components-page.html">
+<link rel="import" href="components/customer/appsco-customer-partner-admins-page.html">
 
 <dom-module id="appsco-manage-customer-page">
     <template>
@@ -99,6 +103,11 @@
                 @apply(--danger-button);
                 border-radius: 0;
             }
+
+            appsco-manage-customer-components-page {
+                padding: 10px;
+            }
+
         </style>
 
         <iron-media-query query="(max-width: 1200px)" query-matches="{{ mediumScreen }}"></iron-media-query>
@@ -142,6 +151,24 @@
                                          selected="{{ _selected }}"
                                          attr-for-selected="name">
 
+                        <appsco-manage-customer-components-page
+                                id="appscoManageCustomerComponentsPage"
+                                name="appsco-customer-components-page"
+                                authorization-token="[[ authorizationToken ]]"
+                                customer="[[ customer ]]"
+                                customer-partner-admins-api="[[ partnerAdminsApi ]]"
+                                on-manage-customer-roles="_onManageCustomerRoles"
+                        ></appsco-manage-customer-components-page>
+
+                        <appsco-customer-partner-admins-page
+                                id="appscoCustomerPartnerAdminsPage"
+                                name="appsco-customer-partner-admins-page"
+                                customer="[[ customer ]]"
+                                partner-admins-api="[[ partnerAdminsApi ]]"
+                                authorization-token="[[ authorizationToken ]]"
+                                on-back="_onResourceBack">
+                        </appsco-customer-partner-admins-page>
+
                     </neon-animated-pages>
                 </div>
 
@@ -167,8 +194,7 @@
                     type: Object,
                     value: function() {
                         return {};
-                    },
-                    observer: '_onCustomerChanged'
+                    }
                 },
 
                 authorizationToken: {
@@ -180,6 +206,12 @@
                     type: String,
                     value: '',
                     observer: '_onCustomersApiChanged'
+                },
+
+                partnerAdminsApi: {
+                    type: String,
+                    value: '',
+                    computed: '_computePartnerAdminsApi(customer)'
                 },
 
                 /**
@@ -262,7 +294,6 @@
             ],
 
             attached: function() {
-
                 this.pageLoaded = false;
 
                 if (this.mobileScreen || this.tabletScreen || this.mediumScreen) {
@@ -285,6 +316,28 @@
                 this._showCustomerComponentsPage();
             },
 
+            removePartnerAdmins: function(customer, partnerAdmins) {
+                if (customer.alias == this.customer.alias) {
+                    this._removePartnerAdmins(partnerAdmins);
+                }
+            },
+
+            addPartnerAdmins: function(customer, partnerAdmins) {
+                if (customer.alias == this.customer.alias) {
+                    this._addPartnerAdmins(partnerAdmins);
+                }
+            },
+
+            _removePartnerAdmins: function(partnerAdmins) {
+                this.$.appscoManageCustomerComponentsPage.removePartnerAdmins(partnerAdmins);
+                this.$.appscoCustomerPartnerAdminsPage.removePartnerAdmins(partnerAdmins);
+            },
+
+            _addPartnerAdmins: function(partnerAdmins) {
+                this.$.appscoManageCustomerComponentsPage.addPartnerAdmins(partnerAdmins);
+                this.$.appscoCustomerPartnerAdminsPage.addPartnerAdmins(partnerAdmins);
+            },
+
             _pageLoaded: function() {
                 this.pageLoaded = true;
                 this.fire('page-loaded');
@@ -301,12 +354,8 @@
                 }
             },
 
-            _computeLogApi: function(customer) {
-                return customer.meta ? customer.meta.log : '';
-            },
-
-            _computeGroupsApi: function(customer) {
-                return customer.meta ? customer.meta.groups + '?extended=1' : '';
+            _computePartnerAdminsApi: function(customer) {
+                return (customer && customer.meta) ? customer.meta.list_partner_admins : null;
             },
 
             _computeHeaders: function (authorizationToken) {
@@ -324,12 +373,7 @@
                 this._getCustomer();
             },
 
-            _onCustomerChanged: function(customer) {
-
-            },
-
             _getCustomer: function() {
-
                 if (!this.customer.self && this.customersApi && this._headers) {
                     var customerApi = this.customersApi + this.route.path,
                         getCustomerRequest = this.$.ironAjaxGetCustomer;
@@ -344,7 +388,6 @@
             },
 
             _onGetCustomerResponse: function(event) {
-
                 if (200 === event.detail.status && event.detail.response) {
                     this.set('customer', event.detail.response);
                 }
@@ -353,7 +396,6 @@
             },
 
             _onGetCustomerError: function(event) {
-
                 if (!event.detail.request.aborted) {
                     this.fire('page-error');
                 }
@@ -370,7 +412,24 @@
             },
 
             reload: function() {
+                this.$.appscoManageGroupComponentsPage.loadPage();
+                this.$.appscoGroupRolesPage.loadPage();
+            },
 
+            _onManageCustomerRoles: function() {
+                this._showCustomerRolesPage();
+            },
+
+            _showCustomerRolesPage: function() {
+                this._selected = 'appsco-customer-partner-admins-page';
+            },
+
+            _showAccountComponentsPage: function() {
+                this._selected = 'appsco-customer-components-page';
+            },
+
+            _onResourceBack: function() {
+                this._showAccountComponentsPage();
             }
 
         });

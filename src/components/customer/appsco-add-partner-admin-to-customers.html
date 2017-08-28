@@ -188,6 +188,11 @@
                     value: ''
                 },
 
+                stopOnNextFail: {
+                    type: Boolean,
+                    value: false
+                },
+
                 _rolesApi: {
                     type: String,
                     computed: '_computeRolesApi(rolesApi)'
@@ -294,6 +299,10 @@
                 this.$.dialog.toggle();
             },
 
+            setStopOnNextFail: function(stopOnNextFail) {
+                this.stopOnNextFail = !!stopOnNextFail;
+            },
+
             _showLoader: function() {
                 this._loader = true;
             },
@@ -369,7 +378,6 @@
              * @private
              */
             _onDialogOpened: function() {
-//                this.$.name.focus();
                 this._loadRoles();
                 Polymer.Gestures.add(this, 'tap', this._handleDocumentClick.bind(this));
             },
@@ -415,13 +423,14 @@
                     request.send(options).then(function() {
                         if (request.succeeded) {
                             me.fire('partner-admin-added', {
-                                customer: request.response
+                                customer: JSON.parse(JSON.stringify(item)),
+                                partnerAdmin: request.response
                             });
                         }
                         processedRequests--;
                         me._onFinishedAddingPartnerAdmins(processedRequests === 0);
                     }, function() {
-                        if(1502883369 === request.response.code) {
+                        if(1502883369 === request.response.code && !me.stopOnNextFail) {
                             // Selected partner admin already added do nothing. Request is success
                             processedRequests--;
                         } else {
@@ -431,6 +440,7 @@
                         me._onFinishedAddingPartnerAdmins(processedRequests === 0);
                     });
                 });
+                this.stopOnNextFail = false;
             },
 
             _onFinishedAddingPartnerAdmins: function(done) {

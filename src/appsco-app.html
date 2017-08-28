@@ -129,7 +129,6 @@
 <link rel="import" href="components/customer/appsco-add-customer.html">
 <link rel="import" href="components/customer/appsco-remove-customers.html">
 <link rel="import" href="components/customer/appsco-add-partner-admin-to-customers.html">
-<link rel="import" href="components/customer/appsco-add-partner-admin.html">
 <link rel="import" href="components/customer/appsco-manage-customer-page-actions.html">
 <link rel="import" href="components/customer/appsco-customer-partner-admin-remove.html">
 
@@ -1454,14 +1453,6 @@
                 on-customers-removed="_onRemovedCustomers"
                 on-customers-remove-failed="_onRemovedCustomersFailed">
         </appsco-remove-customers>
-
-        <appsco-add-partner-admin
-                id="appscoAddPartnerAdmin"
-                authorization-token="[[ authorizationToken ]]"
-                customers-api="[[ _companyCustomersApi ]]"
-                roles-api="[[ _companyRolesApi ]]"
-                api-errors="[[ _apiErrors ]]"
-                on-partner-admin-added="_onPartnerAdminAdded"></appsco-add-partner-admin>
 
         <appsco-import-customers
                 id="appscoImportCustomers"
@@ -4841,7 +4832,8 @@
 
             _onAddPartnerAdminAction: function(event) {
                 var customer = event.detail.customer;
-                this.$.appscoAddPartnerAdmin.setCustomer(customer);
+                this.set('_selectedCustomers', [customer]);
+                this.$.appscoAddPartnerAdmin.setStopOnNextFail(true);
                 this.$.appscoAddPartnerAdmin.open();
             },
 
@@ -4907,16 +4899,11 @@
             },
 
             _onPartnerAdminAdded: function(event) {
-                this._notify('Partner admin added successfully');
-            },
-
-
-            _onPartnerAdminAdded: function(event) {
                 var partnerAdmin = event.detail.partnerAdmin,
                     customer = event.detail.customer;
 
                 this._addPartnerAdmin(customer, partnerAdmin);
-                this._notify('New partner admin was successfully added.');
+                this._notify('Partner admin added successfully.');
             },
 
             _onImportCustomersAction: function() {

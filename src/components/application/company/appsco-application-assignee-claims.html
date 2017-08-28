@@ -346,6 +346,14 @@ Shows dialog screen with form for changing claims for application instance.
                 return application.meta ? application.meta.account_claims : '';
             },
 
+            _showLoader: function() {
+                this._loader = true;
+            },
+
+            _hideLoader: function() {
+                this._loader = false;
+            },
+
             _onFormKeyUp: function() {
                 this._error = '';
             },
@@ -361,19 +369,20 @@ Shows dialog screen with form for changing claims for application instance.
 
             _submit: function() {
                 var form = Polymer.dom(this.root).querySelector('[data-claims]');
+
                 if(!form.isValid()) {
-                    return;
+                    return false;
                 }
                 if(!form.didFieldsChanged()) {
+                    this._showLoader();
+
                     this.fire('claims-changed', {
-                        application: event.detail.response,
+                        application: this.application,
                         assignee: this.assignee
                     });
 
-                    this.reset();
-
                     this.$.dialog.close();
-                    return;
+                    return false;
                 }
 
                 this.$.form.submit();
@@ -383,7 +392,7 @@ Shows dialog screen with form for changing claims for application instance.
                 var form = this.$.form,
                     formSettings = Polymer.dom(this.root).querySelector('[data-claims]');
 
-                this._loader = true;
+                this._showLoader();
                 form.request.method = 'PUT';
                 form.request.body = formSettings.encodedBodyValues();
                 form.request.body += '&' + encodeURIComponent('account_claims[account]') +
@@ -398,7 +407,7 @@ Shows dialog screen with form for changing claims for application instance.
              */
             _onFormError: function(event) {
                 this._error = event.detail.error.message;
-                this._loader = false;
+                this._hideLoader();
             },
 
             /**
@@ -429,7 +438,7 @@ Shows dialog screen with form for changing claims for application instance.
              */
             reset: function() {
                 this._error = '';
-                this._loader = false;
+                this._hideLoader();
             }
         });
     </script>

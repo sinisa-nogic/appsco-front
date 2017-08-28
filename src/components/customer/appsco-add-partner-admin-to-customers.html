@@ -11,6 +11,7 @@
 <link rel="import" href="../../../bower_components/paper-listbox/paper-listbox.html">
 <link rel="import" href="../../../bower_components/paper-item/paper-item.html">
 <link rel="import" href="../../../bower_components/paper-ripple/paper-ripple.html">
+<link rel="import" href="../../../bower_components/iron-ajax/iron-request.html">
 
 <link rel="import" href="../../components/components/appsco-loader.html">
 <link rel="import" href="../../components/components/appsco-form-error.html">
@@ -116,48 +117,37 @@
             <div class="dialog-container">
 
                 <appsco-form-error message="[[ _error ]]"></appsco-form-error>
+                <div id="searchAdminsContainer" class="input-container">
+                    <appsco-search id="appscoSearchAdmins"
+                                   label="Search for partner admin user"
+                                   float-label
+                                   on-focus="_onAdminSearchFocusAction"
+                                   on-keyup="_onAdminSearchKeyupAction"
+                                   on-search="_onAdminSearchAction"
+                                   on-search-clear="_onAdminSearchClearAction"></appsco-search>
 
-                 <form is="iron-form"
-                      id="form"
-                      method="POST"
-                      action="[[ partnerAdminsApi ]]"
-                      headers="[[ _headers ]]"
-                      on-iron-form-presubmit="_onFormPresubmit"
-                      on-iron-form-error="_onFormError"
-                      on-iron-form-response="_onFormResponse">
+                    <div id="adminListContainer" class="admin-list-container">
 
-                    <div id="searchAdminsContainer" class="input-container">
-                        <appsco-search id="appscoSearchAdmins" 
-                                       label="Search for partner admin user"
-                                       float-label
-                                       on-focus="_onAdminSearchFocusAction"
-                                       on-keyup="_onAdminSearchKeyupAction"
-                                       on-search="_onAdminSearchAction"
-                                       on-search-clear="_onAdminSearchClearAction"></appsco-search>
-                        
-                        <div id="adminListContainer" class="admin-list-container">
+                        <paper-listbox id="adminList"
+                                       class="dropdown-content"
+                                       selected="[[ _selectedAdministrator.value ]]"
+                                       attr-for-selected="value"
+                                       on-iron-activate="_onAdminSelected"
+                                       on-iron-overlay-closed="_onListboxClosed">
 
-                            <paper-listbox id="adminList"
-                                           class="dropdown-content"
-                                           selected="[[ _selectedAdministrator.value ]]"
-                                           attr-for-selected="value"
-                                           on-iron-activate="_onAdminSelected"
-                                           on-iron-overlay-closed="_onListboxClosed">
+                            <template is="dom-repeat" items="[[ _administratorsToDisplay ]]">
+                                <paper-item class="paper-item"
+                                            name="[[ item.account.name ]]"
+                                            value="[[ item.self ]]">
+                                    [[ item.account.name ]]
+                                    <paper-ripple></paper-ripple>
+                                </paper-item>
+                            </template>
 
-                                <template is="dom-repeat" items="[[ _administratorsToDisplay ]]">
-                                    <paper-item class="paper-item"
-                                                name="[[ item.account.name ]]"
-                                                value="[[ item.self ]]">
-                                        [[ item.account.name ]]
-                                        <paper-ripple></paper-ripple>
-                                    </paper-item>
-                                </template>
+                        </paper-listbox>
 
-                            </paper-listbox>
-
-                        </div>
                     </div>
-                </form>
+                </div>
             </div>
 
             <div class="buttons">
@@ -165,10 +155,6 @@
                 <paper-button autofocus on-tap="_onAddAction">Add</paper-button>
             </div>
         </paper-dialog>
-
-        <iron-a11y-keys target="[[ _target ]]"
-                        keys="enter"
-                        on-keys-pressed="_onEnterAction"></iron-a11y-keys>
 
     </template>
     <script>
@@ -252,17 +238,6 @@
 
                 _error: {
                     type: String
-                },
-
-                /**
-                 * Target for iron-a11y-keys component.
-                 * Submit form on enter.
-                 */
-                _target: {
-                    type: Object,
-                    value: function() {
-                        return this.$.form
-                    }
                 },
 
                 animationConfig: {
@@ -407,7 +382,6 @@
             _onDialogClosed: function() {
                 this._hideLoader();
                 this._hideError();
-                this._target.reset();
                 this.set('_administrators', []);
                 this.set('_selectedAdministrator', {});
                 this._hideAdminList();
@@ -416,7 +390,54 @@
             },
 
             _onAddAction: function() {
-                this._submitForm();
+                if(!this._selectedAdministrator.value) {
+                    return;
+                }
+                this._showLoader();
+                var options = {
+                    url: "",
+                    method: 'POST',
+                    body: {
+                        "company_role":  this._selectedAdministrator.value
+                    },
+                    handleAs: 'json',
+                    headers: {
+                        'Authorization': 'token ' + this.authorizationToken,
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    }
+                };
+
+                var processedRequests = this.customers.length;
+                var me = this;
+                this.customers.forEach(function(item, index){
+                    var request = document.createElement('iron-request');
+                    options.url = item.self + '/partner-admins';
+                    request.send(options).then(function() {
+                        if (request.succeeded) {
+                            me.fire('partner-admin-added', {
+                                customer: request.response
+                            });
+                        }
+                        processedRequests--;
+                        me._onFinishedAddingPartnerAdmins(processedRequests === 0);
+                    }, function() {
+                        if(1502883369 === request.response.code) {
+                            // Selected partner admin already added do nothing. Request is success
+                            processedRequests--;
+                        } else {
+                            me._showError(me.apiErrors.getError(request.response.code));
+                            me._hideLoader();
+                        }
+                        me._onFinishedAddingPartnerAdmins(processedRequests === 0);
+                    });
+                });
+            },
+
+            _onFinishedAddingPartnerAdmins: function(done) {
+                if(true === done) {
+                    this.close();
+                    this._hideLoader();
+                }
             },
 
             /**
@@ -426,53 +447,6 @@
              */
             _onEnterAction: function() {
                 this._onAddAction();
-            },
-
-            _submitForm: function() {
-                this._hideError();
-
-                if (!this._selectedAdministrator.value) {
-                    this._showError('You have not selected partner administrator.');
-                    this.$.appscoSearchAdmins.focusAppscoSearchInput();
-                    return false;
-                }
-
-                if (this._target.validate()) {
-                    this._showLoader();
-                    this._target.submit();
-                }
-
-            },
-
-            // TODO It isn't done - Customers should be added to body too
-            _onFormPresubmit: function(event) {
-                event.target.request.body['company_customer[partnerAdmin]'] = this._selectedAdministrator.value;
-            },
-
-            /**
-             * Called on form error.
-             *
-             * @param {Object} event
-             * @private
-             */
-            _onFormError: function(event) {
-                this._showError(this.apiErrors.getError(event.detail.request.response.code));
-                this._hideLoader();
-            },
-
-            /**
-             * Called after group has been added.
-             *
-             * @param {Object} event
-             * @private
-             */
-            _onFormResponse: function(event) {
-                this.close();
-
-                this.fire('partner-admin-added', {
-                    customer: event.detail.response
-                });
-
             },
 
             _onRolesError: function() {

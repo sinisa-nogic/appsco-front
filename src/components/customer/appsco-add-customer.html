@@ -122,7 +122,7 @@
 
                 <appsco-form-error message="[[ _error ]]"></appsco-form-error>
 
-                <template is="dom-if" if="[[ _showInfo ]]">
+                <template is="dom-if" if="[[ _infoShown ]]">
                     <div class="info-box">
                         Customer with the same name already exists.
                         If you want to add it anyway please continue.
@@ -142,6 +142,7 @@
                         <paper-input id="name"
                                      label="Customer name"
                                      name="company_customer[name]"
+                                     value="{{ _customerName }}"
                                      required
                                      auto-validate
                                      error-message="Please enter customer's name."
@@ -282,9 +283,15 @@
                     type: String
                 },
 
-                _showInfo: {
+                _infoShown: {
                     type: Boolean,
                     value: false
+                },
+
+                _customerName: {
+                    type: String,
+                    value: '',
+                    observer: '_onCustomerNameChanged'
                 },
 
                 /**
@@ -368,6 +375,14 @@
                 this._error = '';
             },
 
+            _showInfo: function() {
+                this._infoShown = true;
+            },
+
+            _hideInfo: function() {
+                this._infoShown = false;
+            },
+
             _isInPath: function(path, element) {
                 path = path || [];
 
@@ -440,20 +455,32 @@
             _onDialogClosed: function() {
                 this._hideLoader();
                 this._hideError();
+                this._hideInfo();
                 this._target.reset();
                 this.set('_administrators', []);
                 this.set('_administratorsToDisplay', []);
                 this.set('_selectedAdministrator', {});
-                this._showInfo = false;
                 this._hideAdminList();
                 this.$.appscoSearchAdmins.reset();
+                this._customerName = '';
                 Polymer.Gestures.remove(this, 'tap', this._handleDocumentClick.bind(this));
             },
 
+            _onCustomerNameChanged: function(name) {
+
+                if (!name) {
+                    this._hideInfo();
+                }
+            },
+
             _onNameInputValueChanged: function(event) {
-                this.debounce('checkIfCustomerExists', function() {
-                    this._checkIfCustomerExists(event.detail.value);
-                }.bind(this), 500);
+                var name = event.detail.value;
+
+                if (name) {
+                    this.debounce('checkIfCustomerExists', function() {
+                        this._checkIfCustomerExists(name);
+                    }.bind(this), 500);
+                }
             },
 
             _onAddAction: function() {
@@ -470,11 +497,6 @@
             },
 
             _checkIfCustomerExists: function(name) {
-
-                if (!name) {
-                    return false;
-                }
-
                 var request = document.createElement('iron-request'),
                     options = {
                         url: this.checkIfCustomerExistsApi,
@@ -487,13 +509,13 @@
                 request.send(options).then(function() {
 
                     if (200 === request.status) {
-                        this._showInfo = true;
+                        this._showInfo();
                     }
 
                 }.bind(this), function() {
 
                     if (request.response && (1503648194 == request.response.code)) {
-                        this._showInfo = false;
+                        this._hideInfo();
                     }
                 }.bind(this));
             },

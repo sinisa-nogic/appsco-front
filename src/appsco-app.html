@@ -1972,14 +1972,19 @@
             _onCurrentCompanyChanged: function(company, oldCompany) {
 
                 if (company && company.company) {
-                    document.cookie = 'company=' + company.company.alias;
 
-                    this._setCompanyApi(company);
-                    this._setProduct(this._companyPage);
+                    for (key in company.company) {
+                        document.cookie = 'company=' + company.company.alias;
 
-                    if (oldCompany && oldCompany.company
+                        this._setCompanyApi(company);
+                        this._setProduct(this._companyPage);
+
+                        if (oldCompany && oldCompany.company
                             && company.company.personal_dashboards_allowed !== oldCompany.company.personal_dashboards_allowed) {
-                        this.$$('#getAccountRequest').generateRequest();
+                            this._getLoggedAccount();
+                        }
+
+                        return false;
                     }
                 }
                 else {
@@ -2233,10 +2238,15 @@
                 return customersApi ? customersApi + '/export' : '';
             },
 
+            _getLoggedAccount: function() {
+                this.$$('#getAccountRequest').generateRequest();
+            },
+
             _onGetAccountResponse: function(event) {
                 var account = event.detail.response.account;
 
-                this.account = account;
+                this.set('account', {});
+                this.set('account', account);
                 this.$$('#getDashboardsLink').generateRequest();
                 this.$$('#getCompaniesAccountIsContactIn').generateRequest();
                 setTimeout(function() {
@@ -4855,10 +4865,15 @@
                 }
             },
 
+            _removeCompaniesFromSwitcher: function(companies) {
+                this.$.appscoHeader.removeProductCompanies(companies);
+            },
+
             _onCustomerAdded: function(event) {
                 var customer = event.detail.customer;
 
                 this._addCustomer(customer);
+                this._getLoggedAccount();
                 this._notify('New customer ' + customer.name + ' was successfully added.');
             },
 
@@ -4874,11 +4889,12 @@
                 }
             },
 
-            _onRemovedCustomers: function() {
-                $customersCount = this.$.appscoCustomersPage.removeCustomers(this._selectedCustomers);
-                this._onHideCustomersBulkActions();
+            _onRemovedCustomers: function(event) {
+                var customersCount = this.$.appscoCustomersPage.removeCustomers(this._selectedCustomers);
 
-                this._notify($customersCount + ' customers were successfully removed from company.');
+                this._removeCompaniesFromSwitcher(event.detail.customers);
+                this._onHideCustomersBulkActions();
+                this._notify(customersCount + ' customers were successfully removed from company.');
             },
 
             _onRemoveCustomersFailed: function() {
@@ -5108,6 +5124,7 @@
                 this.set('currentCompany', {
                     company: {}
                 });
+
                 this.set('currentCompany', newCompany);
 
                 for (var i = 0; i < length; i++) {

@@ -439,9 +439,13 @@
                                 <a name="contacts" href="#">
                                     <iron-icon icon="icons:perm-contact-calendar"></iron-icon> <span class="menu-text">Contacts</span>
                                 </a>
-                                <a name="customers" href="#">
-                                    <iron-icon icon="icons:social:domain"></iron-icon> <span class="menu-text">Customers</span>
-                                </a>
+
+                                <template is="dom-if" if="[[ currentCompany.company.is_partner ]]">
+                                    <a name="customers" href="#">
+                                        <iron-icon icon="icons:social:domain"></iron-icon> <span class="menu-text">Customers</span>
+                                    </a>
+                                </template>
+
                                 <a name="groups" href="#">
                                     <iron-icon icon="icons:supervisor-account"></iron-icon> <span class="menu-text">Groups</span>
                                 </a>
@@ -870,6 +874,7 @@
                             customers-api="[[ _companyCustomersApi ]]"
                             customers-export-api="[[ _companyCustomersExportApi ]]"
                             authorization-token="[[ authorizationToken ]]"
+                            api-errors="[[ _apiErrors ]]"
                             on-edit-customer="_onEditCustomerAction"
                             on-show-bulk-actions="_onShowBulkActions"
                             on-hide-bulk-actions="_onHideCustomersBulkActions"
@@ -1909,7 +1914,8 @@
                 '_routePageChanged(routeData.page)',
                 '_changeTheme(_companyPage, currentCompany)',
                 '_redirectToCompany(page, currentCompany, account)',
-                '_setupCompanyAccountPage(page, account)'
+                '_setupCompanyAccountPage(page, account)',
+                '_handlePagePermission(currentCompany, page)'
             ],
 
             listeners: {
@@ -2021,6 +2027,26 @@
                 company ? appscoHeader.setProduct('appsco-business-product' + this.currentCompany.company.alias) : appscoHeader.setProduct('appsco-product');
             },
 
+            _handlePagePermission: function(company, page) {
+
+                for (key in company) {
+
+                    switch (page) {
+                        case 'customers':
+                            if (!this.currentCompany.company.is_partner) {
+                                this._showCompanyHomePage();
+                            }
+
+                            break;
+
+                        default:
+                            return false;
+                    }
+
+                    return false;
+                }
+            },
+
             /**
              * Routing START
              */
@@ -2029,7 +2055,6 @@
             },
 
             _pageChanged: function(page) {
-
                 this._setProgressBar(page);
                 this._closeToastMessage();
 

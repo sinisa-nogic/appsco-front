@@ -1,0 +1,258 @@
+<link rel="import" href="../bower_components/neon-animation/neon-animated-pages.html">
+<link rel="import" href="../bower_components/neon-animation/animations/fade-in-animation.html">
+<link rel="import" href="../bower_components/neon-animation/animations/fade-out-animation.html">
+<link rel="import" href="../bower_components/neon-animation/neon-animatable-behavior.html">
+<link rel="import" href="../bower_components/iron-flex-layout/iron-flex-layout.html">
+<link rel="import" href="../bower_components/iron-media-query/iron-media-query.html">
+
+<link rel="import" href="components/page/appsco-content.html">
+<link rel="import" href="components/components/appsco-search.html">
+<!--<link rel="import" href="components/access-report/appsco-company-access-report.html">-->
+<!--<link rel="import" href="components/access-report/appsco-company-access-report-roles.html">-->
+<!--<link rel="import" href="components/access-report/appsco-company-access-report-resources.html">-->
+<!--<link rel="import" href="components/access-report/appsco-company-access-report-contacts.html">-->
+<!--<link rel="import" href="components/access-report/appsco-company-access-report-image.html">-->
+
+<dom-module id="appsco-access-report-page">
+    <template>
+
+        <style include="shared-styles webkit-scrollbar-style">
+            :host {
+                display: block;
+
+                --info-width: 318px;
+
+                --access-report-progress-bar: {
+                    display: none;
+                };
+
+                --access-report-role-initials-background-color: var(--body-background-color-darker);
+                --access-report-contact-initials-background-color: var(--body-background-color-darker);
+            }
+            :host div[info] {
+                height: 100%;
+            }
+            :host div[info] > * {
+                padding: 10px;
+                box-sizing: border-box;
+            }
+            :host .info-content {
+                height: calc(100% - 50px - 40px);
+                margin-top: 10px;
+                overflow: auto;
+            }
+            :host .info-content > * {
+                height: 78px;
+            }
+            :host .access-report-items {
+                @apply(--layout-flex-none);
+            }
+            :host div[content] > * {
+                padding: 0 10px 10px 10px;
+            }
+            .access-report-container {
+                margin-top: 10px;
+            }
+            appsco-company-access-report-image {
+                --access-report-image-preview: {
+                    width: 32px;
+                    height: 32px;
+                    margin-right: 5px;
+                };
+
+                --access-report-image-background-color: var(--body-background-color-darker);
+            }
+            :host div[info] .info-header {
+                border-bottom: 1px solid var(--divider-color);
+                height: 50px;
+            }
+            :host .info-header .access-report-name {
+                @apply(--paper-font-subhead);
+                font-size: 18px;
+            }
+
+            :host div[info] .info-actions {
+                padding: 0;
+                position: absolute;
+                bottom: 0;
+                left: 0;
+                right: 0;
+            }
+            :host .edit-button {
+                @apply(--primary-button);
+                border-radius: 0;
+            }
+            :host .flex-horizontal {
+                @apply(--layout-horizontal);
+                @apply(--layout-center);
+            }
+            :host .flex-vertical {
+                @apply(--layout-vertical);
+            }
+            :host .flex {
+                @apply(--layout-flex);
+            }
+            :host([tablet-screen]) {
+                --info-width: 250px;
+            }
+            :host([mobile-screen]) {
+                --info-width: 100%;
+            }
+            :host([screen992]) {
+                --account-basic-info: {
+                    width: 140px;
+                };
+                --account-basic-info-values: {
+                    width: 140px;
+                };
+
+                --account-auth-type-info: {
+                    width: 140px;
+                };
+                --account-auth-type-info-values: {
+                    width: 140px;
+                };
+            }
+        </style>
+
+        <iron-media-query query="(max-width: 992px)" query-matches="{{ screen992 }}"></iron-media-query>
+        <iron-media-query query="(max-width: 800px)" query-matches="{{ tabletScreen }}"></iron-media-query>
+        <iron-media-query query="(max-width: 600px)" query-matches="{{ mobileScreen }}"></iron-media-query>
+
+        <appsco-content id="appscoContent">
+
+            <div content>
+                <div class="access-report-container">
+
+                </div>
+            </div>
+
+            <div class="flex-vertical" info>
+
+                <div class="info-header flex-horizontal">
+
+                </div>
+
+                <div class="info-content flex-vertical">
+
+
+
+                </div>
+
+                <div class="info-actions flex-horizontal">
+
+                </div>
+            </div>
+        </appsco-content>
+
+    </template>
+
+    <script>
+        Polymer({
+            is: 'appsco-access-report-page',
+
+            properties: {
+
+                mobileScreen: {
+                    type: Boolean,
+                    value: false,
+                    reflectToAttribute: true
+                },
+
+                tabletScreen: {
+                    type: Boolean,
+                    value: false,
+                    reflectToAttribute: true
+                },
+
+                screen992: {
+                    type: Boolean,
+                    value: false,
+                    reflectToAttribute: true
+                },
+
+                /**
+                 * Animation config.
+                 */
+                animationConfig: {
+                    value: function() {
+                        return {
+                            'entry': {
+                                name: 'fade-in-animation',
+                                node: this,
+                                timing: {
+                                    duration: 300
+                                }
+                            },
+                            'exit': {
+                                name: 'fade-out-animation',
+                                node: this,
+                                timing: {
+                                    duration: 200
+                                }
+                            }
+                        }
+                    }
+                },
+
+
+                authorizationToken: {
+                    type: String,
+                    value: ''
+                }
+            },
+
+            behaviors: [
+                Polymer.NeonAnimatableBehavior
+            ],
+
+            observers: [
+                '_updateScreen(mobileScreen, tabletScreen, screen992)'
+            ],
+
+            toggleInfo: function() {
+
+            },
+
+            hideInfo: function() {
+                this.$.appscoContent.hideSection('info');
+                this._infoShown = false;
+            },
+
+            toggleResource: function() {
+                this.$.appscoContent.toggleSection('resource');
+            },
+
+
+
+            resetPage: function() {
+                this._resetPageActions();
+                this._resetPageLists();
+                this.hideInfo();
+            },
+
+            _resetPageActions: function() {
+                this.fire('reset-page-actions');
+            },
+
+            _updateScreen: function() {
+                this.updateStyles();
+            },
+
+            _onPageReadyChanged: function() {
+                this._onPageLoaded();
+            },
+
+            _onPageLoaded: function() {
+                this.pageLoaded = true;
+                this.fire('page-loaded');
+            },
+
+            _onPageAnimationFinished: function(event) {
+                this._resetPageActions();
+                this._resetPageLists(event.detail.fromPage.getAttribute('name'));
+            }
+        });
+    </script>
+
+</dom-module>

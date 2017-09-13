@@ -136,6 +136,7 @@
 <link rel="import" href="components/customer/appsco-import-customer-resources.html">
 
 <link rel="import" href="components/report/appsco-reports-page-actions.html">
+<link rel="import" href="components/report/appsco-access-report-page-actions.html">
 
 <link rel="import" href="shared-styles.html">
 <link rel="import" href="webkit-scrollbar-style.html">
@@ -448,6 +449,7 @@
                                         <iron-icon icon="icons:social:domain"></iron-icon> <span class="menu-text">Customers</span>
                                     </a>
                                 </template>
+
                                 <a name="groups" href="#">
                                     <iron-icon icon="icons:supervisor-account"></iron-icon> <span class="menu-text">Groups</span>
                                 </a>
@@ -665,6 +667,11 @@
                             <appsco-reports-page-actions id="appscoReportsPageActions"
                                                         name="reports"></appsco-reports-page-actions>
 
+                            <appsco-access-report-page-actions
+                                    id="appscoAccessReportPageActions"
+                                    name="access-report"
+                                    on-back="_showReportsPage"
+                                    on-resource-section="_onResourceActionPage"></appsco-access-report-page-actions>
                         </neon-animated-pages>
 
                     </app-toolbar>
@@ -1020,7 +1027,11 @@
 
                     <appsco-reports-page
                             id="appscoReportsPage"
-                            name="reports"></appsco-reports-page>
+                            name="reports"
+                            get-access-report-api="[[ _getAccessReportApi ]]"
+                            authorization-token="[[ authorizationToken ]]"
+                            api-errors="[[ _apiErrors ]]"
+                            on-open-access-report="_showAccessReportPage"></appsco-reports-page>
 
                     <appsco-access-report-page
                             id="appscoAccessReportPage"
@@ -1871,6 +1882,11 @@
                     computed: '_computeCheckIfCustomerExistsApi(_partnerApi)'
                 },
 
+                _getAccessReportApi: {
+                    type: String,
+                    value: ''
+                },
+
                 _subscription: {
                     type: Object,
                     value: function() {
@@ -2215,6 +2231,14 @@
                 this._showPage('contact-home');
             },
 
+            _showReportsPage: function() {
+                this._showPage('reports');
+            },
+
+            _showAccessReportPage: function() {
+                this._showPage('access-report');
+            },
+
             _showPage404: function() {
                 this.page = '404';
                 this._pageName = 'Not Found';
@@ -2261,6 +2285,7 @@
                     this._companySamlMetadataApi = companyApi + '/idp/saml/metadata';
                     this._companyAuditLogApi = companyApi + '/log';
                     this._companyCustomersApi = partnerApi + '/customers';
+                    this._getAccessReportApi = companyApi + '/reports/application-access';
                 }
             },
 
@@ -2607,6 +2632,10 @@
 
                     case 'reports':
                         return this.$.appscoReportsPage;
+                        break;
+
+                    case 'access-report':
+                        return this.$.appscoAccessReportPage;
                         break;
                 }
             },
@@ -5104,6 +5133,10 @@
 
                     case 'customers':
                         this.$.appscoCustomersPage.pageLoaded ? this._hideProgressBar() : this._showProgressBar();
+                        break;
+
+                    case 'reports':
+                        this.$.appscoReportsPage.pageLoaded ? this._hideProgressBar() : this._showProgressBar();
                         break;
 
                     case 'access-report':

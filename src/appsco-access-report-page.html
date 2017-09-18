@@ -5,8 +5,10 @@
 <link rel="import" href="../bower_components/neon-animation/neon-animatable-behavior.html">
 <link rel="import" href="../bower_components/iron-flex-layout/iron-flex-layout.html">
 <link rel="import" href="../bower_components/iron-media-query/iron-media-query.html">
+<link rel="import" href="../bower_components/paper-styles/shadow.html">
 
 <link rel="import" href="components/page/appsco-content.html">
+<link rel="import" href="components/report/appsco-access-report-accounts.html">
 
 <dom-module id="appsco-access-report-page">
     <template>
@@ -16,6 +18,15 @@
                 display: block;
 
                 --resource-width: 318px;
+                --background-color: var(--body-background-color);
+                --collapsible-content-background-color: #fbfbfb;
+                --access-report-account-initials-background-color: var(--body-background-color-darker);
+                --appsco-access-report-list-item: {
+                    cursor: default;
+                };
+                --appsco-access-report-list-item-activated: {
+                    @apply(--shadow-elevation-2dp);
+                };
             }
             :host .resource-header {
                 border-bottom: 1px solid var(--divider-color);
@@ -24,14 +35,18 @@
                 height: 100%;
                 overflow: auto;
             }
-            div[resource] > .resource-content {
+            :host div[resource] > .resource-content {
                 padding-top: 20px;
             }
-            :host div[content] > * {
-                padding: 0 10px 10px 10px;
+            :host div[content] {
+                min-height: 100%;
+                background-color: #ffffff;
             }
-            .access-report-container {
-                margin-top: 10px;
+            .content-container {
+                padding: 10px;
+            }
+            :host *[hidden] {
+                display: none;
             }
             :host .flex-horizontal {
                 @apply(--layout-horizontal);
@@ -66,8 +81,34 @@
             </div>
 
             <div content>
-                <div class="access-report-container">
+                <div class="content-container">
+                    <appsco-access-report-accounts
+                            id="appscoAccessReportRoles"
+                            type="account"
+                            size="100"
+                            load-more
+                            authorization-token="[[ authorizationToken ]]"
+                            list-api="[[ rolesApi ]]"
+                            api-errors="[[ _apiErrors ]]"
+                            number-of-resources-to-display="15"
+                            load-more
+                            hidden$="[[ !_rolesVisible ]]"
+                            on-list-loaded="_onAccountsLoadFinished"
+                            on-list-empty="_onAccountsLoadFinished"></appsco-access-report-accounts>
 
+                    <appsco-access-report-accounts
+                            id="appscoAccessReportContacts"
+                            type="contact"
+                            size="100"
+                            load-more
+                            authorization-token="[[ authorizationToken ]]"
+                            list-api="[[ contactsApi ]]"
+                            api-errors="[[ _apiErrors ]]"
+                            number-of-resources-to-display="15"
+                            load-more
+                            hidden$="[[ !_contactsVisible ]]"
+                            on-list-loaded="_onContactsLoadFinished"
+                            on-list-empty="_onContactsLoadFinished"></appsco-access-report-accounts>
                 </div>
             </div>
 
@@ -80,6 +121,28 @@
             is: 'appsco-access-report-page',
 
             properties: {
+
+                authorizationToken: {
+                    type: String,
+                    value: ''
+                },
+
+                rolesApi: {
+                    type: String,
+                    value: ''
+                },
+
+                contactsApi: {
+                    type: String,
+                    value: ''
+                },
+
+                apiErrors: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    }
+                },
 
                 mobileScreen: {
                     type: Boolean,
@@ -98,6 +161,31 @@
                     value: false
                 },
 
+                _rolesLoaded: {
+                    type: Boolean,
+                    value: false
+                },
+
+                _rolesVisible: {
+                    type: Boolean,
+                    value: true
+                },
+
+                _contactsLoaded: {
+                    type: Boolean,
+                    value: false
+                },
+
+                _contactsVisible: {
+                    type: Boolean,
+                    value: true
+                },
+
+                _pageReady: {
+                    type: Boolean,
+                    computed: '_computePageReadyState(_rolesLoaded, _contactsLoaded)',
+                    observer: '_onPageReadyChanged'
+                },
 
                 /**
                  * Animation config.
@@ -121,8 +209,7 @@
                             }
                         }
                     }
-                },
-
+                }
             },
 
             behaviors: [
@@ -134,22 +221,63 @@
             ],
 
             attached: function() {
-                // TODO - remove comment when '_onPageLoaded' is implemented
-                // this.pageLoaded = false;
+                 this.pageLoaded = false;
 
                 if (this.mobileScreen) {
                     this.updateStyles();
                 }
             },
 
+            resetPage: function() {
+                this.$.appscoAccessReportRoles.reloadItems();
+                this.$.appscoAccessReportContacts.reloadItems();
+                this._hideContacts();
+                this._showRoles();
+            },
+
             _updateScreen: function() {
                 this.updateStyles();
+            },
+
+            _computePageReadyState: function(accounts, contacts) {
+                return accounts && contacts;
+            },
+
+            _showRoles: function() {
+                this._rolesVisible = true;
+            },
+
+            _hideRoles: function() {
+                this._rolesVisible = false;
+            },
+
+            _showContacts: function() {
+                this._contactsVisible = true;
+            },
+
+            _hideContacts: function() {
+                this._contactsVisible = false;
+            },
+
+            _onPageReadyChanged: function(pageReady) {
+
+                if (pageReady) {
+                    this._onPageLoaded();
+                }
             },
 
             _onPageLoaded: function() {
                 this.pageLoaded = true;
                 this.fire('page-loaded');
             },
+
+            _onAccountsLoadFinished: function() {
+                this._rolesLoaded = true;
+            },
+
+            _onContactsLoadFinished: function() {
+                this._contactsLoaded = true;
+            }
         });
     </script>
 

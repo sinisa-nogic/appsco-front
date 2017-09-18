@@ -54,8 +54,8 @@
 
             <template is="dom-if" if="[[ !_listEmpty ]]">
 
-                <div class="info-total" hidden$="[[ !_totalItems ]]">
-                    <span class="total">Total [[ type ]]s: [[ _totalItems ]]</span>
+                <div class="info-total" hidden$="[[ !_accountsCount ]]">
+                    <span class="total">Total [[ _typeLabel ]]: [[ _accountsCount ]]</span>
                 </div>
 
                 <div class="list">
@@ -88,86 +88,40 @@
 
             is: 'appsco-access-report-accounts',
 
-            behaviors: [
-                Polymer.AppscoListBehavior
-            ],
-
             properties: {
 
                 numberOfResourcesToDisplay: {
                     type: Number,
                     value: 15
+                },
+
+                _accountsCount: {
+                    type: Number,
+                    value: 0
+                },
+
+                _typeLabel: {
+                    type: String,
+                    computed: '_computeTypeLabel(type)'
                 }
             },
 
-            filterByType: function(filter) {
-                this._filterType = filter;
-                this._filterByType();
+            behaviors: [
+                Polymer.AppscoListBehavior
+            ],
+
+            listeners: {
+                'filter-done': '_getResultTotal',
+                'list-loaded': '_getResultTotal',
+                'list-empty': '_getResultTotal'
             },
 
-            _filterByType: function() {
-                var filterApi = this.listApi + '?page=1&limit=100&extended=1',
-                    filterTerm = this._filterTerm,
-                    filterTermPresent = (filterTerm && 3 <= filterTerm.length),
-                    filterType = this._filterType;
+            _computeTypeLabel: function(type) {
+                return ('account' === type) ? 'users' : type + 's';
+            },
 
-                this._hideMessage();
-                this._showProgressBar();
-                this._hideLoadMoreAction();
-                this._clearListLoaders();
-                this.set('_listItems', []);
-
-                if ('all' !== filterType) {
-                    filterApi += '&filter=' + filterType;
-                }
-
-                if (filterTermPresent) {
-                    filterApi += '&term=' + filterTerm;
-                }
-
-                this._getItems(filterApi).then(function(items) {
-                    var itemsLength = items.length,
-                        allListItems = JSON.parse(JSON.stringify(this._allListItems)),
-                        allLength = allListItems.length;
-
-                    if (0 === itemsLength) {
-                        var termMessage = filterTermPresent ? 'with asked term' : '';
-
-                        filterType = ('all' === filterType) ? '' : filterType;
-                        this._showMessage('There are no ' + filterType + ' ' + this.type + 's ' + termMessage + '.');
-                        this._handleEmptyLoad();
-                        this.fire('filter-done');
-                        return false;
-                    }
-
-                    this._listEmpty = false;
-
-                    items.forEach(function(elem, index) {
-
-
-                        for (var i = 0; i < allLength; i++) {
-                            var currentListItem = allListItems[i];
-
-                            if (elem.self === currentListItem.self) {
-                                this.push('_listItems', currentListItem);
-                                break;
-                            }
-                            else {
-
-                                if (i === allLength - 1) {
-                                    this.push('_listItems', elem);
-                                }
-                            }
-                        }
-
-                        if (index === itemsLength - 1) {
-                            this._hideProgressBar();
-                            this.fire('filter-done');
-                        }
-
-                    }.bind(this));
-
-                }.bind(this));
+            _getResultTotal: function() {
+                this._accountsCount = this.getCurrentCount();
             }
         });
     </script>

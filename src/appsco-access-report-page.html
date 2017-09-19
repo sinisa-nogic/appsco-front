@@ -9,6 +9,7 @@
 
 <link rel="import" href="components/page/appsco-content.html">
 <link rel="import" href="components/report/appsco-access-report-accounts.html">
+<link rel="import" href="components/report/appsco-access-report-page-filters.html">
 
 <dom-module id="appsco-access-report-page">
     <template>
@@ -28,15 +29,12 @@
                     @apply(--shadow-elevation-2dp);
                 };
             }
-            :host .resource-header {
-                border-bottom: 1px solid var(--divider-color);
-            }
             :host div[resource] {
                 height: 100%;
                 overflow: auto;
             }
             :host div[resource] > .resource-content {
-                padding-top: 20px;
+                padding: 30px 10px 10px;
             }
             :host div[content] {
                 min-height: 100%;
@@ -47,6 +45,11 @@
             }
             :host *[hidden] {
                 display: none;
+            }
+            appsco-access-report-accounts {
+                --list-container: {
+                    min-height: 60px;
+                };
             }
             :host .flex-horizontal {
                 @apply(--layout-horizontal);
@@ -71,12 +74,12 @@
 
         <appsco-content id="appscoContent" resource-active>
             <div class="flex-vertical" resource>
-                <div class="resource-header">
-
-                </div>
-
                 <div class="resource-content">
-
+                    <appsco-access-report-page-filters groups-api="[[ groupsApi ]]"
+                                                       authorization-token="[[ authorizationToken ]]"
+                                                       on-filter-access-report-by-account-term="_filterByTermAction"
+                                                       on-filter-access-report-by-assignee-type="_filterByAssigneeTypeAction"
+                                                       on-filter-access-report-by-group="_filterByGroupAction"></appsco-access-report-page-filters>
                 </div>
             </div>
 
@@ -123,6 +126,11 @@
             properties: {
 
                 authorizationToken: {
+                    type: String,
+                    value: ''
+                },
+
+                groupsApi: {
                     type: String,
                     value: ''
                 },
@@ -178,7 +186,7 @@
 
                 _contactsVisible: {
                     type: Boolean,
-                    value: true
+                    value: false
                 },
 
                 _pageReady: {
@@ -229,8 +237,7 @@
             },
 
             resetPage: function() {
-                this.$.appscoAccessReportRoles.reloadItems();
-                this.$.appscoAccessReportContacts.reloadItems();
+                this._reloadLists();
                 this._hideContacts();
                 this._showRoles();
             },
@@ -245,6 +252,11 @@
 
             _computePageReadyState: function(accounts, contacts) {
                 return accounts && contacts;
+            },
+
+            _reloadLists: function() {
+                this.$.appscoAccessReportRoles.reloadItems();
+                this.$.appscoAccessReportContacts.reloadItems();
             },
 
             _showRoles: function() {
@@ -281,6 +293,44 @@
 
             _onContactsLoadFinished: function() {
                 this._contactsLoaded = true;
+            },
+
+            _filterByTermAction: function(event) {
+                var term = event.detail.term;
+
+                this.$.appscoAccessReportRoles.filterByTerm(term);
+                this.$.appscoAccessReportContacts.filterByTerm(term);
+            },
+
+            _filterByAssigneeTypeAction: function(event) {
+
+                switch (event.detail.type) {
+
+                    case 'users':
+                        this._hideContacts();
+                        this._showRoles();
+                        break;
+
+                    case 'contacts':
+                        this._hideRoles();
+                        this._showContacts();
+                        break;
+
+                    case 'all':
+                        this._showRoles();
+                        this._showContacts();
+                        break;
+
+                    default:
+                        return false;
+                }
+            },
+
+            _filterByGroupAction: function(event) {
+                var group = event.detail.group;
+
+                this.$.appscoAccessReportRoles.filterByGroup(group);
+                this.$.appscoAccessReportContacts.filterByGroup(group);
             }
         });
     </script>

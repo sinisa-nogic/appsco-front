@@ -15,6 +15,7 @@
 <link rel="import" href="../components/application/appsco-application-analytics-security.html">
 <link rel="import" href="../components/application/appsco-application-details-idp.html">
 <link rel="import" href="../components/application/appsco-application-groups.html">
+<link rel="import" href="../components/application/appsco-application-autologin.html">
 
 <dom-module id="appsco-manage-application-components-page">
     <template>
@@ -79,6 +80,15 @@
             :host .details-subscribers, :host .security-sharing, :host .details-idp, :host .middle-column {
                 @apply(--layout-vertical);
             }
+            :host .details-subscribers, :host .security-autologin {
+                @apply(--layout-vertical);
+            }
+            :host([medium-screen]) .security-autologin {
+                margin-right: 0;
+            }
+            :host .details-subscribers, :host .security-autologin {
+                margin-right: 10px;
+            }
             appsco-application-details-idp {
                 --appsco-application-icons-color: var(--app-secondary-color);
 
@@ -137,6 +147,15 @@
             }
             :host([mobile-screen]) .details-subscribers, .middle-column {
                 margin-right: 0;
+            }
+            :host([col2]) {
+                @apply(--layout-start-justified);
+            }
+            :host([col2]) > * {
+                width: calc(100% / 2 - 10px);
+            }
+            :host([col2][medium-screen]) > .appsco-application-log {
+                width: calc(100% / 2 - 10px);
             }
         </style>
 
@@ -229,6 +248,37 @@
                     <paper-button on-tap="_onManageGroups">Manage</paper-button>
                 </div>
             </paper-card>
+
+            <template is="dom-if" if="[[ _isUnPwAuthType ]]">
+                <div class="security-autologin">
+                    <paper-card heading="Autologin" class="appsco-application-autologin">
+                        <div class="card-content">
+                            <appsco-application-autologin
+                                    application="[[ application ]]"
+                                    authorization-token="[[ authorizationToken ]]"
+                                    on-autologin-unavailable="_onAutologinUnavailable"
+                                    on-autologin-changed="_onAutologinChanged"></appsco-application-autologin>
+
+                            <template is="dom-if" if="[[ _autologinUnavailable ]]">
+                                <p>Auto Login sign on method for this resource is unavailable.</p>
+                            </template>
+
+                            <template is="dom-if" if="[[ !_autologinUnavailable ]]">
+
+                                <template is="dom-if" if="[[ _autologinItem ]]">
+                                    <p>Turn on Auto Login to automate sign-in process.</p>
+                                </template>
+
+                                <template is="dom-if" if="[[ !_autologinItem ]]">
+                                    <p>Turn off Auto Login if you prefer to choose login account manually after resource opens in browser.</p>
+                                </template>
+
+                            </template>
+                        </div>
+                    </paper-card>
+                </div>
+            </template>
+
         </div>
 
         <template is="dom-if" if="[[ _viewSecurityPermission ]]" restamp>
@@ -265,6 +315,12 @@
             is: 'appsco-manage-application-components-page',
 
             properties: {
+
+                col2: {
+                    type: Boolean,
+                    value: false,
+                    reflectToAttribute: true
+                },
 
                 /**
                  * Indicates if it is medium screen size.
@@ -317,7 +373,9 @@
                     type: Object,
                     value: function() {
                         return {};
-                    }
+                    },
+                    notify: true,
+                    observer: '_onApplicationChanged'
                 },
 
                 companyIdpSamlMetadataApi: {
@@ -330,6 +388,11 @@
                     computed: '_computeIsSAMLApp(application)'
                 },
 
+                _isUnPwAuthType: {
+                    type: Boolean,
+                    computed: '_computeIsUnPwAuthType(application)'
+                },
+
                 _viewSecurityPermission: {
                     type: Boolean,
                     computed: '_computeViewSecurityPermission(application)',
@@ -340,6 +403,16 @@
                     type: Boolean,
                     value: false,
                     reflectToAttribute: true
+                },
+
+                _autologinItem: {
+                    type: Boolean,
+                    value: false
+                },
+
+                _autologinUnavailable: {
+                    type: Boolean,
+                    value: false
                 },
 
                 /**
@@ -390,6 +463,11 @@
                 this.$.appscoApplicationAssignees.removeAssignee(assignee);
             },
 
+            _onApplicationChanged: function() {
+                this._autologinUnavailable = false;
+                this._autologinItem = this.application.auth_type == 'item';
+            },
+
             /**
              * Computes authorization headers.
              *
@@ -416,6 +494,15 @@
              */
             _computeIsSAMLApp: function(application) {
                 return ['saml', 'saml_dropbox', 'saml_office_365'].indexOf(application.auth_type) !== -1;
+            },
+
+            _computeIsUnPwAuthType: function (application) {
+                var isUnpw =
+                                application.auth_type &&
+                                (application.auth_type === 'unpw' || application.auth_type === 'item')
+                        ;
+                this.col2 = !isUnpw;
+                return isUnpw;
             },
 
             _computeViewSecurityPermission: function(application) {
@@ -469,7 +556,17 @@
             _onManageGroups: function(event) {
                 this._setSharedElement(event.target);
                 this.fire('manage-groups');
-            }
+            },
+
+            _onAutologinUnavailable: function() {
+                this._autologinUnavailable = true;
+            },
+
+            _onAutologinChanged: function() {
+                this._autologinItem = !this._autologinItem;
+
+                this.$.appscoApplicationLog.load();
+            },
 
         });
     </script>

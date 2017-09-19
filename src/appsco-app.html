@@ -637,7 +637,7 @@
                                     on-add-partner-admin="_onAddPartnerAdminToCustomersAction"
                                     on-import-customers="_onImportCustomersAction"
                                     on-import-customer-resources="_onImportCustomerResources"
-                                    on-export-customers="_onExportCustomersAction"
+                                    on-export-customers="F"
                             ></appsco-customers-page-actions>
 
                             <appsco-audit-log-page-actions
@@ -1040,6 +1040,7 @@
                             groups-api="[[ _companyGroupsApi ]]"
                             roles-api="[[ _companyRolesApi ]]"
                             contacts-api="[[ _companyContactsApi ]]"
+                            export-access-report-api="[[ _exportAccessReportApi ]]"
                             api-errors="[[ _apiErrors ]]"></appsco-access-report-page>
 
                     <appsco-billing-page
@@ -1888,6 +1889,11 @@
                     value: ''
                 },
 
+                _exportAccessReportApi: {
+                    type: String,
+                    computed: '_computeExportAccessReportApi(_getAccessReportApi)'
+                },
+
                 _subscription: {
                     type: Object,
                     value: function() {
@@ -1982,7 +1988,10 @@
                 'twofa-disabled': '_onTwoFaDisabled',
                 'revoke-authorized-application': '_onRevokeAuthorizedApplication',
                 'token-generated': '_onTokenGenerated',
-                'reset-page-actions': '_onResetPageActions'
+                'reset-page-actions': '_onResetPageActions',
+                'export-access-report': '_onExportAccessReportAction',
+                'export-access-report-finished': '_onExportAccessReportFinished',
+                'export-access-report-failed': '_onExportAccessReportFailed'
             },
 
             attached: function() {
@@ -2316,6 +2325,10 @@
 
             _computeCustomerPartnerAdminApi: function(customersApi) {
                 return customersApi ? customersApi + '/partner-admins' : '';
+            },
+
+            _computeExportAccessReportApi: function(getAccessReportApi) {
+                return getAccessReportApi ? (getAccessReportApi + '/export') : '';
             },
 
             _getLoggedAccount: function() {
@@ -5036,6 +5049,93 @@
             },
             /**
              * Customers page END
+             */
+
+            /**
+             * Access Report page START
+             */
+            _computeExportAccessReportApiUrl: function() {
+                var url = this._exportAccessReportApi,
+                    filters = this.$.appscoAccessReportPage.getAccessReportFilters();
+
+                switch (filters.type) {
+                    case 'users':
+                        url += '?company_roles=true&contacts=false';
+                        break;
+
+                    case 'contacts':
+                        url += '?company_roles=false&contacts=true';
+                        break;
+                }
+
+                if (filters.group.alias && 'all' != filters.group.alias) {
+                    url += (-1 < url.indexOf(this.exportAccessReportApi + '?')) ? ('&group=' + filters.group.self) : ('?group=' + filters.group.self);
+                }
+
+                if (3 <= filters.term.length) {
+                    url += (-1 < url.indexOf(this.exportAccessReportApi + '?')) ? ('&term=' + filters.term) : ('?term=' + filters.term);
+                }
+
+                return url;
+            },
+
+            _exportAccessReport: function(url) {
+                var request = document.createElement('iron-request'),
+                    options = {
+                        url: url,
+                        method: 'GET',
+                        handleAs: 'blob',
+                        headers: {
+                            'Authorization': 'token ' + this.authorizationToken
+                        }
+                    };
+
+                request.send(options).then(function() {
+                    var fileReader = new FileReader();
+
+                    fileReader.onload = function(event) {
+                        var link = document.createElement('a');
+
+                        link.href = event.target.result;
+                        link.setAttribute('download', 'Access Report.xlsx');
+                        document.body.appendChild(link);
+
+                        if (link.click) {
+                            link.click();
+                        }
+                        else if (document.createEvent) {
+                            var clickEvent = document.createEvent('MouseEvents');
+
+                            clickEvent.initEvent('click', true, true);
+                            link.dispatchEvent(clickEvent);
+                        }
+
+                        document.body.removeChild(link);
+                    };
+
+                    fileReader.readAsDataURL(request.response);
+
+                    this.fire('export-access-report-finished');
+                }.bind(this), function() {
+                    this.fire('export-access-report-failed');
+                }.bind(this));
+            },
+
+            _onExportAccessReportAction: function() {
+                this._showProgressBar();
+                this._exportAccessReport(('access-report' === this.page) ? this._computeExportAccessReportApiUrl() : this._exportAccessReportApi);
+            },
+
+            _onExportAccessReportFinished: function() {
+                this._hideProgressBar();
+            },
+
+            _onExportAccessReportFailed: function() {
+                this._hideProgressBar();
+                this._notify('Export of Access Report failed. Please contact AppsCo support.');
+            },
+            /**
+             * Access Report page END
              */
 
             /**

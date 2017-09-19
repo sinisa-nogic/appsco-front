@@ -470,12 +470,22 @@
                         }
                     };
                 request.send(options).then(function(response) {
-                    var href = "data:application/octet-stream," + encodeURIComponent(response.response);
                     var link = document.createElement('a');
-                    link.href = href;
+
+                    link.href = "data:application/octet-stream," + encodeURIComponent(response.response);
                     link.setAttribute('download', 'customers.csv');
                     document.body.appendChild(link);
-                    link.click();
+
+                    if (link.click) {
+                        link.click();
+                    }
+                    else if (document.createEvent) {
+                        var event = document.createEvent('MouseEvents');
+
+                        event.initEvent('click', true, true);
+                        link.dispatchEvent(event);
+                    }
+
                     document.body.removeChild(link);
                 });
             },

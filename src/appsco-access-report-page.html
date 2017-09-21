@@ -3,6 +3,7 @@
 <link rel="import" href="../bower_components/neon-animation/animations/fade-in-animation.html">
 <link rel="import" href="../bower_components/neon-animation/animations/fade-out-animation.html">
 <link rel="import" href="../bower_components/neon-animation/neon-animatable-behavior.html">
+<link rel="import" href="../bower_components/neon-animation/neon-animation-runner-behavior.html">
 <link rel="import" href="../bower_components/iron-flex-layout/iron-flex-layout.html">
 <link rel="import" href="../bower_components/iron-media-query/iron-media-query.html">
 <link rel="import" href="../bower_components/paper-styles/shadow.html">
@@ -227,12 +228,17 @@
             },
 
             behaviors: [
-                Polymer.NeonAnimatableBehavior
+                Polymer.NeonAnimatableBehavior,
+                Polymer.NeonAnimationRunnerBehavior
             ],
 
             observers: [
                 '_updateScreen(mobileScreen, tabletScreen, screen992)'
             ],
+
+            listeners: {
+                'neon-animation-finish': '_onNeonAnimationFinish'
+            },
 
             attached: function() {
                  this.pageLoaded = false;
@@ -276,18 +282,28 @@
 
             _showRoles: function() {
                 this._rolesVisible = true;
+                this.animationConfig.entry.node = this.$.appscoAccessReportRoles;
+                this.playAnimation('entry');
             },
 
             _hideRoles: function() {
-                this._rolesVisible = false;
+                this.animationConfig.exit.node = this.$.appscoAccessReportRoles;
+                this.playAnimation('exit', {
+                    activeList: 'roles'
+                });
             },
 
             _showContacts: function() {
                 this._contactsVisible = true;
+                this.animationConfig.entry.node = this.$.appscoAccessReportContacts;
+                this.playAnimation('entry');
             },
 
             _hideContacts: function() {
-                this._contactsVisible = false;
+                this.animationConfig.exit.node = this.$.appscoAccessReportContacts;
+                this.playAnimation('exit', {
+                    activeList: 'contacts'
+                });
             },
 
             _onPageReadyChanged: function(pageReady) {
@@ -300,6 +316,25 @@
             _onPageLoaded: function() {
                 this.pageLoaded = true;
                 this.fire('page-loaded');
+            },
+
+            _onNeonAnimationFinish: function(event) {
+
+                switch (event.detail.activeList) {
+                    case 'roles':
+                        this._rolesVisible = false;
+                        this._showContacts();
+                        break;
+
+                    case 'contacts':
+                        this._contactsVisible = false;
+                        this._showRoles();
+                        break;
+
+                    default:
+                        return false;
+
+                }
             },
 
             _onAccountsLoadFinished: function() {
@@ -323,12 +358,12 @@
 
                     case 'users':
                         this._hideContacts();
-                        this._showRoles();
+//                        this._showRoles();
                         break;
 
                     case 'contacts':
                         this._hideRoles();
-                        this._showContacts();
+//                        this._showContacts();
                         break;
 
                     case 'all':

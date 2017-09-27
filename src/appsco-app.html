@@ -138,6 +138,8 @@
 <link rel="import" href="components/report/appsco-reports-page-actions.html">
 <link rel="import" href="components/report/appsco-access-report-page-actions.html">
 
+<link rel="import" href="components/company-role/appsco-role-reset-two-fa.html">
+
 <link rel="import" href="shared-styles.html">
 <link rel="import" href="webkit-scrollbar-style.html">
 
@@ -924,6 +926,7 @@
                             change-password-api="[[ api.changePassword ]]"
                             on-settings-saved="_onAccountSettingsSaved"
                             on-password-changed="_onCompanyAccountPasswordChanged"
+                            on-reset-role-two-fa="_onResetRoleTwoFA"
                             on-add-to-orgunit="_onAddAccountToOrgunit"
                             on-remove-from-orgunit="_onRemoveAccountFromOrgunit"
                             on-remove-from-group="_onRemoveAccountFromGroup"
@@ -1496,6 +1499,12 @@
                 on-customers-removed="_onRemovedCustomers"
                 on-customers-remove-failed="_onRemovedCustomersFailed">
         </appsco-remove-customers>
+
+        <appsco-role-reset-two-fa
+                id="appscoRoleResetTwoFA"
+                authorization-token="[[ authorizationToken ]]"
+                api-errors="[[ _apiErrors ]]"
+                on-role-two-fa-reset="_onRoleTwoFAReset"></appsco-role-reset-two-fa>
 
         <appsco-import-customers
                 id="appscoImportCustomers"
@@ -4010,6 +4019,22 @@
                 this._notify('Password for ' + event.detail.account.name + ' was successfully changed.');
 
                 this._notifyReloadAccounts();
+            },
+
+            _onResetRoleTwoFA: function(event) {
+                var component = this.$.appscoRoleResetTwoFA;
+
+                component.setRole(event.detail.role);
+                component.open();
+            },
+
+            _onRoleTwoFAReset: function(event) {
+
+                if (this.$.appscoManageAccountPage.$) {
+                    this.$.appscoManageAccountPage.resetPage();
+                }
+
+                this._notify('You have successfully reset two-factor authentication for ' + event.detail.role.account.name);
             },
 
             _onAddAccountToOrgunit: function(event) {

@@ -3077,16 +3077,25 @@
                 this.getCurrentAppscoPageElement()._onAccountAdvancedSettings();
             },
 
+            _updateIfAdministrator: function(account) {
+
+                if (this.$.appscoDirectoryPage.$ && (account.id === this.account.id)) {
+                    this.$.appscoDirectoryPage.updateAccount(account);
+                }
+            },
+
             _onAccountSettingsSaved: function(event) {
+                var account = event.detail.account;
 
                 switch (this.page) {
                     case 'manage-account':
-                        this._notify('Account settings for ' + event.detail.account.name + ' were successfully changed.');
+                        this._notify('Account settings for ' + account.name + ' were successfully changed.');
 
                         break;
 
                     case 'account':
                     case 'company-account':
+                        this._updateIfAdministrator(account);
                         this._notify('Account settings were successfully changed.');
 
                         break;
@@ -3120,7 +3129,7 @@
             _onEnableAccountAdvancedSettings: function() {
                 var pageActions = this.getCurrentAppscoPageActionsElement();
 
-                if (pageActions) {
+                if (pageActions && pageActions.enableAdvancedSettings) {
                     pageActions.enableAdvancedSettings();
                 }
             },
@@ -5469,6 +5478,7 @@
                     case 'directory':
                     case 'contacts':
                     case 'customers':
+                    case 'account':
 
                         if (fromPage.$) {
                             fromPage.resetPage();

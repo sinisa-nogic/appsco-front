@@ -47,8 +47,7 @@ Custom property | Description | Default
                 margin-top: 20px;
             }
             .toggle-button-container {
-                margin-top: 20px;
-                margin-bottom: 10px;
+                margin-top: 30px;
             }
             .toggle-button-container paper-toggle-button {
                 margin-top: 10px;
@@ -113,14 +112,16 @@ Custom property | Description | Default
                               error-message="Please type in correct email."
             ></gold-email-input>
 
-            <p class="info info-personal-dash">
-                If you turn off the personal dashboard for managed users they will no longer be able to view, add and share private resources.
-                Once it's turned back on, users will get back the private dashboard. This applies to all managed users including admins in your company.
-            </p>
+            <div class="toggle-button-container">
+                <p class="info">
+                    If you turn off the personal dashboard for managed users they will no longer be able to view, add and share private resources.
+                    Once it's turned back on, users will get back the private dashboard. This applies to all managed users including admins in your company.
+                </p>
 
-            <paper-toggle-button id="allowPersonalDashboard"
-                                 name="company_settings[canHavePrivateDashboards]"
-                                 checked$="[[ _isPersonalDashboardAllowed ]]">Allow personal dashboard</paper-toggle-button>
+                <paper-toggle-button id="allowPersonalDashboard"
+                                     name="company_settings[canHavePrivateDashboards]"
+                                     checked$="[[ _isPersonalDashboardAllowed ]]">Allow personal dashboard</paper-toggle-button>
+            </div>
 
             <div class="toggle-button-container">
                 <p class="info">
@@ -128,9 +129,27 @@ Custom property | Description | Default
                     managed users will be prevented from creating a company.
                     This option does not apply to admins even if they are managed users.
                 </p>
+
                 <paper-toggle-button name="company_settings[userAllowedToCreateCompany]"
                                      checked="[[ company.user_allowed_to_create_company ]]">
                     Managed users can create company
+                </paper-toggle-button>
+            </div>
+
+            <div class="toggle-button-container">
+                <p class="info">
+                    Force managed users to enable two-factor authentication.
+                    Your managed users will be prompted to set up two-factor authentication.
+                    You can reset two-factor authentication for each user separately in case the user needs to set it up again.
+                </p>
+                <p class="info">
+                    Warning: If you disable two-factor policy, it will no longer be enforced and your users
+                    will be able to turn it off.
+                </p>
+
+                <paper-toggle-button name="company_settings[enforced2fa]"
+                                     checked="[[ company.enforced_2fa ]]">
+                    Enforce Two-factor authentication policy
                 </paper-toggle-button>
             </div>
         </form>
@@ -175,6 +194,13 @@ Custom property | Description | Default
                  */
                 settingsApi: {
                     type: String
+                },
+
+                apiErrors: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    }
                 },
 
                 /**
@@ -246,6 +272,14 @@ Custom property | Description | Default
                 this._loader = false;
             },
 
+            _showError: function(message) {
+                this._error = message;
+            },
+
+            _hideError: function() {
+                this._error = '';
+            },
+
             /**
              * Submits form on ENTER key using iron-a11y-keys component.
              *
@@ -265,7 +299,7 @@ Custom property | Description | Default
             },
 
             _onFormError: function(event) {
-                this._error = event.detail.error.message;
+                this._showError(this.apiErrors.getError(event.detail.request.response.code));
                 this._hideLoader();
             },
 
@@ -283,7 +317,7 @@ Custom property | Description | Default
             },
 
             _onKeyUp: function() {
-                this._error = '';
+                this._hideError();
             },
 
             /**
@@ -302,7 +336,7 @@ Custom property | Description | Default
                 this.company = {};
                 this.company = company;
 
-                this._error = '';
+                this._hideError();
                 this.$.contactEmail.invalid = false;
                 this.$.billingEmail.invalid = false;
             }

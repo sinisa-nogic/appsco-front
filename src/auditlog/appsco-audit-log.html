@@ -47,11 +47,28 @@
                 @apply(--layout-horizontal);
                 @apply(--layout-center);
             }
+            .account-name {
+                display: block;
+                font-family: 'Roboto', 'Noto', sans-serif;
+                font-size: 16px;
+                -webkit-font-smoothing: antialiased;
+                font-weight: 400;
+            }
+            .account-email {
+                display: block;
+                font-size: 12px;
+            }
+            .role-name, .role-companies {
+                display: block;
+            }
+            .log-record .role {
+                width: 20%;
+            }
             .log-record .event {
-                width: 45%;
+                width: 30%;
             }
             .log-record .ip-address {
-                width: 15%;
+                width: 10%;
             }
             .log-record .date {
                 width: 20%;
@@ -140,6 +157,7 @@
                 <template is="dom-if" if="[[ !preview ]]">
                     <div class="log-record log-header">
                         <div class="account-info">Account</div>
+                        <div class="role">Role</div>
                         <div class="event">Event</div>
                         <div class="ip-address">IP Address</div>
                         <div class="date">Date</div>
@@ -150,7 +168,14 @@
                         <div class="log-record">
                             <div class="account-info">
                                 <appsco-account-image account="[[ item.account ]]"></appsco-account-image>
-                                <div class="account">[[ item.account.name ]]</div>
+                                <div>
+                                    <span class="account-name">[[ item.account.name ]]</span>
+                                    <span class="account-email">[[ item.account.email ]]</span>
+                                </div>
+                            </div>
+                            <div class="role">
+                                <span class="role-name">[[ item.role.name ]]</span>
+                                <span class="role-companies">[[ item.role.companies ]]</span>
                             </div>
                             <div class="event">[[ item.event ]]</div>
                             <div class="ip-address">[[ item.ip_address ]]</div>
@@ -614,59 +639,96 @@
                 var logItem = {
                     account: {
                         picture_url: item.initiatior_image,
-                        name: item.initiatior_display_name
+                        name: item.initiatior_display_name,
+                        email: item.initiatior_email
                     },
+                    role: {
+                        name: this._formatLogInitiatorRole(item),
+                        companies: this._formatLogInitiatorCompanies(item),
+                    },
+                    event: this._formatLogEvent(item),
                     ip_address: item.ip,
                     date: item.created_at.date
                 };
 
+                return logItem;
+
+            },
+
+            _formatLogInitiatorRole: function (item) {
+                var companyRole = '';
+                switch (item.initiator_company_role) {
+                    case 'COMPANY_ROLE_PARTNER_ADMIN':
+                        companyRole = 'Partner Admin';
+                        break;
+                    case 'COMPANY_ROLE_OWNER':
+                        companyRole = 'Admin';
+                        break;
+                    case 'COMPANY_ROLE_ADMIN':
+                        companyRole = 'Admin';
+                        break;
+                    case 'COMPANY_ROLE_EMPLOYEE':
+                        companyRole = 'Employee';
+                        break;
+                }
+
+                return companyRole;
+            },
+
+            _formatLogInitiatorCompanies: function (item) {
+                var initiatorCompanies = item.initiator_company_names.toString();
+                return initiatorCompanies ? initiatorCompanies.replace(/,/g, ", ") : '';
+            },
+
+            _formatLogEvent: function (item) {
+                var event = '';
                 switch (item.type) {
                     case 'account_login_attempt':
-                        logItem.event = this.localize('account_login_attempt', 'application', item.data.application.title);
+                        event = this.localize('account_login_attempt', 'application', item.data.application.title);
                         break;
 
                     case 'account_update_profile':
-                        logItem.event = this._formatLogAccountUpdateProfile(item);
+                        event = this._formatLogAccountUpdateProfile(item);
                         break;
 
                     case 'account_updated_profile_image':
-                        logItem.event = this.localize('account_log_profile_image_changed');
+                        event = this.localize('account_log_profile_image_changed');
                         break;
 
                     case 'account_changed_password':
-                        logItem.event = this.localize('account_log_password_changed');
+                        event = this.localize('account_log_password_changed');
                         break;
 
                     case 'account_generated_partner_token':
-                        logItem.event = this.localize('account_log_token_generated');
+                        event = this.localize('account_log_token_generated');
                         break;
 
                     case 'account_enabled_two_fa':
-                        logItem.event = this.localize('account_log_2fa_enabled');
+                        event = this.localize('account_log_2fa_enabled');
                         break;
 
                     case 'account_disabled_two_fa':
-                        logItem.event = this.localize('account_log_2fa_disabled');
+                        event = this.localize('account_log_2fa_disabled');
                         break;
 
                     case 'account_authorized_application':
-                        logItem.event = this.localize('account_log_application_authorized', 'application', item.data.title);
+                        event = this.localize('account_log_application_authorized', 'application', item.data.title);
                         break;
 
                     case 'account_revoked_authorization':
-                        logItem.event = this.localize('account_log_application_revoked', 'application', item.data.title);
+                        event = this.localize('account_log_application_revoked', 'application', item.data.title);
                         break;
 
                     case 'company_role_added':
-                        logItem.event = this.localize('company_role_added', 'account', item.data.role.account.name);
+                        event = this.localize('company_role_added', 'account', item.data.role.account.name);
                         break;
 
                     case 'company_role_removed':
-                        logItem.event = this.localize('company_role_removed', 'account', item.data.role.account.name);
+                        event = this.localize('company_role_removed', 'account', item.data.role.account.name);
                         break;
 
                     case 'orgunit_created':
-                        logItem.event = this.localize('orgunit_created', 'orgunit', item.data.orgunit.name);
+                        event = this.localize('orgunit_created', 'orgunit', item.data.orgunit.name);
                         break;
 
                     case 'orgunit_updated':
@@ -681,177 +743,176 @@
                             message += this.localize('orgunit_updated', 'property', property, 'fromValue', from, 'toValue', to);
                         }
 
-                        logItem.event = message;
+                        event = message;
 
                         break;
 
                     case 'org_unit_removed':
-                        logItem.event = this.localize('org_unit_removed', 'orgunit', item.data.orgunit.name);
+                        event = this.localize('org_unit_removed', 'orgunit', item.data.orgunit.name);
                         break;
 
                     case 'orgunit_added':
-                        logItem.event = this.localize('account_log_role_added_to_orgunit', 'account', item.data.role.account.name, 'orgunit', item.data.orgunit.name);
+                        event = this.localize('account_log_role_added_to_orgunit', 'account', item.data.role.account.name, 'orgunit', item.data.orgunit.name);
                         break;
 
                     case 'application_added_to_orgunit':
-                        logItem.event = this.localize('application_added_to_orgunit', 'application', item.data.application.title, 'orgunit', item.data.orgunit.name);
+                        event = this.localize('application_added_to_orgunit', 'application', item.data.application.title, 'orgunit', item.data.orgunit.name);
                         break;
 
                     case 'company_settings_updated':
-                        logItem.event = this._formatLogCompanySettingsUpdated(item);
+                        event = this._formatLogCompanySettingsUpdated(item);
                         break;
 
                     case 'company_logo_updated':
-                        logItem.event = this.localize('log_company_logo_changed');
+                        event = this.localize('log_company_logo_changed');
                         break;
 
                     case 'company_role_promoted_to_admin':
-                        logItem.event = this.localize('company_role_promoted_to_admin', 'account', item.affected_account_display_name);
+                        event = this.localize('company_role_promoted_to_admin', 'account', item.affected_account_display_name);
                         break;
 
                     case 'company_role_demoted_from_admin':
-                        logItem.event = this.localize('company_role_demoted_from_admin', 'account', item.affected_account_display_name);
+                        event = this.localize('company_role_demoted_from_admin', 'account', item.affected_account_display_name);
                         break;
 
                     case 'company_role_account_updated':
-                        logItem.event = this._formatLogCompanyRoleAccountUpdated(item);
+                        event = this._formatLogCompanyRoleAccountUpdated(item);
                         break;
 
                     case 'company_role_account_password_changed':
-                        logItem.event = this.localize('company_role_account_password_changed', 'account', item.affected_account_display_name);
+                        event = this.localize('company_role_account_password_changed', 'account', item.affected_account_display_name);
                         break;
 
                     case 'company_roles_imported':
-                        logItem.event = this.localize('company_roles_imported', 'number', item.data.imporeted_roles);
+                        event = this.localize('company_roles_imported', 'number', item.data.imporeted_roles);
                         break;
 
                     case 'account_added_to_orgunit':
-                        logItem.event = this.localize('account_added_to_orgunit', 'account', item.affected_account_display_name, 'orgunit', item.data.orgunit.name);
+                        event = this.localize('account_added_to_orgunit', 'account', item.affected_account_display_name, 'orgunit', item.data.orgunit.name);
                         break;
 
                     case 'company_role_removed_from_orgunit':
-                        logItem.event = this.localize('company_role_removed_from_orgunit', 'account', item.data.role.account.name, 'orgunit', item.data.org_unit.name);
+                        event = this.localize('company_role_removed_from_orgunit', 'account', item.data.role.account.name, 'orgunit', item.data.org_unit.name);
                         break;
 
                     case 'application_remove_from_orgunit':
-                        logItem.event = this.localize('application_removed_from_orgunit', 'application', item.data.application.title, 'orgunit', item.data.name);
+                        event = this.localize('application_removed_from_orgunit', 'application', item.data.application.title, 'orgunit', item.data.name);
                         break;
 
                     case 'application_created':
-                        logItem.event = this.localize('application_created', 'application', item.data.title);
+                        event = this.localize('application_created', 'application', item.data.title);
                         break;
 
                     case 'application_updated':
-                        logItem.event = this._formatLogApplicationUpdated(item);
+                        event = this._formatLogApplicationUpdated(item);
                         break;
 
                     case 'application_removed':
-                        logItem.event = this.localize('application_removed', 'application', item.data.application.title);
+                        event = this.localize('application_removed', 'application', item.data.application.title);
                         break;
 
                     case 'application_icon_removed':
-                        logItem.event = this.localize('application_icon_removed', 'application', item.data.application.title, 'account', item.affected_account_display_name);
+                        event = this.localize('application_icon_removed', 'application', item.data.application.title, 'account', item.affected_account_display_name);
                         break;
 
                     case 'application_shared':
-                        logItem.event = this.localize('application_shared', 'application', item.data.application.title, 'account', item.affected_account_display_name);
+                        event = this.localize('application_shared', 'application', item.data.application.title, 'account', item.affected_account_display_name);
                         break;
 
                     case 'application_claims_updated':
 
-                            if (item.data.application) {
-                                logItem.event = this.localize('application_claims_updated', 'application', item.data.application.title, 'account', item.affected_account_display_name);
-                            }
-                            else {
-                                logItem.event = this.localize('application_claims_updated_raw');
-                            }
+                        if (item.data.application) {
+                            event = this.localize('application_claims_updated', 'application', item.data.application.title, 'account', item.affected_account_display_name);
+                        }
+                        else {
+                            event = this.localize('application_claims_updated_raw');
+                        }
 
                         break;
 
                     case 'application_icon_claims_updated':
 
                         if (item.data.application) {
-                            logItem.event = this.localize('application_icon_claims_updated', 'application', item.data.application.title, 'account', item.affected_account_display_name);
+                            event = this.localize('application_icon_claims_updated', 'application', item.data.application.title, 'account', item.affected_account_display_name);
                         }
                         else {
-                            logItem.event = this.localize('application_icon_claims_updated_raw', 'account', item.affected_account_display_name);
+                            event = this.localize('application_icon_claims_updated_raw', 'account', item.affected_account_display_name);
                         }
 
                         break;
 
                     case 'subscription_updated':
-                        logItem.event = this.localize('subscription_updated', 'plan', item.data.subscription_plan, 'licences', item.data.appsco_licences);
+                        event = this.localize('subscription_updated', 'plan', item.data.subscription_plan, 'licences', item.data.appsco_licences);
                         break;
 
                     case 'subscription_canceled':
-                        logItem.event = this.localize('subscription_canceled');
+                        event = this.localize('subscription_canceled');
                         break;
 
                     case 'invoice_sent':
-                        logItem.event = this.localize('invoice_sent', 'invoice', item.data.invoice_id);
+                        event = this.localize('invoice_sent', 'invoice', item.data.invoice_id);
                         break;
 
                     case 'credit_card_created':
 
                         if (item.data.brand) {
-                            logItem.event = this.localize('credit_card_created', 'brand', item.data.brand, 'number', item.data.last4);
+                            event = this.localize('credit_card_created', 'brand', item.data.brand, 'number', item.data.last4);
                         }
                         else {
-                            logItem.event = this.localize('credit_card_created_raw');
+                            event = this.localize('credit_card_created_raw');
                         }
 
                         break;
 
                     case 'application_password_copy':
-                        logItem.event = this.localize('application_password_copied', 'application', item.data.application.title);
+                        event = this.localize('application_password_copied', 'application', item.data.application.title);
                         break;
 
                     case 'application_username_copy':
-                        logItem.event = this.localize('application_username_copied', 'application', item.data.application.title);
+                        event = this.localize('application_username_copied', 'application', item.data.application.title);
                         break;
 
                     case 'company_customer_added':
-                        logItem.event = this.localize('customer_added_to_company', 'customer', item.data.customer);
+                        event = this.localize('customer_added_to_company', 'customer', item.data.customer);
                         break;
 
                     case 'company_group_added':
-                        logItem.event = this.localize('company_group_created', 'group', item.data.group);
+                        event = this.localize('company_group_created', 'group', item.data.group);
                         break;
 
                     case 'company_group_removed':
-                        logItem.event = this.localize('company_group_removed', 'group', item.data.group);
+                        event = this.localize('company_group_removed', 'group', item.data.group);
                         break;
 
                     case 'resource_added_to_company_group':
-                        logItem.event = this.localize('company_resource_added_to_company_group', 'group', item.data.group, 'resource', item.data.resource);
+                        event = this.localize('company_resource_added_to_company_group', 'group', item.data.group, 'resource', item.data.resource);
                         break;
 
                     case 'resource_removed_from_company_group':
-                        logItem.event = this.localize('company_resource_removed_from_company_group', 'group', item.data.group, 'resource', item.data.resource);
+                        event = this.localize('company_resource_removed_from_company_group', 'group', item.data.group, 'resource', item.data.resource);
                         break;
 
                     case 'company_role_added_to_company_group':
-                        logItem.event = this.localize('company_role_added_to_company_group', 'group', item.data.group, 'account', item.data.account);
+                        event = this.localize('company_role_added_to_company_group', 'group', item.data.group, 'account', item.data.account);
                         break;
 
                     case 'company_role_removed_from_company_group':
-                        logItem.event = this.localize('company_role_removed_from_company_group', 'group', item.data.group, 'account', item.data.account);
+                        event = this.localize('company_role_removed_from_company_group', 'group', item.data.group, 'account', item.data.account);
                         break;
 
                     case 'company_contact_added_to_company_group':
-                        logItem.event = this.localize('company_contact_added_to_company_group', 'group', item.data.group, 'account', item.data.account);
+                        event = this.localize('company_contact_added_to_company_group', 'group', item.data.group, 'account', item.data.account);
                         break;
 
                     case 'company_contact_removed_from_company_group':
-                        logItem.event = this.localize('company_contact_removed_from_company_group', 'group', item.data.group, 'account', item.data.account);
+                        event = this.localize('company_contact_removed_from_company_group', 'group', item.data.group, 'account', item.data.account);
                         break;
 
                     default:
 //                        console.log(item.type + ' not supported yet.');
                 }
 
-                return logItem;
-
+                return event;
             },
 
             _mapToListItem: function(item) {

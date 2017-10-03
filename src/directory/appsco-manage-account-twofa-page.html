@@ -6,10 +6,9 @@
 <link rel="import" href="../../bower_components/neon-animation/animations/slide-right-animation.html">
 <link rel="import" href="../../bower_components/paper-card/paper-card.html">
 <link rel="import" href="../../bower_components/paper-icon-button/paper-icon-button.html">
+<link rel="import" href="../../bower_components/paper-button/paper-button.html">
 
-<link rel="import" href="appsco-company-settings.html">
-
-<dom-module id="appsco-company-settings-page">
+<dom-module id="appsco-manage-account-twofa-page">
     <template>
         <style include="webkit-scrollbar-style">
             :host {
@@ -19,32 +18,37 @@
                      border-bottom: 1px solid var(--divider-color);
                  };
             }
-            paper-card {
+            :host paper-card {
                 @apply(--full-page-paper-card);
-
-                --paper-card-header-text: {
-                    color: var(--primary-text-color);
-                };
             }
             .page-close-action {
                 @apply(--page-close-action);
             }
+            .info {
+                @apply(--info-message);
+            }
+            .reset-action {
+                @apply(--primary-button);
+                display: inline-block;
+                min-width: 100px;
+            }
         </style>
 
-        <paper-card heading="Settings" id="card">
+        <paper-card heading="Two-Factor Authentication" id="card">
             <paper-icon-button
                     icon="close"
                     title="Close"
                     class="page-close-action"
-                    on-tap="_onBack"></paper-icon-button>
+                    on-tap="_onClosePageAction"></paper-icon-button>
 
-            <div class="card-content">
-                <appsco-company-settings
-                        id="appscoCompanySettings"
-                        company="[[ company ]]"
-                        authorization-token="[[ authorizationToken ]]"
-                        settings-api="[[ settingsApi ]]"
-                        api-errors="[[ apiErrors ]]"></appsco-company-settings>
+            <div class="card-content layout vertical">
+                <p class="info">
+                    Resetting two-factor authentication will remove the user’s existing two-factor configuration
+                    and force the user to set it up again on the next login to AppsCo.
+                </p>
+
+                <paper-button class="reset-action"
+                              on-tap="_onResetTwoFA">Reset</paper-button>
             </div>
         </paper-card>
 
@@ -53,29 +57,11 @@
     <script>
         Polymer({
 
-            is: 'appsco-company-settings-page',
+            is: 'appsco-manage-account-twofa-page',
 
             properties: {
 
-                company: {
-                    type: Object,
-                    value: function() {
-                        return {};
-                    }
-                },
-
-                authorizationToken: {
-                    type: String
-                },
-
-                /**
-                 * Save settings link.
-                 */
-                settingsApi: {
-                    type: String
-                },
-
-                apiErrors: {
+                role: {
                     type: Object,
                     value: function() {
                         return {};
@@ -129,16 +115,15 @@
                 Polymer.NeonSharedElementAnimatableBehavior
             ],
 
-            _onBack: function() {
+            _onClosePageAction: function() {
                 this.fire('back');
             },
 
-            setupPage: function() {
-                this.$.appscoCompanySettings.setup();
-            },
+            _onResetTwoFA: function() {
 
-            resetPage: function() {
-                this.$.appscoCompanySettings.reset();
+                this.fire('reset-role-two-fa', {
+                    role: this.role
+                });
             }
         });
     </script>

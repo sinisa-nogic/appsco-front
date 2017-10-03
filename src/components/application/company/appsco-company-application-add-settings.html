@@ -66,7 +66,8 @@ Custom property | Description | Default
                 cursor: pointer;
             }
             :host .info {
-                margin-top: 10px;
+                @apply(--info-message);
+                margin-top: 20px;
             }
             :host p {
                 margin-top: 4px;
@@ -233,6 +234,13 @@ Custom property | Description | Default
                             domain="[[ domain ]]"
                     ></appsco-application-form-saml-office-365>
                 </template>
+            </template>
+
+            <template is="dom-if" if="[[ _isSSOApplication ]]">
+                <p class="info">
+                    Edit application after it's added to the company resources
+                    in order to access information for the service provider and complete setup.
+                </p>
             </template>
         </div>
     </template>
@@ -407,6 +415,11 @@ Custom property | Description | Default
                     computed: "_computeSAMLAuthType(application, _action, 'saml_office_365')"
                 },
 
+                _isSSOApplication: {
+                    type: Boolean,
+                    computed: '_computeIsSSOApplication(_samlAuthType, _samlDropBoxAuthType, _samlOffice365AuthType)'
+                },
+
                 _applicationForm: {
                     type: Object,
                     value: function() {
@@ -470,6 +483,10 @@ Custom property | Description | Default
                 }
 
                 return false;
+            },
+
+            _computeIsSSOApplication: function(samlAuthType, samlDropBoxAuthType, samlOffice365AuthType) {
+                return (samlAuthType || samlDropBoxAuthType || samlOffice365AuthType);
             },
 
             _claimsAvailableCompute: function (action) {

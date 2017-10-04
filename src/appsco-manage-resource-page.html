@@ -15,6 +15,7 @@
 <link rel="import" href="applications/appsco-application-assignees-page.html">
 <link rel="import" href="applications/appsco-application-groups-page.html">
 <link rel="import" href="components/account/appsco-account-image.html">
+<link rel="import" href="application/appsco-resource-image-settings.html">
 
 <dom-module id="appsco-manage-resource-page">
     <template>
@@ -153,14 +154,13 @@
                             title="Share"
                             on-tap="_onShareApplication"></paper-icon-button>
 
-                    <iron-image
+                    <appsco-resource-image-settings
+                            id="appscoAccountImageSettings"
                             class="application-icon"
-                            placeholder="data:image/gif;base64,R0lGODlhAQABAIAAAMLCwgAAACH5BAAAAAAALAAAAAABAAEAAAICRAEAOw=="
-                            preload
-                            fade
-                            src="[[ application.application_url ]]"
-                            sizing="contain">
-                    </iron-image>
+                            resource="{{ application }}"
+                            authorization-token="[[ authorizationToken ]]"
+                            image-settings-api="[[ _resourceImageSettingApi ]]">
+                    </appsco-resource-image-settings>
 
                     <appsco-account-image account="[[ account ]]"></appsco-account-image>
                 </div>
@@ -412,6 +412,11 @@
                     }
                 },
 
+                _resourceImageSettingApi: {
+                    type: String,
+                    computed: '_computeResourceImageSettingsApi(application)'
+                },
+
                 /**
                  * Indicates if it is medium screen size.
                  * It uses iron-media-query.
@@ -513,6 +518,10 @@
 
             _computeGroupsForApplication: function(application) {
                 return application.meta ? application.meta.groups + '?extended=1' : '';
+            },
+
+            _computeResourceImageSettingsApi: function(application) {
+                return application.meta ? application.meta.change_application_image : '';
             },
 
             _computeLastEditedDate: function(application) {

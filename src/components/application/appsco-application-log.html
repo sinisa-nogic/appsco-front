@@ -37,40 +37,47 @@ Custom property | Description | Default
         <style>
             :host {
                 display: block;
-            @apply(--appsco-application-log);
+                @apply(--appsco-application-log);
             }
+
             :host .logs {
-            @apply(--layout-vertical);
-            @apply(--appsco-application-logs);
+                @apply(--layout-vertical);
+                @apply(--appsco-application-logs);
             }
+
             :host .progress {
                 height: 6px;
                 position: relative;
             }
+
             :host paper-progress {
                 width: 100%;
                 position: absolute;
                 top: 0;
                 left: 0;
-            @apply(--application-log-progress);
+                @apply(--application-log-progress);
             }
+
             :host paper-button {
                 display: block;
                 width: 120px;
                 margin: 20px auto 0;
                 text-align: center;
-            @apply(--load-more-button);
+                @apply(--load-more-button);
             }
+
             :host .message {
                 color: var(--secondary-text-color);
-            @apply(--paper-font-body2);
-            @apply(--info-message);
+                @apply(--paper-font-body2);
+                @apply(--info-message);
             }
+
             :host appsco-list-item {
-            @apply(--application-log-item);
+                @apply(--application-log-item);
             }
+
             :host appsco-list-item:first-of-type {
-            @apply(--application-log-item-first);
+                @apply(--application-log-item-first);
             }
         </style>
 
@@ -108,7 +115,8 @@ Custom property | Description | Default
                 <paper-button on-tap="loadMoreLogs"
                               id="loadMore"
                               class="load-more-button"
-                              hidden="[[ !_moreLogItems ]]">Load More</paper-button>
+                              hidden="[[ !_moreLogItems ]]">Load More
+                </paper-button>
             </template>
         </div>
 
@@ -122,7 +130,7 @@ Custom property | Description | Default
             _if: function (a, b) {
                 return a == b;
             },
-            _date: function(date) {
+            _date: function (date) {
                 var options = {
                     weekday: "long", year: "numeric", month: "short",
                     day: "numeric", hour: "2-digit", minute: "2-digit"
@@ -141,7 +149,7 @@ Custom property | Description | Default
                  */
                 application: {
                     type: Object,
-                    value: function() {
+                    value: function () {
                         return {};
                     },
                     notify: true
@@ -152,7 +160,9 @@ Custom property | Description | Default
                  */
                 _logMessages: {
                     type: Array,
-                    value: function () { return []; }
+                    value: function () {
+                        return [];
+                    }
                 },
                 /**
                  * Number of log items to load and present
@@ -219,15 +229,15 @@ Custom property | Description | Default
                 'on-request': "_loading"
             },
 
-            attached: function() {
+            attached: function () {
                 this.load();
             },
 
-            load: function() {
+            load: function () {
                 this._init();
             },
 
-            _init: function() {
+            _init: function () {
                 this.set('_logMessages', []);
                 this.set('_currentUrl', '');
 
@@ -260,9 +270,9 @@ Custom property | Description | Default
 
                     this.set('_message', '');
 
-                    response.log.forEach(function(el, index) {
+                    response.log.forEach(function (el, index) {
 
-                        setTimeout(function() {
+                        setTimeout(function () {
                             me.push('_logMessages', el);
                         }, (index + 1) * 30);
 
@@ -275,7 +285,7 @@ Custom property | Description | Default
 
                     this._next = e.detail.response.meta.next + "&limit=" + this.size;
                     // Wait for a bit longer so that loading looks nice
-                    setTimeout(function() {
+                    setTimeout(function () {
                         me.$.progress.hidden = true;
 
                         if (parseInt(e.detail.response.meta.page) == parseInt(e.detail.response.meta.pages)) {
@@ -292,7 +302,7 @@ Custom property | Description | Default
                     this.fire('log-empty');
                 }
             },
-            _handleError: function() {
+            _handleError: function () {
                 this._message = 'We couldn\'t load log at the moment. Please try again in a minute.';
                 this.$.progress.hidden = true;
             },
@@ -300,7 +310,7 @@ Custom property | Description | Default
                 this._loadMore = true;
                 this._currentUrl = this._next;
             },
-            _loading: function() {
+            _loading: function () {
                 this.$.progress.hidden = false;
             },
 
@@ -311,7 +321,7 @@ Custom property | Description | Default
              * @returns {{ message: string }}
              * @private
              */
-            _getLogMessage: function(item) {
+            _getLogMessage: function (item) {
                 var message = '';
 
                 switch (item.type) {
@@ -367,6 +377,10 @@ Custom property | Description | Default
                         message = item.account.display_name + ' added application ' + item.application.title + ' to org unit ' + item.data.orgunit.name + '.';
                         break;
 
+                    case 'application_image_changed':
+                        message = 'Resource image changed by ' + item.account.display_name + '.';
+                        break;
+
                     default:
 //                        console.log(item.type ' log type not supported yet.');
                 }
@@ -382,7 +396,7 @@ Custom property | Description | Default
              * @returns {{ item: object }}
              * @private
              */
-            _mapToListItem: function(item) {
+            _mapToListItem: function (item) {
                 return {
                     icon: item.account.image ? item.account.image : this._placeholder,
                     date: item.created_at.date,

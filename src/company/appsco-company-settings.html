@@ -144,11 +144,14 @@ Custom property | Description | Default
                 </p>
                 <p class="info">
                     Warning: If you disable two-factor policy, it will no longer be enforced and your users
-                    will be able to turn it off.
+                    will be able to turn it off. <br />
+                    As soon as you turn on Enforce two-factor authentication policy, you will be sent to another page in order to configure it.
                 </p>
 
                 <paper-toggle-button name="company_settings[enforced2fa]"
-                                     checked="[[ company.enforced_2fa ]]">
+                                     id="switchForce2FA"
+                                     checked="[[ company.enforced_2fa ]]"
+                                     on-change="_enforced2faChanged">
                     Enforce Two-factor authentication policy
                 </paper-toggle-button>
             </div>
@@ -222,6 +225,14 @@ Custom property | Description | Default
                  */
                 _error: {
                     type: String
+                },
+
+                /**
+                 * Detects enabling force 2FA in order to reload page and redirect admin to 2fa configure page
+                 */
+                _2faChangedToEnable: {
+                    type: Boolean,
+                    value: false
                 },
 
                 /**
@@ -314,10 +325,22 @@ Custom property | Description | Default
                 this.$.billingEmail.invalid = false;
 
                 this._hideLoader();
+
+                if (this._2faChangedToEnable) {
+                    this._reloadPage();
+                }
             },
 
             _onKeyUp: function() {
                 this._hideError();
+            },
+
+            _reloadPage: function() {
+                window.location.reload(true);
+            },
+
+            _enforced2faChanged: function() {
+                this._2faChangedToEnable = this.$.switchForce2FA.checked;
             },
 
             /**

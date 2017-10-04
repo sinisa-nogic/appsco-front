@@ -46,6 +46,7 @@
 <link rel="import" href="components/application/company/appsco-company-application-add.html">
 <link rel="import" href="components/application/company/appsco-company-sso-application-add.html">
 <link rel="import" href="components/application/company/appsco-company-application-share.html">
+<link rel="import" href="components/resource/appsco-share-resource.html">
 <link rel="import" href="components/application/company/appsco-company-application-remove.html">
 <link rel="import" href="components/application/company/appsco-application-orgunit.html">
 <link rel="import" href="components/application/company/appsco-application-remove-orgunit.html">
@@ -1222,8 +1223,17 @@
                 authorization-token="[[ authorizationToken ]]"
                 company-api="[[ _companyApi ]]"
                 api-errors="[[ _apiErrors ]]"
-                on-applications-shared="_onCompanyApplicationsShared"
+                on-applications-shared="_onResourcesShared"
                 ></appsco-company-application-share>
+        <appsco-share-resource
+                id="appscoShareResource"
+                resources="[[ _applicationsToShare ]]"
+                authorization-token="[[ authorizationToken ]]"
+                get-roles-api="[[ _companyRolesApi ]]"
+                get-contacts-api="[[ _companyContactsApi ]]"
+                api-errors="[[ _apiErrors ]]"
+                on-resources-shared="_onResourcesShared"
+                ></appsco-share-resource>
 
         <appsco-application-assignee-claims
                 id="appscoApplicationAssigneeClaims"
@@ -3521,36 +3531,35 @@
 
                 if (selectedApplications.length > 0) {
                     this.set('_applicationsToShare', selectedApplications);
-                    this.$.appscoCompanyApplicationsShare.toggle();
+//                    this.$.appscoCompanyApplicationsShare.toggle();
+                    this.$.appscoShareResource.toggle();
                 }
             },
 
             _onShareCompanyResource: function(event) {
                 this.set('_applicationsToShare', []);
                 this.set('_applicationsToShare', [event.detail.resource]);
-                this.$.appscoCompanyApplicationsShare.toggle();
+//                this.$.appscoCompanyApplicationsShare.toggle();
+                this.$.appscoShareResource.toggle();
             },
 
-            _onCompanyApplicationsShared: function(event) {
-                var applications = event.detail.applications,
-                    length = applications.length,
-                    application = applications[length - 1];
+            _onResourcesShared: function(event) {
+                var resources = event.detail.resources,
+                    length = resources.length,
+                    resource = resources[length - 1];
 
                 for (var i = 0; i < length; i++) {
 
-                    if (this._companyApplication.self === applications[i].self) {
-                        application = applications[i];
+                    if (this._companyApplication.self === resources[i].self) {
+                        resource = resources[i];
                         break;
                     }
                 }
 
                 this.set('_companyApplication', {});
-                this.set('_companyApplication', application);
-
+                this.set('_companyApplication', resource);
                 this.resetApplicationAssigneesPage();
-
                 this._notify('Selected resources were successfully shared.');
-
                 this._notifyReloadApplications();
             },
 

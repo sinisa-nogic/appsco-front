@@ -127,7 +127,9 @@
                                            size="100"
                                            on-list-loaded="_onGroupsLoaded"
                                            on-list-empty="_onGroupsEmptyLoad"
-                                           on-item="_onGroupAction"></appsco-company-groups>
+                                           on-item="_onGroupAction"
+                                           selectable
+                                           on-select-item="_onSelectGroupAction"></appsco-company-groups>
                 </div>
             </div>
 
@@ -474,6 +476,34 @@
                     this.hideInfo();
                     this._setDefaultGroup();
                 }
+            },
+
+            _onSelectGroupAction:function(event) {
+                var group = event.detail.item;
+                clearTimeout(this._groupSelectAction);
+
+                this._groupSelectAction = setTimeout(function() {
+                    if (group.selected) {
+                        this._showBulkActions();
+                    }
+                    else {
+                        var selectedGroup = this.$.appscoGroups.getFirstSelectedItem();
+
+                        for (key in selectedGroup) {
+                            return false;
+                        }
+
+                        this._hideBulkActions();
+                    }
+                }.bind(this), 10);
+            },
+
+            _showBulkActions: function() {
+                this.fire('show-bulk-actions');
+            },
+
+            _hideBulkActions: function() {
+                this.fire('hide-bulk-actions');
             },
 
             _onGroupInfoEdit: function() {

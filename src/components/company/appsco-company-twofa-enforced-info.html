@@ -1,0 +1,103 @@
+<link rel="import" href="../../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../../bower_components/paper-button/paper-button.html">
+<link rel="import" href="../../../bower_components/paper-dialog/paper-dialog.html">
+<link rel="import" href="../../../bower_components/paper-dialog-scrollable/paper-dialog-scrollable.html">
+<link rel="import" href="../../../bower_components/neon-animation/animations/fade-out-animation.html">
+<link rel="import" href="../../../bower_components/neon-animation/animations/scale-up-animation.html">
+
+<link rel="import" href="../../components/components/appsco-loader.html">
+
+<dom-module id="appsco-company-twofa-enforced-info">
+    <template>
+        <style>
+            :host {
+                display: block;
+                position: relative;
+            }
+            :host paper-dialog {
+                width: 670px;
+                top: 20vh;
+                @apply(--appsco-paper-dialog);
+            }
+            :host paper-dialog-scrollable > * {
+                @apply(--paper-dialog-scrollable-child);
+            }
+            :host .buttons paper-button {
+                @apply(--paper-dialog-button);
+            }
+            :host .buttons paper-button[dialog-dismiss] {
+                @apply(--paper-dialog-dismiss-button);
+            }
+            :host appsco-loader {
+                @apply(--paper-dialog-appsco-loader);
+            }
+        </style>
+        <paper-dialog
+                with-backdrop
+                id="dialog"
+                entry-animation="scale-up-animation"
+                exit-animation="fade-out-animation"
+                on-iron-overlay-closed="_onDialogClosed">
+
+            <h2>Two-Factor Authentication policy</h2>
+
+            <appsco-loader active="[[ _loader ]]" loader-alt="Appsco is processing request" multi-color></appsco-loader>
+
+            <paper-dialog-scrollable>
+                <div class="dialog-container">
+                    <p>Your company has Enforced two-factor authentication policy.</p>
+                    <p>You will be logged out and sent to configure the two-factor authentication for your account.</p>
+                </div>
+            </paper-dialog-scrollable>
+
+            <div class="buttons">
+                <paper-button autofocus on-tap="_onConfirmAction">OK</paper-button>
+            </div>
+        </paper-dialog>
+
+    </template>
+    <script>
+        Polymer({
+
+            is: 'appsco-company-twofa-enforced-info',
+
+            properties: {
+
+                _loader: {
+                    type: Boolean,
+                    value: false
+                }
+            },
+
+            open: function () {
+                this.$.dialog.open();
+            },
+
+            close: function () {
+                this.$.dialog.close();
+            },
+
+            toggle: function () {
+                this.$.dialog.toggle();
+            },
+
+            _showLoader: function() {
+                this._loader = true;
+            },
+
+            _hideLoader: function() {
+                this._loader = false;
+            },
+
+            _onDialogClosed: function() {
+                this.fire('redirect-to-twofa-setup-page');
+                this._hideLoader();
+            },
+
+            _onConfirmAction: function() {
+                this._showLoader();
+                this.close();
+            }
+        });
+    </script>
+</dom-module>

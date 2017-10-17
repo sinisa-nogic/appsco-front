@@ -2092,11 +2092,8 @@
             _onCurrentCompanyChanged: function(company, oldCompany) {
 
                 if (company && company.company) {
-
-                    var secure_cookie = Boolean(Number(this.cookieSecure)) == true ? ';secure' : '';
-
                     for (key in company.company) {
-                        document.cookie = 'company=' + company.company.alias + secure_cookie;
+                        this._storeValue('company', company.company.alias);
 
                         this._setCompanyApi(company);
                         this._setProduct(this._companyPage);
@@ -2422,7 +2419,7 @@
                     var companies = this._companiesAccountHasPermissionTo,
                             length = companies.length,
                             currentCompany = companies[0],
-                            companyAlias = this._getCookie('company');
+                            companyAlias = this._getStoredValue('company');
 
                     if (companyAlias && companyAlias.length > 0) {
 
@@ -5721,6 +5718,26 @@
                 }
 
                 return '';
+            },
+
+            _isLocalStorageSupported: function () {
+                return window.localStorage
+                        && typeof(window.localStorage.setItem) === 'function'
+                        && typeof(window.localStorage.getItem) === 'function'
+                        && typeof(window.localStorage.removeItem) === 'function';
+            },
+
+            _storeValue: function(key, value) {
+                if (this._isLocalStorageSupported()) {
+                    window.localStorage.setItem(key, value);
+                } else {
+                    var secure_cookie = Boolean(Number(this.cookieSecure)) == true ? ';secure' : '';
+                    document.cookie = key + '=' + value + secure_cookie;
+                }
+            },
+
+            _getStoredValue: function(key) {
+                return this._isLocalStorageSupported() ? window.localStorage.getItem(key) : this._getCookie(key);
             },
 
             _changeTheme: function(companyPage, currentCompany) {

@@ -141,6 +141,8 @@
 
 <link rel="import" href="components/company-role/appsco-role-reset-two-fa.html">
 
+<link rel="import" href="components/company/appsco-company-twofa-enforced-info.html">
+
 <link rel="import" href="shared-styles.html">
 <link rel="import" href="webkit-scrollbar-style.html">
 
@@ -1530,6 +1532,9 @@
                 domain="[[ domain ]]"
                 on-import-finished="_onCustomersImportFinished"></appsco-import-customers>
 
+        <appsco-company-twofa-enforced-info
+                id="appscoCompanyTwoFAEnforcedInfo"></appsco-company-twofa-enforced-info>
+
         <template is="dom-if" if="[[ api.me ]]">
             <iron-ajax auto
                        id = "getAccountRequest"
@@ -1543,6 +1548,20 @@
                        url="[[ api.companiesAccountIsContactInApi ]]"
                        on-response="_onGetCompaniesAccountIsContactInApiResponse"
                        headers="[[ _computedHeaders ]]"></iron-ajax>
+
+            <iron-ajax id="getIsUserPassing2FAVerification"
+                       url="[[ api.isUserPassing2FAVerificationApi ]]"
+                       headers="[[ _computedHeaders ]]"
+                       handle-as="json"
+                       on-response="_onIsUserPassing2FAVerificationResponse"
+                       on-error="_onIsUserPassing2FAVerificationError"></iron-ajax>
+
+            <iron-ajax id="getIsUserLoggedIn"
+                       url="[[ api.isUserLoggedInApi ]]"
+                       headers="[[ _computedHeaders ]]"
+                       handle-as="json"
+                       on-error="_onIsUserLoggedInError"></iron-ajax>
+
         </template>
 
         <template is="dom-if" if="[[ api.dashboards ]]">
@@ -2036,7 +2055,8 @@
                 'reset-page-actions': '_onResetPageActions',
                 'export-access-report': '_onExportAccessReportAction',
                 'export-access-report-finished': '_onExportAccessReportFinished',
-                'export-access-report-failed': '_onExportAccessReportFailed'
+                'export-access-report-failed': '_onExportAccessReportFailed',
+                'redirect-to-twofa-setup-page': '_onRedirectToTwoFASetupPage'
             },
 
             attached: function() {
@@ -2045,6 +2065,7 @@
                     this.updateStyles();
                 }
 
+                this._getIsUserPassing2FAVerification();
             },
 
             _updateScreen: function(mobile, tablet) {
@@ -2567,6 +2588,49 @@
 
             _computeAccountManagedState: function(account) {
                 return !!account.native_company;
+            },
+
+            _getIsUserLoggedIn: function() {
+                this.$$('#getIsUserLoggedIn').generateRequest();
+            },
+
+            _getIsUserPassing2FAVerification: function() {
+
+                this.async(function() {
+                    this.$$('#getIsUserPassing2FAVerification').generateRequest();
+                }, 180000);
+            },
+
+            _redirectUserToLoginPage: function() {
+                window.location.href = this.api.loginURL;
+            },
+
+            _redirectUserToTwoFASetupPage: function() {
+                window.location.href = this.api.setupTwoFAURL;
+            },
+
+            _showTwoFAEnforcedInfo: function() {
+                this.$.appscoCompanyTwoFAEnforcedInfo.open();
+            },
+
+            _onRedirectToTwoFASetupPage: function() {
+                this._redirectUserToTwoFASetupPage();
+            },
+
+            _onIsUserPassing2FAVerificationResponse: function(event) {
+
+                if (200 === event.detail.status) {
+                    this._getIsUserLoggedIn();
+                    this._getIsUserPassing2FAVerification();
+                }
+            },
+
+            _onIsUserPassing2FAVerificationError: function() {
+                this._showTwoFAEnforcedInfo();
+            },
+
+            _onIsUserLoggedInError: function() {
+                this._redirectUserToLoginPage();
             },
             /**
              * Ajax END

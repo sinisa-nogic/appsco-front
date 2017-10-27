@@ -614,13 +614,40 @@ Custom property | Description | Default
                 }
             },
 
-            _formatLogUserChangedCompanyResourceImage: function(item) {
-                return {
-                    image: item.data.application.application_url,
+            _formatLogCompanyRolePromotedToAdmin: function(item) {
+                var logItem = {
                     date: item.created_at.date,
-                    message: this.localize('application_image_changed', 'resource', item.data.application.title),
+                    message: this.localize('account_log_role_promoted_to_admin', 'account', item.data.role.account.name),
                     address: item.ip
+                },
+                picture = item.data.role.account.picture_url;
+
+                if (picture) {
+                    logItem.image = picture;
                 }
+                else {
+                    logItem.icon = 'social:person-outline';
+                }
+
+                return logItem;
+            },
+
+            _formatLogCompanyRoleDemotedFromAdmin: function(item) {
+                var logItem = {
+                    date: item.created_at.date,
+                    message: this.localize('account_log_role_demoted_from_admin', 'account', item.data.role.account.name),
+                    address: item.ip
+                },
+                picture = item.data.role.account.picture_url;
+
+                if (picture) {
+                    logItem.image = picture;
+                }
+                else {
+                    logItem.icon = 'social:person-outline';
+                }
+
+                return logItem;
             },
 
             /**
@@ -723,6 +750,14 @@ Custom property | Description | Default
 
                     case 'application_image_changed':
                         logItem = this._formatLogUserChangedCompanyResourceImage(item);
+                        break;
+
+                    case 'account_log_role_promoted_to_admin':
+                        logItem = this._formatLogCompanyRolePromotedToAdmin(item);
+                        break;
+
+                    case 'account_log_role_demoted_from_admin':
+                        logItem = this._formatLogCompanyRoleDemotedFromAdmin(item);
                         break;
 
                     default:

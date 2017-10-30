@@ -6,6 +6,7 @@
 <link rel="import" href="../../bower_components/neon-animation/animations/fade-out-animation.html">
 <link rel="import" href="../../bower_components/paper-styles/typography.html">
 <link rel="import" href="../../bower_components/iron-ajax/iron-ajax.html">
+<link rel="import" href="../../bower_components/iron-media-query/iron-media-query.html">
 
 <link rel="import" href="../components/components/appsco-date-format.html">
 
@@ -140,6 +141,27 @@ Custom property | Description | Default
                 display: block;
                 font-size: 12px;
             }
+            :host([screen1000]) .actions {
+                @apply(--layout-vertical);
+            }
+            :host([screen1000]) .item {
+                height: 90px;
+            }
+            :host([screen1000]) .domain-basic-info {
+                width: 170px;
+            }
+            :host([screen1000]) .info-label, :host([screen1000]) .info-value {
+                width: 100%;
+            }
+            :host([mobile-screen]) .actions {
+                display: none;
+            }
+            :host([mobile-screen]) .item {
+                height: 70px;
+            }
+            :host([mobile-screen]) .domain-info {
+                width: 50%;
+            }
         </style>
 
         <iron-ajax id="getDomainStatus"
@@ -148,6 +170,9 @@ Custom property | Description | Default
                    on-error="_onDomainStatusError"
                    on-response="_onDomainStatusResponse"
                    debounce-duration="300"></iron-ajax>
+
+        <iron-media-query query="(max-width: 768px)" query-matches="{{ mobileScreen }}"></iron-media-query>
+        <iron-media-query query="(max-width: 1000px)" query-matches="{{ screen1000 }}"></iron-media-query>
 
         <template is="dom-if" if="[[ preview ]]">
             <span class="info-label domain-title preview">[[ domain.domain ]]</span>
@@ -236,6 +261,18 @@ Custom property | Description | Default
                     value: false
                 },
 
+                mobileScreen: {
+                    type: Boolean,
+                    value: false,
+                    reflectToAttribute: true
+                },
+
+                screen1000: {
+                    type: Boolean,
+                    value: false,
+                    reflectToAttribute: true
+                },
+
                 _verificationAction: {
                     type: Boolean,
                     value: false
@@ -290,9 +327,22 @@ Custom property | Description | Default
                 Polymer.NeonAnimationRunnerBehavior
             ],
 
+            observers: [
+                '_updateScreen(mobileScreen, screen1000)'
+            ],
+
             attached: function() {
+
+                if (this.mobileScreen || this.screen1000) {
+                    this.updateStyles();
+                }
+
                 this.style.display = 'inline-block';
                 this.playAnimation('entry');
+            },
+
+            _updateScreen: function() {
+                this.updateStyles();
             },
 
             _notifyDomainStatus: function() {

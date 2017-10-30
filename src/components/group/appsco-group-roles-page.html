@@ -6,8 +6,10 @@
 <link rel="import" href="../../../bower_components/neon-animation/animations/slide-right-animation.html">
 <link rel="import" href="../../../bower_components/paper-card/paper-card.html">
 <link rel="import" href="../../../bower_components/paper-icon-button/paper-icon-button.html">
+<link rel="import" href="../../../bower_components/paper-button/paper-button.html">
 
 <link rel="import" href="appsco-company-group-roles.html">
+<link rel="import" href="appsco-group-items-page-behavior.html">
 
 <dom-module id="appsco-group-roles-page">
     <template>
@@ -30,12 +32,12 @@
             .page-close-action {
                 @apply(--page-close-action);
             }
-            .info p {
-                margin-top: 5px;
-                margin-bottom: 0;
+            .add-action {
+                @apply(--primary-button);
+                display: inline-block;
             }
-            .info {
-                margin-bottom: 20px;
+            .group-item-list {
+                margin-top: 20px;
             }
         </style>
 
@@ -48,14 +50,12 @@
 
             <div class="card-content layout vertical">
 
-                <template is="dom-if" if="[[ !_applicationsEmpty ]]">
-                    <div class="info">
-                        <p>List of all users added to this group. </p>
-                    </div>
-                </template>
+                <paper-button class="add-action"
+                              on-tap="_onAddToGroupAction">Add to group</paper-button>
 
                 <appsco-company-group-roles
-                        id="appscoCompanyGroupRoles"
+                        id="appscoCompanyGroupItems"
+                        class="group-item-list"
                         group="[[ group ]]"
                         list-api="[[ groupRolesApi ]]"
                         authorization-token="[[ authorizationToken ]]"
@@ -74,21 +74,14 @@
 
             properties: {
 
-                group: {
-                    type: Object,
-                    value: function() {
-                        return {};
-                    }
-                },
-
                 groupRolesApi: {
                     type: String,
                     value: ''
                 },
 
-                authorizationToken: {
+                resourceType: {
                     type: String,
-                    value: ''
+                    value: 'role'
                 },
 
                 /**
@@ -132,24 +125,9 @@
             },
 
             behaviors: [
+                Polymer.AppscoGroupItemsPageBehavior,
                 Polymer.NeonSharedElementAnimatableBehavior
-            ],
-
-            loadPage: function() {
-                this.$.appscoCompanyGroupRoles.loadRoles();
-            },
-
-            addGroupRoles: function(roles) {
-                this.$.appscoCompanyGroupRoles.addGroupRoles(roles);
-            },
-
-            removeGroupRoles: function(roles) {
-                this.$.appscoCompanyGroupRoles.removeGroupRoles(roles);
-            },
-
-            _onClosePageAction: function() {
-                this.fire('back');
-            }
+            ]
         });
     </script>
 </dom-module>

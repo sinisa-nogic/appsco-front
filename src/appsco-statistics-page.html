@@ -7,6 +7,7 @@
 <link rel="import" href="../bower_components/iron-icon/iron-icon.html">
 <link rel="import" href="../bower_components/iron-image/iron-image.html">
 <link rel="import" href="../bower_components/google-chart/google-chart.html">
+<link rel="import" href="../bower_components/iron-resizable-behavior/iron-resizable-behavior.html">
 
 <link rel="import" href="components/page/appsco-content.html">
 <link rel="import" href="components/components/appsco-loader.html">
@@ -28,6 +29,10 @@
                 --appsco-content-sections: {
                     padding: 0;
                 };
+
+                --chart-container-width: {
+                    width: 50%;
+                };
             }
             :host div[content] {
                 padding: 10px;
@@ -37,10 +42,19 @@
                 padding: 10px;
                 color: var(--primary-text-color);
             }
+            .one-chart {
+                @apply(--layout-horizontal);
+            }
             .two-charts {
                 @apply(--layout-horizontal);
             }
-            .chart-container {
+            .one-chart .chart-container {
+                width: 100%;
+                @apply(--layout-flex);
+                position: relative;
+            }
+            .two-charts .chart-container {
+                width: var(--chart-container-width);
                 @apply(--layout-flex);
                 position: relative;
             }
@@ -90,12 +104,21 @@
                 text-align: center;
             }
             :host([medium-screen]) .two-charts {
-                @apply(--layout-vertical);
-            }
-            :host([medium-screen]) .chart-container {
-                @apply(--layout-flex-none);
+                @apply(--layout-horizontal);
                 width: 100%;
             }
+            :host([medium-screen]) .chart-container {
+                @apply(--layout-flex);
+            }
+            :host([tablet-screen]) .two-charts {
+                @apply(--layout-vertical);
+                width: 100%;
+            }
+            :host([tablet-screen]) .chart-container {
+                @apply(--layout-flex);
+                width: 100%;
+            }
+
         </style>
 
         <!--<iron-ajax-->
@@ -159,12 +182,13 @@
                 ></iron-ajax>
 
         <iron-media-query query="(max-width: 1200px)" query-matches="{{ mediumScreen }}"></iron-media-query>
+        <iron-media-query query="(max-width: 800px)" query-matches="{{ tabletScreen }}"></iron-media-query>
 
         <appsco-content id="appscoContent">
 
             <div content>
 
-                <div class="two-charts">
+                <div class="one-chart">
 
                     <div class="chart-container">
                         <template is="dom-if" if="[[ _loginAttemptsMessage ]]">
@@ -387,6 +411,10 @@
         Polymer({
             is: 'appsco-statistics-page',
 
+            behaviors: [
+                Polymer.IronResizableBehavior
+            ],
+
             properties: {
 
                 companyApi: {
@@ -516,6 +544,12 @@
                     reflectToAttribute: true
                 },
 
+                tabletScreen: {
+                    type: Boolean,
+                    value: false,
+                    reflectToAttribute: true
+                },
+
                 pageLoaded: {
                     type: Boolean,
                     value: false
@@ -526,13 +560,12 @@
                 '_updateScreen(mediumScreen)'
             ],
 
+            listeners: {
+                'iron-resize': "_onIronResize"
+            },
+
             attached: function() {
-
                 this.pageLoaded = false;
-
-                if (this.mediumScreen) {
-                    this.updateStyles();
-                }
 
                 this._pageLoaded();
             },
@@ -589,6 +622,17 @@
 
             _hideLoader: function(loader) {
                 this.set(loader, false);
+            },
+
+            _onIronResize: function () {
+                var charts = Polymer.dom(this.root).querySelectorAll('google-chart');
+
+                this.customStyle['--chart-container-width'] = '50%;';
+                this.updateStyles();
+
+                charts.forEach(function(chart, index) {
+                    chart.redraw();
+                });
             },
 
             reloadStatistics: function() {

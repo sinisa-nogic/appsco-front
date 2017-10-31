@@ -268,22 +268,24 @@
         </div>
 
         <div class="notifications">
-            <paper-card heading="Notifications"
+            <template is="dom-if" if="[[ _managedUser ]]">
+                <paper-card heading="Notifications"
                         class="appsco-account-notifications">
-                <div class="card-content">
-                        <appsco-account-notifications
-                                id="appscoAccountNotifications"
-                                authorization-token="[[ authorizationToken ]]"
-                                notifications-api="[[ notificationsApi ]]"
-                                size="5"
-                                on-new-notifications="_loadNotifications">
-                        </appsco-account-notifications>
-                </div>
+                    <div class="card-content">
+                            <appsco-account-notifications
+                                    id="appscoAccountNotifications"
+                                    authorization-token="[[ authorizationToken ]]"
+                                    notifications-api="[[ notificationsApi ]]"
+                                    on-notifications-attached="_loadNotifications"
+                                    size="5">
+                            </appsco-account-notifications>
+                    </div>
 
-                <div class="card-actions">
-                    <paper-button on-tap="_onAccountNotifications">ALL</paper-button>
-                </div>
-            </paper-card>
+                    <div class="card-actions">
+                        <paper-button on-tap="_onAccountNotifications">ALL</paper-button>
+                    </div>
+                </paper-card>
+            </template>
 
             <template is="dom-if" if="[[ _changeCompanyRolePermission ]]">
                 <paper-card heading="Company roles"
@@ -455,6 +457,12 @@
                     computed: '_computeManageTwoFAPermission(canManage, twoFaEnforced)'
                 },
 
+                _managedUser: {
+                    type: Boolean,
+                    value: true,
+                    computed: '_computeUserManaged(role)'
+                },
+
                 /**
                  * Animation config with hero animation.
                  */
@@ -523,6 +531,10 @@
                 return canManage && twoFaEnforced;
             },
 
+            _computeUserManaged: function (role) {
+                return role.account.native_company.alias === role.company.alias;
+            },
+
             load: function() {
                 this._loadNotifications();
                 this.loadLog();
@@ -567,7 +579,9 @@
             },
 
             _loadNotifications: function() {
-                this.$.appscoAccountNotifications.loadNotifications();
+                if (this.$$('#appscoAccountNotifications') && this._managedUser) {
+                    this.$$('#appscoAccountNotifications').loadNotifications();
+                }
             },
 
             loadLog: function() {

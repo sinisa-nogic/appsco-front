@@ -109,7 +109,7 @@ Custom property | Description | Default
                         id="url"
                         label="url"
                         value="[[ application.url ]]"
-                        pattern="https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)"
+                        pattern="[[ _urlValidationPattern ]]"
                         error-message="Url is invalid."
                         required
                         auto-validate
@@ -302,6 +302,11 @@ Custom property | Description | Default
                 _shouldShowUrl: {
                     type: Boolean,
                     computed: '_computeShouldShowUrl(application)'
+                },
+
+                _urlValidationPattern: {
+                    type: String,
+                    computed: '_computeUrlValidationPattern(application)'
                 },
 
                 _saveClaimsUri: {
@@ -536,6 +541,14 @@ Custom property | Description | Default
                 var auth = this._supportedAuthTypeByPriority(application.auth_types);
                 return application.url_editable &&
                     ['unpw', 'item', 'login', 'none'].indexOf(auth) !== -1;
+            },
+
+            _computeUrlValidationPattern: function (application) {
+                var defaultPattern = 'https?:\\/\\/(www\\.)?[-a-zA-Z0-9@:%._\\+~#=]{2,256}\\.[a-z]{2,6}\\b([-a-zA-Z0-9@:%_\\+.~#?&//=]*)',
+                        allowFtpPattern = '(https?|ftps?)://(-\\.)?([^\\s/?\\.#-]+\\.?)+(/[^\\s]*)?$';
+
+                var auth = this._supportedAuthTypeByPriority(application.auth_types);
+                return (['login', 'none'].indexOf(auth) !== -1) ? allowFtpPattern : defaultPattern;
             },
 
             _supportedAuthTypeByPriority: function(authTypes) {

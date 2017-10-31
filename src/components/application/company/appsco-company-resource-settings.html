@@ -87,7 +87,7 @@ Used to update company resource - configuration fields and claims.
                                  label="Url"
                                  name="configure_application[url]"
                                  value="[[ resource.url ]]"
-                                 pattern="https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)"
+                                 pattern="[[ _urlValidationPattern ]]"
                                  required
                                  auto-validate
                                  error-message="Please enter a valid url."></paper-input>
@@ -320,6 +320,21 @@ Used to update company resource - configuration fields and claims.
                     observer: '_onClaimTypeChanged'
                 },
 
+                _urlValidationPattern: {
+                    type: String,
+                    computed: '_computeUrlValidationPattern(resource)'
+                },
+
+                _supportedAuthTypes: {
+                    type: Array,
+                    value: function () {
+                        return [
+                            'icon_item', 'icon_unpw', 'icon_saml', 'icon_jwt', 'icon_cc', 'icon_login',
+                            'icon_passport', 'icon_securenote', 'icon_softwarelicence', 'icon_none'
+                        ]
+                    }
+                },
+
                 animationConfig: {
                     value: function() {
                         return {
@@ -481,6 +496,15 @@ Used to update company resource - configuration fields and claims.
             _computeAuthType: function(resource, authType) {
                 return (resource.auth_type && resource.auth_type === authType);
             },
+
+            _computeUrlValidationPattern: function (resource) {
+                var defaultPattern = 'https?:\\/\\/(www\\.)?[-a-zA-Z0-9@:%._\\+~#=]{2,256}\\.[a-z]{2,6}\\b([-a-zA-Z0-9@:%_\\+.~#?&//=]*)',
+                        allowFtpPattern = '(https?|ftps?)://(-\\.)?([^\\s/?\\.#-]+\\.?)+(/[^\\s]*)?$';
+
+                var auth = resource.auth_type;
+                return (['login', 'none'].indexOf(auth) !== -1) ? allowFtpPattern : defaultPattern;
+            },
+
 
             _showLoader: function() {
                 this._loader = true;

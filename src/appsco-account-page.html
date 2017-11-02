@@ -15,7 +15,6 @@
 <link rel="import" href="account/appsco-account-notifications-page.html">
 <link rel="import" href="account/appsco-account-authorized-apps-page.html">
 <link rel="import" href="account/appsco-account-log-page.html">
-<link rel="import" href="account/appsco-account-transfer-token-page.html">
 <link rel="import" href="account/appsco-account-change-password-page.html">
 
 <dom-module id="appsco-account-page">
@@ -58,19 +57,6 @@
                 border-bottom: 1px solid var(--divider-color);
                 position: relative;
             }
-            .resource-header .action-share {
-                color: var(--app-secondary-color);
-                position: absolute;
-                top: 0;
-                right: 0;
-            }
-            .account-image {
-                width: 64px;
-                height: 64px;
-                margin: 0 auto;
-                border-radius: 50%;
-                display: block;
-            }
             .account-info {
                 margin-top: 10px;
                 font-size: 14px;
@@ -78,7 +64,7 @@
             .account-info p {
                 margin: 4px 0;
             }
-            .account-managed-by, .account-partner-info {
+            .account-managed-by {
                 margin-top: 10px;
             }
             div[resource] .resource-actions {
@@ -120,11 +106,6 @@
                 opacity: 0;
                 visibility: hidden;
             }
-            .additional-info {
-                font-size: 12px;
-                color: var(--secondary-text-color);
-                text-align: center;
-            }
             hr {
                 height: 1px;
                 margin: 4px 0;
@@ -136,13 +117,6 @@
         <iron-media-query query="(max-width: 1200px)" query-matches="{{ mediumScreen }}"></iron-media-query>
         <iron-media-query query="(max-width: 800px)" query-matches="{{ tabletScreen }}"></iron-media-query>
         <iron-media-query query="(max-width: 600px)" query-matches="{{ mobileScreen }}"></iron-media-query>
-
-        <iron-ajax
-                auto
-                url="[[ partnerApi ]]"
-                on-response="_onPartnerResponse"
-                headers="{{ _computedHeaders }}">
-        </iron-ajax>
 
         <appsco-content id="appscoContent" resource-active>
 
@@ -172,13 +146,6 @@
                             <p>Managed by: [[ account.company.name ]]</p>
                         </div>
                     </template>
-
-                    <template is="dom-if" if="[[ _partner.company_name ]]">
-                        <hr>
-                        <div class="account-partner-info">
-                            <p>Partner: [[ _partner.company_name ]]</p>
-                        </div>
-                    </template>
                 </div>
 
                 <div class="resource-actions flex-horizontal">
@@ -203,7 +170,6 @@
                                 id="appscoAccountComponentsPage"
                                 name="appsco-account-components-page"
                                 account="{{ account }}"
-                                partner="{{ _partner }}"
                                 authorization-token="[[ authorizationToken ]]"
                                 notifications-api="[[ notificationsApi ]]"
                                 authorized-apps-api="[[ authorizedAppsApi ]]"
@@ -216,7 +182,6 @@
                                 on-all-notifications="_onAllNotifications"
                                 on-manage-authorized-apps="_onManageAuthorizedApps"
                                 on-whole-log="_onWholeLog"
-                                on-manage-partner="_onManagePartner"
                                 on-log-loaded="_pageLoaded"
                                 on-log-empty="_pageLoaded">
                         </appsco-account-components-page>
@@ -278,15 +243,6 @@
                                 on-back="_onResourceBack">
                         </appsco-account-log-page>
 
-                        <appsco-account-transfer-token-page
-                                name="appsco-account-transfer-token-page"
-                                partner="[[ _partner ]]"
-                                authorization-token="[[ authorizationToken ]]"
-                                transfer-token-api="[[ transferTokenApi ]]"
-                                on-token-generated="_onTokenGenerated"
-                                on-back="_onResourceBack">
-                        </appsco-account-transfer-token-page>
-
                         <appsco-account-change-password-page
                                 name="appsco-account-change-password-page"
                                 authorization-token="[[ authorizationToken ]]"
@@ -320,13 +276,6 @@
                 },
 
                 apiErrors: {
-                    type: Object,
-                    value: function() {
-                        return {};
-                    }
-                },
-
-                _partner: {
                     type: Object,
                     value: function() {
                         return {};
@@ -394,33 +343,10 @@
                 },
 
                 /**
-                 * Get account transfer token link.
-                 */
-                transferTokenApi: {
-                    type: String
-                },
-
-                /**
                  * Change account password link.
                  */
                 changePasswordApi: {
                     type: String
-                },
-
-                /**
-                 * Get partner link.
-                 */
-                partnerApi: {
-                    type: String
-                },
-
-                /**
-                 * Computed headers.
-                 * It contains authorization token.
-                 */
-                _computedHeaders: {
-                    type: Object,
-                    computed: "_computeHeaders(authorizationToken)"
                 },
 
                 /**
@@ -543,19 +469,6 @@
                 }
             },
 
-            /**
-             * Computes authorization headers.
-             *
-             * @param {Object} authorizationToken
-             * @returns {{ Authorization: string }}
-             * @private
-             */
-            _computeHeaders: function (authorizationToken) {
-                return {
-                    'Authorization': 'token ' + authorizationToken
-                }
-            },
-
             _pageLoaded: function() {
                 this.pageLoaded = true;
                 this.fire('page-loaded');
@@ -567,10 +480,6 @@
                     this.showAllApplications();
                 }
 
-            },
-
-            _onPartnerResponse: function(event) {
-                this._partner = event.detail.response;
             },
 
             /**
@@ -687,11 +596,6 @@
                 this._selected = 'appsco-account-log-page';
             },
 
-            _onManagePartner: function() {
-                this._disableAdvancedSettings();
-                this._selected = 'appsco-account-transfer-token-page';
-            },
-
             _onChangePassword: function() {
                 this._disableAdvancedSettings();
 
@@ -708,7 +612,6 @@
 
                 switch(fromPage.getAttribute('name')) {
                     case 'appsco-account-settings-page':
-                    case 'appsco-account-transfer-token-page':
                     case 'appsco-account-change-password-page':
                         fromPage.resetPage();
                         break;

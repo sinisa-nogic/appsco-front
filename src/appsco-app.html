@@ -630,7 +630,6 @@
                             <appsco-manage-group-page-actions
                                     name="manage-group"
                                     on-back="_showGroupsPage"
-                                    on-add-item-to-group-action="_onAddItemToGroupAction"
                                     on-resource-section="_onResourceActionPage"></appsco-manage-group-page-actions>
 
                             <appsco-customers-page-actions
@@ -2055,7 +2054,8 @@
                 'export-access-report': '_onExportAccessReportAction',
                 'export-access-report-finished': '_onExportAccessReportFinished',
                 'export-access-report-failed': '_onExportAccessReportFailed',
-                'user-session-expired': '_onUserSessionExpired'
+                'user-session-expired': '_onUserSessionExpired',
+                'add-item-to-group-event': '_onAddItemToGroupAction'
             },
 
             attached: function() {
@@ -4851,7 +4851,7 @@
             _onAddGroupsToCompanyRoles: function() {
                 var selectedRoles = this.$.appscoDirectoryPage.getSelectedAccounts();
 
-                this._shareToGroup(selectedRoles, 'account');
+                this._shareToGroup(selectedRoles, 'role');
             },
 
             _handleResourcesAddedToGroupResponse: function(groups, items, resourceType) {
@@ -4883,7 +4883,7 @@
 
                         break;
 
-                    case 'account':
+                    case 'role':
 
                         if (oneItem) {
                             this._role = items[0];
@@ -4930,16 +4930,16 @@
 
             _onAddItemToGroupAction: function(event) {
                 var addToGroupComponent = this.$.appscoGroupAddResource,
-                    action = event.detail.action;
+                    resourceType = event.detail.resourceType;
 
-                addToGroupComponent.setType(action);
+                addToGroupComponent.setType(resourceType);
 
-                switch (action) {
+                switch (resourceType) {
                     case 'resource':
                         addToGroupComponent.setListItemsApi(this._companyApplicationsApi);
                         break;
 
-                    case 'account':
+                    case 'role':
                         addToGroupComponent.setListItemsApi(this._companyRolesApi);
                         break;
 
@@ -4973,7 +4973,7 @@
             },
 
             _onRemoveCompanyRoleFromGroup: function(event) {
-                this._removeResourceFromGroup(event.detail.group, event.detail.role, 'account');
+                this._removeResourceFromGroup(event.detail.group, event.detail.role, 'role');
             },
 
             _onRemoveCompanyContactFromGroup: function(event) {
@@ -5015,7 +5015,7 @@
                 switch (resourceType) {
                     case 'resource':
 
-                        this._notify(item.title + ' was successfully removed from ' + group.name + ' group.');
+                        this._notify(item.application.title + ' was successfully removed from ' + group.name + ' group.');
 
                         this._modifyCompanyApplications([item]);
                         this._reloadCompanyHomePageApplications();
@@ -5026,7 +5026,7 @@
 
                         break;
 
-                    case 'account':
+                    case 'role':
 
                         this._notify(item.account.display_name + ' was successfully removed from ' + group.name + ' group.');
 

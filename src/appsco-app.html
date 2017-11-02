@@ -47,8 +47,6 @@
 <link rel="import" href="components/application/company/appsco-company-sso-application-add.html">
 <link rel="import" href="components/resource/appsco-share-resource.html">
 <link rel="import" href="components/application/company/appsco-company-application-remove.html">
-<link rel="import" href="components/application/company/appsco-application-orgunit.html">
-<link rel="import" href="components/application/company/appsco-application-remove-orgunit.html">
 <link rel="import" href="components/application/company/appsco-application-assignee-claims.html">
 <link rel="import" href="components/application/company/appsco-application-assignee-revoke.html">
 <link rel="import" href="components/application/appsco-import-resources.html">
@@ -563,8 +561,7 @@
                                     on-search-clear="_onSearchCompanyApplicationsClear"
                                     on-share="_onShareResources"
                                     on-remove="_onRemoveApplications"
-                                    on-share-to-group="_onShareResourcesToGroup"
-                                    on-orgunits="_onAddApplicationsToOrgunit"></appsco-resources-page-actions>
+                                    on-share-to-group="_onShareResourcesToGroup"></appsco-resources-page-actions>
 
                             <appsco-manage-resource-page-actions
                                     id="appscoManageApplicationPageActions"
@@ -815,7 +812,6 @@
                             authorization-token="[[ authorizationToken ]]"
                             computed-headers="[[ _computedHeaders ]]"
                             company-resources-api="[[ _companyApplicationsApi ]]"
-                            company-orgunits-api="[[ _companyOrgunitsApi ]]"
                             groups-api="[[ _companyGroupsApi ]]"
                             api-errors="[[ _apiErrors ]]"
                             on-list-loaded="_onLoadedPage"
@@ -847,7 +843,6 @@
                             on-application-settings-saved="_onApplicationSettingsSaved"
                             on-application-settings-no-changes="_onApplicationSettingsNoChanges"
                             on-add-to-orgunit="_onAddApplicationToOrgunit"
-                            on-remove-from-orgunit="_onRemoveApplicationFromOrgunit"
                             on-enable-assignees-search-action="_onEnableAssigneesSearchAction"
                             on-disable-assignees-search-action="_onDisableAssigneesSearchAction"
                             on-page-error="_onError"
@@ -1209,19 +1204,6 @@
                 authorization-token="[[ authorizationToken ]]"
                 import-api="[[ _companyImportResourcesApi ]]"
                 on-import-finished="_onImportCompanyResourcesFinished"></appsco-import-resources>
-
-        <appsco-application-orgunit
-                id="appscoApplicationOrgunit"
-                authorization-token="[[ authorizationToken ]]"
-                company-orgunits-api="[[ _companyOrgunitsApi ]]"
-                applications="[[ _selectedApplications ]]"
-                on-added-to-orgunit="_onApplicationsAddedToOrgunit"></appsco-application-orgunit>
-
-        <appsco-application-remove-orgunit
-                id="appscoApplicationRemoveOrgunit"
-                authorization-token="[[ authorizationToken ]]"
-                application="[[ _companyApplication ]]"
-                on-application-removed-from-orgunit="_onApplicationRemovedFromOrgunit"></appsco-application-remove-orgunit>
         
         <appsco-share-resource
                 id="appscoShareResource"
@@ -3397,10 +3379,6 @@
                 switch (data.event) {
                     case 'orgunit-added':
 
-                        if (null != applicationsPage) {
-                            applicationsPage.addOrgunit(data.orgunit);
-                        }
-
                         if (null != directoryPage) {
                             directoryPage.addOrgunit(data.orgunit);
                         }
@@ -3409,9 +3387,6 @@
 
                     case 'orgunit-modified':
 
-                        if (null != applicationsPage) {
-                            applicationsPage.modifyOrgunit(data.orgunit);
-                        }
 
                         if (null != directoryPage) {
                             directoryPage.modifyOrgunit(data.orgunit);
@@ -3420,10 +3395,6 @@
                         break;
 
                     case 'orgunit-removed':
-
-                        if (null != applicationsPage) {
-                            applicationsPage.removeOrgunit(data.orgunit);
-                        }
 
                         if (null != directoryPage) {
                             directoryPage.removeOrgunit(data.orgunit);
@@ -3579,12 +3550,6 @@
                     this.set('_selectedApplications', applications);
                     this.$.appscoApplicationOrgunit.toggle();
                 }
-            },
-
-            _onAddApplicationsToOrgunit: function() {
-                var selectedApplications = this.$.appscoResourcesPage.getSelectedResources();
-
-                this._addApplicationsToOrgunit(selectedApplications);
             },
 
             _onApplicationsAddedToOrgunit: function(event) {
@@ -3774,29 +3739,10 @@
                 this._addApplicationsToOrgunit([event.detail.application]);
             },
 
-            _onRemoveApplicationFromOrgunit: function(event) {
-                this.$.appscoApplicationRemoveOrgunit.orgunit = event.detail.orgunit;
-                this._companyApplication = event.detail.application;
-                this.$.appscoApplicationRemoveOrgunit.toggle();
-            },
-
             _onRemoveApplicationFromGroup: function(event) {
                 this.$.appscoApplicationRemoveGroup.setGroup(event.detail.group);
                 this.$.appscoApplicationRemoveGroup.setApplication(event.detail.application);
                 this.$.appscoApplicationRemoveGroup.toggle();
-            },
-
-            _onApplicationRemovedFromOrgunit: function(event) {
-                var application = event.detail.application,
-                    orgunit = event.detail.orgunit;
-
-                this._modifyCompanyApplications([application]);
-                this._reloadApplicationAssignees();
-
-                this._companyApplication = application;
-                this._notify(application.title + ' has been removed from ' + orgunit.name + ' organization unit.');
-
-                this._notifyReloadApplications();
             },
 
             _onApplicationRemovedFromGroup: function(event) {

@@ -1,0 +1,251 @@
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../bower_components/iron-flex-layout/iron-flex-layout.html">
+<link rel="import" href="../../bower_components/iron-form/iron-form.html">
+<link rel="import" href="../../bower_components/paper-styles/shadow.html">
+<link rel="import" href="../../bower_components/paper-styles/typography.html">
+<link rel="import" href="../../bower_components/paper-button/paper-button.html">
+<link rel="import" href="../../bower_components/neon-animation/neon-animation-runner-behavior.html">
+<link rel="import" href="../../bower_components/neon-animation/animations/fade-in-animation.html">
+<link rel="import" href="../../bower_components/neon-animation/animations/fade-out-animation.html">
+
+<link rel="import" href="../components/components/appsco-loader.html">
+<link rel="import" href="../components/components/appsco-form-error.html">
+<link rel="import" href="../components/components/appsco-copy.html">
+
+<dom-module id="appsco-company-transfer-token">
+    <template>
+        <style>
+            :host {
+                display: block;
+                position: relative;
+
+            --appsco-loader: {
+                 width: 16px;
+                 height: 16px;
+             };
+            }
+            :host .headline {
+                @apply(--paper-font-headline);
+                margin: 0 0 10px;
+            }
+            :host p {
+                line-height: 1.4;
+                margin: 8px 0;
+            }
+            :host form {
+                position: relative;
+            }
+            :host .submit-button {
+                @apply(--primary-button);
+                margin: 10px 0;
+                display: inline-block;
+            }
+            :host .token {
+                max-width: 500px;
+                padding: 6px 30px 6px 6px;
+                height: 18px;
+                @apply(--paper-font-common-nowrap);
+                @apply(--shadow-elevation-2dp);
+                color: var(--secondary-text-color, #eeeeee);
+                font-size: 14px;
+                font-style: italic;
+                border-radius: 2px;
+                position: relative;
+                display: none;
+            }
+            :host appsco-copy {
+                position: absolute;
+                top: 0;
+                right: 0;
+
+                --paper-icon-button: {
+                     width: 32px;
+                     height: 32px;
+                 };
+            }
+        </style>
+
+        <p>
+            Transfer token enables AppsCo partner to add your company as a customer.
+            <br>
+            Once you generate the code, it will be active for short period of time.
+            Once transfer token is used it will become inactive.
+        </p>
+
+        <form is="iron-form"
+              id="transferTokenForm"
+              method="GET"
+              action="[[ transferTokenApi ]]"
+              headers="[[ _headers ]]"
+              on-iron-form-error="_onFormError"
+              on-iron-form-response="_onFormResponse">
+
+            <appsco-form-error message="[[ _error ]]"></appsco-form-error>
+
+            <paper-button class="submit-button"
+                          on-tap="_onGenerateTokenAction">
+                <appsco-loader active="[[ _loader ]]"
+                               loader-alt="AppsCo is processing request"
+                               multi-color></appsco-loader>
+                Generate token</paper-button>
+        </form>
+
+        <div id="token" class="token">
+            [[ _token ]]
+            <appsco-copy value="[[ _token ]]"></appsco-copy>
+        </div>
+
+    </template>
+    <script>
+        Polymer({
+
+            is: 'appsco-company-transfer-token',
+
+            properties: {
+
+                authorizationToken: {
+                    type: String,
+                    value: ''
+                },
+
+                transferTokenApi: {
+                    type: String,
+                    value: ''
+                },
+
+                apiErrors: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    }
+                },
+
+                _token: {
+                    type: String,
+                    value: ''
+                },
+
+                _tokenGenerated: {
+                    type: Boolean,
+                    value: false
+                },
+
+                _headers: {
+                    type: Object,
+                    computed: '_computeHeaders(authorizationToken)'
+                },
+
+                _loader: {
+                    type: Boolean,
+                    value: false
+                },
+
+                _error: {
+                    type: String
+                },
+
+                animationConfig: {
+                    value: function() {
+                        return {
+                            'entry': {
+                                name: 'fade-in-animation',
+                                node: this.$.token,
+                                timing: {
+                                    duration: 300
+                                }
+                            },
+                            'exit': {
+                                name: 'fade-out-animation',
+                                node: this.$.token,
+                                timing: {
+                                    duration: 100
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+
+            behaviors: [
+                Polymer.NeonAnimationRunnerBehavior
+            ],
+
+            _computeHeaders: function (authorizationToken) {
+                return {
+                    'Authorization': 'token ' + authorizationToken
+                }
+            },
+
+            _showLoader: function() {
+                this._loader = true;
+            },
+
+            _hideLoader: function() {
+                this._loader = false;
+            },
+
+            _showError: function(message) {
+                this._error = message;
+            },
+
+            _hideError: function() {
+                this._error = '';
+            },
+
+            _onGenerateTokenAction: function() {
+                this._submitForm();
+            },
+
+            _submitForm: function() {
+                var form = this.$.transferTokenForm;
+
+                if (form.validate()) {
+                    this._showLoader();
+                    form.submit();
+                }
+            },
+
+            _onFormError: function(event) {
+                this._showError(this.apiErrors.getError(event.detail.request.response.code));
+                this._hideLoader();
+            },
+
+            _onFormResponse: function(event) {
+                var response = event.detail.response;
+
+                if (response && response.transfer_token) {
+                    this._token = response.transfer_token;
+
+                    if (!this._tokenGenerated) {
+                        this._tokenGenerated = true;
+
+                        setTimeout(function() {
+                            this.$.token.style.display = 'block';
+                            this.playAnimation('entry');
+                        }.bind(this), 200);
+                    }
+
+                    /**
+                     * Fired after successful token generation.
+                     *
+                     * @event token-generated
+                     */
+                    this.fire('token-generated');
+                }
+                else {
+                    this._showError(this.apiErrors.getError(404));
+                }
+
+                this._hideLoader();
+            },
+
+            reset: function() {
+                this.$.token.style.display = 'none';
+                this._token = '';
+                this._tokenGenerated = false;
+                this._hideError();
+
+            }
+        });
+    </script>
+</dom-module>

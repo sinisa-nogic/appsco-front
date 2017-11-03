@@ -161,12 +161,6 @@
         <iron-media-query query="(max-width: 800px)" query-matches="{{ tabletScreen }}"></iron-media-query>
         <iron-media-query query="(max-width: 600px)" query-matches="{{ mobileScreen }}"></iron-media-query>
 
-        <iron-ajax id="getOrgunitsLink"
-                   auto
-                   url="[[ companyOrgunitsApi ]]"
-                   on-response="_onOrgunitsResponse"
-                   headers="[[ computedHeaders ]]"></iron-ajax>
-
         <appsco-content id="appscoContent" resource-active>
 
             <div class="flex-vertical" resource>
@@ -174,7 +168,6 @@
                 <div class="resource-container">
 
                     <paper-tabs id="paperTabs" selected="{{ _selectedFilter }}">
-                        <paper-tab name="organization-units">Organization units</paper-tab>
                         <paper-tab name="groups">Groups</paper-tab>
                     </paper-tabs>
 
@@ -183,12 +176,6 @@
                             entry-animation="fade-in-animation"
                             exit-animation="fade-out-animation"
                             class="paper-tabs-pages">
-
-                        <div name="organization-units" class="tab-content organization-units">
-                            <appsco-orgunit-tree id="appscoOrgunitTree"
-                                                 org-units="[[ _orgUnits ]]"
-                                                 on-selected="_onOrgunitSelected"></appsco-orgunit-tree>
-                        </div>
 
                         <div name="groups" class="tab-content groups">
                             <appsco-search id="appscoSearch"
@@ -372,14 +359,6 @@
                     value: ''
                 },
 
-                /**
-                 * Get company organization units.
-                 */
-                companyOrgunitsApi: {
-                    type: String,
-                    value: ''
-                },
-
                 _resourceSelectAction: {
                     type: Number,
                     value: 0
@@ -544,27 +523,6 @@
                 this.fire('reset-page-actions')
             },
 
-            _onOrgunitsResponse: function(event) {
-                var response = event.detail.response;
-
-                if (response && response.orgunits) {
-                    this.set('_orgUnits', event.detail.response.orgunits);
-                }
-            },
-
-            addOrgunit: function(orgunit) {
-                this.$.appscoOrgunitTree.addOrgunit(orgunit);
-            },
-
-            modifyOrgunit: function(orgunit) {
-                this.$.appscoOrgunitTree.setOrgunit(orgunit);
-                this.$.appscoResources.setOrgunit(orgunit);
-            },
-
-            removeOrgunit: function(orgunit) {
-                this.$.appscoOrgunitTree.removeOrgunit(orgunit);
-            },
-
             addGroup: function(group) {
                 this.$.appscoCompanyGroups.addItems([group]);
             },
@@ -672,10 +630,6 @@
                 this.$.appscoResources.filterByTerm(term);
             },
 
-            _onOrgunitSelected: function(event) {
-                this.$.appscoResources.filterByOrgunit(event.detail);
-            },
-
             _onSelectedFilterChanged: function(filter) {
 
                 if (this.pageLoaded) {
@@ -685,7 +639,6 @@
 
             _resetFilters: function() {
                 this.$.appscoCompanyGroups.reset();
-                this.$.appscoOrgunitTree.reset();
             },
             _searchGroups: function(term) {
                 this.$.appscoCompanyGroups.filterByTerm(term);

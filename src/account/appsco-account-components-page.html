@@ -14,7 +14,6 @@
 <link rel="import" href="../components/account/appsco-account-notifications.html">
 <link rel="import" href="../components/account/appsco-account-authorized-apps.html">
 <link rel="import" href="../components/account/appsco-account-log.html">
-<link rel="import" href="../components/account/appsco-account-partner.html">
 
 <dom-module id="appsco-account-components-page">
     <template>
@@ -150,12 +149,7 @@
                      top: 2px;
                  };
             }
-            appsco-account-partner {
-                --partner-additional-info-value: {
-                     color: inherit;
-                 };
-            }
-            .details-2fa, .notifications-authorized-apps, .log-partner {
+            .details-2fa, .notifications-authorized-apps, .log-container {
                 @apply(--layout-vertical);
             }
             .details-2fa, .notifications-authorized-apps {
@@ -170,25 +164,25 @@
             :host([medium-screen]) .notifications-authorized-apps {
                 margin-right: 0;
             }
-            :host([medium-screen]) > .log-partner {
+            :host([medium-screen]) > .log-container {
                 @apply(--layout-horizontal);
                 @apply(--layout-start);
                 width: 100%;
             }
-            :host([medium-screen]) > .log-partner paper-card {
+            :host([medium-screen]) > .log-container paper-card {
                 @apply(--layout-flex);
             }
-            :host([medium-screen]) > .log-partner .appsco-account-log {
+            :host([medium-screen]) > .log-container .appsco-account-log {
                 margin-right: 20px;
             }
-            :host([tablet-screen]) > .log-partner {
+            :host([tablet-screen]) > .log-container {
                 @apply(--layout-vertical);
             }
-            :host([tablet-screen]) > .log-partner paper-card {
+            :host([tablet-screen]) > .log-container paper-card {
                 @apply(--layout-flex-none);
                 width: 100%;
             }
-            :host([tablet-screen]) > .log-partner .appsco-account-log {
+            :host([tablet-screen]) > .log-container .appsco-account-log {
                 margin-right: 0;
             }
             :host([tablet-screen]) > * {
@@ -197,12 +191,13 @@
             :host([tablet-screen]) .details-2fa {
                 margin-right: 0;
             }
-            .appsco-account-authorized-apps, .appsco-account-partner {
+            .appsco-account-authorized-apps {
                 opacity: 0;
                 visibility: hidden;
                 min-height: inherit;
                 height: 0;
                 overflow: hidden;
+                transition: opacity 0.2s ease-out;
 
                 --paper-card-header-text: {
                      padding: 8px 16px;
@@ -211,21 +206,13 @@
                      border-bottom: 1px solid var(--success-color);
                  };
             }
-            .appsco-account-authorized-apps, .appsco-account-partner {
-                transition: opacity 0.2s ease-out;
-            }
-            .appsco-account-authorized-apps paper-button, .appsco-account-partner paper-button {
+            .appsco-account-authorized-apps paper-button {
                 color: var(--success-color);
             }
-            :host([_advanced-settings]) .appsco-account-authorized-apps, :host([_advanced-settings]) .appsco-account-partner {
+            :host([_advanced-settings]) .appsco-account-authorized-apps {
                 opacity: 1;
                 visibility: visible;
                 height: auto;
-            }
-            :host([_advanced-settings]) .appsco-account-authorized-apps {
-                transition: opacity 0.3s ease-in;
-            }
-            :host([_advanced-settings]) .appsco-account-partner {
                 transition: opacity 0.3s ease-in;
             }
             .message {
@@ -334,7 +321,7 @@
             </paper-card>
         </div>
 
-        <div class="log-partner">
+        <div class="log-container">
             <paper-card heading="Activity log"
                         class="appsco-account-log">
                 <div class="card-content">
@@ -350,31 +337,6 @@
 
                 <div class="card-actions">
                     <paper-button on-tap="_onAccountLog">ALL</paper-button>
-                </div>
-            </paper-card>
-
-            <paper-card heading="Partner"
-                        id="appscoAccountPartnerCard"
-                        class="appsco-account-partner">
-
-                <template is="dom-if" if="[[ _partnerExists ]]">
-                    <div class="card-content">
-                        <appsco-account-partner
-                                id="appscoAccountPartner"
-                                partner="[[ partner ]]"></appsco-account-partner>
-                    </div>
-                </template>
-
-                <template is="dom-if" if="[[ !_partnerExists ]]">
-                    <div class="card-content card-content-no-padding">
-                        <p class="message">
-                            You don't have a partner.
-                        </p>
-                    </div>
-                </template>
-
-                <div class="card-actions">
-                    <paper-button on-tap="_onManagePartner">Manage</paper-button>
                 </div>
             </paper-card>
         </div>
@@ -394,19 +356,6 @@
                         return {};
                     },
                     notify: true
-                },
-
-                partner: {
-                    type: Object,
-                    value: function() {
-                        return {};
-                    },
-                    notify: true
-                },
-
-                _partnerExists: {
-                    type: Boolean,
-                    computed: '_computePartnerExists(partner)'
                 },
 
                 authorizationToken: {
@@ -557,16 +506,6 @@
                 }
             },
 
-            _computePartnerExists: function(partner) {
-
-                for (key in partner) {
-                    return true;
-                }
-
-                return false;
-
-            },
-
             setSharedElement: function(target, callback) {
 
                 switch (target) {
@@ -671,11 +610,6 @@
             _onAccountLog: function(event) {
                 this._setSharedElement(event.target);
                 this.fire('whole-log');
-            },
-
-            _onManagePartner: function(event) {
-                this._setSharedElement(event.target);
-                this.fire('manage-partner');
             }
         });
     </script>

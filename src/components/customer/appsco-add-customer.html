@@ -97,6 +97,13 @@
             :host .info-box {
                 @apply(--info-box);
             }
+            .or-separator {
+                padding-top: 40px;
+            }
+            .or-separator span {
+                font-weight: inherit;
+                font-size: 20px;
+            }
         </style>
 
         <iron-ajax id="getRolesApiRequest"
@@ -129,8 +136,12 @@
                     </div>
                 </template>
 
+                <div>
+                    <p>You can add an existing AppsCo Business as a customer by using the partner transfer token they provide you with, or you can create a new AppsCo Business and automatically add your company as a partner. </p>
+                </div>
+
                  <form is="iron-form"
-                      id="form"
+                      id="formCustomerNew"
                       method="POST"
                       action="[[ customersApi ]]"
                       headers="[[ _headers ]]"
@@ -145,15 +156,18 @@
                                      value="{{ _customerName }}"
                                      required
                                      auto-validate
+                                     on-focus="_onFormCustomerNewFocus"
                                      error-message="Please enter customer's name."
                                      on-value-changed="_onNameInputValueChanged"></paper-input>
                     </div>
 
                     <div class="input-container">
                         <gold-email-input label="Contact e-mail"
+                                          id="email"
                                           name="company_customer[contactEmail]"
                                           required
                                           auto-validate
+                                          on-focus="_onFormCustomerNewFocus"
                                           error-message="Please enter valid contact e-mail."></gold-email-input>
                     </div>
 
@@ -189,6 +203,27 @@
                         </div>
                     </div>
                 </form>
+
+                <div class="or-separator"><span>or</span></div>
+
+                <form is="iron-form"
+                    id="formCustomerConvert"
+                    method="POST"
+                    action="[[ companyConvertToCustomerApi ]]"
+                    headers="[[ _headers ]]"
+                    on-iron-form-presubmit="_onFormTokenPresubmit"
+                    on-iron-form-error="_onFormError"
+                    on-iron-form-response="_onFormResponse">
+
+                    <paper-input id="customerToken"
+                                 label="Customer token"
+                                 name="customer_convert[token]"
+                                 value=""
+                                 required
+                                 auto-validate
+                                 on-focus="_onFormCustomerConvertFocus"
+                                 error-message="Please enter customer's token."></paper-input>
+                </form>
             </div>
 
             <div class="buttons">
@@ -197,7 +232,10 @@
             </div>
         </paper-dialog>
 
-        <iron-a11y-keys target="[[ _target ]]"
+        <iron-a11y-keys target="[[ _formCustomerNew ]]"
+                        keys="enter"
+                        on-keys-pressed="_onEnterAction"></iron-a11y-keys>
+        <iron-a11y-keys target="[[ _formCustomerConvert ]]"
                         keys="enter"
                         on-keys-pressed="_onEnterAction"></iron-a11y-keys>
 
@@ -217,6 +255,11 @@
                 },
 
                 customersApi: {
+                    type: String,
+                    value: ''
+                },
+
+                companyConvertToCustomerApi: {
                     type: String,
                     value: ''
                 },
@@ -294,14 +337,35 @@
                     observer: '_onCustomerNameChanged'
                 },
 
+                _customerToken: {
+                    type: String,
+                    value: ''
+                },
+
+                _formCustomerConvertActive: {
+                    type: Boolean,
+                    value: true
+                },
+
                 /**
                  * Target for iron-a11y-keys component.
-                 * Submit form on enter.
+                 * Submit formCustomerNew on enter.
                  */
-                _target: {
+                _formCustomerNew: {
                     type: Object,
                     value: function() {
-                        return this.$.form
+                        return this.$.formCustomerNew
+                    }
+                },
+
+                /**
+                 * Target for iron-a11y-keys component.
+                 * Submit formCustomerConvert on enter.
+                 */
+                _formCustomerConvert: {
+                    type: Object,
+                    value: function() {
+                        return this.$.formCustomerConvert
                     }
                 },
 
@@ -428,6 +492,24 @@
                 this.$.getRolesApiRequest.generateRequest();
             },
 
+            _onFormCustomerConvertFocus: function () {
+                this._formCustomerConvertActive = true;
+
+                this.$.name.disabled = true;
+                this.$.email.disabled = true;
+                this.$.appscoSearchAdmins.disableAppscoSearchInput();
+                this.$.customerToken.disabled = false;
+            },
+
+            _onFormCustomerNewFocus: function () {
+                this._formCustomerConvertActive = false;
+
+                this.$.name.disabled = false;
+                this.$.email.disabled = false;
+                this.$.appscoSearchAdmins.disabled = false;
+                this.$.customerToken.disabled = true;
+            },
+
             _focusFirstAdmin: function() {
                 this.$$('#adminList').items[0].focus();
             },
@@ -442,7 +524,6 @@
              * @private
              */
             _onDialogOpened: function() {
-                this.$.name.focus();
                 this._loadRoles();
                 Polymer.Gestures.add(this, 'tap', this._handleDocumentClick.bind(this));
             },
@@ -456,14 +537,23 @@
                 this._hideLoader();
                 this._hideError();
                 this._hideInfo();
-                this._target.reset();
+                this._formCustomerNew.reset();
+                this._formCustomerConvert.reset();
                 this.set('_administrators', []);
                 this.set('_administratorsToDisplay', []);
                 this.set('_selectedAdministrator', {});
                 this._hideAdminList();
                 this.$.appscoSearchAdmins.reset();
                 this._customerName = '';
+                this._enableAllFormFields();
                 Polymer.Gestures.remove(this, 'tap', this._handleDocumentClick.bind(this));
+            },
+
+            _enableAllFormFields: function () {
+                this.$.name.disabled = false;
+                this.$.email.disabled = false;
+                this.$.appscoSearchAdmins.enableAppscoSearchInput();
+                this.$.customerToken.disabled = false;
             },
 
             _onCustomerNameChanged: function(name) {
@@ -484,7 +574,11 @@
             },
 
             _onAddAction: function() {
-                this._submitForm();
+                if (this._formCustomerConvertActive) {
+                    this._submitFormCustomerConvert();
+                } else {
+                    this._submitFormCustomerNew();
+                }
             },
 
             /**
@@ -520,7 +614,7 @@
                 }.bind(this));
             },
 
-            _submitForm: function() {
+            _submitFormCustomerNew: function() {
                 this._hideError();
 
                 if (!this._selectedAdministrator.value) {
@@ -529,15 +623,28 @@
                     return false;
                 }
 
-                if (this._target.validate()) {
+                if (this._formCustomerNew.validate()) {
                     this._showLoader();
-                    this._target.submit();
+                    this._formCustomerNew.submit();
                 }
 
             },
 
+            _submitFormCustomerConvert: function () {
+                this._hideError();
+
+                if (this._formCustomerConvert.validate()) {
+                    this._showLoader();
+                    this._formCustomerConvert.submit();
+                }
+            },
+
             _onFormPresubmit: function(event) {
                 event.target.request.body['company_customer[partnerAdmin]'] = this._selectedAdministrator.value;
+            },
+
+            _onFormTokenPresubmit: function(event) {
+                event.target.request.body['customer_convert[token]'] = this.$.customerToken.value;
             },
 
             /**
@@ -608,6 +715,7 @@
             },
 
             _onAdminSearchFocusAction: function() {
+                this._onFormCustomerNewFocus();
                 this._showAdminList();
             },
 

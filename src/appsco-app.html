@@ -469,9 +469,11 @@
                                     <iron-icon icon="icons:description"></iron-icon>
                                     <span class="menu-text">Reports</span>
                                 </a>
-                                <a name="billing" href="#">
-                                    <iron-icon icon="icons:payment"></iron-icon> <span class="menu-text">Billing</span>
-                                </a>
+                                <template is="dom-if" if="[[ _accessBilling ]]">
+                                    <a name="billing" href="#">
+                                        <iron-icon icon="icons:payment"></iron-icon> <span class="menu-text">Billing</span>
+                                    </a>
+                                </template>
                                 <a name="company" href="#">
                                     <iron-icon icon="icons:settings"></iron-icon> <span class="menu-text">Settings</span>
                                 </a>
@@ -1996,6 +1998,11 @@
                 _contactIconsApi: {
                     type: String,
                     computed: '_computeContactIconsApi(domain, currentCompany)'
+                },
+
+                _accessBilling: {
+                    type: Boolean,
+                    computed: "_computeAccessBilling(currentCompany)"
                 }
             },
 
@@ -2114,6 +2121,10 @@
             _computeCompaniesAccountHasPermissionTo: function(account, companiesAccountIsContactIn) {
                 var companies = (account.companies && 0 < account.companies.length) ? account.companies : [];
                 return (0 < companiesAccountIsContactIn.length) ? companies.concat(companiesAccountIsContactIn) : companies;
+            },
+
+            _computeAccessBilling: function (currentCompany) {
+                return currentCompany.company && !currentCompany.company.subscription_paid_externally;
             },
 
             _setProduct: function(company) {

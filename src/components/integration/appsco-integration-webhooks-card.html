@@ -1,0 +1,215 @@
+<link rel="import" href="../../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../../bower_components/neon-animation/neon-animation-runner-behavior.html">
+<link rel="import" href="../../../bower_components/neon-animation/animations/fade-in-animation.html">
+<link rel="import" href="../../../bower_components/neon-animation/animations/fade-out-animation.html">
+<link rel="import" href="../../../bower_components/iron-ajax/iron-ajax.html">
+<link rel="import" href="../../../bower_components/paper-progress/paper-progress.html">
+
+<dom-module id="appsco-integration-webhooks-card">
+    <template>
+        <style>
+            :host {
+                display: inline-block;
+                position: relative;
+                @apply(--appsco-integration-webhooks-card);
+            }
+            .message {
+                @apply(--info-message);
+            }
+            .progress-bar {
+                min-width: 100px;
+                width: 100%;
+                position: absolute;
+                top: 0;
+                left: 0;
+            }
+        </style>
+
+        <div>
+            <iron-ajax
+                    id="getIntegrationWebhooksApiRequest"
+                    url="[[ webhookApi ]]"
+                    headers="[[ _computedHeaders ]]"
+                    debounce-duration="300"
+                    on-error="_onError"
+                    on-response="_onResponse"></iron-ajax>
+
+            <paper-progress id="paperProgress"
+                            class="progress-bar"
+                            indeterminate></paper-progress>
+
+            <template is="dom-if" if="[[ _message ]]">
+                <p class="message">[[ _message ]]</p>
+            </template>
+
+        </div>
+    </template>
+    <script>
+        Polymer({
+
+            is: 'appsco-integration-webhooks-card',
+
+            properties: {
+
+                /**
+                 * Route to retrieve webhooks
+                 */
+                webhookApi: {
+                    type: String,
+                    value: '',
+                    observer: '_onWebhookApiChanged'
+                },
+
+                /**
+                 * Authorization token.
+                 */
+                authorizationToken: {
+                    type: String,
+                    value: ''
+                },
+
+                 _message: {
+                    type: String,
+                    value: ''
+                },
+
+                _webhooks: {
+                    type: Array,
+                    value: function() {
+                        return [];
+                    }
+                },
+
+                _loaders: {
+                    type: Array,
+                    value: function() { return []; }
+                },
+
+                /**
+                 * Animation config.
+                 */
+                animationConfig: {
+                    value: function() {
+                        return {
+                            'entry': {
+                                name: 'fade-in-animation',
+                                node: this,
+                                timing: {
+                                    duration: 500
+                                }
+                            },
+                            'exit': {
+                                name: 'fade-out-animation',
+                                node: this,
+                                timing: {
+                                    duration: 100
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+
+            behaviors: [
+                Polymer.NeonAnimationRunnerBehavior
+            ],
+
+            attached: function() {
+                this._showWebhookDetails();
+            },
+
+            _onWebhookApiChanged: function(url) {
+                if (url && url.length > 0) {
+                    this._loadWebhooks();
+                } else {
+                    this._onError();
+                }
+            },
+
+            _showWebhookDetails: function() {
+                this.style.display = 'block';
+                this.playAnimation('entry');
+            },
+
+            _handleEmptyLoad: function() {
+                this._hideProgressBar();
+                this.fire('empty-load');
+            },
+
+            loadWebhooks: function() {
+                this._loadWebhooks();
+            },
+
+            _loadWebhooks: function() {
+                this._showProgressBar();
+                this._clearWebhooks();
+                this.$.getIntegrationWebhooksApiRequest.generateRequest();
+            },
+
+            _onError: function() {
+                this._message = 'We couldn\'t load webhooks at the moment. Please try again in a minute.';
+                this._hideProgressBar();
+                this.fire('webhooks-load-error');
+            },
+
+            _clearWebhooks: function() {
+                this._clearLoaders();
+                this.set('_webhooks', []);
+            },
+
+            _clearLoaders: function() {
+                for (var idx in this._loaders) {
+                    clearTimeout(this._loaders[idx]);
+                }
+                this.set('_loaders', []);
+            },
+
+            _onResponse: function(event) {
+                var response = event.detail.response;
+                if (response && response.webhooks) {
+                    var webhooks = response.webhooks,
+                        meta = response.meta,
+                        webhooksCount = webhooks.length - 1;
+
+                    if (meta.total === 0) {
+                        this._message = 'There are no webhooks in this integration.';
+                        this._handleEmptyLoad();
+                        return false;
+                    }
+
+                    this._message = '';
+                    this._clearWebhooks();
+                    webhooks.forEach(function(el, index) {
+
+                        this._loaders.push(setTimeout(function() {
+
+                            this.push('_webhooks', el);
+
+                            if (index === webhooksCount) {
+
+                                this._hideProgressBar();
+                                this.fire('loaded', {
+                                    webhooks: webhooks
+                                });
+                            }
+
+                        }.bind(this), (index + 1) * 30));
+
+                    }.bind(this));
+                }
+            },
+
+            _showProgressBar: function() {
+                this.$$('#paperProgress').hidden = false;
+            },
+
+            _hideProgressBar: function() {
+
+                setTimeout(function() {
+                    this.$$('#paperProgress').hidden = true;
+                }.bind(this), 300);
+
+            },
+        });
+    </script>
+</dom-module>

@@ -1,0 +1,383 @@
+<link rel="import" href="../bower_components/polymer/polymer.html">
+<link rel="import" href="../bower_components/neon-animation/neon-animated-pages.html">
+<link rel="import" href="../bower_components/neon-animation/animations/fade-in-animation.html">
+<link rel="import" href="../bower_components/neon-animation/animations/fade-out-animation.html">
+<link rel="import" href="../bower_components/paper-icon-button/paper-icon-button.html">
+<link rel="import" href="../bower_components/iron-image/iron-image.html">
+<link rel="import" href="../bower_components/iron-media-query/iron-media-query.html">
+
+<link rel="import" href="components/page/appsco-content.html">
+<link rel="import" href="provisioning/appsco-manage-integration-components-page.html">
+<link rel="import" href="provisioning/appsco-integration-settings-page.html">
+<link rel="import" href="provisioning/appsco-integration-rules-page.html">
+
+<dom-module id="appsco-manage-integration-page">
+    <template>
+        <style include="webkit-scrollbar-style">
+            :host {
+                display: block;
+                color: var(--app-primary-color);
+
+                --resource-width: 300px;
+            }
+            div[resource] {
+                padding: 10px;
+                height: calc(100% - 32px - 20px - 10px);
+                overflow: auto;
+            }
+            div[content] {
+                height: 100%;
+            }
+            .resource-header {
+                padding: 20px 10px 30px;
+                border-bottom: 1px solid var(--divider-color);
+                position: relative;
+            }
+            .integration-image {
+                width: 96px;
+                height: 96px;
+                margin-left: auto;
+                margin-right: auto;
+                border-radius: 50%;
+                position: relative;
+                background-color: var(--body-background-color-darker);
+            }
+            .integration-image iron-image {
+                width: 48px;
+                height: 48px;
+                position: absolute;
+                top: 0;
+                right: 0;
+                bottom: 0;
+                left: 0;
+                margin: auto;
+            }
+            div[resource] .resource-actions {
+                position: absolute;
+                bottom: 0;
+                left: 0;
+                right: 0;
+            }
+            .remove-action {
+                @apply(--primary-button);
+                @apply(--danger-button);
+                border-radius: 0;
+            }
+            :host .integration-components, :host .integration-components neon-animated-pages {
+                height: 100%;
+            }
+            .flex-horizontal {
+                @apply(--layout-horizontal);
+                @apply(--layout-center);
+            }
+            .flex-vertical {
+                @apply(--layout-vertical);
+            }
+            .flex {
+                @apply(--layout-flex);
+            }
+            appsco-manage-integration-components-page {
+                padding: 10px;
+            }
+            :host([medium-screen]) {
+                --resource-width: 240px;
+            }
+            :host([mobile-screen]) {
+                --resource-width: 180px;
+            }
+        </style>
+
+        <iron-media-query query="(max-width: 1200px)" query-matches="{{ mediumScreen }}"></iron-media-query>
+        <iron-media-query query="(max-width: 800px)" query-matches="{{ tabletScreen }}"></iron-media-query>
+        <iron-media-query query="(max-width: 600px)" query-matches="{{ mobileScreen }}"></iron-media-query>
+
+        <iron-ajax
+            id="ironAjaxGetIntegration"
+            on-error="_onIntegrationError"
+            on-response="_onIntegrationResponse"
+            headers="[[ _headers ]]">
+        </iron-ajax>
+
+        <appsco-content id="appscoContent" resource-active>
+
+            <div class="flex-vertical" resource>
+
+                <div class="resource-header">
+                    <div class="integration-image">
+                        <iron-image
+                            src="[[ integration.integration_active.integration.image ]]"
+                            alt="Integration image"
+                            class="sized"
+                            sizing="cover"
+                            preload fade>
+                        </iron-image>
+                    </div>
+                </div>
+
+                <div class="integration-info">
+                    <p>[[ integration.integration_active.name ]]</p>
+                </div>
+
+                <div class="resource-actions flex-horizontal">
+                    <paper-button
+                            class="remove-action flex"
+                            on-tap="_onRemoveIntegration">
+                        Remove
+                    </paper-button>
+                </div>
+            </div>
+
+            <div content>
+
+                <div class="integration-components">
+                    <neon-animated-pages class="flex"
+                                         selected="{{ _selected }}"
+                                         attr-for-selected="name">
+
+                        <appsco-manage-integration-components-page
+                                id="appscoManageIntegrationComponentsPage"
+                                name="appsco-manage-integration-components-page"
+                                integration="[[ integration ]]"
+                                webhook-api="[[ _webhookApi ]]"
+                                on-manage-integration-settings="_onManageIntegrationSettings"
+                                on-manage-integration-rules="_onManageIntegrationRules">
+                        </appsco-manage-integration-components-page>
+
+                        <appsco-integration-settings-page
+                                name="appsco-integration-settings-page"
+                                on-back="_onResourceBack">
+                        </appsco-integration-settings-page>
+
+                        <appsco-integration-rules-page
+                                name="appsco-integration-rules-page"
+                                on-back="_onResourceBack">
+                        </appsco-integration-rules-page>
+
+                    </neon-animated-pages>
+                </div>
+
+            </div>
+        </appsco-content>
+
+    </template>
+
+    <script>
+        Polymer({
+            is: 'appsco-manage-integration-page',
+
+            properties: {
+
+                route: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    }
+                },
+
+                integration: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    }
+                },
+
+                _selected: {
+                    type: String,
+                    value: 'appsco-manage-integration-components-page',
+                    notify: true
+                },
+
+                /**
+                 * Get integration link.
+                 */
+                integrationApi: {
+                    type: String,
+                    value: '',
+                    observer: '_onIntegrationApiChanged'
+                },
+
+                _webhookApi: {
+                    type: String,
+                    computed: '_computeWebhookApi(integration)'
+                },
+
+                authorizationToken: {
+                    type: String,
+                    value: ''
+                },
+
+                /**
+                 * Computed headers.
+                 * It contains authorization token.
+                 */
+                _headers: {
+                    type: Object,
+                    computed: '_computeHeaders(authorizationToken)'
+                },
+
+                mediumScreen: {
+                    type: Boolean,
+                    value: false,
+                    reflectToAttribute: true
+                },
+
+                tabletScreen: {
+                    type: Boolean,
+                    value: false,
+                    reflectToAttribute: true
+                },
+
+                mobileScreen: {
+                    type: Boolean,
+                    value: false,
+                    reflectToAttribute: true
+                },
+
+                /**
+                 * Animation config.
+                 */
+                animationConfig: {
+                    value: function() {
+                        return {
+                            'entry': {
+                                name: 'fade-in-animation',
+                                node: this,
+                                timing: {
+                                    duration: 300
+                                }
+                            },
+                            'exit': {
+                                name: 'fade-out-animation',
+                                node: this,
+                                timing: {
+                                    duration: 200
+                                }
+                            }
+                        }
+                    }
+                },
+
+                pageLoaded: {
+                    type: Boolean,
+                    value: false
+                }
+            },
+
+            behaviors: [
+                Polymer.NeonAnimatableBehavior
+            ],
+
+            observers: [
+                '_updateScreen(mediumScreen, tabletScreen, mobileScreen)'
+            ],
+
+            attached: function() {
+                this.pageLoaded = false;
+
+                if (this.mobileScreen || this.tabletScreen || this.mediumScreen) {
+                    this.updateStyles();
+                }
+                this._getIntegration();
+            },
+
+            _onPageLoaded: function() {
+                this.pageLoaded = true;
+                this.fire('page-loaded');
+            },
+
+            toggleResource: function() {
+                this.$.appscoContent.toggleSection('resource');
+            },
+
+            resetPage: function() {
+                this._showComponentsPage();
+            },
+
+            _showIntegrationSettingsPage: function() {
+                this._selected = 'appsco-integration-settings-page';
+            },
+
+            _showIntegrationRulesPage: function() {
+                this._selected = 'appsco-integration-rules-page';
+            },
+
+            _showComponentsPage: function() {
+                this._selected = 'appsco-manage-integration-components-page';
+            },
+
+            _updateScreen: function(medium, tablet, mobile) {
+                this.updateStyles();
+
+                if (mobile) {
+                    this.$.appscoContent.hideSection('resource');
+                }
+                else if(!this.$.appscoContent.resourceActive) {
+                    this.$.appscoContent.showSection('resource');
+                }
+            },
+
+            _getIntegration: function() {
+                if (!this.integration.self && this.integrationApi && this._headers) {
+                    if (!this.route.path) {
+                        this.fire('page-error');
+                    }
+                    this.$.ironAjaxGetIntegration.url = this.integrationApi + '/active' + this.route.path;
+                    this.$.ironAjaxGetIntegration.generateRequest();
+                }
+            },
+
+            _onIntegrationApiChanged: function() {
+                this._getIntegration();
+            },
+
+            _onIntegrationResponse: function(event) {
+                if (200 === event.detail.status && event.detail.response) {
+                    this.set('integration', event.detail.response);
+                }
+                this._onPageLoaded();
+            },
+
+            _onIntegrationError: function(event) {
+                if (!event.detail.request.aborted) {
+                    this.fire('page-error');
+                }
+            },
+
+            /**
+             * Computes authorization headers.
+             *
+             * @param {Object} authorizationToken
+             * @returns {{ Authorization: string }}
+             * @private
+             */
+            _computeHeaders: function (authorizationToken) {
+                return {
+                    'Authorization': 'token ' + authorizationToken
+                }
+            },
+
+            _computeWebhookApi: function(integration) {
+                return integration.meta ? integration.meta.webhooks + '?extended=1' : '';
+            },
+
+            _onResourceBack: function() {
+                this._showComponentsPage();
+            },
+
+            _onRemoveIntegration: function() {
+                this.fire('remove-integration', {
+                    integration: this.integration
+                });
+            },
+
+            _onManageIntegrationSettings: function() {
+                this._showIntegrationSettingsPage();
+            },
+
+            _onManageIntegrationRules: function() {
+                this._showIntegrationRulesPage();
+            }
+
+        });
+    </script>
+</dom-module>

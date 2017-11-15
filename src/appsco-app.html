@@ -104,6 +104,8 @@
 
 <link rel="import" href="provisioning/appsco-provisioning-settings-page-actions.html">
 <link rel="import" href="provisioning/appsco-start-integration.html">
+<link rel="import" href="provisioning/appsco-manage-integration-page-actions.html">
+<link rel="import" href="components/integration/appsco-remove-integration.html">
 
 <link rel="import" href="company/appsco-company-page-actions.html">
 <link rel="import" href="company/appsco-company-add-domain.html">
@@ -630,6 +632,10 @@
                                     name="manage-group"
                                     on-back="_showGroupsPage"
                                     on-resource-section="_onResourceActionPage"></appsco-manage-group-page-actions>
+                            <appsco-manage-integration-page-actions
+                                    name="manage-integration"
+                                    on-back="_showCompanyProvisioningPage"
+                                    on-resource-section="_onResourceActionPage"></appsco-manage-integration-page-actions>
 
                             <appsco-customers-page-actions
                                     id="appscoCustomersPageActions"
@@ -974,6 +980,17 @@
                             on-remove-company-contact-from-group="_onRemoveCompanyContactFromGroup"
                             on-remove-company-resource-from-group="_onRemoveCompanyResourceFromGroup"
                     ></appsco-manage-group-page>
+
+                    <appsco-manage-integration-page
+                            id="appscoManageIntegrationPage"
+                            name="manage-integration"
+                            route="[[ subroute ]]"
+                            integration="[[ _selectedIntegration ]]"
+                            integration-api="[[ _companyIntegrationApi ]]"
+                            authorization-token="[[ authorizationToken ]]"
+                            on-page-error="_onError"
+                            on-remove-integration="_onRemoveIntegrationAction"
+                    ></appsco-manage-integration-page>
 
                     <appsco-provisioning-page
                             id="appscoProvisioningPage"
@@ -1340,6 +1357,12 @@
                 authorization-token="[[ authorizationToken ]]"
                 company-api="[[ _companyApi ]]">
         </appsco-start-integration>
+
+        <appsco-remove-integration
+                id="appscoRemoveIntegration"
+                authorization-token="[[ authorizationToken ]]"
+                api-errors="[[ _apiErrors ]]"
+                on-integration-removed="_onIntegrationRemoved"></appsco-remove-integration>
 
         <appsco-company-add-domain
                 id="appscoCompanyAddDomain"
@@ -1901,6 +1924,11 @@
                     value: ''
                 },
 
+                _companyIntegrationApi: {
+                    type: String,
+                    value: ''
+                },
+
                 _customerPartnerAdminsApi: {
                     type: String,
                     computed: '_computeCustomerPartnerAdminApi(_companyCustomersApi)'
@@ -2191,6 +2219,9 @@
                     case 'manage-group':
                         return 'Manage Group';
 
+                    case 'manage-integration':
+                        return 'Manage Integration';
+
                     case 'company-home':
                         return 'Dashboard';
 
@@ -2353,6 +2384,7 @@
                     this._companySamlMetadataApi = companyApi + '/idp/saml/metadata';
                     this._companyAuditLogApi = companyApi + '/log';
                     this._companyCustomersApi = partnerApi + '/customers';
+                    this._companyIntegrationApi = companyApi + '/integrations';
                     this._getAccessReportApi = companyApi + '/reports/application-access';
                     this._getTransferTokenApi = companyApi + '/transfer-token';
                 }
@@ -2380,6 +2412,10 @@
 
             _computeCompanyExportCustomersApi: function(customersApi) {
                 return customersApi ? customersApi + '/export' : '';
+            },
+
+            _computeCompanyIntegrationsApi: function(companyApi) {
+                return companyApi ? companyApi + '/integration' : '';
             },
 
             _computeCustomerPartnerAdminApi: function(customersApi) {
@@ -2706,6 +2742,10 @@
                         return this.$.appscoResourcesPage;
                         break;
 
+                    case 'manage-integration':
+                        return this.$.appscoManageIntegrationPage;
+                        break;
+
                     case 'directory':
                         return this.$.appscoDirectoryPage;
                         break;
@@ -2968,6 +3008,7 @@
                         this._reloadCompanyApplications();
 
                         break;
+
                 }
             },
 
@@ -4566,6 +4607,10 @@
             _onHideBulkActionsProvisioningPage: function() {
                 this.$.appscoProvisioningSettingsPageActions.hideBulkActions();
             },
+            _onRemoveIntegrationAction: function(event) {
+                this.$.appscoRemoveIntegration.setIntegration(event.detail.integration);
+                this.$.appscoRemoveIntegration.open();
+            },
             /**
              * Provisioning page END
              */
@@ -5344,6 +5389,10 @@
                         this.$.appscoManageGroupPage.pageLoaded ? this._hideProgressBar() : this._showProgressBar();
                         break;
 
+                    case 'manage-integration':
+                        this.$.appscoManageIntegrationPage.pageLoaded ? this._hideProgressBar() : this._showProgressBar();
+                        break;
+
                     case 'audit-log':
                         this.$.appscoAuditLogPage.pageLoaded ? this._hideProgressBar() : this._showProgressBar();
                         break;
@@ -5419,6 +5468,7 @@
                         page === 'manage-contact' ||
                         page === 'manage-customer' ||
                         page === 'manage-group' ||
+                        page === 'manage-integration' ||
                         page === 'statistics' ||
                         page === 'reports' ||
                         page === 'access-report' ||
@@ -5514,6 +5564,7 @@
                     case 'manage-contact':
                     case 'manage-customer':
                     case 'manage-group':
+                    case 'manage-integration':
                     case 'audit-log':
                     case 'provisioning-settings':
                     case 'company':

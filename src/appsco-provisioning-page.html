@@ -1,15 +1,11 @@
 <link rel="import" href="../bower_components/polymer/polymer.html">
-<link rel="import" href="../bower_components/iron-ajax/iron-ajax.html">
 <link rel="import" href="../bower_components/neon-animation/neon-animated-pages.html">
 <link rel="import" href="../bower_components/neon-animation/animations/fade-in-animation.html">
 <link rel="import" href="../bower_components/neon-animation/animations/fade-out-animation.html">
-<link rel="import" href="../bower_components/iron-media-query/iron-media-query.html">
 
 <link rel="import" href="shared-styles.html">
 <link rel="import" href="components/page/appsco-content.html">
-<link rel="import" href="components/components/appsco-loader.html">
-<link rel="import" href="provisioning/available-integration-item.html">
-<link rel="import" href="provisioning/active-integration-item.html">
+<link rel="import" href="provisioning/appsco-active-integrations.html">
 
 <dom-module id="appsco-provisioning-page">
     <template>
@@ -23,149 +19,30 @@
                     padding: 0;
                 };
             }
-            .progress-container {
-                height: 2px;
-            }
-            paper-progress {
-                width: 100%;
-            }
-            paper-progress[hidden] {
-                display: none !important;
-            }
-            .active-integrations-info {
-                padding-top: 30px;
-            }
-            .active-integrations-info p:first-of-type {
-                margin-top: 0;
-            }
-            .integrations {
-                margin-top: 10px;
-            }
-            available-integration-item {
-                margin-bottom: 5px;
-            }
-            :host .title {
-                margin-top: 0;
-                margin-bottom: 6px;
-                font-weight: 400;
-            }
-            :host div[resource] > * {
-                padding: 10px;
-            }
-            :host div[resource] p {
-                margin-bottom: 0;
-                margin-top: 6px;
-                font-size: 14px;
-            }
-            :host .resource-header {
-                border-bottom: 1px solid var(--divider-color);
-                font-size: 18px;
-            }
             :host div[content] {
                 padding: 10px;
                 color: var(--primary-text-color);
             }
-            :host .flex-horizontal {
-                @apply(--layout-horizontal);
-                @apply(--layout-center);
-            }
-            :host .flex-vertical {
-                @apply(--layout-vertical);
-            }
-            :host .flex-center {
-                @apply(--layout-center);
-            }
-            :host .pt-40{
-                padding-top:40px;
-            }
-            .image {
-                max-width: 100%;
-            }
-            .info {
-                @apply(--info-message);
-            }
         </style>
-
-        <iron-ajax
-                auto
-                url="[[ _availableIntegrationsApi ]]"
-                handle-as="json"
-                headers="[[ _headers ]]"
-                on-response="_handleAvailableIntegrationsResponse"
-        ></iron-ajax>
-
-        <iron-ajax
-                auto
-                url="[[ _activeIntegrationsApi ]]"
-                handle-as="json"
-                headers="[[ _headers ]]"
-                on-response="_handleActiveIntegrationsResponse"
-        ></iron-ajax>
 
         <iron-media-query query="(max-width: 600px)" query-matches="{{ mobileScreen }}"></iron-media-query>
 
-        <appsco-content id="appscoContent" resource-active>
-
-            <div class="flex-vertical" resource>
-
-                <div class="resource-header">
-                    Available Integrations
-                </div>
-
-                <div>
-                    <div class="progress-container">
-                        <paper-progress id="availableIntegrationsLoader"
-                                        indeterminate></paper-progress>
-                    </div>
-
-                    <div class="integrations">
-                        <template is="dom-repeat" items="[[ _availableIntegrations ]]" >
-                            <available-integration-item item="[[ item ]]"></available-integration-item>
-                        </template>
-
-                        <template is="dom-if" if="[[ _noAvailableIntegrations ]]">
-                            <p class="info">There are no available integrations.</p>
-                        </template>
-                    </div>
-                </div>
-            </div>
+        <appsco-content id="appscoContent">
 
             <div content>
-                <h2 class="title">Active Integrations</h2>
 
-                <div class="progress-container">
-                    <paper-progress id="activeIntegrationsLoader"
-                                    indeterminate></paper-progress>
+                <div class="provisioning-container">
+                    <appsco-active-integrations
+                            id="appscoActiveIntegrations"
+                            type="integration"
+                            size="100"
+                            load-more
+                            authorization-token="[[ authorizationToken ]]"
+                            list-api="[[ activeIntegrationsApi ]]"
+                            on-edit-item="_onIntegrationEditAction"
+                            on-list-loaded="_onIntegrationsLoadFinished"
+                            on-list-empty="_onIntegrationsLoadFinished"></appsco-active-integrations>
                 </div>
-
-                <template is="dom-if" if="[[ _noActiveIntegrations ]]">
-                    <div class="active-integrations-info">
-                        <p>There are no active integrations.</p>
-                        <p>
-                            Integrations facilitate the exchange of provisioning information among applications and organizations, corporations, or agencies.
-                            Provisioning is the automation of all the steps required to manage (setup, amend, and revoke) user
-                            or system access entitlements or data relative to electronically published services.
-                        </p>
-                        <p>
-                            AppsCo provides set of systems that integration can be achieved with.
-                            If you cant find what you require please contact us and we will be glad to help you.
-                        </p>
-
-                        <div class="flex-vertical flex-center pt-40">
-                            <div class="flex-horizontal">
-                                <img src="../images/provisioning/provisioning-info.png" class="image">
-                            </div>
-                        </div>
-                    </div>
-                </template>
-
-                <template is="dom-if" if="[[ _hasActiveIntegrations ]]">
-                    <div class="integrations">
-                        <template is="dom-repeat" items="[[ _activeIntegrations ]]" >
-                            <active-integration-item item="[[ item ]]"></active-integration-item>
-                        </template>
-                    </div>
-                </template>
             </div>
 
         </appsco-content>
@@ -177,62 +54,13 @@
 
             properties: {
 
-                companyApi: {
-                    type: String,
-                    value: '',
-                    observer: '_onCompanyApiChanged'
-                },
-
                 authorizationToken: {
                     type: String
                 },
 
-                /**
-                 * Computed headers.
-                 * It contains authorization token.
-                 */
-                _headers: {
-                    type: Object,
-                    computed: '_computeHeaders(authorizationToken)'
-                },
-
-                _availableIntegrationsApi: {
+                activeIntegrationsApi: {
                     type: String,
                     value: ''
-                },
-
-                _activeIntegrationsApi: {
-                    type: String,
-                    value: ''
-                },
-
-                _availableIntegrations: {
-                    type: Array,
-                    value: function() {
-                        return [];
-                    }
-                },
-
-                _activeIntegrations: {
-                    type: Array,
-                    value: function() {
-                        return [];
-                    }
-                },
-
-                _noAvailableIntegrations: {
-                    type: Boolean,
-                    value: false
-                },
-
-                _noActiveIntegrations: {
-                    type: Boolean,
-                    value: false
-                },
-
-                _hasActiveIntegrations: {
-                    type: Boolean,
-                    value: false
                 },
 
                 animationConfig: {
@@ -259,12 +87,6 @@
                 pageLoaded: {
                     type: Boolean,
                     value: false
-                },
-
-                mobileScreen: {
-                    type: Boolean,
-                    value: false,
-                    reflectToAttribute: true
                 }
             },
 
@@ -272,55 +94,8 @@
                 Polymer.NeonAnimatableBehavior
             ],
 
-            observers: [
-                '_updateScreen(mobileScreen)'
-            ],
-
             attached: function() {
-
                 this.pageLoaded = false;
-
-                if (this.mobileScreen) {
-                    this.updateStyles();
-                }
-
-                this._pageLoaded();
-            },
-
-            _updateScreen: function(mobile) {
-                this.updateStyles();
-
-                if (mobile) {
-                    this.$.appscoContent.hideSection('resource');
-                }
-                else if(!this.$.appscoContent.resourceActive) {
-                    this.$.appscoContent.showSection('resource');
-                }
-            },
-
-            /**
-             * Computes authorization headers.
-             *
-             * @param {Object} authorizationToken
-             * @returns {{ Authorization: string }}
-             * @private
-             */
-            _computeHeaders: function (authorizationToken) {
-                return {
-                    'Authorization': 'token ' + authorizationToken
-                }
-            },
-
-            _onCompanyApiChanged: function(companyApi) {
-
-                if (companyApi) {
-                    this._availableIntegrationsApi = companyApi + '/integrations/available';
-                    this._activeIntegrationsApi = companyApi + '/integrations/active';
-                }
-                else {
-                    this._availableIntegrationsApi = '';
-                    this._activeIntegrationsApi = '';
-                }
             },
 
             _pageLoaded: function() {
@@ -328,77 +103,8 @@
                 this.fire('page-loaded');
             },
 
-            toggleResource: function() {
-                this.$.appscoContent.toggleSection('resource');
-            },
-
-            _handleAvailableIntegrationsResponse: function(event) {
-                var response = event.detail.response;
-
-                this.set('_availableIntegrations', []);
-
-                if (response) {
-
-                    if (response.available_integrations.length > 0) {
-                        var integrations = response.available_integrations;
-
-                        this._noAvailableIntegrations = false;
-
-                        integrations.forEach(function(integration, index) {
-
-                            setTimeout(function() {
-                                this.push('_availableIntegrations', integration);
-                            }.bind(this), (index + 1) * 30);
-
-                            if (index == integrations.length - 1) {
-                                this._hideProgressBar('availableIntegrationsLoader');
-                            }
-                        }.bind(this));
-                    }
-                    else {
-                        this._noAvailableIntegrations = true;
-                        this._hideProgressBar('availableIntegrationsLoader');
-                    }
-
-                }
-            },
-
-            _handleActiveIntegrationsResponse: function(event) {
-                var response = event.detail.response;
-
-                this.set('_activeIntegrations', []);
-
-                if (response) {
-
-                    if (response.active_integrations.length > 0) {
-                        var integrations = event.detail.response.active_integrations;
-
-                        this._hasActiveIntegrations = integrations.length != 0;
-                        this._noActiveIntegrations = !this._hasActiveIntegrations;
-
-                        integrations.forEach(function(integration, index) {
-                            setTimeout(function() {
-                                this.push('_activeIntegrations', integration);
-                            }.bind(this), (index + 1) * 30);
-
-                            if (index == integrations.length - 1) {
-                                this._hideProgressBar('activeIntegrationsLoader');
-                            }
-                        }.bind(this));
-                    }
-                    else {
-                        this._hasActiveIntegrations = false;
-                        this._noActiveIntegrations = !this._hasActiveIntegrations;
-                        this._hideProgressBar('activeIntegrationsLoader');
-                    }
-
-                }
-            },
-
-            _hideProgressBar: function(progressId) {
-                setTimeout(function() {
-                    this.$$('#' + progressId).hidden = true;
-                }.bind(this), 1000);
+            _onIntegrationsLoadFinished: function() {
+                this._pageLoaded();
             }
         });
     </script>

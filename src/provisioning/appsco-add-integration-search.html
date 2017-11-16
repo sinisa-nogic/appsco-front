@@ -1,0 +1,354 @@
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../bower_components/paper-dialog/paper-dialog.html">
+<link rel="import" href="../../bower_components/iron-ajax/iron-ajax.html">
+<link rel="import" href="../../bower_components/paper-styles/shadow.html">
+<link rel="import" href="../../bower_components/paper-listbox/paper-listbox.html">
+<link rel="import" href="../../bower_components/paper-item/paper-item.html">
+<link rel="import" href="../../bower_components/neon-animation/neon-shared-element-animatable-behavior.html">
+<link rel="import" href="../../bower_components/neon-animation/animations/hero-animation.html">
+<link rel="import" href="../../bower_components/neon-animation/animations/fade-out-animation.html">
+
+<link rel="import" href="../components/components/appsco-search.html">
+
+<dom-module id="appsco-add-integration-search">
+    <template>
+        <style>
+            :host {
+                display: block;
+            }
+            .search-container {
+                margin-bottom: 10px;
+                position: relative;
+                box-sizing: border-box;
+            }
+            .suggested-list-items {
+                @apply(--shadow-elevation-2dp);
+                width: 100%;
+                min-height: 68px;
+                overflow-y: auto;
+                position: absolute;
+                top: 50px;
+                left: 0;
+                z-index: 10;
+                opacity: 1;
+                visibility: visible;
+                transform: scale(1, 1);
+                transform-origin: top center;
+                transition: all 0.2s linear;
+            }
+            .suggested-list-items[hidden] {
+                opacity: 0;
+                visibility: hidden;
+                transform: scale(1, 0);
+                transform-origin: top center;
+                transition: all 0.1s linear;
+            }
+            paper-item {
+                min-height: initial;
+                padding: 8px 10px;
+                line-height: 18px;
+            }
+            :host paper-item:hover {
+                @apply(--paper-item-hover);
+            }
+            :host p:first-of-type {
+                margin-top: 0;
+            }
+            :host p + p {
+                margin-bottom: 0;
+            }
+        </style>
+
+        <iron-ajax auto
+                   method="GET"
+                   url="[[ _availableIntegrationsApi ]]"
+                   headers="[[ _headers ]]"
+                   handle-as="json"
+                   on-response="_onAvailableIntegrationsResponse"></iron-ajax>
+
+        <div>
+            <p>
+                Integrations enable the exchange of provisioning information and help you automate the management of users,
+                access and data across different systems.
+            </p>
+            <p>
+                AppsCo provides a set of systems that integration can be achieved with. Choose an integration you wish to add.
+            </p>
+        </div>
+
+        <div id="searchActionContainer" class="search-container">
+            <appsco-search id="appscoSearch"
+                           label="Search available integration systems"
+                           float-label
+                           on-focus="_onSearchFocus"
+                           on-keyup="_onSearchKeyup"
+                           on-search="_onSearch"
+                           on-search-clear="_onClearSearch"></appsco-search>
+    
+            <paper-listbox id="searchList"
+                           class="dropdown-content suggested-list-items"
+                           on-iron-activate="_onListItemSelectAction"
+                           hidden>
+                <template is="dom-repeat" items="[[ _availableIntegrationListDisplay ]]">
+                    <paper-item value$="[[ item.alias ]]"
+                                title$="[[ item.title ]]">
+                        [[ item.title ]]
+                    </paper-item>
+                </template>
+            </paper-listbox>
+        </div>
+
+    </template>
+
+    <script>
+        Polymer({
+
+            is: 'appsco-add-integration-search',
+
+            properties: {
+
+                authorizationToken: {
+                    type: String
+                },
+
+                availableIntegrationsApi: {
+                    type: String,
+                    value: ''
+                },
+
+                selectedIntegration: {
+                    type: Object,
+                    notify: true
+                },
+
+                _headers: {
+                    type: Object,
+                    computed: '_computeHeaders(authorizationToken)'
+                },
+
+                _availableIntegrationsApi: {
+                    type: String,
+                    computed: '_computeAvailableIntegrationsApi(availableIntegrationsApi)'
+                },
+
+                _searchAvailableIntegrationsApi: {
+                    type: String,
+                    computed: '_computeSearchAvailableIntegrationsApi(availableIntegrationsApi, _searchTerm)'
+                },
+
+                _searchTerm: {
+                    type: String,
+                    value: ''
+                },
+
+                _availableIntegrationList: {
+                    type: Array,
+                    value: function() {
+                        return [];
+                    }
+                },
+
+                _availableIntegrationListDisplay: {
+                    type: Array,
+                    value: function() {
+                        return [];
+                    }
+                },
+
+                animationConfig: {
+                    value: function() {
+                        return {
+                            'entry': {
+                                name: 'scale-up-animation',
+                                node: this
+                            },
+                            'exit': [{
+                                name: 'hero-animation',
+                                id: 'hero',
+                                fromPage: this,
+                                timing: {
+                                    duration: 300
+                                }
+                            }, {
+                                name: 'fade-out-animation',
+                                node: this,
+                                timing: {
+                                    duration: 100
+                                }
+                            }]
+                        }
+                    }
+                },
+
+                sharedElements: {
+                    value: function() {
+                        return {
+                            'hero': {}
+                        }
+                    }
+                }
+            },
+
+            behaviors: [
+                Polymer.NeonSharedElementAnimatableBehavior
+            ],
+
+            attached: function() {
+                Polymer.Gestures.add(document, 'tap', this._handleDocumentClick.bind(this));
+            },
+
+            reset: function() {
+                this.$.appscoSearch.reset();
+                this._setDefaultListItem();
+                this.set('_availableIntegrationListDisplay', JSON.parse(JSON.stringify(this._availableIntegrationList)));
+            },
+
+            _computeHeaders: function(authorizationToken) {
+                return {
+                    'Authorization': 'token ' + authorizationToken
+                }
+            },
+
+            _computeAvailableIntegrationsApi: function(availableIntegrationsApi) {
+                return availableIntegrationsApi ? availableIntegrationsApi + '?extended=1' : '';
+            },
+
+            _computeSearchAvailableIntegrationsApi: function(availableIntegrationsApi, term) {
+                return (availableIntegrationsApi && term) ? (availableIntegrationsApi + '?extended=1&limit=10&term=' + term) : '';
+            },
+
+            _isInPath: function(path, element) {
+                path = path || [];
+
+                for (var i = 0; i < path.length; i++) {
+
+                    if (path[i] == element) {
+                        return true;
+                    }
+                }
+
+                return false;
+            },
+
+            _handleDocumentClick: function(event) {
+                var path = Polymer.dom(event).path;
+
+                if (!this._isInPath(path, this.$.searchActionContainer)) {
+                    this._hideList();
+                }
+            },
+
+            _onAvailableIntegrationsResponse: function(event) {
+                var response = event.detail.response;
+
+                if (response && response.available_integrations) {
+                    this.set('_availableIntegrationList', response.available_integrations);
+                    this.set('_availableIntegrationListDisplay', response.available_integrations);
+                    this._setDefaultListItem();
+                }
+            },
+
+            _searchList: function(term) {
+                var termLength = term.length,
+                    list = this._availableIntegrationList,
+                    length = list.length;
+
+                this.set('_availableIntegrationListDisplay', []);
+
+                if (3 > termLength) {
+                    term = '';
+                }
+
+                for (var i = 0; i < length; i++) {
+                    var item = list[i];
+
+                    if (item && item.title.toLowerCase().indexOf(term.toLowerCase()) >= 0) {
+                        this.push('_availableIntegrationListDisplay', item);
+                    }
+
+                }
+
+                if (0 === this._availableIntegrationListDisplay.length && 3 <= termLength) {
+                    this.push('_availableIntegrationListDisplay', {
+                        value: 'no-result',
+                        title: 'There are no available integrations with asked term.'
+                    });
+                }
+            },
+
+            _setDefaultListItem: function() {
+                this.$.appscoSearch.setValue('');
+                this.$.searchList.selected = -1;
+            },
+
+            _showList: function() {
+                this.$.searchList.hidden = false;
+            },
+
+            _hideList: function() {
+                var list = this.$.searchList,
+                    appscoSearch = this.$.appscoSearch;
+
+                if (0 === appscoSearch.getValue().length && list.selectedItem) {
+                    appscoSearch.setValue(list.selectedItem.title);
+                }
+
+                this.$.searchList.hidden = true;
+            },
+
+            _onSearchFocus: function() {
+                this._showList();
+            },
+
+            _onSearchKeyup: function(event) {
+                var keyCode = event.keyCode;
+
+                if (40 === keyCode) {
+                    event.target.blur();
+                    this._selectFirstListItem();
+                }
+
+            },
+
+            _onSearch: function(event) {
+                this._searchList(event.detail.term);
+            },
+
+            _onClearSearch: function() {
+                this._searchList('');
+            },
+
+            _selectFirstListItem: function() {
+                var list = this.$.searchList;
+
+                if (!list.selectedItem) {
+                    list.selected = 0;
+                }
+
+                list.selectedItem.focus();
+            },
+
+            _onListItemSelectAction: function(event) {
+                var alias = parseInt(event.detail.item.getAttribute('value')),
+                    list = this._availableIntegrationListDisplay,
+                    length = list.length,
+                    selectedListItem;
+
+                for (var i = 0; i < length; i++) {
+
+                    if (alias === list[i].alias) {
+                        selectedListItem = list[i];
+                        break;
+                    }
+                }
+
+                this.sharedElements.hero = event.detail.item;
+                this._hideList();
+
+                this.fire('available-integration-selected', {
+                    integration: selectedListItem
+                });
+            }
+        });
+    </script>
+</dom-module>

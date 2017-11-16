@@ -1,0 +1,305 @@
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../bower_components/iron-form/iron-form.html">
+<link rel="import" href="../../bower_components/paper-input/paper-input.html">
+<link rel="import" href="../../bower_components/paper-dropdown-menu/paper-dropdown-menu.html">
+<link rel="import" href="../../bower_components/paper-listbox/paper-listbox.html">
+<link rel="import" href="../../bower_components/paper-item/paper-item.html">
+<link rel="import" href="../../bower_components/paper-toggle-button/paper-toggle-button.html">
+<link rel="import" href="../../bower_components/paper-time-input/paper-time-input.html">
+<link rel="import" href="../../bower_components/neon-animation/neon-shared-element-animatable-behavior.html">
+<link rel="import" href="../../bower_components/neon-animation/animations/hero-animation.html">
+<link rel="import" href="../../bower_components/neon-animation/animations/fade-in-animation.html">
+<link rel="import" href="../../bower_components/neon-animation/animations/fade-out-animation.html">
+
+<link rel="import" href="../components/components/appsco-loader.html">
+<link rel="import" href="../components/components/appsco-form-error.html">
+
+<dom-module id="appsco-add-integration-form">
+    <template>
+        <style>
+            :host {
+                display: block;
+            }
+            paper-dropdown-menu {
+                width: 100%;
+            }
+            paper-toggle-button {
+                cursor: pointer;
+                margin-top: 20px;
+            }
+            .input-container {
+                margin-bottom: 10px;
+            }
+        </style>
+
+        <div id="appscoAddIntegrationForm">
+
+            <appsco-loader active="[[ _loader ]]" loader-alt="AppsCo is processing request" multi-color></appsco-loader>
+
+            <appsco-form-error message="[[ _error ]]"></appsco-form-error>
+
+            <form is="iron-form"
+                  id="form"
+                  method="POST"
+                  action$="[[ _formAction ]]"
+                  headers="[[ _headers ]]"
+                  on-iron-form-presubmit="_onFormPresubmit"
+                  on-iron-form-error="_onFormError"
+                  on-iron-form-response="_onFormResponse">
+
+                <div class="input-container">
+                    <paper-input type="text"
+                                 label="Title"
+                                 name="activate_integration[name]"
+                                 required
+                                 error-message="Please enter integration title."
+                                 auto-validate></paper-input>
+                </div>
+
+                <div class="input-container">
+                    <paper-dropdown-menu id="integrationKindSelect"
+                                         label="Integration type"
+                                         name="activate_integration[kind]"
+                                         horizontal-align="left"
+                                         on-iron-overlay-closed="_onSelectClosed"
+                                         required
+                                         error-message="Please select integration type."
+                                         auto-validate>
+                        <paper-listbox id="integrationKindList"
+                                       class="dropdown-content"
+                                       attr-for-selected="value">
+                            <template is="dom-repeat" items="[[ _integrationKindList ]]">
+                                <paper-item value="[[ item.value ]]">[[ item.name ]]</paper-item>
+                            </template>
+                        </paper-listbox>
+                    </paper-dropdown-menu>
+                </div>
+
+                <div class="input-container">
+                    <paper-dropdown-menu id="integrationScheduleSyncSelect"
+                                         label="Schedule sync interval"
+                                         name="activate_integration[scheduleSyncInterval]"
+                                         horizontal-align="left"
+                                         on-iron-overlay-closed="_onSelectClosed"
+                                         required
+                                         error-message="Please select schedule sync interval."
+                                         auto-validate>
+                        <paper-listbox id="integrationScheduleSyncList"
+                                       class="dropdown-content"
+                                       attr-for-selected="value">
+                            <template is="dom-repeat" items="[[ _integrationScheduleSyncList ]]">
+                                <paper-item value="[[ item.value ]]">[[ item.name ]]</paper-item>
+                            </template>
+                        </paper-listbox>
+                    </paper-dropdown-menu>
+                </div>
+            </form>
+
+            <div class="input-container">
+                <paper-time-input format="24"
+                                  label="Schedule sync time"
+                                  name="activate_integration[scheduleSyncTime]"
+                                  value="{{ _scheduleSyncTime }}"></paper-time-input>
+            </div>
+
+            <div class="input-container">
+                <paper-toggle-button id="toggleIntegrationActive"
+                                     name="activate_integration[active]">Activate integration</paper-toggle-button>
+            </div>
+        </div>
+    </template>
+
+    <script>
+        Polymer({
+
+            is: 'appsco-add-integration-form',
+
+            properties: {
+
+                integration: {
+                    type: Object,
+                    value: function () {
+                        return {};
+                    }
+                },
+
+                authorizationToken: {
+                    type: String
+                },
+
+                apiErrors: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    }
+                },
+
+                _headers: {
+                    type: Object,
+                    computed: '_computeHeaders(authorizationToken)'
+                },
+
+                _formAction: {
+                    type: String,
+                    computed: '_computeFormAction(integration)'
+                },
+
+                _integrationKindList: {
+                    type: Array,
+                    value: function() {
+                        return [
+                            {
+                                value: 'ra',
+                                name: 'Request authority'
+                            },
+                            {
+                                value: 'pst',
+                                name: 'Provisioning service target'
+                            }
+                        ];
+                    }
+                },
+
+                _integrationScheduleSyncList: {
+                    type: Array,
+                    value: function() {
+                        return [
+                            {
+                                value: 'daily',
+                                name: 'Daily'
+                            },
+                            {
+                                value: 'weekly',
+                                name: 'Weekly'
+                            }
+                        ];
+                    }
+                },
+
+                _scheduleSyncTime: {
+                    type: String,
+                    value: ''
+                },
+
+                _loader: {
+                    type: Boolean,
+                    value: false
+                },
+
+                _error: {
+                    type: String
+                },
+
+                animationConfig: {
+                    value: function() {
+                        return {
+                            'entry': [{
+                                name: 'hero-animation',
+                                id: 'hero',
+                                toPage: this
+                            }, {
+                                name: 'fade-in-animation',
+                                node: this,
+                                timing: {
+                                    duration: 600
+                                }
+                            }],
+                            'exit': {
+                                name: 'fade-out-animation',
+                                node: this
+                            }
+                        }
+                    }
+                },
+
+                sharedElements: {
+                    value: function() {
+                        return {
+                            'hero': this.$.appscoAddIntegrationForm
+                        }
+                    }
+                }
+            },
+
+            behaviors: [
+                Polymer.NeonSharedElementAnimatableBehavior
+            ],
+
+            setIntegration: function(integration) {
+                this.set('integration', integration);
+            },
+
+            addIntegration: function() {
+                var form = this.$.form;
+
+                if (form.validate()) {
+                    this._showLoader();
+                    form.submit();
+                }
+            },
+
+            reset: function() {
+                this.$.form.reset();
+                this.$.toggleIntegrationActive.checked = false;
+                this.set('integration', {});
+                this._hideError();
+                this._hideLoader();
+            },
+
+            _computeHeaders: function (authorizationToken) {
+                return {
+                    'Authorization': 'token ' + authorizationToken
+                }
+            },
+
+            _computeFormAction: function(integration) {
+                return integration.self ? integration.self : '';
+            },
+
+            _showLoader: function() {
+                this._loader = true;
+            },
+
+            _hideLoader: function() {
+                this._loader = false;
+            },
+
+            _showError: function(message) {
+                this._error = message;
+            },
+
+            _hideError: function() {
+                this._error = '';
+            },
+
+            _onSelectClosed: function(event) {
+                event.stopPropagation();
+            },
+
+            _onFormPresubmit: function(event) {
+                var form = event.target,
+                    integrationKindSelect = this.$.integrationKindSelect,
+                    integrationScheduleSyncSelect = this.$.integrationScheduleSyncSelect;
+
+                form.request.body['activate_integration[kind]'] = integrationKindSelect.selectedItem ? integrationKindSelect.selectedItem.value : '';
+                form.request.body['activate_integration[scheduleSyncInterval]'] = integrationScheduleSyncSelect.selectedItem ? integrationScheduleSyncSelect.selectedItem.value : '';
+                form.request.body['activate_integration[scheduleSyncTime]'] = this._scheduleSyncTime;
+            },
+
+            _onFormError: function(event) {
+                this._showError(this.apiErrors.getError(event.detail.request.response.code));
+                this._hideLoader();
+            },
+
+            _onFormResponse: function(event) {
+                this._hideLoader();
+
+                if (200 === event.detail.status) {
+                    this.fire('integration-requested', {
+                        authorizationUrl: event.detail.response.authorization_url
+                    });
+                }
+            }
+        });
+    </script>
+</dom-module>

@@ -102,9 +102,10 @@
 
 <link rel="import" href="auditlog/appsco-audit-log-page-actions.html">
 
+<link rel="import" href="provisioning/appsco-provisioning-page-actions.html">
 <link rel="import" href="provisioning/appsco-provisioning-settings-page-actions.html">
-<link rel="import" href="provisioning/appsco-start-integration.html">
 <link rel="import" href="provisioning/appsco-manage-integration-page-actions.html">
+<link rel="import" href="provisioning/appsco-add-integration.html">
 <link rel="import" href="components/integration/appsco-remove-integration.html">
 
 <link rel="import" href="company/appsco-company-page-actions.html">
@@ -632,6 +633,7 @@
                                     name="manage-group"
                                     on-back="_showGroupsPage"
                                     on-resource-section="_onResourceActionPage"></appsco-manage-group-page-actions>
+
                             <appsco-manage-integration-page-actions
                                     name="manage-integration"
                                     on-back="_showCompanyProvisioningPage"
@@ -682,6 +684,10 @@
                                     name="access-report"
                                     on-back="_showReportsPage"
                                     on-resource-section="_onResourceActionPage"></appsco-access-report-page-actions>
+
+                            <appsco-provisioning-page-actions id="appscoProvisioningPageActions"
+                                                              name="provisioning"
+                                                              on-add-integration="_onAddIntegrationAction"></appsco-provisioning-page-actions>
                         </neon-animated-pages>
 
                     </app-toolbar>
@@ -962,7 +968,7 @@
                             authorization-token="[[ authorizationToken ]]"
                             customers-api="[[ _companyCustomersApi ]]"
                             on-delete-customer="_onDeleteCustomerAction"
-                            on-page-error="_onError",
+                            on-page-error="_onError"
                             on-remove-partner-admin-from-customer="_onRemovePartnerAdminFromCustomer"
                             on-add-partner-admin="_onAddPartnerAdminAction"
                     ></appsco-manage-customer-page>
@@ -981,6 +987,14 @@
                             on-remove-company-resource-from-group="_onRemoveCompanyResourceFromGroup"
                     ></appsco-manage-group-page>
 
+                    <appsco-provisioning-page
+                            id="appscoProvisioningPage"
+                            name="provisioning"
+                            active-integrations-api="[[ _getActiveIntegrationsApi ]]"
+                            authorization-token="[[ authorizationToken ]]"
+                            on-active-integration="_onIntegrationSetup"
+                    ></appsco-provisioning-page>
+
                     <appsco-manage-integration-page
                             id="appscoManageIntegrationPage"
                             name="manage-integration"
@@ -991,15 +1005,6 @@
                             on-page-error="_onError"
                             on-remove-integration="_onRemoveIntegrationAction"
                     ></appsco-manage-integration-page>
-
-                    <appsco-provisioning-page
-                            id="appscoProvisioningPage"
-                            name="provisioning"
-                            company-api="[[ _companyApi ]]"
-                            authorization-token="[[ authorizationToken ]]"
-                            on-available-integration="_onStartAuthorization"
-                            on-active-integration="_onIntegrationSetup"
-                    ></appsco-provisioning-page>
 
                     <appsco-provisioning-settings-page
                             id="appscoProvisioningSettingsPage"
@@ -1351,12 +1356,13 @@
                 on-invoice-sent="_onInvoiceSent">
         </appsco-billing-send-invoice>
 
-        <appsco-start-integration
-                id="appscoStartIntegration"
-                account="[[ account ]]"
+        <appsco-add-integration
+                id="appscoAddIntegration"
                 authorization-token="[[ authorizationToken ]]"
-                company-api="[[ _companyApi ]]">
-        </appsco-start-integration>
+                available-integrations-api="[[ _getAvailableIntegrationsApi ]]"
+                api-errors="[[ _apiErrors ]]"
+                on-integration-requested="_onIntegrationRequested">
+        </appsco-add-integration>
 
         <appsco-remove-integration
                 id="appscoRemoveIntegration"
@@ -1969,6 +1975,16 @@
                     value: ''
                 },
 
+                _getAvailableIntegrationsApi: {
+                    type: String,
+                    value: ''
+                },
+
+                _getActiveIntegrationsApi: {
+                    type: String,
+                    value: ''
+                },
+
                 _subscription: {
                     type: Object,
                     value: function() {
@@ -2387,6 +2403,8 @@
                     this._companyIntegrationApi = companyApi + '/integrations';
                     this._getAccessReportApi = companyApi + '/reports/application-access';
                     this._getTransferTokenApi = companyApi + '/transfer-token';
+                    this._getAvailableIntegrationsApi = companyApi + '/integrations/available';
+                    this._getActiveIntegrationsApi = companyApi + '/integrations/active';
                 }
             },
 
@@ -2826,6 +2844,10 @@
                     case 'customers':
                         return this.$.appscoCustomersPageActions;
                         break;
+
+                    case 'provisioning':
+                        return this.$.appscoProvisioningPageActions;
+                        break;
                 }
 
             },
@@ -3008,7 +3030,6 @@
                         this._reloadCompanyApplications();
 
                         break;
-
                 }
             },
 
@@ -4544,9 +4565,20 @@
             /**
              * Provisioning page START
              */
-            _onStartAuthorization: function(event) {
-                this.$.appscoStartIntegration.setIntegration(event.detail.integration);
-                this.$.appscoStartIntegration.toggle();
+            _onAddIntegrationAction: function() {
+                this.$.appscoAddIntegration.open();
+            },
+
+            _onIntegrationRequested: function(event) {
+
+                if (event.detail.authorizationUrl) {
+                    window.location.href = event.detail.authorizationUrl;
+                }
+            },
+
+            _onRemoveIntegrationAction: function(event) {
+                this.$.appscoRemoveIntegration.setIntegration(event.detail.integration);
+                this.$.appscoRemoveIntegration.open();
             },
 
             _onIntegrationSetup: function(event) {
@@ -4606,10 +4638,6 @@
 
             _onHideBulkActionsProvisioningPage: function() {
                 this.$.appscoProvisioningSettingsPageActions.hideBulkActions();
-            },
-            _onRemoveIntegrationAction: function(event) {
-                this.$.appscoRemoveIntegration.setIntegration(event.detail.integration);
-                this.$.appscoRemoveIntegration.open();
             },
             /**
              * Provisioning page END

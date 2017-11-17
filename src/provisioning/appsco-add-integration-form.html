@@ -28,10 +28,10 @@
                 margin-top: 20px;
             }
             .input-container {
-                margin-bottom: 10px;
+                margin-bottom: 20px;
             }
             .input-info {
-                margin-bottom: 0;
+                margin: 0;
             }
         </style>
 
@@ -60,6 +60,7 @@
                 </div>
 
                 <div class="input-container">
+                    <p class="input-info">Integration type determines the way in which AppsCo integrates with [[ integration.title ]].</p>
                     <paper-dropdown-menu id="integrationKindSelect"
                                          label="Integration type"
                                          name="activate_integration[kind]"
@@ -79,7 +80,10 @@
                 </div>
 
                 <div class="input-container">
-                    <p class="input-info">You can schedule integration to run:</p>
+                    <p class="input-info">
+                        Schedule sync interval implies synchronization interval between AppsCo and [[ integration.title ]].
+                        Synchronization will run at 00:00 at the start of the schedule sync interval.
+                    </p>
                     <paper-dropdown-menu id="integrationScheduleSyncSelect"
                                          label="Schedule sync interval"
                                          name="activate_integration[scheduleSyncInterval]"
@@ -149,7 +153,18 @@
 
                 _integrationKindList: {
                     type: Array,
-                    computed: '_computeIntegrationKindList(integration)'
+                    value: function() {
+                        return [
+                            {
+                                value: 'ra',
+                                name: 'From integration system to AppsCo'
+                            },
+                            {
+                                value: 'pst',
+                                name: 'From AppsCo to integration system'
+                            }
+                        ];
+                    }
                 },
 
                 _integrationScheduleSyncList: {
@@ -158,15 +173,15 @@
                         return [
                             {
                                 value: 'daily',
-                                name: 'Daily - will run every day at 00:00'
+                                name: 'Every day'
                             },
                             {
                                 value: 'weekly',
-                                name: 'Weekly - will run every monday at 00:00'
+                                name: 'Every Monday'
                             },
                             {
                                 value: 'monthly',
-                                name: 'Monthly - will run 1st of the month at 00:00'
+                                name: 'Every 1st in the month'
                             }
                         ];
                     }
@@ -252,19 +267,6 @@
 
             _computeFormAction: function(integration) {
                 return integration.self ? integration.self : '';
-            },
-
-            _computeIntegrationKindList: function(integration) {
-                return integration ? [
-                    {
-                        value: 'ra',
-                        name: 'Request authority - Users and Groups come from ' + this.integration.title + ' into AppsCo'
-                    },
-                    {
-                        value: 'pst',
-                        name: 'Provisioning service target - Users and Groups go from AppsCo to' + this.integration.title
-                    }
-                ] : [];
             },
 
             _showLoader: function() {

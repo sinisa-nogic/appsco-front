@@ -5,11 +5,11 @@
 <link rel="import" href="../../bower_components/paper-listbox/paper-listbox.html">
 <link rel="import" href="../../bower_components/paper-item/paper-item.html">
 <link rel="import" href="../../bower_components/paper-toggle-button/paper-toggle-button.html">
-<link rel="import" href="../../bower_components/paper-time-input/paper-time-input.html">
 <link rel="import" href="../../bower_components/neon-animation/neon-shared-element-animatable-behavior.html">
 <link rel="import" href="../../bower_components/neon-animation/animations/hero-animation.html">
 <link rel="import" href="../../bower_components/neon-animation/animations/fade-in-animation.html">
 <link rel="import" href="../../bower_components/neon-animation/animations/fade-out-animation.html">
+<link rel="import" href="../../bower_components/iron-a11y-keys/iron-a11y-keys.html">
 
 <link rel="import" href="../components/components/appsco-loader.html">
 <link rel="import" href="../components/components/appsco-form-error.html">
@@ -29,6 +29,9 @@
             }
             .input-container {
                 margin-bottom: 10px;
+            }
+            .input-info {
+                margin-bottom: 0;
             }
         </style>
 
@@ -76,6 +79,7 @@
                 </div>
 
                 <div class="input-container">
+                    <p class="input-info">You can schedule integration to run:</p>
                     <paper-dropdown-menu id="integrationScheduleSyncSelect"
                                          label="Schedule sync interval"
                                          name="activate_integration[scheduleSyncInterval]"
@@ -96,17 +100,16 @@
             </form>
 
             <div class="input-container">
-                <paper-time-input format="24"
-                                  label="Schedule sync time"
-                                  name="activate_integration[scheduleSyncTime]"
-                                  value="{{ _scheduleSyncTime }}"></paper-time-input>
-            </div>
-
-            <div class="input-container">
                 <paper-toggle-button id="toggleIntegrationActive"
                                      name="activate_integration[active]">Activate integration</paper-toggle-button>
             </div>
         </div>
+
+        <iron-a11y-keys target="[[ _form ]]"
+                        keys="enter"
+                        on-keys-pressed="_onEnter">
+        </iron-a11y-keys>
+
     </template>
 
     <script>
@@ -146,18 +149,7 @@
 
                 _integrationKindList: {
                     type: Array,
-                    value: function() {
-                        return [
-                            {
-                                value: 'ra',
-                                name: 'Request authority'
-                            },
-                            {
-                                value: 'pst',
-                                name: 'Provisioning service target'
-                            }
-                        ];
-                    }
+                    computed: '_computeIntegrationKindList(integration)'
                 },
 
                 _integrationScheduleSyncList: {
@@ -166,19 +158,18 @@
                         return [
                             {
                                 value: 'daily',
-                                name: 'Daily'
+                                name: 'Daily - will run every day at 00:00'
                             },
                             {
                                 value: 'weekly',
-                                name: 'Weekly'
+                                name: 'Weekly - will run every monday at 00:00'
+                            },
+                            {
+                                value: 'monthly',
+                                name: 'Monthly - will run 1st of the month at 00:00'
                             }
                         ];
                     }
-                },
-
-                _scheduleSyncTime: {
-                    type: String,
-                    value: ''
                 },
 
                 _loader: {
@@ -188,6 +179,13 @@
 
                 _error: {
                     type: String
+                },
+
+                _form: {
+                    type: Object,
+                    value: function() {
+                        return this.$.form
+                    }
                 },
 
                 animationConfig: {
@@ -230,7 +228,7 @@
             },
 
             addIntegration: function() {
-                var form = this.$.form;
+                var form = this._form;
 
                 if (form.validate()) {
                     this._showLoader();
@@ -239,7 +237,7 @@
             },
 
             reset: function() {
-                this.$.form.reset();
+                this._form.reset();
                 this.$.toggleIntegrationActive.checked = false;
                 this.set('integration', {});
                 this._hideError();
@@ -254,6 +252,19 @@
 
             _computeFormAction: function(integration) {
                 return integration.self ? integration.self : '';
+            },
+
+            _computeIntegrationKindList: function(integration) {
+                return integration ? [
+                    {
+                        value: 'ra',
+                        name: 'Request authority - Users and Groups come from ' + this.integration.title + ' into AppsCo'
+                    },
+                    {
+                        value: 'pst',
+                        name: 'Provisioning service target - Users and Groups go from AppsCo to' + this.integration.title
+                    }
+                ] : [];
             },
 
             _showLoader: function() {
@@ -276,6 +287,10 @@
                 event.stopPropagation();
             },
 
+            _onEnter: function() {
+                this.addIntegration();
+            },
+
             _onFormPresubmit: function(event) {
                 var form = event.target,
                     integrationKindSelect = this.$.integrationKindSelect,
@@ -283,7 +298,6 @@
 
                 form.request.body['activate_integration[kind]'] = integrationKindSelect.selectedItem ? integrationKindSelect.selectedItem.value : '';
                 form.request.body['activate_integration[scheduleSyncInterval]'] = integrationScheduleSyncSelect.selectedItem ? integrationScheduleSyncSelect.selectedItem.value : '';
-                form.request.body['activate_integration[scheduleSyncTime]'] = this._scheduleSyncTime;
             },
 
             _onFormError: function(event) {

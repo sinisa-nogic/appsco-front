@@ -105,7 +105,7 @@
                 <div class="resource-header">
                     <div class="integration-image">
                         <iron-image
-                            src="[[ integration.integration_active.integration.image ]]"
+                            src="[[ integration.integration.image ]]"
                             alt="Integration image"
                             class="sized"
                             sizing="cover"
@@ -115,7 +115,7 @@
                 </div>
 
                 <div class="integration-info">
-                    <p>[[ integration.integration_active.name ]]</p>
+                    <p>[[ integration.name ]]</p>
                 </div>
 
                 <div class="resource-actions flex-horizontal">
@@ -145,7 +145,11 @@
 
                         <appsco-integration-settings-page
                                 name="appsco-integration-settings-page"
-                                on-back="_onResourceBack">
+                                integration="[[ integration ]]"
+                                integration-api="[[ integrationApi ]]"
+                                api-errors="[[ apiErrors ]]"
+                                on-back="_onResourceBack"
+                                on-integration-settings-changed="_onIntegrationSettingsChanged">
                         </appsco-integration-settings-page>
 
                         <appsco-integration-rules-page
@@ -204,6 +208,13 @@
                 authorizationToken: {
                     type: String,
                     value: ''
+                },
+
+                apiErrors: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    }
                 },
 
                 /**
@@ -331,8 +342,8 @@
             },
 
             _onIntegrationResponse: function(event) {
-                if (200 === event.detail.status && event.detail.response) {
-                    this.set('integration', event.detail.response);
+                if (200 === event.detail.status && event.detail.response && event.detail.response.integration_active) {
+                    this.set('integration', event.detail.response.integration_active);
                 }
                 this._onPageLoaded();
             },
@@ -341,6 +352,12 @@
                 if (!event.detail.request.aborted) {
                     this.fire('page-error');
                 }
+            },
+
+            _onIntegrationSettingsChanged: function(event) {
+                this.set('integration', {});
+                this.set('integration', event.detail.integration);
+                this._showComponentsPage();
             },
 
             /**
@@ -357,7 +374,7 @@
             },
 
             _computeWebhookApi: function(integration) {
-                return integration.meta ? integration.meta.webhooks + '?extended=1' : '';
+                return '';
             },
 
             _onResourceBack: function() {

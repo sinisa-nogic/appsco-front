@@ -1,0 +1,146 @@
+<link rel="import" href="../../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../../bower_components/paper-toggle-button/paper-toggle-button.html">
+<link rel="import" href="../../../bower_components/iron-ajax/iron-request.html">
+
+<link rel="import" href="../../components/components/appsco-loader.html">
+<link rel="import" href="../../components/components/appsco-form-error.html">
+
+<dom-module id="appsco-customer-subscription-toggle">
+    <template>
+        <style>
+            :host {
+                display: block;
+                @apply(--appsco-customer-subscription-toggle);
+            }
+            :host paper-toggle-button {
+                cursor: pointer;
+            }
+            .info {
+                margin-top: 10px;
+            }
+        </style>
+
+        <appsco-loader active="[[ _loader ]]"
+                       loader-alt="Appsco is processing request"
+                       multi-color></appsco-loader>
+
+        <appsco-form-error message="[[ _error ]]"></appsco-form-error>
+
+        <paper-toggle-button id="switch"
+                             checked$="[[ customer.subscription_paid_externally ]]">Subscription paid externally</paper-toggle-button>
+
+        <div class="info">
+            <p>Turn on this option if the subscription for this customer has been paid by the partner.</p>
+        </div>
+
+    </template>
+    <script>
+        Polymer({
+
+            is: 'appsco-customer-subscription-toggle',
+
+            properties: {
+
+                customer: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    }
+                },
+
+                authorizationToken: {
+                    type: String
+                },
+
+                apiErrors: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    }
+                },
+
+                _headers: {
+                    type: Object,
+                    computed: '_computeHeaders(authorizationToken)'
+                },
+
+                _subscriptionPaidStateApi: {
+                    type: String,
+                    computed: '_computeSubscriptionPaidStateApi(customer)'
+                },
+
+                _loader: {
+                    type: Boolean,
+                    value: false
+                },
+
+                _error: {
+                    type: String
+                }
+            },
+
+            listeners: {
+                'switch.change': '_onSwitchChanged'
+            },
+
+            _computeHeaders: function(token) {
+                return token ? {
+                    'Authorization': 'token ' + token
+                } : {};
+            },
+
+            _computeSubscriptionPaidStateApi: function(customer) {
+                return customer ? (customer.self + '/paid-externally') : '';
+            },
+
+            _showLoader: function() {
+                this._loader = true;
+            },
+
+            _hideLoader: function() {
+                this._loader = false;
+            },
+
+            _showError: function(message) {
+                this._error = message;
+            },
+
+            _hideError: function() {
+                this._error = '';
+            },
+
+            _onSwitchChanged: function() {
+                var request = document.createElement('iron-request'),
+                    options = {
+                        url: this._subscriptionPaidStateApi,
+                        method: 'PUT',
+                        handleAs: 'json',
+                        headers: this._headers
+                    };
+
+                if (!this._headers || !this._subscriptionPaidStateApi) {
+                    this._showError(this.apiErrors.getError(404));
+                    return false;
+                }
+
+                this._showLoader();
+
+                request.send(options).then(function() {
+                    var customer = request.response;
+
+                    this.set('customer', {});
+                    this.set('customer', customer);
+                    this._hideLoader();
+
+                    this.fire('customer-subscription-state-changed', {
+                        customer: customer
+                    });
+
+                }.bind(this), function() {
+                    this._showError(this.apiErrors.getError(request.response.code));
+                    this._hideLoader();
+                }.bind(this));
+            }
+        });
+    </script>
+</dom-module>

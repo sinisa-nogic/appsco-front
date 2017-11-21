@@ -143,6 +143,7 @@
 <link rel="import" href="components/company-role/appsco-role-reset-two-fa.html">
 
 <link rel="import" href="components/company/appsco-company-notice.html">
+<link rel="import" href="components/notifications/appsco-send-notification.html">
 
 <link rel="import" href="shared-styles.html">
 <link rel="import" href="webkit-scrollbar-style.html">
@@ -1546,6 +1547,16 @@
                 domain="[[ domain ]]"
                 on-import-finished="_onCustomersImportFinished"></appsco-import-customers>
 
+        <appsco-send-notification
+                id="appscoSendNotification"
+                authorization-token="[[ authorizationToken ]]"
+                company-notifications-api="[[ _companyNotificationsApi ]]"
+                get-roles-api="[[ _companyRolesApi ]]"
+                get-contacts-api="[[ _companyContactsApi ]]"
+                api-errors="[[ _apiErrors ]]"
+                on-notification-sent="_onNotificationSent"
+        ></appsco-send-notification>
+
         <appsco-company-notice
                 id="appscoCompanyNotice"></appsco-company-notice>
 
@@ -2400,6 +2411,7 @@
                 if (company.company_admin) {
                     this._companyApplicationsApi = companyApi + '/applications';
                     this._companyRolesApi = companyApi + '/directory/roles';
+                    this._companyNotificationsApi = companyApi + '/notification';
                     this._companyInvitationsApi = companyApi + '/invitation';
                     this._companyImportAccountsApi = companyApi + '/directory/roles/import';
                     this._companyContactsApi = companyApi + '/contacts';
@@ -3692,6 +3704,10 @@
                 this._notifyReloadApplications();
             },
 
+            _onNotificationSent: function(event) {
+                this._notify('Notification successfully sent to '+ event.detail.counter +' account/s.');
+            },
+
             resetApplicationAssigneesPage: function() {
 
                 if (this.$.appscoManageApplicationPageActions.$) {
@@ -4108,8 +4124,11 @@
                 this.$.appscoDirectoryPageActions.resetTypeFilter();
             },
 
-            // TODO - implement send notification action process
-            _onSendNotificationToCompanyRoles: function() {},
+            _onSendNotificationToCompanyRoles: function() {
+                this.$.appscoSendNotification.setFilterType('user');
+                this.$.appscoSendNotification.toggle();
+            },
+
             /**
              * Directory page END
              */
@@ -4387,8 +4406,10 @@
                 this._searchContacts('');
             },
 
-            // TODO - implement send notification action process
-            _onSendNotificationToContacts: function() {},
+            _onSendNotificationToContacts: function() {
+                this.$.appscoSendNotification.setFilterType('contact');
+                this.$.appscoSendNotification.toggle();
+            },
             /**
              * Contacts page END
              */

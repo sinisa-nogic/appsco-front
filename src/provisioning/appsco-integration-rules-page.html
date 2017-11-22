@@ -5,6 +5,7 @@
 <link rel="import" href="../../bower_components/neon-animation/animations/slide-right-animation.html">
 <link rel="import" href="../../bower_components/paper-card/paper-card.html">
 <link rel="import" href="../../bower_components/paper-icon-button/paper-icon-button.html">
+<link rel="import" href="../../bower_components/paper-button/paper-button.html">
 
 <link rel="import" href="../components/integration/appsco-integration-rules.html">
 
@@ -21,6 +22,11 @@
             :host paper-card {
                 @apply(--full-page-paper-card);
             }
+            :host paper-button {
+                @apply(--primary-button);
+                display: inline-block;
+                min-width: 100px;
+            }
             .page-close-action {
                 @apply(--page-close-action);
             }
@@ -35,9 +41,15 @@
 
             </paper-icon-button>
 
-            <div class="card-content layout vertical">
+            <div class="card-content">
+                <paper-button on-tap="_onAddAction">Add</paper-button>
+
                 <appsco-integration-rules
-                        id="appscoIntegrationRules">
+                        id="appscoIntegrationRules"
+                        list-api="[[ _integrationRulesApi ]]"
+                        authorization-token="[[ authorizationToken ]]"
+                        api-errors="[[ apiErrors ]]"
+                        type="integration-rule">
                 </appsco-integration-rules>
             </div>
         </paper-card>
@@ -51,9 +63,30 @@
 
             properties: {
 
-                /**
-                 * Animation config with hero animation.
-                 */
+                integration: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    }
+                },
+
+                authorizationToken: {
+                    type: String,
+                    value: ''
+                },
+
+                apiErrors: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    }
+                },
+
+                _integrationRulesApi: {
+                    type: String,
+                    computed: '_computeIntegrationRulesApi(integration)'
+                },
+
                 animationConfig: {
                     value: function() {
                         return {
@@ -97,6 +130,16 @@
             behaviors: [
                 Polymer.NeonSharedElementAnimatableBehavior
             ],
+
+            _computeIntegrationRulesApi: function(integration) {
+                return integration.meta ? integration.meta.recipes : '';
+            },
+
+            _onAddAction: function() {
+                this.fire('add-integration-rule', {
+                    integration: this.integration
+                });
+            },
 
             _onClosePageAction: function() {
                 this.fire('back');

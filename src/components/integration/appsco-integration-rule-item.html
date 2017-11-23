@@ -1,0 +1,121 @@
+<link rel="import" href="../../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../../bower_components/iron-icon/iron-icon.html">
+<link rel="import" href="../../../bower_components/iron-icons/iron-icons.html">
+<link rel="import" href="../../../bower_components/iron-icons/hardware-icons.html">
+<link rel="import" href="../../../bower_components/paper-button/paper-button.html">
+<link rel="import" href="../../../bower_components/neon-animation/neon-animation-runner-behavior.html">
+<link rel="import" href="../../../bower_components/neon-animation/animations/fade-in-animation.html">
+<link rel="import" href="../../../bower_components/neon-animation/animations/fade-out-animation.html">
+<link rel="import" href="../../../bower_components/iron-image/iron-image.html">
+
+<link rel="import" href="../components/appsco-list-item-behavior.html">
+<link rel="import" href="../components/appsco-list-item-styles.html">
+
+<dom-module id="appsco-integration-rule-item">
+    <template>
+        <style include="appsco-list-item-styles"></style>
+
+        <style>
+            :host .item {
+                cursor: default;
+            }
+            :host .icon-container {
+                width: 52px;
+                height: 52px;
+                margin: 0;
+                border-radius: 26px;
+                background-color: var(--rule-icon-background-color, --account-initials-background-color);
+                position: relative;
+            }
+            :host .rule-icon {
+                width: 24px;
+                height: 24px;
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                margin: auto;
+
+                --iron-icon-fill-color: var(--primary-text-color, #ffffff);
+            }
+        </style>
+
+        <div class="item" on-tap="_onItemAction">
+
+            <template is="dom-if" if="[[ selectable ]]">
+                <div class="select-action"
+                     on-tap="_onSelectItemAction">
+
+                    <div class="icon-container">
+                        <iron-icon class="rule-icon"
+                                   icon="hardware:device-hub"></iron-icon>
+                    </div>
+
+                    <div class="icon-action">
+                        <div class="iron-action-inner">
+                            <iron-icon icon="icons:check"></iron-icon>
+                        </div>
+                    </div>
+                </div>
+            </template>
+
+            <template is="dom-if" if="[[ !selectable ]]">
+                <div class="icon-container">
+                    <iron-icon class="rule-icon"
+                               icon="hardware:device-hub"></iron-icon>
+                </div>
+            </template>
+
+            <div class="item-info item-basic-info">
+                <span class="info-label item-title">[[ item.name ]]</span>
+            </div>
+
+            <div class="item-info item-additional-info">
+                <div class="info">
+                    <span class="info-label">Status:&nbsp;</span>
+                    <span class="info-value">
+                        <template is="dom-if" if="[[ item.active ]]">
+                            active
+                        </template>
+                        <template is="dom-if" if="[[ !item.active ]]">
+                            inactive
+                        </template>
+                    </span>
+                </div>
+            </div>
+
+            <div class="actions">
+                <paper-button on-tap="_onEditItemAction">Edit</paper-button>
+                <paper-button on-tap="_onRemoveItemAction">Remove</paper-button>
+            </div>
+        </div>
+
+    </template>
+
+    <script>
+        Polymer({
+
+            is: 'appsco-integration-rule-item',
+
+            behaviors: [
+                Polymer.NeonAnimationRunnerBehavior,
+                Polymer.AppscoListItemBehavior
+            ],
+
+            _onRemoveItemAction: function(event) {
+                event.stopPropagation();
+
+                /**
+                 * Fired when `remove` is tapped.
+                 *
+                 * @event remove-item
+                 * @param {Object} item
+                 */
+                this.fire('remove-item', {
+                    item: this.item
+                });
+            }
+        });
+    </script>
+</dom-module>

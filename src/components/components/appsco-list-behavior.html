@@ -70,6 +70,11 @@
                 computed: '_computeSearchListApi(listApi, _filterTerm)'
             },
 
+            _typeDisplay: {
+                type: String,
+                computed: '_computeTypeDisplay(type)'
+            },
+
             _loadMore: {
                 type: Boolean,
                 value: false
@@ -360,7 +365,7 @@
             });
 
             if (0 === this._listItems.length) {
-                this._showMessage('You have removed all ' + this.type + 's from company.');
+                this._showMessage('You have removed all ' + this._typeDisplay + 's from company.');
                 this._handleEmptyLoad();
             }
         },
@@ -528,6 +533,17 @@
             return listApi ? listApi + '?page=1&limit=100&extended=1&term=' + term : '';
         },
 
+        _computeTypeDisplay: function(type) {
+
+            switch (type) {
+                case 'integration-rule':
+                    return 'integration rule';
+
+                default:
+                    return type;
+            }
+        },
+
         _setLoadMoreAction: function() {
             this._loadMore = (this.loadMore && this._allListItems.length < this._totalItems);
         },
@@ -673,6 +689,10 @@
                     itemList = response.active_integrations ? response.active_integrations : [];
                     break;
 
+                case 'integration-rule':
+                    itemList = response.integration_recipes ? response.integration_recipes : [];
+                    break;
+
                 default:
                     itemList = [];
             }
@@ -685,7 +705,7 @@
                 this._nextListPageApi = meta.next + '&limit=' + this.size;
 
                 if (0 === meta.total) {
-                    this._showMessage('There are no ' + this.type + 's in company.');
+                    this._showMessage('There are no ' + this._typeDisplay + 's in company.');
                     this._handleEmptyLoad();
                     return false;
                 }
@@ -727,8 +747,8 @@
                 }
                 else {
                     (itemList && !itemList.length) ?
-                        this._showMessage('There are no ' + this.type + 's in company.') :
-                        this._showMessage('We couldn\'t load ' + this.type + 's at the moment. Please contact AppsCo support.');
+                        this._showMessage('There are no ' + this._typeDisplay + 's in company.') :
+                        this._showMessage('We couldn\'t load ' + this._typeDisplay + 's at the moment. Please contact AppsCo support.');
 
                     this._hideLoadMoreAction();
                     this._handleEmptyLoad();
@@ -794,7 +814,7 @@
             this._listEmpty = (0 === this._searchedListItems.length);
 
             if (this._listEmpty) {
-                this._showMessage('There are no ' + this.type + 's with asked term.');
+                this._showMessage('There are no ' + this._typeDisplay + 's with asked term.');
             }
             else {
                 this.set('_listItems', this._searchedListItems);
@@ -841,6 +861,10 @@
 
                             case 'integration':
                                 resolve(request.response.active_integrations);
+                                break;
+
+                            case 'integration-rule':
+                                resolve(request.response.integration_recipes);
                                 break;
 
                             default:
@@ -918,7 +942,7 @@
                     }
 
                     if (0 === this._listItems.length) {
-                        this._showMessage('There are no ' + this.type + 's with asked term.');
+                        this._showMessage('There are no ' + this._typeDisplay + 's with asked term.');
                         this._handleEmptyLoad();
                     }
                 }
@@ -940,7 +964,7 @@
                     responseListItemsLength;
 
                 if (0 === itemsLength) {
-                    this._showMessage('There are no ' + this.type + 's in ' + group.name + ' group.');
+                    this._showMessage('There are no ' + this._typeDisplay + 's in ' + group.name + ' group.');
                     this._handleEmptyLoad();
                     return false;
                 }
@@ -973,7 +997,7 @@
                     responseListItemsLength = responseListItems.length;
 
                     if (0 === responseListItemsLength) {
-                        this._showMessage('There are no ' + this.type + 's with asked term in ' + group.name + ' group.');
+                        this._showMessage('There are no ' + this._typeDisplay + 's with asked term in ' + group.name + ' group.');
                         this._handleEmptyLoad();
                         return false;
                     }
@@ -1146,7 +1170,7 @@
                     }
 
                     if (0 === this._listItems.length) {
-                        this._showMessage('There are no ' + this.type + 's with asked term.');
+                        this._showMessage('There are no ' + this._typeDisplay + 's with asked term.');
                         this._handleEmptyLoad();
                     }
                 }
@@ -1234,8 +1258,8 @@
                 if (0 === this._listItems.length) {
 
                     (0 < listItemsWithSelectedOrgunit.length) ?
-                        this._showMessage('There are no ' + this.type + 's with asked term in ' + orgunit.name +' organization unit.') :
-                        this._showMessage('There are no ' + this.type + 's in ' + orgunit.name +' organization unit.');
+                        this._showMessage('There are no ' + this._typeDisplay + 's with asked term in ' + orgunit.name +' organization unit.') :
+                        this._showMessage('There are no ' + this._typeDisplay + 's in ' + orgunit.name +' organization unit.');
 
                     this._handleEmptyLoad();
                 }

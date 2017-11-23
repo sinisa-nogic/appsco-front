@@ -1,6 +1,7 @@
 <link rel="import" href="../../../bower_components/polymer/polymer.html">
 <link rel="import" href="../../../bower_components/paper-toggle-button/paper-toggle-button.html">
 <link rel="import" href="../../../bower_components/iron-ajax/iron-request.html">
+<link rel="import" href="../../../bower_components/iron-form/iron-form.html">
 
 <link rel="import" href="../../components/components/appsco-loader.html">
 <link rel="import" href="../../components/components/appsco-form-error.html">
@@ -26,7 +27,18 @@
 
         <appsco-form-error message="[[ _error ]]"></appsco-form-error>
 
+        <form is="iron-form"
+              id="form"
+              method="POST"
+              action="[[ _subscriptionPaidStateApi ]]"
+              headers="[[ _headers ]]"
+              on-iron-form-presubmit="_onFormPresubmit"
+              on-iron-form-error="_onFormError"
+              on-iron-form-response="_onFormResponse">
+        </form>
+
         <paper-toggle-button id="switch"
+                             name="form[subscription_paid_externally]"
                              checked$="[[ customer.subscription_paid_externally ]]">Subscription paid externally</paper-toggle-button>
 
         <div class="info">
@@ -83,6 +95,13 @@
                 'switch.change': '_onSwitchChanged'
             },
 
+            resetCustomer: function() {
+                var customer = JSON.parse(JSON.stringify(this.customer));
+
+                this.set('customer', {});
+                this.set('customer', customer);
+            },
+
             _computeHeaders: function(token) {
                 return token ? {
                     'Authorization': 'token ' + token
@@ -109,37 +128,49 @@
                 this._error = '';
             },
 
-            _onSwitchChanged: function() {
-                var request = document.createElement('iron-request'),
-                    options = {
-                        url: this._subscriptionPaidStateApi,
-                        method: 'PUT',
-                        handleAs: 'json',
-                        headers: this._headers
-                    };
-
-                if (!this._headers || !this._subscriptionPaidStateApi) {
-                    this._showError(this.apiErrors.getError(404));
-                    return false;
-                }
-
+            _turnSubscriptionPaidExternallyOn: function() {
                 this._showLoader();
+                this.$.form.submit();
+            },
 
-                request.send(options).then(function() {
-                    var customer = request.response;
+            _turnSubscriptionPaidExternallyOff: function() {
+                this.fire('disable-customer-subscription-paid-externally', {
+                    customer: this.customer
+                });
+            },
 
-                    this.set('customer', {});
-                    this.set('customer', customer);
-                    this._hideLoader();
+            _onSwitchChanged: function(event) {
+                event.target.checked ? this._turnSubscriptionPaidExternallyOn() : this._turnSubscriptionPaidExternallyOff();
+            },
 
+            _onFormPresubmit: function(event) {
+                var form = event.target;
+
+                form.request.method = 'PUT';
+                form.request.body['form[subscription_paid_externally]'] = ('on' === this.$.switch.value) ? 1 : 0;
+            },
+
+            _onFormError: function() {
+                this.resetCustomer();
+                this._showError(this.apiErrors.getError(404));
+                this._hideLoader();
+            },
+
+            _onFormResponse: function(event) {
+                this._hideLoader();
+
+                if (200 === event.detail.status) {
+
+                    /**
+                     * Fired when subscription paid externally state for customer has been changed.
+                     *
+                     * @event customer-subscription-state-changed
+                     * @param {Object} customer
+                     */
                     this.fire('customer-subscription-state-changed', {
-                        customer: customer
+                        customer: event.detail.response
                     });
-
-                }.bind(this), function() {
-                    this._showError(this.apiErrors.getError(request.response.code));
-                    this._hideLoader();
-                }.bind(this));
+                }
             }
         });
     </script>

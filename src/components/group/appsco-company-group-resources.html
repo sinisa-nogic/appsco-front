@@ -112,7 +112,7 @@ Custom property | Description | Default
 
             <iron-ajax
                     id="getGroupResourcesApiRequest"
-                    url="[[ listApi ]]"
+                    url="[[ _listApi ]]"
                     headers="[[ _computedHeaders ]]"
                     debounce-duration="300"
                     on-error="_onError"
@@ -297,14 +297,14 @@ Custom property | Description | Default
             },
 
             _onListApiChanged: function(url) {
-
+                this._listApi = ((url.indexOf('extended') != -1) ? url : (url + '?extended=1')) + '&page=1&limit=' + this.size;
                 if (url && url.length > 0) {
                     this._loadResources();
                 }
             },
 
             _setLoadMoreAction: function() {
-                this._loadMore = (this.loadMore && this._allResources.length < this._totalResources);
+                this._loadMore = (!this.preview && this.loadMore && this._allResources.length < this._totalResources);
             },
 
             _hideLoadMoreAction: function() {
@@ -384,7 +384,9 @@ Custom property | Description | Default
                     this._resourcesEmpty = false;
                     this._message = '';
 
-                    this._clearResources();
+                    if (this.preview) {
+                        this._clearResources();
+                    }
                     resources.forEach(function(el, index) {
 
                         this._loaders.push(setTimeout(function() {

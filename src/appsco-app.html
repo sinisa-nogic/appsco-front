@@ -136,6 +136,7 @@
 
 <link rel="import" href="components/customer/appsco-import-customers.html">
 <link rel="import" href="components/customer/appsco-import-customer-resources.html">
+<link rel="import" href="components/customer/appsco-disable-customer-subscription-paid-externally.html">
 
 <link rel="import" href="components/report/appsco-reports-page-actions.html">
 <link rel="import" href="components/report/appsco-access-report-page-actions.html">
@@ -975,7 +976,7 @@
                             on-page-error="_onError"
                             on-remove-partner-admin-from-customer="_onRemovePartnerAdminFromCustomer"
                             on-add-partner-admin="_onAddPartnerAdminAction"
-                            on-customer-subscription-state-changed="_onCustomerSubscriptionStateChanged"
+                            on-disable-customer-subscription-paid-externally="_onDisableCustomerSubscriptionPaidExternallyAction"
                     ></appsco-manage-customer-page>
 
                     <appsco-manage-group-page
@@ -1560,6 +1561,12 @@
                 on-notification-sent="_onNotificationSent"
         ></appsco-send-notification>
 
+        <appsco-disable-customer-subscription-paid-externally
+                id="appscoDisableCustomerSubscriptionPaidExternally"
+                authorization-token="[[ authorizationToken ]]"
+                api-errors="[[ _apiErrors ]]"
+                on-action-canceled="_onDisableCustomerSubscriptionPaidExternallyActionCanceled"></appsco-disable-customer-subscription-paid-externally>
+
         <appsco-company-notice
                 id="appscoCompanyNotice"></appsco-company-notice>
 
@@ -2114,7 +2121,8 @@
                 'export-access-report-finished': '_onExportAccessReportFinished',
                 'export-access-report-failed': '_onExportAccessReportFailed',
                 'user-session-expired': '_onUserSessionExpired',
-                'add-item-to-group-event': '_onAddItemToGroupAction'
+                'add-item-to-group-event': '_onAddItemToGroupAction',
+                'customer-subscription-state-changed': '_onCustomerSubscriptionStateChanged'
             },
 
             attached: function() {
@@ -5322,6 +5330,17 @@
 
                 this._notifyAccountLog();
                 this._notify(message, true);
+            },
+
+            _onDisableCustomerSubscriptionPaidExternallyAction: function(event) {
+                var component = this.$.appscoDisableCustomerSubscriptionPaidExternally;
+
+                component.setCustomer(event.detail.customer);
+                component.open();
+            },
+
+            _onDisableCustomerSubscriptionPaidExternallyActionCanceled: function() {
+                this.$.appscoManageCustomerPage.resetCustomer();
             },
 
             _onCustomerSubscriptionStateChanged: function(event) {

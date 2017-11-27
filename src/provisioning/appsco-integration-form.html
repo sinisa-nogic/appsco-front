@@ -1,0 +1,174 @@
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../bower_components/paper-input/paper-input.html">
+<link rel="import" href="../../bower_components/paper-dropdown-menu/paper-dropdown-menu.html">
+<link rel="import" href="../../bower_components/paper-listbox/paper-listbox.html">
+<link rel="import" href="../../bower_components/paper-item/paper-item.html">
+<link rel="import" href="../../bower_components/paper-toggle-button/paper-toggle-button.html">
+
+<dom-module id="appsco-integration-form">
+    <template>
+        <style>
+            :host {
+                display: block;
+            }
+            paper-dropdown-menu {
+                width: 100%;
+            }
+            paper-toggle-button {
+                cursor: pointer;
+                margin-top: 20px;
+            }
+            .input-container {
+                margin-bottom: 20px;
+            }
+            .input-info {
+                margin: 0;
+            }
+        </style>
+
+        <div class="input-container">
+            <paper-input type="text"
+                         label="Title"
+                         name="activate_integration[name]"
+                         value="[[ integration.name ]]"
+                         required
+                         error-message="Please enter integration title."
+                         auto-validate>
+            </paper-input>
+        </div>
+
+        <div class="input-container">
+            <p class="input-info">Integration type determines the way in which AppsCo integrates with [[ integration.title ]].</p>
+            <paper-dropdown-menu id="integrationKindSelect"
+                                 label="Integration type"
+                                 name="activate_integration[kind]"
+                                 horizontal-align="left"
+                                 on-iron-overlay-closed="_onSelectClosed"
+                                 required
+                                 error-message="Please select integration type."
+                                 auto-validate>
+                <paper-listbox id="integrationKindList"
+                               class="dropdown-content"
+                               attr-for-selected="value"
+                               selected="[[ integration.kind ]]">
+                    <template is="dom-repeat" items="[[ _integrationKindList ]]">
+                        <paper-item value="[[ item.value ]]">[[ item.name ]]</paper-item>
+                    </template>
+
+                </paper-listbox>
+
+            </paper-dropdown-menu>
+        </div>
+
+        <div class="input-container">
+            <p class="input-info">
+                Schedule sync interval implies synchronization interval between AppsCo and [[ integration.title ]].
+                Synchronization will run at 00:00 at the start of the schedule sync interval.
+            </p>
+            <paper-dropdown-menu id="integrationScheduleSyncSelect"
+                                 label="Schedule sync interval"
+                                 name="activate_integration[scheduleSyncInterval]"
+                                 horizontal-align="left"
+                                 on-iron-overlay-closed="_onSelectClosed"
+                                 required
+                                 error-message="Please select schedule sync interval."
+                                 auto-validate>
+                <paper-listbox id="integrationScheduleSyncList"
+                               class="dropdown-content filter"
+                               attr-for-selected="value"
+                               selected="[[ integration.scheduleSyncInterval ]]">
+                    <template is="dom-repeat" items="[[ _integrationScheduleSyncList ]]">
+                        <paper-item value="[[ item.value ]]">[[ item.name ]]</paper-item>
+                    </template>
+                </paper-listbox>
+            </paper-dropdown-menu>
+        </div>
+        <div class="input-container">
+            <paper-toggle-button id="toggleIntegrationActive"
+                                 checked$="[[ _isIntegrationActive ]]"
+                                 name="activate_integration[active]">Activate integration</paper-toggle-button>
+        </div>
+
+    </template>
+
+    <script>
+        Polymer({
+
+            is: 'appsco-integration-form',
+
+            properties: {
+
+                integration: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    }
+                },
+
+                _integrationKindList: {
+                    type: Array,
+                    value: function() {
+                        return [
+                            {
+                                value: 'ra',
+                                name: 'From integration system to AppsCo'
+                            },
+                            {
+                                value: 'pst',
+                                name: 'From AppsCo to integration system'
+                            }
+                        ];
+                    }
+                },
+
+                _integrationScheduleSyncList: {
+                    type: Array,
+                    value: function() {
+                        return [
+                            {
+                                value: 'daily',
+                                name: 'Every day'
+                            },
+                            {
+                                value: 'weekly',
+                                name: 'Every Monday'
+                            },
+                            {
+                                value: 'monthly',
+                                name: 'Every 1st in the month'
+                            }
+                        ];
+                    }
+                },
+                _isIntegrationActive: {
+                    type: String,
+                    computed: '_computeIsIntegrationActive(integration)'
+                },
+            },
+
+            _onSelectClosed: function(event) {
+                event.stopPropagation();
+            },
+
+            getIntegrationKind: function() {
+                return this.$.integrationKindSelect.selectedItem ?
+                    this.$.integrationKindSelect.selectedItem.value : null;
+
+            },
+            getIntegrationScheduleSync: function() {
+                return this.$.integrationScheduleSyncSelect.selectedItem ?
+                    this.$.integrationScheduleSyncSelect.selectedItem.value : null;
+            },
+            setToggleChecked: function(checked) {
+                this.$.toggleIntegrationActive.checked = checked;
+            },
+            _computeIsIntegrationActive: function(integration) {
+                return integration && integration.active;
+            },
+            getIntegrationActive: function() {
+                return this.$.toggleIntegrationActive.checked ? '1' : '0';
+            }
+
+        });
+    </script>
+</dom-module>

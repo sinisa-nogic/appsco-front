@@ -2,8 +2,10 @@
 <link rel="import" href="../../../bower_components/paper-input/paper-input.html">
 <link rel="import" href="../../../bower_components/paper-dropdown-menu/paper-dropdown-menu.html">
 <link rel="import" href="../../../bower_components/paper-toggle-button/paper-toggle-button.html">
+
 <link rel="import" href="../components/appsco-form-error.html">
 <link rel="import" href="../components/appsco-loader.html">
+<link rel="import" href="../../provisioning/appsco-integration-form.html">
 
 <dom-module id="appsco-integration-settings">
     <template>
@@ -13,24 +15,11 @@
                 position: relative;
                 @apply(--appsco-integration-settings);
             }
-            paper-toggle-button {
-                cursor: pointer;
-            }
-            .control-container {
-                margin: 20px 0;
-            }
             :host .submit-button {
                 margin: 20px 0 0 0;
                 @apply(--form-action);
             }
         </style>
-
-        <iron-ajax
-                auto
-                url="{{ _formDataUrl }}"
-                handle-as="json"
-                on-response="_onFormDataResponse">
-        </iron-ajax>
 
         <appsco-loader active="[[ _loader ]]" loader-alt="Appsco is processing request" multi-color></appsco-loader>
 
@@ -46,64 +35,11 @@
               on-iron-form-response="_onFormResponse"
               on-keyup="_onKeyUp">
 
-            <div class="integration-name-container">
-                <paper-input
-                        id="integrationName"
-                        label="Integration name"
-                        value="[[ integration.name ]]"
-                        name="integration_settings[name]"
-                        required
-                        auto-validate
-                        error-message="Please type in integration name."
-                ></paper-input>
-            </div>
-
-            <div class="dropdown-container">
-                <paper-dropdown-menu id="dropDownIntegrationKind"
-                                     label="Integration kind"
-                                     name="integration_settings[kind]"
-                                     required
-                                     error-message="Please select integration kind."
-                                     horizontal-align="left">
-                    <paper-listbox id="paperListboxIntegrationKind"
-                                   class="dropdown-content filter"
-                                   attr-for-selected="kind"
-                                   selected="[[ integration.kind ]]">
-                        <template is="dom-repeat" items="[[ _integrationKindList ]]">
-                            <paper-item kind="[[ item.kind ]]" >[[ item.text ]]</paper-item>
-                        </template>
-
-                    </paper-listbox>
-
-                </paper-dropdown-menu>
-            </div>
-
-            <div class="control-container">
-                <paper-toggle-button id="integrationActive"
-                                     name="integration_settings[active]"
-                                     checked$="[[ _isIntegrationActive ]]"
-                >Integration active</paper-toggle-button>
-            </div>
-            <div class="control-container">
-                <paper-dropdown-menu id="dropDownIntegrationScheduleSyncInterval"
-                                     label="Schedule sync interval"
-                                     name="integration_settings[schedule_sync_interval]"
-                                     required
-                                     auto-validate
-                                     error-message="Please select sync interval."
-                                     horizontal-align="left">
-                    <paper-listbox id="paperListboxIntegrationScheduleSyncInterval"
-                                   class="dropdown-content"
-                                   attr-for-selected="interval"
-                                   selected="[[ integration.scheduleSyncInterval ]]">
-
-                        <template is="dom-repeat" items="[[ _syncIntervalsList ]]">
-                            <paper-item interval="[[ item.interval ]]" >[[ item.text ]]</paper-item>
-                        </template>
-
-                    </paper-listbox>
-                </paper-dropdown-menu>
-            </div>
+            <appsco-integration-form
+                    id="appscoIntegrationForm"
+                    name="appsco-integration-form"
+                    integration="[[ integration ]]">
+            </appsco-integration-form>
         </form>
 
         <paper-button id="submit"
@@ -190,36 +126,6 @@
                     value: function() {
                         return this.$.form
                     }
-                },
-
-                _formDataUrl: {
-                    type: String,
-                    value: function() {
-                        return this.resolveUrl('./data/integration-form-data.json');
-                    }
-                },
-
-                /**
-                 * Sync intervals
-                 *
-                 * This is loaded from local data/integration-form-data.json.
-                 */
-                _syncIntervalsList: {
-                    type: Array,
-                    value: function() {
-                        return [];
-                    }
-                },
-                /**
-                 * Integration kind
-                 *
-                 * This is loaded from local data/integration-form-data.json.
-                 */
-                _integrationKindList: {
-                    type: Array,
-                    value: function() {
-                        return [];
-                    }
                 }
             },
 
@@ -273,9 +179,21 @@
                 this.$.form.submit();
             },
 
-            _onFormPresubmit: function() {
+            _onFormPresubmit: function(event) {
                 this._showLoader();
-                this.$.form.request.method = 'PATCH';
+                var form = event.target,
+                    integrationKind = this.$.appscoIntegrationForm.getIntegrationKind(),
+                    integrationScheduleSync = this.$.appscoIntegrationForm.getIntegrationScheduleSync(),
+                    integrationActive = this.$.appscoIntegrationForm.getIntegrationActive();
+
+                form.request.method = 'PATCH';
+
+                form.request.body['activate_integration[kind]'] =
+                    integrationKind ? integrationKind : '';
+                form.request.body['activate_integration[scheduleSyncInterval]'] =
+                    integrationScheduleSync ? integrationScheduleSync : '';
+                form.request.body['activate_integration[active]'] =
+                    integrationActive ? integrationActive : 'off';
             },
 
             _onFormError: function(event) {
@@ -297,23 +215,12 @@
                 this._hideError();
             },
 
-            _onFormDataResponse: function(event, ironRequest) {
-                this._syncIntervalsList = ironRequest.response["sync-intervals"];
-                this._integrationKindList = ironRequest.response["integration-kind"];
-            },
-
             _reloadPage: function() {
                 window.location.reload(true);
             },
 
-            /**
-             * Sets up component.
-             */
-            setup: function() {
-                this.$.integrationName.focus();
-            },
-
             reset: function() {
+
                 var integration = JSON.parse(JSON.stringify(this.integration));
 
                 this._hideError();

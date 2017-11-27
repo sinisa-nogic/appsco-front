@@ -13,6 +13,7 @@
 
 <link rel="import" href="../components/components/appsco-loader.html">
 <link rel="import" href="../components/components/appsco-form-error.html">
+<link rel="import" href="appsco-integration-form.html">
 
 <dom-module id="appsco-add-integration-form">
     <template>
@@ -50,62 +51,12 @@
                   on-iron-form-error="_onFormError"
                   on-iron-form-response="_onFormResponse">
 
-                <div class="input-container">
-                    <paper-input type="text"
-                                 label="Title"
-                                 name="activate_integration[name]"
-                                 required
-                                 error-message="Please enter integration title."
-                                 auto-validate></paper-input>
-                </div>
-
-                <div class="input-container">
-                    <p class="input-info">Integration type determines the way in which AppsCo integrates with [[ integration.title ]].</p>
-                    <paper-dropdown-menu id="integrationKindSelect"
-                                         label="Integration type"
-                                         name="activate_integration[kind]"
-                                         horizontal-align="left"
-                                         on-iron-overlay-closed="_onSelectClosed"
-                                         required
-                                         error-message="Please select integration type."
-                                         auto-validate>
-                        <paper-listbox id="integrationKindList"
-                                       class="dropdown-content"
-                                       attr-for-selected="value">
-                            <template is="dom-repeat" items="[[ _integrationKindList ]]">
-                                <paper-item value="[[ item.value ]]">[[ item.name ]]</paper-item>
-                            </template>
-                        </paper-listbox>
-                    </paper-dropdown-menu>
-                </div>
-
-                <div class="input-container">
-                    <p class="input-info">
-                        Schedule sync interval implies synchronization interval between AppsCo and [[ integration.title ]].
-                        Synchronization will run at 00:00 at the start of the schedule sync interval.
-                    </p>
-                    <paper-dropdown-menu id="integrationScheduleSyncSelect"
-                                         label="Schedule sync interval"
-                                         name="activate_integration[scheduleSyncInterval]"
-                                         horizontal-align="left"
-                                         on-iron-overlay-closed="_onSelectClosed"
-                                         required
-                                         error-message="Please select schedule sync interval."
-                                         auto-validate>
-                        <paper-listbox id="integrationScheduleSyncList"
-                                       class="dropdown-content"
-                                       attr-for-selected="value">
-                            <template is="dom-repeat" items="[[ _integrationScheduleSyncList ]]">
-                                <paper-item value="[[ item.value ]]">[[ item.name ]]</paper-item>
-                            </template>
-                        </paper-listbox>
-                    </paper-dropdown-menu>
-                </div>
+                <appsco-integration-form
+                        id="appscoIntegrationForm"
+                        name="appsco-integration-form"
+                        integration="[[ integration ]]">
+                </appsco-integration-form>
             </form>
-
-            <div class="input-container">
-                <paper-toggle-button id="toggleIntegrationActive"
-                                     name="activate_integration[active]">Activate integration</paper-toggle-button>
             </div>
         </div>
 
@@ -253,7 +204,7 @@
 
             reset: function() {
                 this._form.reset();
-                this.$.toggleIntegrationActive.checked = false;
+                this.$.appscoIntegrationForm.setToggleChecked(false);
                 this.set('integration', {});
                 this._hideError();
                 this._hideLoader();
@@ -295,11 +246,13 @@
 
             _onFormPresubmit: function(event) {
                 var form = event.target,
-                    integrationKindSelect = this.$.integrationKindSelect,
-                    integrationScheduleSyncSelect = this.$.integrationScheduleSyncSelect;
+                    integrationKind = this.$.appscoIntegrationForm.getIntegrationKind(),
+                    integrationScheduleSync = this.$.appscoIntegrationForm.getIntegrationScheduleSync();
 
-                form.request.body['activate_integration[kind]'] = integrationKindSelect.selectedItem ? integrationKindSelect.selectedItem.value : '';
-                form.request.body['activate_integration[scheduleSyncInterval]'] = integrationScheduleSyncSelect.selectedItem ? integrationScheduleSyncSelect.selectedItem.value : '';
+                form.request.body['activate_integration[kind]'] =
+                    integrationKind ? integrationKind : '';
+                form.request.body['activate_integration[scheduleSyncInterval]'] =
+                    integrationScheduleSync ? integrationScheduleSync : '';
             },
 
             _onFormError: function(event) {

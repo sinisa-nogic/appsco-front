@@ -1,0 +1,455 @@
+<link rel="import" href="../../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../../bower_components/iron-flex-layout/iron-flex-layout.html">
+<link rel="import" href="../../../bower_components/paper-button/paper-button.html">
+<link rel="import" href="../../../bower_components/iron-form/iron-form.html">
+<link rel="import" href="../../../bower_components/paper-input/paper-input.html">
+<link rel="import" href="../../../bower_components/paper-dialog/paper-dialog.html">
+<link rel="import" href="../../../bower_components/paper-dialog-scrollable/paper-dialog-scrollable.html">
+<link rel="import" href="../../../bower_components/neon-animation/animations/scale-up-animation.html">
+<link rel="import" href="../../../bower_components/neon-animation/animations/fade-out-animation.html">
+<link rel="import" href="../../../bower_components/iron-a11y-keys/iron-a11y-keys.html">
+<link rel="import" href="../../../bower_components/paper-dropdown-menu/paper-dropdown-menu.html">
+<link rel="import" href="../../../bower_components/paper-listbox/paper-listbox.html">
+<link rel="import" href="../../../bower_components/paper-item/paper-item.html">
+<link rel="import" href="../../../bower_components/paper-toggle-button/paper-toggle-button.html">
+<link rel="import" href="../../../bower_components/iron-ajax/iron-ajax.html">
+
+<link rel="import" href="../../components/components/appsco-loader.html">
+<link rel="import" href="../../components/components/appsco-form-error.html">
+
+<dom-module id="appsco-add-integration-rule">
+    <template>
+        <style>
+            :host {
+                display: block;
+                position: relative;
+            }
+            :host paper-dialog {
+                width: 670px;
+                top: 10vh;
+                @apply(--appsco-paper-dialog);
+            }
+            :host paper-dialog-scrollable > * {
+                @apply(--paper-dialog-scrollable-child);
+            }
+            :host appsco-loader {
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+            :host .buttons paper-button {
+                @apply(--paper-dialog-button);
+            }
+            :host .buttons paper-button[dialog-dismiss] {
+                @apply(--paper-dialog-dismiss-button);
+            }
+            paper-dropdown-menu {
+                width: 100%;
+            }
+            paper-toggle-button {
+                cursor: pointer;
+                margin-top: 20px;
+            }
+            :host .subtitle {
+                padding-top: 40px;
+                font-size: 16px;
+                font-weight: 500;
+                text-transform: uppercase;
+            }
+        </style>
+
+        <iron-ajax id="getIntegrationPSOSApiRequest"
+                   auto
+                   url="[[ _getIntegrationPSOSApi ]]"
+                   headers="[[ _headers ]]"
+                   on-error="_onIntegrationPSOSError"
+                   on-response="_onIntegrationPSOSResponse"></iron-ajax>
+
+        <paper-dialog id="dialog"
+                      with-backdrop
+                      entry-animation="scale-up-animation"
+                      exit-animation="fade-out-animation"
+                      on-iron-overlay-opened="_onDialogOpened"
+                      on-iron-overlay-closed="_onDialogClosed">
+
+            <h2>Add integration rule</h2>
+
+            <appsco-loader active="[[ _loader ]]"
+                           loader-alt="AppsCo is processing request"
+                           multi-color></appsco-loader>
+
+            <paper-dialog-scrollable>
+                <div class="dialog-container">
+
+                    <appsco-form-error message="[[ _error ]]"></appsco-form-error>
+
+                    <form is="iron-form"
+                          id="form"
+                          method="POST"
+                          action="[[ _addIntegrationRuleApi ]]"
+                          headers="[[ _headers ]]"
+                          on-iron-form-presubmit="_onFormPresubmit"
+                          on-iron-form-error="_onFormError"
+                          on-iron-form-response="_onFormResponse">
+
+                        <div class="input-container">
+                            <paper-input id="title"
+                                         label="Title"
+                                         name="integration_recipe[name]"
+                                         required
+                                         auto-validate
+                                         error-message="Please enter rule name."></paper-input>
+                        </div>
+
+                        <div class="subtitle">From</div>
+                        <div class="input-container">
+                            <paper-dropdown-menu id="fromMethod"
+                                                 label="Method"
+                                                 name="integration_recipe[fromMethod]"
+                                                 horizontal-align="left"
+                                                 on-iron-overlay-opened="_onSelectClosed"
+                                                 on-iron-overlay-closed="_onSelectClosed"
+                                                 required
+                                                 error-message="Please select method."
+                                                 auto-validate>
+                                <paper-listbox id="fromMethodList"
+                                               class="dropdown-content"
+                                               attr-for-selected="value">
+                                    <template is="dom-repeat" items="[[ _fromMethodList ]]">
+                                        <paper-item value="[[ item.value ]]">[[ item.name ]]</paper-item>
+                                    </template>
+                                </paper-listbox>
+                            </paper-dropdown-menu>
+                        </div>
+                        <div class="input-container">
+                            <paper-dropdown-menu id="fromPSO"
+                                                 label="Object"
+                                                 name="integration_recipe[fromPSO]"
+                                                 horizontal-align="left"
+                                                 on-iron-overlay-opened="_onSelectClosed"
+                                                 on-iron-overlay-closed="_onSelectClosed"
+                                                 required
+                                                 error-message="Please select object."
+                                                 auto-validate>
+                                <paper-listbox id="fromPSOList"
+                                               class="dropdown-content"
+                                               attr-for-selected="value">
+                                    <template is="dom-repeat" items="[[ _fromPSOList ]]">
+                                        <paper-item value="[[ item ]]">[[ item ]]</paper-item>
+                                    </template>
+                                </paper-listbox>
+                            </paper-dropdown-menu>
+                        </div>
+
+                        <div class="subtitle">To</div>
+                        <div class="input-container">
+                            <paper-dropdown-menu id="toMethod"
+                                                 label="Method"
+                                                 name="integration_recipe[toMethod]"
+                                                 horizontal-align="left"
+                                                 on-iron-overlay-opened="_onSelectClosed"
+                                                 on-iron-overlay-closed="_onSelectClosed"
+                                                 required
+                                                 error-message="Please select method."
+                                                 auto-validate>
+                                <paper-listbox id="toMethodList"
+                                               class="dropdown-content"
+                                               attr-for-selected="value">
+                                    <template is="dom-repeat" items="[[ _toMethodList ]]">
+                                        <paper-item value="[[ item.value ]]">[[ item.name ]]</paper-item>
+                                    </template>
+                                </paper-listbox>
+                            </paper-dropdown-menu>
+                        </div>
+                        <div class="input-container">
+                            <paper-dropdown-menu id="toPSO"
+                                                 label="Object"
+                                                 name="integration_recipe[toPSO]"
+                                                 horizontal-align="left"
+                                                 on-iron-overlay-opened="_onSelectClosed"
+                                                 on-iron-overlay-closed="_onSelectClosed"
+                                                 required
+                                                 error-message="Please select object."
+                                                 auto-validate>
+                                <paper-listbox id="toPSOList"
+                                               class="dropdown-content"
+                                               attr-for-selected="value">
+                                    <template is="dom-repeat" items="[[ _toPSOList ]]">
+                                        <paper-item value="[[ item ]]">[[ item ]]</paper-item>
+                                    </template>
+                                </paper-listbox>
+                            </paper-dropdown-menu>
+                        </div>
+
+                        <div class="input-container">
+                            <paper-toggle-button id="active"
+                                                 name="integration_recipe[active]">Activate integration</paper-toggle-button>
+                        </div>
+                    </form>
+                </div>
+            </paper-dialog-scrollable>
+
+            <div class="buttons">
+                <paper-button dialog-dismiss>Cancel</paper-button>
+                <paper-button autofocus on-tap="_onAddAction">Add</paper-button>
+            </div>
+        </paper-dialog>
+
+        <iron-a11y-keys target="[[ _target ]]"
+                        keys="enter"
+                        on-keys-pressed="_onEnterAction"></iron-a11y-keys>
+
+    </template>
+    <script>
+        Polymer({
+
+            is: 'appsco-add-integration-rule',
+
+            properties: {
+
+                integration: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    }
+                },
+
+                authorizationToken: {
+                    type: String,
+                    value: ''
+                },
+
+                apiErrors: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    }
+                },
+
+                _headers: {
+                    type: Object,
+                    computed: '_computeHeaders(authorizationToken)'
+                },
+
+                _getIntegrationPSOSApi: {
+                    type: String,
+                    computed: '_computeGetIntegrationPSOSApi(integration)'
+                },
+
+                _addIntegrationRuleApi: {
+                    type: String,
+                    computed: '_computeAddIntegrationRuleApi(integration)'
+                },
+
+                _integrationKindRA: {
+                    type: Boolean,
+                    computed: '_computeIntegrationKindRA(integration)'
+                },
+
+                _fromMethodList: {
+                    type: Array,
+                    value: function() {
+                        return [
+                            {
+                                value: 'lookup',
+                                name: 'Lookup'
+                            },
+                            {
+                                value: 'added',
+                                name: 'Added'
+                            },
+                            {
+                                value: 'modified',
+                                name: 'Modified'
+                            },
+                            {
+                                value: 'removed',
+                                name: 'Removed'
+                            }
+                        ];
+                    }
+                },
+
+                _fromPSOList: {
+                    type: Array,
+                    value: function() {
+                        return [];
+                    }
+                },
+
+                _toMethodList: {
+                    type: Array,
+                    value: function() {
+                        return [
+                            {
+                                value: 'add',
+                                name: 'Add'
+                            },
+                            {
+                                value: 'modify',
+                                name: 'Modify'
+                            },
+                            {
+                                value: 'remove',
+                                name: 'Remove'
+                            },
+                            {
+                                value: 'lookup',
+                                name: 'Lookup'
+                            }
+                        ];
+                    }
+                },
+
+                _toPSOList: {
+                    type: Array,
+                    value: function() {
+                        return [];
+                    }
+                },
+
+                _appscoPSOList: {
+                    type: Array,
+                    value: function() {
+                        return ['PSOAppsCoUser', 'PSOAppsCoGroup'];
+                    }
+                },
+
+                _loader: {
+                    type: Boolean,
+                    value: false
+                },
+
+                _error: {
+                    type: String
+                },
+
+                _target: {
+                    type: Object,
+                    value: function() {
+                        return this.$.form
+                    }
+                }
+            },
+
+            setIntegration: function(integration) {
+                this.set('integration', integration);
+            },
+
+            open: function() {
+                this.$.dialog.open();
+            },
+
+            close: function() {
+                this.$.dialog.close();
+            },
+
+            toggle: function() {
+                this.$.dialog.toggle();
+            },
+
+            _showLoader: function() {
+                this._loader = true;
+            },
+
+            _hideLoader: function() {
+                this._loader = false;
+            },
+
+            _showError: function(message) {
+                this._error = message;
+            },
+
+            _hideError: function() {
+                this._error = '';
+            },
+
+            _computeHeaders: function (authorizationToken) {
+                return {
+                    'Authorization': 'token ' + authorizationToken,
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                }
+            },
+
+            _computeGetIntegrationPSOSApi: function(integration) {
+                return integration.self ? (integration.self + '/pso') : '';
+            },
+
+            _computeAddIntegrationRuleApi: function(integration) {
+                return integration.meta ? integration.meta.recipes : '';
+            },
+
+            _computeIntegrationKindRA: function(integration) {
+                return (integration.kind && 'ra' === integration.kind);
+            },
+
+            _onDialogOpened: function() {
+                this.$.title.focus();
+            },
+
+            _onDialogClosed: function() {
+                this._hideLoader();
+                this._hideError();
+                this._target.reset();
+            },
+
+            _onSelectClosed: function(event) {
+                event.stopPropagation();
+            },
+
+            _onIntegrationPSOSError: function() {
+                this.set('_fromPSOList', []);
+            },
+
+            _onIntegrationPSOSResponse: function(event) {
+                var response = event.detail.response;
+
+                if (this._integrationKindRA) {
+                    this.set('_fromPSOList', (response && response.psos) ? response.psos : []);
+                    this.set('_toPSOList', this._appscoPSOList);
+                }
+                else {
+                    this.set('_fromPSOList', this._appscoPSOList);
+                    this.set('_toPSOList', (response && response.psos) ? response.psos : []);
+                }
+            },
+
+            _onEnterAction: function() {
+                this._onAddAction();
+            },
+
+            _onAddAction: function() {
+
+                this._hideError();
+
+                if (this._target.validate()) {
+                    this._showLoader();
+                    this._target.submit();
+                }
+
+            },
+
+            _onFormPresubmit: function(event) {
+                var form = event.target,
+                    fromMethod = this.$.fromMethod,
+                    toMethod = this.$.toMethod;
+
+                form.request.body['integration_recipe[fromMethod]'] = fromMethod.selectedItem ? fromMethod.selectedItem.value : '';
+                form.request.body['integration_recipe[toMethod]'] = toMethod.selectedItem ? toMethod.selectedItem.value : '';
+            },
+
+            _onFormError: function(event) {
+                this._showError(this.apiErrors.getError(event.detail.request.response.code));
+                this._hideLoader();
+            },
+
+            _onFormResponse: function(event) {
+                this.close();
+
+                this.fire('integration-rule-added', {
+                    integration: this.integration,
+                    rule: event.detail.response
+                });
+            }
+        });
+    </script>
+</dom-module>

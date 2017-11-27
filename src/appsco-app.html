@@ -107,6 +107,7 @@
 <link rel="import" href="provisioning/appsco-manage-integration-page-actions.html">
 <link rel="import" href="provisioning/appsco-add-integration.html">
 <link rel="import" href="components/integration/appsco-remove-integration.html">
+<link rel="import" href="components/integration/appsco-add-integration-rule.html">
 
 <link rel="import" href="company/appsco-company-page-actions.html">
 <link rel="import" href="company/appsco-company-add-domain.html">
@@ -1374,6 +1375,13 @@
                 api-errors="[[ _apiErrors ]]"
                 on-integration-requested="_onIntegrationRequested">
         </appsco-add-integration>
+
+        <appsco-add-integration-rule
+                id="appscoAddIntegrationRule"
+                authorization-token="[[ authorizationToken ]]"
+                api-errors="[[ _apiErrors ]]"
+                on-integration-rule-added="_onIntegrationRuleAdded">
+        </appsco-add-integration-rule>
 
         <appsco-remove-integration
                 id="appscoRemoveIntegration"
@@ -4714,9 +4722,20 @@
                 this._notify(message);
             },
 
-            // TODO - implement add integration rule process
-            // event.detail.integration
-            _onAddIntegrationRuleAction: function(event) {},
+            _onAddIntegrationRuleAction: function(event) {
+                var addIntegrationRuleComponent = this.$.appscoAddIntegrationRule;
+
+                addIntegrationRuleComponent.setIntegration(event.detail.integration);
+                addIntegrationRuleComponent.open();
+            },
+
+            _onIntegrationRuleAdded: function(event) {
+                this._notify('Rule for ' + event.detail.integration.name + ' has been successfully added.')
+
+                if (this.$.appscoManageIntegrationPage.$) {
+                    this.$.appscoManageIntegrationPage.addIntegrationRule(event.detail.rule);
+                }
+            },
             /**
              * Provisioning page END
              */

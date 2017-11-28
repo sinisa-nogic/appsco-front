@@ -108,6 +108,7 @@
 <link rel="import" href="provisioning/appsco-add-integration.html">
 <link rel="import" href="components/integration/appsco-remove-integration.html">
 <link rel="import" href="components/integration/appsco-add-integration-rule.html">
+<link rel="import" href="components/integration/appsco-edit-integration-rule.html">
 
 <link rel="import" href="company/appsco-company-page-actions.html">
 <link rel="import" href="company/appsco-company-add-domain.html">
@@ -1015,6 +1016,8 @@
                             on-page-error="_onError"
                             on-remove-integration="_onRemoveIntegrationAction"
                             on-add-integration-rule="_onAddIntegrationRuleAction"
+                            on-edit-integration-rule="_onEditIntegrationRuleAction"
+                            on-remove-integration-rule="_onRemoveIntegrationRuleAction"
                             on-integration-settings-changed="_onIntegrationSettingsChanged"
                     ></appsco-manage-integration-page>
 
@@ -1382,6 +1385,13 @@
                 api-errors="[[ _apiErrors ]]"
                 on-integration-rule-added="_onIntegrationRuleAdded">
         </appsco-add-integration-rule>
+
+        <appsco-edit-integration-rule
+                id="appscoEditIntegrationRule"
+                authorization-token="[[ authorizationToken ]]"
+                api-errors="[[ _apiErrors ]]"
+                on-integration-rule-edited="_onIntegrationRuleEdited">
+        </appsco-edit-integration-rule>
 
         <appsco-remove-integration
                 id="appscoRemoveIntegration"
@@ -4730,11 +4740,33 @@
             },
 
             _onIntegrationRuleAdded: function(event) {
-                this._notify('Rule for ' + event.detail.integration.name + ' has been successfully added.')
+                this._notify('Rule for ' + event.detail.integration.name + ' has been successfully added.');
 
                 if (this.$.appscoManageIntegrationPage.$) {
                     this.$.appscoManageIntegrationPage.addIntegrationRule(event.detail.rule);
                 }
+            },
+
+            _triggerIntegrationRuleAction: function(integration, rule, component) {
+                component.setIntegration(integration);
+                component.setIntegrationRule(rule);
+                component.open();
+            },
+
+            _onEditIntegrationRuleAction: function(event) {
+                this._triggerIntegrationRuleAction(event.detail.integration, event.detail.rule, this.$.appscoEditIntegrationRule);
+            },
+
+            _onIntegrationRuleEdited: function(event) {
+                this._notify('Rule for ' + event.detail.integration.name + ' has been successfully modified.');
+
+                if (this.$.appscoManageIntegrationPage.$) {
+                    this.$.appscoManageIntegrationPage.modifyIntegrationRule(event.detail.rule);
+                }
+            },
+
+            _onRemoveIntegrationRuleAction: function(event) {
+                this._triggerIntegrationRuleAction(event.detail.integration, event.detail.rule, this.$.appscoRemoveIntegrationRule);
             },
             /**
              * Provisioning page END

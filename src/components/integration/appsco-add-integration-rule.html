@@ -13,6 +13,8 @@
 <link rel="import" href="../../../bower_components/paper-item/paper-item.html">
 <link rel="import" href="../../../bower_components/paper-toggle-button/paper-toggle-button.html">
 <link rel="import" href="../../../bower_components/iron-ajax/iron-ajax.html">
+<link rel="import" href="../../../bower_components/neon-animation/neon-animation-runner-behavior.html">
+<link rel="import" href="../../../bower_components/neon-animation/animations/fade-in-animation.html">
 
 <link rel="import" href="../../components/components/appsco-loader.html">
 <link rel="import" href="../../components/components/appsco-form-error.html">
@@ -50,19 +52,39 @@
                 margin-top: 20px;
             }
             :host .subtitle {
-                padding-top: 40px;
+                margin-top: 30px;
                 font-size: 16px;
                 font-weight: 500;
                 text-transform: uppercase;
             }
+            :host .primary-button, :host .danger-button {
+                @apply(--primary-button);
+                display: inline-block;
+                margin-top: 10px;
+            }
+            :host .primary-button[active] {
+                @apply(--shadow-elevation-4dp);
+            }
+            :host .display-none {
+                display: none;
+            }
+            :host .input-container-title {
+                font-size: 16px;
+                margin-top: 20px;
+            }
         </style>
 
         <iron-ajax id="getIntegrationPSOSApiRequest"
-                   auto
                    url="[[ _getIntegrationPSOSApi ]]"
                    headers="[[ _headers ]]"
                    on-error="_onIntegrationPSOSError"
                    on-response="_onIntegrationPSOSResponse"></iron-ajax>
+
+        <iron-ajax auto
+                   url="[[ _getAppscoPSOSApi ]]"
+                   headers="[[ _headers ]]"
+                   on-error="_onAppscoPSOSError"
+                   on-response="_onAppscoPSOSResponse"></iron-ajax>
 
         <paper-dialog id="dialog"
                       with-backdrop
@@ -106,8 +128,8 @@
                                                  label="Method"
                                                  name="integration_recipe[fromMethod]"
                                                  horizontal-align="left"
-                                                 on-iron-overlay-opened="_onSelectClosed"
-                                                 on-iron-overlay-closed="_onSelectClosed"
+                                                 on-iron-overlay-opened="_onIronOverlayEvents"
+                                                 on-iron-overlay-closed="_onIronOverlayEvents"
                                                  required
                                                  error-message="Please select method."
                                                  auto-validate>
@@ -125,19 +147,50 @@
                                                  label="Object"
                                                  name="integration_recipe[fromPSO]"
                                                  horizontal-align="left"
-                                                 on-iron-overlay-opened="_onSelectClosed"
-                                                 on-iron-overlay-closed="_onSelectClosed"
+                                                 on-iron-overlay-opened="_onIronOverlayEvents"
+                                                 on-iron-overlay-closed="_onIronOverlayEvents"
                                                  required
                                                  error-message="Please select object."
                                                  auto-validate>
                                 <paper-listbox id="fromPSOList"
                                                class="dropdown-content"
-                                               attr-for-selected="value">
+                                               attr-for-selected="value"
+                                               on-iron-activate="_onFromPSOSelected">
                                     <template is="dom-repeat" items="[[ _fromPSOList ]]">
-                                        <paper-item value="[[ item ]]">[[ item ]]</paper-item>
+                                        <paper-item value="[[ item.key ]]">[[ item.value ]]</paper-item>
                                     </template>
                                 </paper-listbox>
                             </paper-dropdown-menu>
+                        </div>
+                        <div class="input-container">
+                            <paper-button class="primary-button"
+                                          on-tap="_onToggleConditionAction"
+                                          disabled$="[[ !_fromPSOSelected ]]"
+                                          toggles>Advanced</paper-button>
+                        </div>
+                        <div id="fromConditionField"
+                             class="input-container display-none">
+                            <div class="input-container-title">Conditions:</div>
+                            <template is="dom-repeat" items="[[ _fromConditionList ]]">
+                                <div class="input-container">
+                                    <paper-input label="[[ item.key ]]" value="{{ item.value }}"></paper-input>
+                                </div>
+                            </template>
+
+                            <!--<paper-dropdown-menu id="fromCondition"-->
+                                                 <!--label="Condition"-->
+                                                 <!--name="integration_recipe[fromCondition]"-->
+                                                 <!--horizontal-align="left"-->
+                                                 <!--on-iron-overlay-opened="_onIronOverlayEvents"-->
+                                                 <!--on-iron-overlay-closed="_onIronOverlayEvents">-->
+                                <!--<paper-listbox id="fromConditionList"-->
+                                               <!--class="dropdown-content"-->
+                                               <!--attr-for-selected="value">-->
+                                    <!--<template is="dom-repeat" items="[[ _fromConditionList ]]">-->
+                                        <!--<paper-item value="[[ item ]]">[[ item ]]</paper-item>-->
+                                    <!--</template>-->
+                                <!--</paper-listbox>-->
+                            <!--</paper-dropdown-menu>-->
                         </div>
 
                         <div class="subtitle">To</div>
@@ -146,8 +199,8 @@
                                                  label="Method"
                                                  name="integration_recipe[toMethod]"
                                                  horizontal-align="left"
-                                                 on-iron-overlay-opened="_onSelectClosed"
-                                                 on-iron-overlay-closed="_onSelectClosed"
+                                                 on-iron-overlay-opened="_onIronOverlayEvents"
+                                                 on-iron-overlay-closed="_onIronOverlayEvents"
                                                  required
                                                  error-message="Please select method."
                                                  auto-validate>
@@ -165,24 +218,40 @@
                                                  label="Object"
                                                  name="integration_recipe[toPSO]"
                                                  horizontal-align="left"
-                                                 on-iron-overlay-opened="_onSelectClosed"
-                                                 on-iron-overlay-closed="_onSelectClosed"
+                                                 on-iron-overlay-opened="_onIronOverlayEvents"
+                                                 on-iron-overlay-closed="_onIronOverlayEvents"
                                                  required
                                                  error-message="Please select object."
                                                  auto-validate>
                                 <paper-listbox id="toPSOList"
                                                class="dropdown-content"
-                                               attr-for-selected="value">
+                                               attr-for-selected="value"
+                                               on-iron-activate="_onToPSOSelected">
                                     <template is="dom-repeat" items="[[ _toPSOList ]]">
-                                        <paper-item value="[[ item ]]">[[ item ]]</paper-item>
+                                        <paper-item value="[[ item.key ]]">[[ item.value ]]</paper-item>
                                     </template>
                                 </paper-listbox>
                             </paper-dropdown-menu>
                         </div>
+                        <div class="input-container">
+                            <paper-button class="primary-button"
+                                          on-tap="_onToggleParamsAction"
+                                          disabled$="[[ !_toPSOSelected ]]"
+                                          toggles>Advanced</paper-button>
+                        </div>
+                        <div id="toParamField"
+                             class="input-container" hidden$="[[ !_paramsVisible ]]">
+                            <div class="input-container-title">Fields:</div>
+                            <template is="dom-repeat" items="[[ _toParamsList ]]">
+                                <div class="input-container">
+                                    <paper-input label="[[ item.key ]]" value="{{ item.value }}"></paper-input>
+                                </div>
+                            </template>
+                        </div>
 
                         <div class="input-container">
                             <paper-toggle-button id="active"
-                                                 name="integration_recipe[active]">Activate integration</paper-toggle-button>
+                                                 name="integration_recipe[active]">Activate rule</paper-toggle-button>
                         </div>
                     </form>
                 </div>
@@ -235,6 +304,11 @@
                     computed: '_computeGetIntegrationPSOSApi(integration)'
                 },
 
+                _getAppscoPSOSApi: {
+                    type: String,
+                    computed: '_computeGetAppscoPSOSApi(integration)'
+                },
+
                 _addIntegrationRuleApi: {
                     type: String,
                     computed: '_computeAddIntegrationRuleApi(integration)'
@@ -276,6 +350,20 @@
                     }
                 },
 
+                _fromConditionList: {
+                    type: Array,
+                    value: function() {
+                        return [];
+                    }
+                },
+
+                _toParamsList: {
+                    type: Array,
+                    value: function() {
+                        return [];
+                    }
+                },
+
                 _toMethodList: {
                     type: Array,
                     value: function() {
@@ -310,8 +398,28 @@
                 _appscoPSOList: {
                     type: Array,
                     value: function() {
-                        return ['PSOAppsCoUser', 'PSOAppsCoGroup'];
+                        return [];
                     }
+                },
+
+                _fromPSOSelected: {
+                    type: Boolean,
+                    value: false
+                },
+
+                _toPSOSelected: {
+                    type: Boolean,
+                    value: false
+                },
+
+                _conditionVisible: {
+                    type: Boolean,
+                    value: false
+                },
+
+                _paramsVisible: {
+                    type: Boolean,
+                    value: false
                 },
 
                 _loader: {
@@ -328,7 +436,36 @@
                     value: function() {
                         return this.$.form
                     }
+                },
+
+                animationConfig: {
+                    value: function() {
+                        return {
+                            'entry': {
+                                name: 'fade-in-animation',
+                                node: this.$.fromConditionField,
+                                timing: {
+                                    duration: 300
+                                }
+                            },
+                            'exit': {
+                                name: 'fade-out-animation',
+                                node: this.$.fromConditionField,
+                                timing: {
+                                    duration: 200
+                                }
+                            }
+                        }
+                    }
                 }
+            },
+
+            behaviors: [
+                Polymer.NeonAnimationRunnerBehavior
+            ],
+
+            listeners: {
+                'neon-animation-finish': '_onNeonAnimationFinished'
             },
 
             setIntegration: function(integration) {
@@ -363,6 +500,23 @@
                 this._error = '';
             },
 
+            _reset: function() {
+                this._target.reset();
+                this._fromPSOSelected = false;
+                this._toPSOSelected = false;
+                this._conditionVisible = false;
+                this._paramsVisible = false;
+                this._hideConditionFields();
+                this.$$('#fromMethodList').selected = -1;
+                this.$$('#fromPSOList').selected = -1;
+                this.$$('#toMethodList').selected = -1;
+                this.$$('#toPSOList').selected = -1;
+
+                Polymer.dom(this.root).querySelectorAll('paper-button').forEach(function(element) {
+                    element.active = false;
+                });
+            },
+
             _computeHeaders: function (authorizationToken) {
                 return {
                     'Authorization': 'token ' + authorizationToken,
@@ -372,6 +526,10 @@
 
             _computeGetIntegrationPSOSApi: function(integration) {
                 return integration.self ? (integration.self + '/pso') : '';
+            },
+
+            _computeGetAppscoPSOSApi: function(integration) {
+                return integration.self ? (integration.self + '/pso/appsco') : '';
             },
 
             _computeAddIntegrationRuleApi: function(integration) {
@@ -389,27 +547,120 @@
             _onDialogClosed: function() {
                 this._hideLoader();
                 this._hideError();
-                this._target.reset();
+                this._reset();
             },
 
-            _onSelectClosed: function(event) {
+            _onIronOverlayEvents: function(event) {
                 event.stopPropagation();
+            },
+
+            _loadIntegrationPSOS: function() {
+                var getIntegrationPSOSRequest = this.$.getIntegrationPSOSApiRequest;
+
+                if (getIntegrationPSOSRequest.lastRequest) {
+                    getIntegrationPSOSRequest.lastRequest.abort();
+                }
+
+                getIntegrationPSOSRequest.generateRequest();
             },
 
             _onIntegrationPSOSError: function() {
                 this.set('_fromPSOList', []);
+                this.set('_toPSOList', []);
             },
 
             _onIntegrationPSOSResponse: function(event) {
-                var response = event.detail.response;
+                var response = event.detail.response,
+                    appscoPSOList = JSON.parse(JSON.stringify(this._appscoPSOList));
 
                 if (this._integrationKindRA) {
                     this.set('_fromPSOList', (response && response.psos) ? response.psos : []);
-                    this.set('_toPSOList', this._appscoPSOList);
+                    this.set('_toPSOList', appscoPSOList);
                 }
                 else {
-                    this.set('_fromPSOList', this._appscoPSOList);
+                    this.set('_fromPSOList', appscoPSOList);
                     this.set('_toPSOList', (response && response.psos) ? response.psos : []);
+                }
+            },
+
+            _onAppscoPSOSError: function() {
+                this.set('_appscoPSOList', []);
+            },
+
+            _onAppscoPSOSResponse: function(event) {
+                var response = event.detail.response;
+
+                this.set('_appscoPSOList', (response && response.psos) ? response.psos : []);
+                this._loadIntegrationPSOS();
+            },
+
+            _onFromPSOSelected: function(event) {
+                var selectedItem = event.detail.selected;
+
+                this._fromPSOSelected = true;
+                this._fromPSOList.forEach(function(element) {
+
+                    if (selectedItem === element.key) {
+                        this.set('_fromConditionList', element.conditions.map(function(element) {
+                            return {
+                                key: element,
+                                value: ''
+                            };
+                        }));
+                        return false;
+                    }
+                }.bind(this));
+            },
+
+            _onToPSOSelected: function(event) {
+                var selectedItem = event.detail.selected;
+
+                this._toPSOSelected = true;
+                this._toPSOList.forEach(function(element) {
+
+                    if (selectedItem === element.key) {
+                        this.set('_toParamsList', element.params.map(function(element) {
+                            return {
+                                key: element,
+                                value: ''
+                            };
+                        }));
+                        return false;
+                    }
+                }.bind(this));
+            },
+
+            _onToggleConditionAction: function(event) {
+                if (this.$.fromPSOList.selected) {
+                    this._conditionVisible = !this._conditionVisible;
+                    this._conditionVisible ? this._showConditionFields() : this._hideConditionFields();
+                }
+                else {
+                    event.target.active = false;
+                }
+            },
+
+            _showConditionFields: function() {
+                this.animationConfig.entry.node.style.display = 'block';
+                this.playAnimation('entry');
+            },
+
+            _hideConditionFields: function() {
+                this.playAnimation('exit');
+            },
+
+            _onToggleParamsAction: function() {
+                if (this.$.toPSOList.selected) {
+                    this._paramsVisible = !this._paramsVisible;
+                }
+                else {
+                    event.target.active = false;
+                }
+            },
+
+            _onNeonAnimationFinished: function() {
+                if (this.animationConfig && !this._conditionVisible) {
+                    this.animationConfig.exit.node.style.display = 'none';
                 }
             },
 
@@ -431,10 +682,40 @@
             _onFormPresubmit: function(event) {
                 var form = event.target,
                     fromMethod = this.$.fromMethod,
-                    toMethod = this.$.toMethod;
+                    fromPSO = this.$.fromPSO,
+                    toMethod = this.$.toMethod,
+                    toPSO = this.$.toPSO;
 
                 form.request.body['integration_recipe[fromMethod]'] = fromMethod.selectedItem ? fromMethod.selectedItem.value : '';
+                form.request.body['integration_recipe[fromPSO]'] = fromPSO.selectedItem ? fromPSO.selectedItem.value : '';
                 form.request.body['integration_recipe[toMethod]'] = toMethod.selectedItem ? toMethod.selectedItem.value : '';
+                form.request.body['integration_recipe[toPSO]'] = toPSO.selectedItem ? toPSO.selectedItem.value : '';
+
+                if (this._conditionVisible) {
+                    var index = 0;
+
+                    this._fromConditionList.forEach(function(element) {
+
+                        if ('' != element.value) {
+                            form.request.body['integration_recipe[fromCondition][' + index + '][key]'] = element.key;
+                            form.request.body['integration_recipe[fromCondition][' + index + '][value]'] = element.value;
+                            index ++;
+                        }
+                    });
+                }
+
+                if (this._paramsVisible) {
+                    var index = 0;
+
+                    this._toParamsList.forEach(function(element) {
+
+                        if ('' != element.value) {
+                            form.request.body['integration_recipe[toField][' + index + '][key]'] = element.key;
+                            form.request.body['integration_recipe[toField][' + index + '][value]'] = element.value;
+                            index ++;
+                        }
+                    });
+                }
             },
 
             _onFormError: function(event) {

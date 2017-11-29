@@ -9,22 +9,13 @@
 <link rel="import" href="../components/appsco-loader.html">
 <link rel="import" href="../components/appsco-form-error.html">
 
-<!--
-`appsco-remove-integration`
-Shows dialog screen with confirmation for integration removal.
-
-    <appsco-remove-integration integration="{}" authorization-token="">
-    </appsco-remove-integration>
-
--->
-
-<dom-module id="appsco-remove-integration">
+<dom-module id="appsco-run-integration-rule">
     <template>
         <style>
             :host {
                 display: block;
                 position: relative;
-                @apply(--appsco-integration-remove);
+                @apply(--appsco-run-integration-rule);
 
                 --form-error-box: {
                      margin-top: 0;
@@ -55,20 +46,22 @@ Shows dialog screen with confirmation for integration removal.
                 exit-animation="fade-out-animation"
                 on-iron-overlay-closed="_onDialogClosed">
 
-            <h2>Remove integration</h2>
+            <h2>Apply integration rule</h2>
 
-            <appsco-loader active="[[ _loader ]]" loader-alt="Appsco is processing request" multi-color></appsco-loader>
+            <appsco-loader active="[[ _loader ]]"
+                           loader-alt="AppsCo is processing request"
+                           multi-color></appsco-loader>
 
             <paper-dialog-scrollable>
-                <div class="remove-container">
+                <div>
                     <appsco-form-error message="[[ _error ]]"></appsco-form-error>
-                    <p>By removing the integration, all connections between the systems will be lost. Are you sure you wish to remove the integration? </p>
+                    <p>Please confirm that you want to apply the rule.</p>
                 </div>
             </paper-dialog-scrollable>
 
             <div class="buttons">
                 <paper-button dialog-dismiss>Cancel</paper-button>
-                <paper-button autofocus on-tap="_onRemoveAction">Remove</paper-button>
+                <paper-button autofocus on-tap="_onConfirmAction">Apply</paper-button>
             </div>
         </paper-dialog>
 
@@ -76,13 +69,10 @@ Shows dialog screen with confirmation for integration removal.
     <script>
         Polymer({
 
-            is: 'appsco-remove-integration',
+            is: 'appsco-run-integration-rule',
 
             properties: {
 
-                /**
-                 * Integration to remove.
-                 */
                 integration: {
                     type: Object,
                     value: function() {
@@ -90,9 +80,13 @@ Shows dialog screen with confirmation for integration removal.
                     }
                 },
 
-                /**
-                 * Authorization token.
-                 */
+                rule: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    }
+                },
+
                 authorizationToken: {
                     type: String,
                     value: ''
@@ -105,9 +99,9 @@ Shows dialog screen with confirmation for integration removal.
                     }
                 },
 
-                _removeIntegrationApi: {
+                _runIntegrationRuleApi: {
                     type: String,
-                    computed: '_computeRemoveIntegrationApi(integration)'
+                    computed: '_computeRunIntegrationRuleApi(rule)'
                 },
 
                 _headers: {
@@ -120,16 +114,17 @@ Shows dialog screen with confirmation for integration removal.
                     value: false
                 },
 
-                /**
-                 * Error message.
-                 */
                 _error: {
                     type: String
                 }
             },
 
             setIntegration: function(integration) {
-                this.integration = integration;
+                this.set('integration', integration);
+            },
+
+            setIntegrationRule: function(rule) {
+                this.set('rule', rule);
             },
 
             open: function () {
@@ -146,12 +141,13 @@ Shows dialog screen with confirmation for integration removal.
 
             _computeHeaders: function(authorizationToken) {
                 return {
-                    'Authorization': 'token ' + authorizationToken
+                    'Authorization': 'token ' + authorizationToken,
+                    'Content-Type': 'application/x-www-form-urlencoded'
                 };
             },
 
-            _computeRemoveIntegrationApi: function(integration) {
-                return integration ? integration.self : '';
+            _computeRunIntegrationRuleApi: function(rule) {
+                return rule ? (rule.self + '/run') : '';
             },
 
             _showLoader: function() {
@@ -175,11 +171,11 @@ Shows dialog screen with confirmation for integration removal.
                 this._hideLoader();
             },
 
-            _onRemoveAction: function() {
+            _onConfirmAction: function() {
                 var request = document.createElement('iron-request'),
                     options = {
-                        url: this._removeIntegrationApi,
-                        method: 'DELETE',
+                        url: this._runIntegrationRuleApi,
+                        method: 'POST',
                         handleAs: 'json',
                         headers: this._headers
                     };
@@ -191,13 +187,14 @@ Shows dialog screen with confirmation for integration removal.
                     if (200 === request.status) {
 
                         /**
-                         * Fired when integration is deleted.
+                         * Fired when rule is applied.
                          *
-                         * @event integration-removed
-                         * @param [Object] integration
+                         * @event integration-rule-run
+                         * @param {Object} integration, {Object} rule
                          */
-                        this.fire('integration-removed', {
-                            integration: request.response
+                        this.fire('integration-rule-run', {
+                            integration: this.integration,
+                            rule: request.response
                         });
 
                         this.close();

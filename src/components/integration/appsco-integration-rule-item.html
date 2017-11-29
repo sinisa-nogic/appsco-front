@@ -1,4 +1,5 @@
 <link rel="import" href="../../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../../bower_components/iron-flex-layout/iron-flex-layout.html">
 <link rel="import" href="../../../bower_components/iron-icon/iron-icon.html">
 <link rel="import" href="../../../bower_components/iron-icons/iron-icons.html">
 <link rel="import" href="../../../bower_components/iron-icons/hardware-icons.html">
@@ -7,6 +8,7 @@
 <link rel="import" href="../../../bower_components/neon-animation/animations/fade-in-animation.html">
 <link rel="import" href="../../../bower_components/neon-animation/animations/fade-out-animation.html">
 <link rel="import" href="../../../bower_components/iron-image/iron-image.html">
+<link rel="import" href="../../../bower_components/iron-media-query/iron-media-query.html">
 
 <link rel="import" href="../components/appsco-list-item-behavior.html">
 <link rel="import" href="../components/appsco-list-item-styles.html">
@@ -26,6 +28,7 @@
                 border-radius: 26px;
                 background-color: var(--rule-icon-background-color, --account-initials-background-color);
                 position: relative;
+                @apply(--layout-flex-none);
             }
             :host .rule-icon {
                 width: 24px;
@@ -39,7 +42,16 @@
 
                 --iron-icon-fill-color: var(--primary-text-color, #ffffff);
             }
+            :host([tablet-screen]) .item-basic-info, :host([tablet-screen]) .item-basic-info .info-label, :host([tablet-screen]) .item-basic-info .info-value {
+                width: 40%;;
+            }
+            :host([mobile-screen]) .item-additional-info {
+                display: none;
+            }
         </style>
+
+        <iron-media-query query="(max-width: 600px)" query-matches="{{ mobileScreen }}"></iron-media-query>
+        <iron-media-query query="(max-width: 900px)" query-matches="{{ tabletScreen }}"></iron-media-query>
 
         <div class="item" on-tap="_onItemAction">
 
@@ -87,6 +99,11 @@
 
             <div class="actions">
                 <paper-button on-tap="_onEditItemAction">Edit</paper-button>
+
+                <template is="dom-if" if="[[ _isFromMethodLookup ]]">
+                    <paper-button on-tap="_onRunItemAction">Run</paper-button>
+                </template>
+
                 <paper-button on-tap="_onRemoveItemAction">Remove</paper-button>
             </div>
         </div>
@@ -98,10 +115,70 @@
 
             is: 'appsco-integration-rule-item',
 
+            properties: {
+
+                integration: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    }
+                },
+
+                _isFromMethodLookup: {
+                    type: Boolean,
+                    computed: '_computeIsFromMethodLookup(item, integration)'
+                },
+
+                mobileScreen: {
+                    type: Boolean,
+                    value: false,
+                    reflectToAttribute: true
+                },
+
+                tabletScreen: {
+                    type: Boolean,
+                    value: false,
+                    reflectToAttribute: true
+                }
+            },
+
             behaviors: [
                 Polymer.NeonAnimationRunnerBehavior,
                 Polymer.AppscoListItemBehavior
             ],
+
+            observers: [
+                '_updateScreen(mobileScreen, tabletScreen)'
+            ],
+
+            attached: function() {
+
+                if (this.mobileScreen || this.tabletScreen) {
+                    this._updateScreen();
+                }
+            },
+
+            _computeIsFromMethodLookup: function(rule, integration) {
+                return ('ra' === integration.kind && 'from_lookup' === rule.fromMethod);
+            },
+
+            _updateScreen: function() {
+                this.updateStyles();
+            },
+
+            _onRunItemAction: function(event) {
+                event.stopPropagation();
+
+                /**
+                 * Fired when `run` is tapped.
+                 *
+                 * @event run-item
+                 * @param {Object} item
+                 */
+                this.fire('run-item', {
+                    item: this.item
+                });
+            },
 
             _onRemoveItemAction: function(event) {
                 event.stopPropagation();

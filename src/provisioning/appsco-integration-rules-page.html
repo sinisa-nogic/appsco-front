@@ -21,6 +21,10 @@
 
                 --background-color: var(--body-background-color);
                 --rule-icon-background-color: var(--body-background-color-darker);
+
+                --appsco-list-progress-bar: {
+                    display: none;
+                };
             }
             :host paper-card {
                 @apply(--full-page-paper-card);
@@ -53,11 +57,13 @@
 
                 <appsco-integration-rules
                         id="appscoIntegrationRules"
+                        integration="[[ integration ]]"
                         list-api="[[ _integrationRulesApi ]]"
                         authorization-token="[[ authorizationToken ]]"
                         api-errors="[[ apiErrors ]]"
                         type="integration-rule"
                         on-edit-item="_onEditIntegrationRuleAction"
+                        on-run-item="_onRunIntegrationRuleAction"
                         on-remove-item="_onRemoveIntegrationRuleAction">
                 </appsco-integration-rules>
             </div>
@@ -148,6 +154,10 @@
                 this.$.appscoIntegrationRules.modifyItems([rule]);
             },
 
+            removeIntegrationRule: function(rule) {
+                this.$.appscoIntegrationRules.removeItems([rule]);
+            },
+
             _computeIntegrationRulesApi: function(integration) {
                 return integration.meta ? integration.meta.recipes : '';
             },
@@ -160,6 +170,13 @@
 
             _onEditIntegrationRuleAction: function(event) {
                 this.fire('edit-integration-rule', {
+                    integration: this.integration,
+                    rule: event.detail.item
+                });
+            },
+
+            _onRunIntegrationRuleAction: function(event) {
+                this.fire('run-integration-rule', {
                     integration: this.integration,
                     rule: event.detail.item
                 });

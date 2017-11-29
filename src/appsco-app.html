@@ -109,6 +109,8 @@
 <link rel="import" href="components/integration/appsco-remove-integration.html">
 <link rel="import" href="components/integration/appsco-add-integration-rule.html">
 <link rel="import" href="components/integration/appsco-edit-integration-rule.html">
+<link rel="import" href="components/integration/appsco-run-integration-rule.html">
+<link rel="import" href="components/integration/appsco-remove-integration-rule.html">
 
 <link rel="import" href="company/appsco-company-page-actions.html">
 <link rel="import" href="company/appsco-company-add-domain.html">
@@ -1017,6 +1019,7 @@
                             on-remove-integration="_onRemoveIntegrationAction"
                             on-add-integration-rule="_onAddIntegrationRuleAction"
                             on-edit-integration-rule="_onEditIntegrationRuleAction"
+                            on-run-integration-rule="_onRunIntegrationRuleAction"
                             on-remove-integration-rule="_onRemoveIntegrationRuleAction"
                             on-integration-settings-changed="_onIntegrationSettingsChanged"
                     ></appsco-manage-integration-page>
@@ -1392,6 +1395,20 @@
                 api-errors="[[ _apiErrors ]]"
                 on-integration-rule-edited="_onIntegrationRuleEdited">
         </appsco-edit-integration-rule>
+
+        <appsco-run-integration-rule
+                id="appscoRunIntegrationRule"
+                authorization-token="[[ authorizationToken ]]"
+                api-errors="[[ _apiErrors ]]"
+                on-integration-rule-run="_onIntegrationRuleRun">
+        </appsco-run-integration-rule>
+
+        <appsco-remove-integration-rule
+                id="appscoRemoveIntegrationRule"
+                authorization-token="[[ authorizationToken ]]"
+                api-errors="[[ _apiErrors ]]"
+                on-integration-rule-removed="_onIntegrationRuleRemoved">
+        </appsco-remove-integration-rule>
 
         <appsco-remove-integration
                 id="appscoRemoveIntegration"
@@ -4765,8 +4782,24 @@
                 }
             },
 
+            _onRunIntegrationRuleAction: function(event) {
+                this._triggerIntegrationRuleAction(event.detail.integration, event.detail.rule, this.$.appscoRunIntegrationRule);
+            },
+
+            _onIntegrationRuleRun: function(event) {
+                this._notify('Rule for ' + event.detail.integration.name + ' has been applied.');
+            },
+
             _onRemoveIntegrationRuleAction: function(event) {
                 this._triggerIntegrationRuleAction(event.detail.integration, event.detail.rule, this.$.appscoRemoveIntegrationRule);
+            },
+
+            _onIntegrationRuleRemoved: function(event) {
+                this._notify('Rule for ' + event.detail.integration.name + ' has been removed.');
+
+                if (this.$.appscoManageIntegrationPage.$) {
+                    this.$.appscoManageIntegrationPage.removeIntegrationRule(event.detail.rule);
+                }
             },
             /**
              * Provisioning page END

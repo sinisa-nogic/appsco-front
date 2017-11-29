@@ -88,6 +88,14 @@
                 _watcherListApi: {
                     type: String,
                     computed: '_computeWatcherListApi(integration)'
+                },
+
+                _watcherList: {
+                    type: Array,
+                    value: function() {
+                        return [];
+                    },
+                    observer: '_onWatcherListChanged'
                 }
             },
 
@@ -107,12 +115,42 @@
                 this.$.getWatcherListApiRequest.generateRequest();
             },
 
-            _onGetWatcherListResponse: function(event) {
+            _onWatcherListChanged: function() {
+                this._setWebhookList();
+                console.log('changed');
+            },
+
+            addIntegrationWatcher: function(watcher) {
+                var watchers = JSON.parse(JSON.stringify(this._watcherList));
+
+                watchers.push(watcher);
+
+                this.set('_watcherList', []);
+                this.set('_watcherList', watchers);
+            },
+
+            removeIntegrationWatcher: function(watcher) {
+                var watchers = JSON.parse(JSON.stringify(this._watcherList)),
+                    length = watchers.length;
+
+                for (var i = 0; i < length; i++) {
+                    if (watcher.alias === watchers[i].alias) {
+                        watchers.splice(i, 1);
+                        i --;
+                        break;
+                    }
+                }
+
+                this.set('_watcherList', []);
+                this.set('_watcherList', watchers);
+            },
+
+            _setWebhookList: function() {
                 var webhooks = JSON.parse(JSON.stringify(this._allListItems)),
                     webhooksLength = webhooks.length,
                     removeWebhooks = [],
                     modifyWebhooks = [],
-                    watchers = (event.detail.response && event.detail.response.watchers) ? event.detail.response.watchers : [];
+                    watchers = this._watcherList;
 
                 if (watchers && 0 < watchers.length) {
                     var watchersLength = watchers.length;
@@ -144,6 +182,10 @@
                 if (0 < removeWebhooks.length) {
                     this.removeItems(removeWebhooks);
                 }
+            },
+
+            _onGetWatcherListResponse: function(event) {
+                this.set('_watcherList', (event.detail.response && event.detail.response.watchers) ? event.detail.response.watchers : []);
             }
         });
     </script>

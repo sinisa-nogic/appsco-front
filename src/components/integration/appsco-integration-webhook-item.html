@@ -1,0 +1,150 @@
+<link rel="import" href="../../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../../bower_components/iron-flex-layout/iron-flex-layout.html">
+<link rel="import" href="../../../bower_components/iron-icon/iron-icon.html">
+<link rel="import" href="../../../bower_components/iron-icons/iron-icons.html">
+<link rel="import" href="../../../bower_components/iron-icons/hardware-icons.html">
+<link rel="import" href="../../../bower_components/paper-button/paper-button.html">
+<link rel="import" href="../../../bower_components/neon-animation/neon-animation-runner-behavior.html">
+<link rel="import" href="../../../bower_components/neon-animation/animations/fade-in-animation.html">
+<link rel="import" href="../../../bower_components/neon-animation/animations/fade-out-animation.html">
+
+<link rel="import" href="../components/appsco-list-item-behavior.html">
+<link rel="import" href="../components/appsco-list-item-styles.html">
+
+<dom-module id="appsco-integration-webhook-item">
+    <template>
+        <style include="appsco-list-item-styles"></style>
+
+        <style>
+            :host .item {
+                cursor: default;
+            }
+            :host .icon-container {
+                width: 52px;
+                height: 52px;
+                margin: 0;
+                border-radius: 26px;
+                background-color: var(--webhook-icon-background-color, --account-initials-background-color);
+                position: relative;
+                @apply(--layout-flex-none);
+            }
+            :host .webhook-icon {
+                width: 24px;
+                height: 24px;
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                margin: auto;
+
+                --iron-icon-fill-color: var(--primary-text-color, #ffffff);
+            }
+        </style>
+
+        <div class="item" on-tap="_onItemAction">
+
+            <template is="dom-if" if="[[ selectable ]]">
+                <div class="select-action"
+                     on-tap="_onSelectItemAction">
+
+                    <div class="icon-container">
+                        <iron-icon class="webhook-icon"
+                                   icon="hardware:device-hub"></iron-icon>
+                    </div>
+
+                    <div class="icon-action">
+                        <div class="iron-action-inner">
+                            <iron-icon icon="icons:check"></iron-icon>
+                        </div>
+                    </div>
+                </div>
+            </template>
+
+            <template is="dom-if" if="[[ !selectable ]]">
+                <div class="icon-container">
+                    <iron-icon class="webhook-icon"
+                               icon="hardware:device-hub"></iron-icon>
+                </div>
+            </template>
+
+            <div class="item-info item-basic-info">
+                <span class="info-label item-title">[[ item.title ]]</span>
+            </div>
+
+            <div class="actions">
+                <template is="dom-if" if="[[ !_registered ]]">
+                    <paper-button on-tap="_onRegisterItemAction">Register</paper-button>
+                </template>
+
+                <template is="dom-if" if="[[ _registered ]]">
+                    <paper-button on-tap="_onUnregisterItemAction">Unregister</paper-button>
+                </template>
+            </div>
+        </div>
+
+    </template>
+
+    <script>
+        Polymer({
+
+            is: 'appsco-integration-webhook-item',
+
+            properties: {
+
+                integration: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    }
+                },
+
+                _registered: {
+                    type: Boolean,
+                    value: false
+                }
+            },
+
+            behaviors: [
+                Polymer.NeonAnimationRunnerBehavior,
+                Polymer.AppscoListItemBehavior
+            ],
+
+            register: function() {
+                this._registered = true;
+            },
+
+            _onItemChanged: function(item) {
+                this._register = item.registered ? item.registered : false;
+            },
+
+            _onRegisterItemAction: function(event) {
+                event.stopPropagation();
+
+                /**
+                 * Fired when `register` is tapped.
+                 *
+                 * @event register-item
+                 * @param {Object} item
+                 */
+                this.fire('register-item', {
+                    item: this.item
+                });
+            },
+
+            _onUnregisterItemAction: function(event) {
+                event.stopPropagation();
+
+                /**
+                 * Fired when `unregister` is tapped.
+                 *
+                 * @event unregister-item
+                 * @param {Object} item
+                 */
+                this.fire('unregister-item', {
+                    item: this.item
+                });
+            }
+        });
+    </script>
+</dom-module>

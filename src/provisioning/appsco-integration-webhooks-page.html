@@ -5,11 +5,10 @@
 <link rel="import" href="../../bower_components/neon-animation/animations/slide-right-animation.html">
 <link rel="import" href="../../bower_components/paper-card/paper-card.html">
 <link rel="import" href="../../bower_components/paper-icon-button/paper-icon-button.html">
-<link rel="import" href="../../bower_components/paper-button/paper-button.html">
 
-<link rel="import" href="../components/integration/appsco-integration-rules.html">
+<link rel="import" href="../components/integration/appsco-integration-webhooks.html">
 
-<dom-module id="appsco-integration-rules-page">
+<dom-module id="appsco-integration-webhooks-page">
     <template>
         <style include="webkit-scrollbar-style">
             :host {
@@ -20,7 +19,7 @@
                  };
 
                 --background-color: var(--body-background-color);
-                --rule-icon-background-color: var(--body-background-color-darker);
+                --webhook-icon-background-color: var(--body-background-color-darker);
 
                 --appsco-list-progress-bar: {
                     display: none;
@@ -43,7 +42,7 @@
             }
         </style>
 
-        <paper-card heading="Integration rules" id="card">
+        <paper-card heading="Integration web hooks" id="card">
             <paper-icon-button
                     icon="close"
                     title="Close"
@@ -53,20 +52,17 @@
             </paper-icon-button>
 
             <div class="card-content">
-                <paper-button on-tap="_onAddAction">Add</paper-button>
-
-                <appsco-integration-rules
-                        id="appscoIntegrationRules"
+                <appsco-integration-webhooks
+                        id="appscoIntegrationWebhooks"
                         integration="[[ integration ]]"
-                        list-api="[[ _integrationRulesApi ]]"
+                        list-api="[[ _integrationWebhooksApi ]]"
                         authorization-token="[[ authorizationToken ]]"
                         api-errors="[[ apiErrors ]]"
-                        type="integration-rule"
+                        type="integration-webhook"
                         size="1000"
-                        on-edit-item="_onEditIntegrationRuleAction"
-                        on-run-item="_onRunIntegrationRuleAction"
-                        on-remove-item="_onRemoveIntegrationRuleAction">
-                </appsco-integration-rules>
+                        on-register-item="_onRegisterIntegrationWebhookAction"
+                        on-unregister-item="_onUnregisterIntegrationWebhookAction">
+                </appsco-integration-webhooks>
             </div>
         </paper-card>
 
@@ -75,7 +71,7 @@
     <script>
         Polymer({
 
-            is: 'appsco-integration-rules-page',
+            is: 'appsco-integration-webhooks-page',
 
             properties: {
 
@@ -98,9 +94,9 @@
                     }
                 },
 
-                _integrationRulesApi: {
+                _integrationWebhooksApi: {
                     type: String,
-                    computed: '_computeIntegrationRulesApi(integration)'
+                    computed: '_computeIntegrationWebhooksApi(integration)'
                 },
 
                 animationConfig: {
@@ -147,46 +143,26 @@
                 Polymer.NeonSharedElementAnimatableBehavior
             ],
 
-            addIntegrationRule: function(rule) {
-                this.$.appscoIntegrationRules.addItems([rule]);
+            modifyIntegrationWebhook: function(webhook) {
+                webhook.registered = true;
+                this.$.appscoIntegrationWebhooks.modifyItems([webhook]);
             },
 
-            modifyIntegrationRule: function(rule) {
-                this.$.appscoIntegrationRules.modifyItems([rule]);
+            _computeIntegrationWebhooksApi: function(integration) {
+                return integration.meta ? integration.meta.webHooks : '';
             },
 
-            removeIntegrationRule: function(rule) {
-                this.$.appscoIntegrationRules.removeItems([rule]);
-            },
-
-            _computeIntegrationRulesApi: function(integration) {
-                return integration.meta ? integration.meta.recipes : '';
-            },
-
-            _onAddAction: function() {
-                this.fire('add-integration-rule', {
-                    integration: this.integration
+            _onRegisterIntegrationWebhookAction: function(event) {
+                this.fire('register-integration-webhook', {
+                    integration: this.integration,
+                    webhook: event.detail.item
                 });
             },
 
-            _onEditIntegrationRuleAction: function(event) {
-                this.fire('edit-integration-rule', {
+            _onUnregisterIntegrationWebhookAction: function(event) {
+                this.fire('unregister-integration-webhook', {
                     integration: this.integration,
-                    rule: event.detail.item
-                });
-            },
-
-            _onRunIntegrationRuleAction: function(event) {
-                this.fire('run-integration-rule', {
-                    integration: this.integration,
-                    rule: event.detail.item
-                });
-            },
-
-            _onRemoveIntegrationRuleAction: function(event) {
-                this.fire('remove-integration-rule', {
-                    integration: this.integration,
-                    rule: event.detail.item
+                    webhook: event.detail.item
                 });
             },
 

@@ -1,0 +1,150 @@
+<link rel="import" href="../../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../../bower_components/iron-ajax/iron-ajax.html">
+<link rel="import" href="../../../bower_components/paper-button/paper-button.html">
+<link rel="import" href="../../../bower_components/paper-progress/paper-progress.html">
+
+<link rel="import" href="appsco-integration-webhook-item.html">
+<link rel="import" href="../components/appsco-list-behavior.html">
+<link rel="import" href="../components/appsco-list-styles.html">
+
+<dom-module id="appsco-integration-webhooks">
+    <template>
+        <style include="appsco-list-styles"></style>
+
+        <style>
+            :host appsco-integration-webhook-item {
+                width: 100%;
+                margin: 0 0 10px 0;
+                @apply(--appsco-integration-webhook-item);
+            }
+        </style>
+
+        <iron-ajax id="getListApiRequest"
+                   url="[[ _listApi ]]"
+                   on-error="_onGetListError"
+                   on-response="_onGetListResponse"
+                   headers="[[ _headers ]]"
+                   debounce-duration="300"></iron-ajax>
+
+        <iron-ajax id="getWatcherListApiRequest"
+                   url="[[ _watcherListApi ]]"
+                   on-response="_onGetWatcherListResponse"
+                   headers="[[ _headers ]]"
+                   debounce-duration="300"></iron-ajax>
+
+        <div class="list-container">
+
+            <paper-progress id="paperProgress"
+                            class="list-progress-bar"
+                            indeterminate></paper-progress>
+
+            <template is="dom-if" if="[[ _message ]]">
+                <p class="message">[[ _message ]]</p>
+            </template>
+
+            <template is="dom-if" if="[[ !_listEmpty ]]">
+                <div class="list">
+                    <template is="dom-repeat"
+                              items="[[ _listItems ]]"
+                              on-dom-change="_onItemsDomChange">
+
+                        <appsco-integration-webhook-item id="appscoListItem_[[ index ]]"
+                                                      item="[[ item ]]"
+                                                      integration="[[ integration ]]"
+                                                      type="[[ type ]]"
+                                                      selectable="[[ selectable ]]"
+                                                      on-item="_onListItemAction"
+                                                      on-select-item="_onSelectListItemAction"></appsco-integration-webhook-item>
+                    </template>
+                </div>
+            </template>
+        </div>
+
+        <template is="dom-if" if="[[ !_listEmpty ]]">
+            <div class="load-more-box" hidden$="[[ !_loadMore ]]">
+                <paper-progress id="loadMoreProgress"
+                                indeterminate></paper-progress>
+                <paper-button class="load-more-action"
+                              on-tap="_onLoadMoreAction">Load More</paper-button>
+            </div>
+        </template>
+
+    </template>
+
+    <script>
+        Polymer({
+
+            is: 'appsco-integration-webhooks',
+
+            properties: {
+
+                integration: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    }
+                },
+
+                _watcherListApi: {
+                    type: String,
+                    computed: '_computeWatcherListApi(integration)'
+                }
+            },
+
+            behaviors: [
+                Polymer.AppscoListBehavior
+            ],
+
+            listeners: {
+                'list-loaded': '_getWatcherList'
+            },
+
+            _computeWatcherListApi: function(integration) {
+                return integration.meta ? (integration.meta.watchers + '?extended=1') : '';
+            },
+
+            _getWatcherList: function() {
+                this.$.getWatcherListApiRequest.generateRequest();
+            },
+
+            _onGetWatcherListResponse: function(event) {
+                var webhooks = JSON.parse(JSON.stringify(this._allListItems)),
+                    webhooksLength = webhooks.length,
+                    removeWebhooks = [],
+                    modifyWebhooks = [],
+                    watchers = (event.detail.response && event.detail.response.watchers) ? event.detail.response.watchers : [];
+
+                if (watchers && 0 < watchers.length) {
+                    var watchersLength = watchers.length;
+
+                    for (var j = 0; j < webhooksLength; j++) {
+                        var webhook = webhooks[j];
+
+                        if (!webhook.fromMethod) {
+                            removeWebhooks.push(webhook);
+                            break;
+                        }
+
+                        for (var i = 0; i < watchersLength; i++) {
+
+                            if (webhook.self === watchers[i].meta.webhook && this.$$('#appscoListItem_' + j).$) {
+                                webhook.removeWatcherApi = watchers[i].self;
+                                modifyWebhooks.push(webhook);
+                                this.$$('#appscoListItem_' + j).register();
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                if (0 < modifyWebhooks.length) {
+                    this.modifyItems(modifyWebhooks);
+                }
+
+                if (0 < removeWebhooks.length) {
+                    this.removeItems(removeWebhooks);
+                }
+            }
+        });
+    </script>
+</dom-module>

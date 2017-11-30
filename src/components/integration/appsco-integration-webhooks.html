@@ -112,11 +112,12 @@
             },
 
             _getWatcherList: function() {
+                this._removeUnActiveWebhooks();
                 this.$.getWatcherListApiRequest.generateRequest();
             },
 
             _onWatcherListChanged: function() {
-                this._setWebhookList();
+                this._setWebhooksState();
             },
 
             addIntegrationWatcher: function(watcher) {
@@ -144,10 +145,27 @@
                 this.set('_watcherList', watchers);
             },
 
-            _setWebhookList: function() {
+            _removeUnActiveWebhooks: function() {
                 var webhooks = JSON.parse(JSON.stringify(this._allListItems)),
                     webhooksLength = webhooks.length,
-                    removeWebhooks = [],
+                    removeWebhooks = [];
+                for (var j = 0; j < webhooksLength; j++) {
+                    var webhook = webhooks[j];
+
+                    if (false === this._isVisible(webhook)) {
+                        removeWebhooks.push(webhook);
+                        continue;
+                    }
+                }
+
+                if (0 < removeWebhooks.length) {
+                    this.removeItems(removeWebhooks);
+                }
+            },
+
+            _setWebhooksState: function() {
+                var webhooks = JSON.parse(JSON.stringify(this._allListItems)),
+                    webhooksLength = webhooks.length,
                     modifyWebhooks = [],
                     watchers = this._watcherList;
 
@@ -157,27 +175,18 @@
                     for (var j = 0; j < webhooksLength; j++) {
                         var webhook = webhooks[j];
 
-                        if (false === this._isVisible(webhook)) {
-                            removeWebhooks.push(webhook);
-                            continue;
-                        }
-
                         for (var i = 0; i < watchersLength; i++) {
-                            if (webhook.self === watchers[i].meta.webhook && this.$$('#appscoListItem_' + j).$) {
+                            if (webhook.self === watchers[i].meta.webhook) {
                                 webhook.removeWatcherApi = watchers[i].self;
                                 modifyWebhooks.push(webhook);
                                 this.$$('#appscoListItem_' + j).register();
                             }
                         }
                     }
-                }
 
+                }
                 if (0 < modifyWebhooks.length) {
                     this.modifyItems(modifyWebhooks);
-                }
-
-                if (0 < removeWebhooks.length) {
-                    this.removeItems(removeWebhooks);
                 }
             },
 

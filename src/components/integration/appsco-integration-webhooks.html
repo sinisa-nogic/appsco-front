@@ -136,7 +136,6 @@
                 for (var i = 0; i < length; i++) {
                     if (watcher.alias === watchers[i].alias) {
                         watchers.splice(i, 1);
-                        i --;
                         break;
                     }
                 }
@@ -178,13 +177,23 @@
                         for (var i = 0; i < watchersLength; i++) {
                             if (webhook.self === watchers[i].meta.webhook) {
                                 webhook.removeWatcherApi = watchers[i].self;
-                                modifyWebhooks.push(webhook);
                                 this.$$('#appscoListItem_' + j).register();
+                                modifyWebhooks.push(webhook);
+                                break;
+                            }
+                            else {
+                                delete webhook.removeWatcherApi;
+                                this.$$('#appscoListItem_' + j).unregister();
+
+                                if (i === watchersLength - 1) {
+                                    modifyWebhooks.push(webhook);
+                                }
                             }
                         }
                     }
 
                 }
+
                 if (0 < modifyWebhooks.length) {
                     this.modifyItems(modifyWebhooks);
                 }

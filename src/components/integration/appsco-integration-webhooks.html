@@ -157,18 +157,16 @@
                     for (var j = 0; j < webhooksLength; j++) {
                         var webhook = webhooks[j];
 
-                        if (!webhook.fromMethod) {
+                        if (false === this._isVisible(webhook)) {
                             removeWebhooks.push(webhook);
-                            break;
+                            continue;
                         }
 
                         for (var i = 0; i < watchersLength; i++) {
-
                             if (webhook.self === watchers[i].meta.webhook && this.$$('#appscoListItem_' + j).$) {
                                 webhook.removeWatcherApi = watchers[i].self;
                                 modifyWebhooks.push(webhook);
                                 this.$$('#appscoListItem_' + j).register();
-                                break;
                             }
                         }
                     }
@@ -181,6 +179,11 @@
                 if (0 < removeWebhooks.length) {
                     this.removeItems(removeWebhooks);
                 }
+            },
+
+            _isVisible: function (webhook) {
+                // If From Method is set to null then it is not visible webhook
+                return null === webhook.fromMethod ? false : true;
             },
 
             _onGetWatcherListResponse: function(event) {

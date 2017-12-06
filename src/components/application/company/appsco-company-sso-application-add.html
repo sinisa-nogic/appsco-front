@@ -12,6 +12,7 @@
 <link rel="import" href="../../../../bower_components/iron-a11y-keys/iron-a11y-keys.html">
 
 <link rel="import" href="../../components/appsco-loader.html">
+<link rel="import" href="../../components/appsco-search.html">
 <link rel="import" href="appsco-company-application-add-settings.html">
 <link rel="import" href="appsco-company-application-sso-list.html">
 
@@ -23,7 +24,7 @@
             }
             :host paper-dialog {
                 width: 670px;
-                top: 20vh;
+                top: 10vh;
                 @apply(--appsco-paper-dialog);
             }
             :host paper-dialog-scrollable > * {
@@ -38,6 +39,9 @@
             appsco-loader {
                 margin: 0 !important;
                 padding: 0 !important;
+            }
+            appsco-search {
+                margin-bottom: 10px;
             }
             :host .buttons {
                 padding-right: 24px;
@@ -58,8 +62,7 @@
         <iron-ajax auto
                    url="[[ itemApi ]]"
                    on-response="_onItemResponse"
-                   headers="[[ _computedHeaders ]]">
-        </iron-ajax>
+                   headers="[[ _computedHeaders ]]"></iron-ajax>
 
         <paper-dialog
                 with-backdrop
@@ -72,6 +75,14 @@
             <h2>[[ _dialogTitle ]]</h2>
 
             <appsco-loader active="[[ _loader ]]" loader-alt="Appsco is processing request" multi-color></appsco-loader>
+
+            <template is="dom-if" if="[[ _searchAction ]]">
+                <appsco-search id="appscoSearch"
+                               label="Search SSO applications"
+                               float-label
+                               on-search="_onSearch"
+                               on-search-clear="_onSearchClear"></appsco-search>
+            </template>
 
             <paper-dialog-scrollable>
                 <neon-animated-pages class="flex"
@@ -212,7 +223,17 @@
                 },
 
                 /**
-                 * Indicates wheather add action should be displayed or not.
+                 * Indicates weather search action should be displayed or not.
+                 * It depends on which page is currently displayed.
+                 */
+                _searchAction: {
+                    type: Boolean,
+                    value: false,
+                    notify: true
+                },
+
+                /**
+                 * Indicates weather add action should be displayed or not.
                  * It depends on which page is currently displayed.
                  */
                 _addAction: {
@@ -259,6 +280,7 @@
 
             listeners: {
                 '_selected-changed': '_onSelectedChanged',
+                '_search-action-changed': '_onSearchActionChanged',
                 'neon-animation-finish': '_onAddActionAnimationFinish'
             },
 
@@ -294,6 +316,36 @@
                 this.set('_item', customApp);
             },
 
+            _onSearch: function(event) {
+                this.$.appscoApplicationAddSearch.filterResourcesByTerm(event.detail.term);
+            },
+
+            _onSearchClear: function() {
+                this._onSearch({
+                    detail: {
+                        term: ''
+                    }
+                });
+            },
+
+            _setupAppscoSearch: function() {
+
+                if (this.$$('#appscoSearch')) {
+                    this.$$('#appscoSearch').setup();
+                }
+            },
+
+            _resetAppscoSearch: function() {
+
+                if (this.$$('#appscoSearch')) {
+                    this.$$('#appscoSearch').reset();
+                }
+            },
+
+            _onSearchActionChanged: function(event) {
+                event.detail.value ? this._setupAppscoSearch() : this._resetAppscoSearch();
+            },
+
             /**
              * Called after selected page has been changed.
              * According to selected page it shows / hides add application action (_addAction).
@@ -303,11 +355,13 @@
             _onSelectedChanged: function() {
 
                 if (this._selected != 'appsco-application-add-search') {
+                    this._searchAction = false;
                     this.$.addApplicationAction.style.display = 'block';
                     this.playAnimation('entry');
                     this._addAction = true;
                 }
                 else {
+                    this._searchAction = true;
                     this._addAction = false;
                     this.playAnimation('exit');
                 }
@@ -358,6 +412,7 @@
             _onDialogOpened: function() {
                 this._dialogTitle = 'Add application';
                 this.$.appscoApplicationAddSearch.setup();
+                this._setupAppscoSearch();
             },
 
             /**
@@ -368,6 +423,7 @@
              * @private
              */
             _onDialogClosed: function() {
+                this._resetAppscoSearch();
                 this._selectedApplication = {};
                 this.$.appscoApplicationAddSearch.reset();
                 this.$.appscoApplicationAddSettings.reset();

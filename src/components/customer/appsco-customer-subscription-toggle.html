@@ -1,10 +1,5 @@
 <link rel="import" href="../../../bower_components/polymer/polymer.html">
 <link rel="import" href="../../../bower_components/paper-toggle-button/paper-toggle-button.html">
-<link rel="import" href="../../../bower_components/iron-ajax/iron-request.html">
-<link rel="import" href="../../../bower_components/iron-form/iron-form.html">
-
-<link rel="import" href="../../components/components/appsco-loader.html">
-<link rel="import" href="../../components/components/appsco-form-error.html">
 
 <dom-module id="appsco-customer-subscription-toggle">
     <template>
@@ -16,29 +11,12 @@
             :host paper-toggle-button {
                 cursor: pointer;
             }
-            .info {
+            :host .info {
                 margin-top: 10px;
             }
         </style>
 
-        <appsco-loader active="[[ _loader ]]"
-                       loader-alt="Appsco is processing request"
-                       multi-color></appsco-loader>
-
-        <appsco-form-error message="[[ _error ]]"></appsco-form-error>
-
-        <form is="iron-form"
-              id="form"
-              method="POST"
-              action="[[ _subscriptionPaidStateApi ]]"
-              headers="[[ _headers ]]"
-              on-iron-form-presubmit="_onFormPresubmit"
-              on-iron-form-error="_onFormError"
-              on-iron-form-response="_onFormResponse">
-        </form>
-
         <paper-toggle-button id="switch"
-                             name="form[subscription_paid_externally]"
                              checked$="[[ customer.subscription_paid_externally ]]">Subscription paid externally</paper-toggle-button>
 
         <div class="info">
@@ -58,36 +36,6 @@
                     value: function() {
                         return {};
                     }
-                },
-
-                authorizationToken: {
-                    type: String
-                },
-
-                apiErrors: {
-                    type: Object,
-                    value: function() {
-                        return {};
-                    }
-                },
-
-                _headers: {
-                    type: Object,
-                    computed: '_computeHeaders(authorizationToken)'
-                },
-
-                _subscriptionPaidStateApi: {
-                    type: String,
-                    computed: '_computeSubscriptionPaidStateApi(customer)'
-                },
-
-                _loader: {
-                    type: Boolean,
-                    value: false
-                },
-
-                _error: {
-                    type: String
                 }
             },
 
@@ -102,35 +50,10 @@
                 this.set('customer', customer);
             },
 
-            _computeHeaders: function(token) {
-                return token ? {
-                    'Authorization': 'token ' + token
-                } : {};
-            },
-
-            _computeSubscriptionPaidStateApi: function(customer) {
-                return customer ? (customer.self + '/paid-externally') : '';
-            },
-
-            _showLoader: function() {
-                this._loader = true;
-            },
-
-            _hideLoader: function() {
-                this._loader = false;
-            },
-
-            _showError: function(message) {
-                this._error = message;
-            },
-
-            _hideError: function() {
-                this._error = '';
-            },
-
             _turnSubscriptionPaidExternallyOn: function() {
-                this._showLoader();
-                this.$.form.submit();
+                this.fire('enable-customer-subscription-paid-externally', {
+                    customer: this.customer
+                });
             },
 
             _turnSubscriptionPaidExternallyOff: function() {
@@ -141,36 +64,6 @@
 
             _onSwitchChanged: function(event) {
                 event.target.checked ? this._turnSubscriptionPaidExternallyOn() : this._turnSubscriptionPaidExternallyOff();
-            },
-
-            _onFormPresubmit: function(event) {
-                var form = event.target;
-
-                form.request.method = 'PUT';
-                form.request.body['form[subscription_paid_externally]'] = ('on' === this.$.switch.value) ? 1 : 0;
-            },
-
-            _onFormError: function() {
-                this.resetCustomer();
-                this._showError(this.apiErrors.getError(404));
-                this._hideLoader();
-            },
-
-            _onFormResponse: function(event) {
-                this._hideLoader();
-
-                if (200 === event.detail.status) {
-
-                    /**
-                     * Fired when subscription paid externally state for customer has been changed.
-                     *
-                     * @event customer-subscription-state-changed
-                     * @param {Object} customer
-                     */
-                    this.fire('customer-subscription-state-changed', {
-                        customer: event.detail.response
-                    });
-                }
             }
         });
     </script>

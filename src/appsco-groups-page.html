@@ -294,6 +294,11 @@
                 _groupResourcesApi: {
                     type: String,
                     computed: '_computeGroupResourcesApi(group)'
+                },
+
+                _selectedAll: {
+                    type: Boolean,
+                    value: false
                 }
             },
 
@@ -351,6 +356,20 @@
 
             filterByTerm: function(term) {
                 this.$.appscoGroups.filterByTerm(term);
+            },
+
+            selectAllGroups: function() {
+                var groupsComponent = this.$.appscoGroups;
+
+                this._selectedAll = !this._selectedAll;
+
+                if (this._selectedAll) {
+                    groupsComponent.selectAllItems();
+                }
+                else {
+                    groupsComponent.deselectAllItems();
+                    this._hideBulkActions();
+                }
             },
 
             getSelectedGroups: function() {
@@ -421,10 +440,12 @@
             },
 
             _resetPageActions: function() {
+                this._hideBulkActions();
                 this.fire('reset-page-actions');
             },
 
             _resetPageLists: function(page) {
+                this._selectedAll = false;
                 this.filterByTerm('', page);
                 this.$.appscoGroups.resetAllItems();
             },

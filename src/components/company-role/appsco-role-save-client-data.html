@@ -1,0 +1,113 @@
+<link rel="import" href="../../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../../bower_components/iron-ajax/iron-ajax.html">
+<link rel="import" href="../../../bower_components/iron-ajax/iron-request.html">
+
+<dom-module id="appsco-role-save-client-data">
+    <template>
+        <style>
+            :host {
+                display: none;
+                @apply(--appsco-role-save-client-data);
+            }
+        </style>
+
+        <iron-ajax auto
+                   headers="[[ _headers ]]"
+                   url="[[ _getCompanyRoleApi ]]"
+                   handle-as="json"
+                   on-response="_onGetCompanyRoleResponse"></iron-ajax>
+
+    </template>
+
+    <script type="text/javascript" src="../../../bower_components/clientjs/dist/client.min.js"></script>
+
+    <script>
+        Polymer({
+
+            is: 'appsco-role-save-client-data',
+
+            properties: {
+
+                account: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    }
+                },
+
+                authorizationToken: {
+                    type: String,
+                    value: ''
+                },
+
+                _headers: {
+                    type: Object,
+                    computed: '_computeHeaders(authorizationToken)'
+                },
+
+                _getCompanyRoleApi: {
+                    type: String,
+                    computed: '_computeGetCompanyRoleApi(account)'
+                },
+
+                _device: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    }
+                }
+            },
+
+            _computeHeaders: function(authorizationToken) {
+                return {
+                    'Authorization': 'token ' + authorizationToken,
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                };
+            },
+
+            _computeGetCompanyRoleApi: function(account) {
+                return account.native_company ?
+                    (account.native_company.self + '/directory/roles?term=' + account.email) :
+                    '';
+            },
+
+            _sendClientDataForRole: function(roleApi) {
+                var client = new ClientJS(),
+                    request = document.createElement('iron-request'),
+                    options = {
+                        url: roleApi + '/byod',
+                        method: 'POST',
+                        handleAs: 'json',
+                        headers: this._headers
+                    };
+
+                options.body = 'byod[name]=' + encodeURIComponent(client.getFingerprint()) +
+                    '&byod[device]=' + encodeURIComponent(client.getDevice()) +
+                    '&byod[device_type]=' + (client.getDeviceType() ? encodeURIComponent(client.getDeviceType()) : 'desktop') +
+                    '&byod[device_vendor]=' + encodeURIComponent(client.getDeviceVendor()) +
+                    '&byod[user_agent]=' + encodeURIComponent(client.getUserAgent()) +
+                    '&byod[browser]=' + encodeURIComponent(client.getBrowser()) +
+                    '&byod[browser_version]=' + encodeURIComponent(client.getBrowserVersion()) +
+                    '&byod[browser_fingerprint]=' + encodeURIComponent(client.getFingerprint()) +
+                    '&byod[operating_system]=' + encodeURIComponent(client.getOS()) +
+                    '&byod[operating_system_version]=' + encodeURIComponent(client.getOSVersion());
+
+                request.send(options).then(function() {
+
+                    if (200 == request.status) {
+                        this.set('_device', request.response);
+                    }
+                }.bind(this));
+            },
+
+            _onGetCompanyRoleResponse: function(event) {
+                var response = event.detail.response;
+
+                if (response && response.company_roles && 1 === response.company_roles.length) {
+                    this._sendClientDataForRole(response.company_roles[0]);
+                }
+            }
+
+        });
+    </script>
+</dom-module>

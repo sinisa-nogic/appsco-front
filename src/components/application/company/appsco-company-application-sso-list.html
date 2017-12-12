@@ -7,17 +7,21 @@
 <link rel="import" href="../../../../bower_components/neon-animation/animations/fade-out-animation.html">
 
 <link rel="import" href="../../components/appsco-loader.html">
-<link rel="import" href="../../components/appsco-search.html">
-<link rel="import" href="../appsco-application-card.html">
+<link rel="import" href="appsco-company-resource-item.html">
 
 <dom-module id="appsco-company-application-sso-list">
     <template>
         <style>
             :host {
                 display: block;
-            }
-            appsco-search {
-                margin-bottom: 10px;
+
+                --item-additional-info: {
+                    display: none;
+                };
+
+                --item-actions: {
+                    display: none;
+                };
             }
             .application-list {
                 @apply(--layout-horizontal);
@@ -25,9 +29,31 @@
                 padding: 2px;
                 margin-right: -8px;
             }
-            appsco-application-card {
-                margin-right: 6px;
-                margin-bottom: 6px;
+            appsco-company-resource-item {
+                width: 100%;
+
+                --item-icon-width: 32px;
+                --item-icon-height: 32px;
+
+                --appsco-list-item: {
+                    box-shadow: none;
+                    padding: 5px 0;
+                    height: auto;
+                    border-bottom: 1px solid var(--border-color);
+                };
+
+                --appsco-list-item-activated: {
+                    box-shadow: none;
+                    background-color: var(--body-background-color);
+                };
+
+                --item-info-label: {
+                    font-size: 14px;
+                };
+
+                --item-info-value: {
+                    display: none;
+                };
             }
             :host .message {
                 margin: 0;
@@ -38,20 +64,17 @@
             }
         </style>
 
-        <appsco-search id="appscoSearch"
-                       label="Search SSO applications"
-                       float-label
-                       on-search="_onSearch"
-                       on-search-clear="_onSearchClear"></appsco-search>
-
         <div class="application-list">
 
-            <appsco-loader active="[[ _searchLoader ]]" loader-alt="Appsco is searching applications" multi-color></appsco-loader>
+            <appsco-loader active="[[ _searchLoader ]]"
+                           loader-alt="AppsCo is processing request"
+                           multi-color></appsco-loader>
 
             <template is="dom-repeat" items="[[ _searchList ]]">
-                <appsco-application-card id="application_[[ index ]]"
-                                         application="[[ item ]]"
-                                         on-selected="_onApplicationSelect"></appsco-application-card>
+                <appsco-company-resource-item id="appscoListItem_[[ index ]]"
+                                              item="[[ item ]]"
+                                              type="resource"
+                                              on-item="_onApplicationSelect"></appsco-company-resource-item>
             </template>
 
             <template is="dom-if" if="[[ _message ]]">
@@ -71,6 +94,23 @@
             properties: {
 
                 /**
+                 * Authorization token.
+                 */
+                authorizationToken: {
+                    type: String,
+                    value: ''
+                },
+
+                /**
+                 * Applications template API link.
+                 * API to get applications.
+                 */
+                applicationsTemplateApi: {
+                    type: String,
+                    value: ''
+                },
+
+                /**
                  * Selected application from search list.
                  */
                 selectedApplication: {
@@ -79,6 +119,16 @@
                         return {};
                     },
                     notify: true
+                },
+
+                _getResourcesApi: {
+                    type: String,
+                    computed: '_computeGetResourceApi(applicationsTemplateApi)'
+                },
+
+                _headers: {
+                    type: Object,
+                    computed: '_computeHeaders(authorizationToken)'
                 },
 
                 /**
@@ -97,36 +147,6 @@
                 _message: {
                     type: String,
                     value: ''
-                },
-
-                /**
-                 * Authorization token.
-                 */
-                authorizationToken: {
-                    type: String,
-                    value: ''
-                },
-
-                /**
-                 * Applications template API link.
-                 * API to get applications.
-                 */
-                applicationsTemplateApi: {
-                    type: String,
-                    value: ''
-                },
-
-                /**
-                 * Number of applications to load and present.
-                 */
-                size: {
-                    type: Number,
-                    value: 12
-                },
-
-                _computedHeaders: {
-                    type: Object,
-                    computed: '_computeHeaders(authorizationToken)'
                 },
 
                 /**
@@ -192,6 +212,10 @@
                 }
             },
 
+            _computeGetResourceApi: function(applicationsTemplateApi) {
+                return applicationsTemplateApi ? (applicationsTemplateApi + '?status=3&extended=1') : '';
+            },
+
             _showLoader: function() {
                 this._searchLoader = true;
             },
@@ -208,9 +232,32 @@
                 this._message = '';
             },
 
+            _setSearchList: function(applications) {
+                this.set('_searchList', applications.sort(function(app1, app2) {
+                    var app1Title = app1.title.toLowerCase(),
+                        app2Title = app2.title.toLowerCase();
+
+                    if (app1Title < app2Title) {
+                        return -1;
+                    }
+
+                    if (app1Title > app2Title) {
+                        return 1;
+                    }
+
+                    return 0;
+                }));
+            },
+
             _populateTopSSOApps: function() {
+
+                if (!this._getResourcesApi) {
+                    this._showMessage('There are no applications to display.');
+                    return false;
+                }
+
                 var request = document.createElement('iron-request'),
-                    url = this.applicationsTemplateApi + '?status=3&extended=1&limit=8';
+                    url = this._getResourcesApi;
 
                 this._hideMessage();
 
@@ -218,14 +265,14 @@
                     url: url,
                     method: 'GET',
                     handleAs: 'json',
-                    headers: this._computedHeaders
+                    headers: this._headers
                 };
 
                 request.send(options).then(function() {
                     var applications = request.response.applications;
 
                     if (applications && applications.length > 0) {
-                        this.set('_searchList', applications);
+                        this._setSearchList(applications);
                     }
 
                     this._hideLoader();
@@ -238,20 +285,19 @@
              * @param {Object} event
              * @private
              */
-            _onSearch: function(event) {
-                var searchValue = event.detail.term,
-                    searchLength = searchValue.length;
+            filterResourcesByTerm: function(term) {
+                var termLength = term.length;
 
                 this._showLoader();
                 this._hideMessage();
 
-                if (0 === searchLength) {
+                if (0 === termLength) {
                     this._populateTopSSOApps();
 
                     return false;
                 }
 
-                if (searchLength < 2) {
+                if (termLength < 2) {
                     this._showMessage('Please type two or more letters.');
                     this._hideLoader();
                     this.set('_searchList', []);
@@ -260,7 +306,7 @@
                 }
 
                 var request = document.createElement('iron-request'),
-                    url = this.applicationsTemplateApi + '?status=3&extended=1&limit=' + this.size + '&term=' + searchValue;
+                    url = this._getResourcesApi + '&term=' + term;
 
                 this._hideMessage();
 
@@ -268,14 +314,14 @@
                     url: url,
                     method: 'GET',
                     handleAs: 'json',
-                    headers: this._computedHeaders
+                    headers: this._headers
                 };
 
                 request.send(options).then(function() {
                     var applications = request.response.applications;
 
                     if (applications && applications.length > 0) {
-                        this.set('_searchList', applications);
+                        this._setSearchList(applications);
                     }
                     else {
                         this.set('_searchList', []);
@@ -284,14 +330,6 @@
 
                     this._hideLoader();
                 }.bind(this));
-            },
-
-            _onSearchClear: function() {
-                this._onSearch({
-                    detail: {
-                        term: ''
-                    }
-                });
             },
 
             /**
@@ -303,8 +341,8 @@
              * @private
              */
             _onApplicationSelect: function(event) {
-                this.sharedElements.hero = this.$$('#application_' + event.model.index);
-                this.selectedApplication = event.detail.application;
+                this.sharedElements.hero = this.$$('#appscoListItem_' + event.model.index);
+                this.selectedApplication = event.detail.item;
 
                 /**
                  * Fired after application has been selected.
@@ -328,16 +366,13 @@
             /**
              * Sets focus on search input.
              */
-            setup: function() {
-                this.$.appscoSearch.setup();
-            },
+            setup: function() {},
 
             /**
              * Resets component.
              */
             reset: function() {
-                this.$.appscoSearch.reset();
-                this._searchList = [];
+                this.set('_searchList', []);
                 this._populateTopSSOApps();
                 this._hideMessage();
                 this._hideLoader();

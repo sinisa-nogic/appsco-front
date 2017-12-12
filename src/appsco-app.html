@@ -1665,7 +1665,8 @@
                        headers="[[ _computedHeaders ]]"></iron-ajax>
         </template>
 
-        <iron-ajax auto
+        <iron-ajax
+                   id="companySubscriptionInfo"
                    url="[[ _companySubscriptionApi ]]"
                    headers="[[ _computedHeaders ]]"
                    handle-as="json"
@@ -1989,7 +1990,8 @@
 
                 _companySubscriptionApi: {
                     type: String,
-                    value: ''
+                    value: '',
+                    observer: '_onCompanySubscriptionApiChanged'
                 },
 
                 _companyDomainsApi: {
@@ -2221,7 +2223,6 @@
             },
 
             _onCurrentCompanyChanged: function(company, oldCompany) {
-
                 if (company && company.company) {
                     for (key in company.company) {
                         this._storeValue('company', company.company.alias);
@@ -2240,6 +2241,10 @@
                 else {
                     this._setProduct(false);
                 }
+            },
+
+            _onCompanySubscriptionApiChanged: function(newValue, oldValue) {
+                this.$.companySubscriptionInfo.generateRequest();
             },
 
             _redirectToCompany: function(page, currentCompany, account) {

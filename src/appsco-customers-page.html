@@ -288,6 +288,11 @@
                     reflectToAttribute: true
                 },
 
+                _selectedAll: {
+                    type: Boolean,
+                    value: false
+                },
+
                 /**
                  * Animation config.
                  */
@@ -327,6 +332,7 @@
 
             resetPage: function() {
                 this.hideInfo();
+                this._selectedAll = false;
                 this.$.appscoCustomers.reset();
             },
 
@@ -364,8 +370,24 @@
                 this.$.appscoCustomers.reloadItems();
             },
 
-            removeCustomers: function(customers) {
+            removeCustomers: function (customers) {
                 this.$.appscoCustomers.removeItems(customers);
+                this._setDefaultCustomer();
+                return customers.length;
+            },
+
+            selectAllCustomers: function() {
+                var customersComponent = this.$.appscoCustomers;
+
+                this._selectedAll = !this._selectedAll;
+
+                if (this._selectedAll) {
+                    customersComponent.selectAllItems();
+                }
+                else {
+                    customersComponent.deselectAllItems();
+                    this._hideBulkActions();
+                }
             },
 
             _computeCustomerLogApi: function(customer) {
@@ -514,12 +536,6 @@
 
             getSelectedCustomers: function () {
                 return this.$.appscoCustomers.getSelectedItems()
-            },
-
-            removeCustomers: function (customers) {
-                this.$.appscoCustomers.removeItems(customers);
-                this._setDefaultCustomer();
-                return customers.length;
             }
         });
     </script>

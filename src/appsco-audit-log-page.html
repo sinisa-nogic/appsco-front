@@ -274,19 +274,33 @@
                 },
 
                 _filterAccount: {
-                    type: String
+                    type: String,
+                    value: ''
                 },
 
                 _filterEventType: {
-                    type: String
+                    type: String,
+                    value: ''
                 },
 
                 _filterFromDate: {
-                    type: String
+                    type: String,
+                    value: ''
+                },
+
+                _defaultFromDateValue: {
+                    type: String,
+                    value: ''
                 },
 
                 _filterToDate: {
-                    type: String
+                    type: String,
+                    value: ''
+                },
+
+                _defaultToDateValue: {
+                    type: String,
+                    value: ''
                 },
 
                 mobileScreen: {
@@ -364,14 +378,14 @@
                     this.updateStyles();
                 }
 
-                this._setValidFromDate();
+                this._setupDatePicker();
 
                 Polymer.Gestures.add(document, 'tap', this._handleDocumentClick.bind(this));
 
                 this.loadResources(this.resolveUrl('./components/components/data/event-types.json'));
             },
 
-            _updateScreen: function(mobile, tablet, tablet900) {
+            _updateScreen: function() {
                 this.updateStyles();
             },
 
@@ -403,8 +417,10 @@
                 this.$.appscoSearchEventType.reset();
                 this._hideEventTypeList();
                 this.$.filterListEventTypes.selected = 0;
-                this.$.filterDateFrom.value = '';
-                this.$.filterDateTo.value = '';
+                this._filterFromDate = this._defaultFromDateValue;
+                this.$.filterDateFrom.value = this._defaultFromDateValue;
+                this._filterToDate = this._defaultToDateValue;
+                this.$.filterDateTo.value = this._defaultToDateValue;
             },
 
             _isInPath: function(path, element) {
@@ -449,23 +465,35 @@
                 return (companyApi && term) ? companyApi + '/directory/roles?extended=1&limit=50&term=' + term : '';
             },
 
-            _setValidFromDate: function() {
+            _setupDatePicker: function() {
+                this._setValidDates();
+            },
+
+            _setValidDates: function() {
                 var date = new Date(),
                     day = date.getDate(),
-                    month = date.getMonth() + 1,
-                    year = date.getFullYear();
+                    month = date.getMonth(),
+                    year = date.getFullYear(),
+                    filterDateFromComponent = this.$.filterDateFrom,
+                    filterDateToComponent = this.$.filterDateTo;
 
                 if (day < 10) {
                     day = '0' + day;
                 }
 
+                this._defaultFromDateValue = year + '-' + month + '-' + day;
+
+                month += 1;
+
                 if (month < 10) {
-                    month= '0' + month
+                    month = '0' + month
                 }
 
-                date = year + '-' + month + '-' + day;
+                this._defaultToDateValue = year + '-' + month + '-' + day;
 
-                this.$.filterDateFrom.max = date;
+                filterDateFromComponent.value = this._defaultFromDateValue;
+                filterDateFromComponent.max = this._defaultToDateValue;
+                filterDateToComponent.value = this._defaultToDateValue;
             },
 
             _setValidToDate: function(date) {
@@ -473,9 +501,15 @@
             },
 
             _onFilterDateFrom: function(event) {
-                var fromDate = event.detail.value;
+                var fromDate = event.detail.value,
+                    filterDateFromComponent = this.$.filterDateFrom;
 
-                this._filterFromDate = fromDate ? fromDate + ' 00:00:00' : '';
+                if (!fromDate) {
+                    fromDate = this._defaultFromDateValue;
+                    filterDateFromComponent.value = fromDate;
+                }
+
+                this._filterFromDate = fromDate + ' 00:00:00';
                 this._setValidToDate(fromDate);
 
                 if (this._attached) {
@@ -484,9 +518,15 @@
             },
 
             _onFilterDateTo: function(event) {
-                var toDate = event.detail.value;
+                var toDate = event.detail.value,
+                    filterDateToComponent = this.$.filterDateTo;
 
-                this._filterToDate = toDate ? toDate + ' 23:59:59' : '';
+                if (!toDate) {
+                    toDate = this._defaultToDateValue;
+                    filterDateToComponent.value = toDate;
+                }
+
+                this._filterToDate = toDate + ' 23:59:59';
 
                 if (this._attached) {
                     this._filterLog();

@@ -9,13 +9,13 @@
 <link rel="import" href="../components/appsco-loader.html">
 <link rel="import" href="../components/appsco-form-error.html">
 
-<dom-module id="appsco-disable-customer-subscription-paid-externally">
+<dom-module id="appsco-toggle-customer-subscription-paid-externally">
     <template>
         <style>
             :host {
                 display: block;
                 position: relative;
-                @apply(--appsco-disable-customer-paid-externally);
+                @apply(--appsco-toggle-customer-paid-externally);
 
                 --form-error-box: {
                     margin-top: 0;
@@ -38,6 +38,9 @@
             :host appsco-loader {
                 @apply(--paper-dialog-appsco-loader);
             }
+            :host p + p {
+                margin-top: 0;
+            }
         </style>
         <paper-dialog
                 with-backdrop
@@ -46,14 +49,23 @@
                 exit-animation="fade-out-animation"
                 on-iron-overlay-closed="_onDialogClosed">
 
-            <h2>Confirm action</h2>
+            <h2>Subscription paid externally</h2>
 
             <appsco-loader active="[[ _loader ]]" loader-alt="AppsCo is processing request" multi-color></appsco-loader>
 
             <paper-dialog-scrollable>
                 <div class="remove-container">
                     <appsco-form-error message="[[ _error ]]"></appsco-form-error>
-                    <p>Please confirm that subscription for customer [[ customer.name ]] has been paid by the partner.</p>
+
+                    <template is="dom-if" if="[[ customer.subscription_paid_externally ]]">
+                        <p>You are about to turn off subscription paid externally option for the customer.</p>
+                    </template>
+
+                    <template is="dom-if" if="[[ !customer.subscription_paid_externally ]]">
+                        <p>You are about to turn on subscription paid externally option for the customer.</p>
+                    </template>
+
+                    <p>Please confirm this action.</p>
                 </div>
             </paper-dialog-scrollable>
 
@@ -69,7 +81,7 @@
     <script>
         Polymer({
 
-            is: 'appsco-disable-customer-subscription-paid-externally',
+            is: 'appsco-toggle-customer-subscription-paid-externally',
 
             properties: {
 
@@ -183,7 +195,7 @@
                         method: 'PUT',
                         handleAs: 'json',
                         headers: this._headers,
-                        body: 'form[subscription_paid_externally]=0'
+                        body: 'form[subscription_paid_externally]=' + (this.customer.subscription_paid_externally ? 0 : 1)
                     };
 
                 if (!this._subscriptionPaidStateApi || !this._headers) {

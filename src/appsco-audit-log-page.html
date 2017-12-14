@@ -277,6 +277,13 @@
                     }
                 },
 
+                _logListForExport: {
+                    type: Array,
+                    value: function() {
+                        return [];
+                    }
+                },
+
                 _accountTerm: {
                     type: String,
                     value: ''
@@ -562,6 +569,21 @@
                 };
             },
 
+
+            _formatApplication: function(item) {
+                if (typeof item.data.application == 'undefined') {
+                    return '';
+                }
+                if (typeof item.data.application.title !== 'undefined') {
+                    return item.data.application.title;
+                }
+                if (typeof item.data.application.application_template.title !== 'undefined') {
+                    return item.data.application.application_template.title;
+                }
+                return '';
+            },
+
+
             _onEventTypesResponse: function(event) {
                 var response = event.detail.response;
 
@@ -711,6 +733,86 @@
                         }.bind(this));
 
                 }.bind(this));
+            },
+
+            exportToCSV: function() {
+                this.set('_logListForExport', []);
+                var request = document.createElement('iron-request'),
+                        options = {
+                            url: this.auditLogApi + '/export',
+                            method: 'POST',
+                            handleAs: 'text',
+                            body: {
+                                "from": this._filterFromDate,
+                                "to": this._filterToDate,
+                                "event":this._filterEventType,
+                                "account": this._filterAccount
+                            },
+                            headers: {
+                                'Authorization': 'token ' + this.authorizationToken,
+                                'Content-Type': 'application/x-www-form-urlencoded'
+                            }
+                        };
+                request.send(options).then(function(response) {
+                    if (response.response) {
+                        var responseObject = JSON.parse(response.response);
+                        var logs = responseObject.logs;
+                        logs.forEach(function(log, i) {
+                            var record =  this._formatLogItem(logs[i]),
+                                    exportRecord = [
+                                        this._formatDate(record.date),
+                                        record.event_type.text,
+                                        record.account.name + " - " + record.account.email,
+                                        record.role.name,
+                                        record.event,
+                                        record.application,
+                                        record.ip_address
+                                    ];
+                            this.push('_logListForExport', exportRecord);
+                        }.bind(this));
+
+                        this._setCSVReportHeader();
+                        this._printCSV();
+
+                        this.fire('export-company-log-finished');
+                    }
+                }.bind(this));
+            },
+
+            _formatDate: function(date) {
+                var dateObject = new Date(date);
+                return dateObject.getDay() + '.' + dateObject.getMonth() + '.' + dateObject.getFullYear() + ' ' +
+                        dateObject.getHours() + ':' + dateObject.getMinutes() + ':' + dateObject.getSeconds();
+            },
+
+            _setCSVReportHeader: function () {
+                var header = ['Date', 'Event type', 'Account', 'Role', 'Event', 'Application', 'IP Address'];
+                this._logListForExport.unshift(header);
+            },
+
+            _printCSV: function() {
+                var csvContent = "data:text/csv;charset=utf-8,",
+                        logs = this._logListForExport;
+
+                logs.forEach(function(logElement){
+                    let log = logElement.join(",");
+                    csvContent += log + "\r\n";
+                });
+
+                var encodedUri = encodeURI(csvContent),
+                        link = document.createElement("a");
+                link.setAttribute("href", encodedUri);
+                link.setAttribute("download", "company_log.csv");
+                document.body.appendChild(link);
+
+                link.click()
+            },
+
+            _formatLogItem: function(log) {
+                var logItem = this.$.appscoAuditLog.formatLogItem(log);
+                logItem.event_type = this._formatEventType(log.type);
+                logItem.application = this._formatApplication(log);
+                return logItem;
             },
 
             _onFilterAccount: function(event) {

@@ -97,6 +97,8 @@
 <link rel="import" href="components/account/company/appsco-account-remove-orgunit.html">
 <link rel="import" href="components/account/company/appsco-account-remove-group.html">
 <link rel="import" href="components/account/company/appsco-account-remove.html">
+<link rel="import" href="components/account/company/appsco-account-approve-device.html">
+<link rel="import" href="components/account/company/appsco-account-disapprove-device.html">
 <link rel="import" href="account/appsco-account-disable-2fa.html">
 <link rel="import" href="components/contact/appsco-contact-remove-group.html">
 
@@ -937,7 +939,6 @@
                             on-hide-bulk-actions="_onHideGroupsBulkActions"
                     ></appsco-groups-page>
 
-
                     <appsco-manage-account-page
                             id="appscoManageAccountPage"
                             name="manage-account"
@@ -962,6 +963,8 @@
                             on-account-role-changed="_onAccountRoleChanged"
                             on-page-error="_onError"
                             on-revoke-assignee="_onRevokeAssigneeAccess"
+                            on-approve-device="_onApproveDevice"
+                            on-disapprove-device="_onDisapproveDevice"
                     ></appsco-manage-account-page>
 
                     <appsco-manage-contact-page
@@ -1341,6 +1344,20 @@
                 authorization-token="[[ authorizationToken ]]"
                 application="[[ application ]]"
                 on-application-removed-from-group="_onApplicationRemovedFromGroup"></appsco-application-remove-group>
+
+        <appsco-account-approve-device
+                id="appscoAccountApproveDevice"
+                authorization-token="[[ authorizationToken ]]"
+                api-errors="[[ _apiErrors ]]"
+                on-device-approve-finished="_onDeviceApproveFinished">
+        </appsco-account-approve-device>
+
+        <appsco-account-disapprove-device
+                id="appscoAccountDisapproveDevice"
+                authorization-token="[[ authorizationToken ]]"
+                api-errors="[[ _apiErrors ]]"
+                on-device-disapprove-finished="_onDeviceDisapproveFinished">
+        </appsco-account-disapprove-device>
 
         <appsco-account-remove
                 id="appscoAccountsRemove"
@@ -3952,6 +3969,18 @@
                 this._notifyReloadApplications();
             },
 
+            _onDeviceApproveFinished: function(event) {
+                var device = event.detail.device;
+                this.$.appscoManageAccountPage.reloadDevices();
+                this._notify('Device ' + device.name + ' has been successfully approved.');
+            },
+
+            _onDeviceDisapproveFinished: function(event) {
+                var device = event.detail.device;
+                this.$.appscoManageAccountPage.reloadDevices();
+                this._notify('Device ' + device.name + ' has been successfully disapproved.');
+            },
+
             _onEnableAssigneesSearchAction: function() {
                 this.$.appscoManageApplicationPageActions.enableAssigneesSearchAction();
             },
@@ -5355,6 +5384,29 @@
             },
             /**
              * Groups page END
+             */
+
+
+            /**
+             *  Devices page start
+             */
+            _onApproveDevice: function(event) {
+                var component = this.$.appscoAccountApproveDevice;
+
+                component.setDevice(event.detail.device);
+                component.setAccount(event.detail.account);
+                component.open();
+            },
+
+            _onDisapproveDevice: function(event) {
+                var component = this.$.appscoAccountDisapproveDevice;
+
+                component.setDevice(event.detail.device);
+                component.setAccount(event.detail.account);
+                component.open();
+            },
+            /**
+             *  Devices page end
              */
 
             /**

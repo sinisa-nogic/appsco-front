@@ -1,0 +1,180 @@
+<link rel="import" href="../../../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../../../bower_components/iron-flex-layout/iron-flex-layout.html">
+<link rel="import" href="../../../../bower_components/paper-button/paper-button.html">
+<link rel="import" href="../../../../bower_components/neon-animation/neon-animation-runner-behavior.html">
+<link rel="import" href="../../../../bower_components/neon-animation/animations/fade-in-animation.html">
+<link rel="import" href="../../../../bower_components/neon-animation/animations/fade-out-animation.html">
+<link rel="import" href="../../../../bower_components/paper-styles/typography.html">
+<link rel="import" href="../../../../bower_components/iron-ajax/iron-ajax.html">
+<link rel="import" href="../../components/appsco-list-item-styles.html">
+
+<dom-module id="appsco-account-devices-item">
+    <template>
+        <style include="appsco-list-item-styles"></style>
+
+        <style>
+            :host {
+                padding-bottom: 10px;
+            }
+            :host .item {
+                cursor: default;
+                height: 100px;
+            }
+            :host .info-additional {
+                font-size: 12px;
+                opacity: 0.8;
+                width: 500px;
+            }
+            .browser-hash {
+                font-size: 11px;
+                position: absolute;
+                top: 5px;
+                right: 6px;
+                opacity: 0.5;
+            }
+            :host .item-title {
+                padding-bottom: 5px;
+            }
+            .value {
+                font-weight: bold;
+            }
+        </style>
+
+        <div class="item">
+            <div class="browser-hash">Browser fingerprint: [[ device.browserFingerprint ]]</div>
+
+            <div class="item-info item-basic-info">
+                <span class="info-label item-title">[[ device.name ]]</span>
+                <div class="info-additional">
+                    Device: <span class="value">[[ device.device ]]</span>
+                    Device vendor: <span class="value">[[ device.vendor ]]</span>
+                </div>
+                <div class="info-additional">
+                    Browser: <span class="value">[[ device.browser ]]</span>
+                    Browser version: <span class="value">[[ device.browserVersion ]]</span>
+                </div>
+                <div class="info-additional">
+                    Operating system: <span class="value">[[ device.operatingSystem ]]</span>
+                </div>
+            </div>
+
+            <div class="actions">
+                <template is="dom-if" if="[[ !_approved ]]">
+                    <paper-button on-tap="_onApproveAction">Approve</paper-button>
+                </template>
+
+                <template is="dom-if" if="[[ _approved ]]">
+                    <paper-button on-tap="_onDisapproveAction">Disapprove</paper-button>
+                </template>
+            </div>
+        </div>
+
+    </template>
+
+    <script>
+        Polymer({
+
+            is: 'appsco-account-devices-item',
+
+            properties: {
+
+                /**
+                 * Group that is to be rendered
+                 */
+                device: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    }
+                },
+
+                /**
+                 * Account
+                 */
+                account: {
+                    type: Object,
+                    value: function () {
+                        return {};
+                    }
+                },
+
+                _approved: {
+                    type: Boolean,
+                    computed: '_computeApproved(device)'
+                },
+
+                /**
+                 * Animation for loader appearance.
+                 */
+                animationConfig: {
+                    value: function() {
+                        return {
+                            'entry': {
+                                name: 'fade-in-animation',
+                                node: this,
+                                timing: {
+                                    duration: 200
+                                }
+                            },
+                            'exit': {
+                                name: 'fade-out-animation',
+                                node: this,
+                                timing: {
+                                    duration: 100
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+
+            behaviors: [
+                Polymer.NeonAnimationRunnerBehavior
+            ],
+
+            attached: function() {
+                this.style.display = 'inline-block';
+                this.playAnimation('entry');
+            },
+
+            _computeApproved: function(device) {
+                return device.approved;
+            },
+
+            _onApproveAction: function(event) {
+                this.device.approved = true;
+                event.stopPropagation();
+
+                /**
+                 * Fired when `Approve` action is tapped.
+                 *
+                 * @event approve-device
+                 * @param {Object} device
+                 * @param {Object} account
+                 */
+                this.fire('approve-device', {
+                    device: this.device,
+                    account: this.account
+                });
+            },
+
+            _onDisapproveAction: function(event) {
+                this.device.approved = false;
+                event.stopPropagation();
+
+                /**
+                 * Fired when `disapprove` action is tapped.
+                 *
+                 * @event disapprove-device
+                 * @param {Object} device
+                 * @param {Object} account
+                 */
+                this.fire('disapprove-device', {
+                    device: this.device,
+                    account: this.account
+                });
+            }
+
+        });
+    </script>
+</dom-module>

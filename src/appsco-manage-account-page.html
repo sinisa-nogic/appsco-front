@@ -18,6 +18,7 @@
 <link rel="import" href="directory/appsco-manage-account-change-password-page.html">
 <link rel="import" href="directory/appsco-directory-role-applications-page.html">
 <link rel="import" href="directory/appsco-account-groups-page.html">
+<link rel="import" href="directory/appsco-account-devices-page.html">
 <link rel="import" href="directory/appsco-manage-account-twofa-page.html">
 
 <link rel="import" href="components/account/appsco-account-image.html">
@@ -202,12 +203,14 @@
                                 two-fa-api="[[ _twoFaApi ]]"
                                 two-fa-enforced="[[ twoFaEnforced ]]"
                                 groups-api="[[ _groupsApi ]]"
+                                devices-api="[[ _devicesApi ]]"
                                 on-account-settings="_onAccountSettings"
                                 on-all-notifications="_onAllNotifications"
                                 on-whole-log="_onWholeLog"
                                 on-manage-two-fa="_onManageTwoFA"
                                 on-manage-orgunits="_onManageOrgunits"
                                 on-manage-groups="_onManageGroups"
+                                on-manage-devices="_onManageDevices"
                                 on-manage-applications="_onManageApplications"
                                 on-log-loaded="_pageLoaded"
                                 on-log-empty="_pageLoaded">
@@ -258,6 +261,15 @@
                                 authorization-token="[[ authorizationToken ]]"
                                 on-back="_onResourceBack">
                         </appsco-account-groups-page>
+
+                        <appsco-account-devices-page
+                                id="appscoAccountDevicesPage"
+                                name="appsco-account-devices-page"
+                                account="[[ role ]]"
+                                devices-api="[[ _devicesApi ]]"
+                                authorization-token="[[ authorizationToken ]]"
+                                on-back="_onResourceBack">
+                        </appsco-account-devices-page>
 
                         <appsco-manage-account-change-password-page
                                 name="appsco-manage-account-change-password-page"
@@ -386,6 +398,14 @@
                 _groupsApi: {
                     type: String,
                     computed: '_computeGroupsForRole(role)'
+                },
+
+                /**
+                 * Get company role devices link
+                 */
+                _devicesApi: {
+                    type: String,
+                    computed: '_computeDevicesForRole(role)'
                 },
 
                 /**
@@ -551,6 +571,10 @@
                 return role.meta ? role.meta.groups + '?extended=1' : '';
             },
 
+            _computeDevicesForRole: function(role) {
+                return role.meta ? role.meta.devices + '?extended=1' : '';
+            },
+
             _computeChangePasswordApi: function(role) {
                 return role.self + '/change-password';
             },
@@ -615,6 +639,10 @@
                 this.$.appscoAccountGroupsPage.removeGroup(group);
             },
 
+            reloadDevices: function() {
+                this.$.appscoAccountDevicesPage.loadDevices();
+            },
+
             _onSettingsSaved: function(event) {
                 this._showAccountComponentsPage();
                 this.refreshLog();
@@ -665,6 +693,10 @@
 
             _onManageGroups: function() {
                 this._selected = 'appsco-account-groups-page';
+            },
+
+            _onManageDevices: function() {
+                this._selected = 'appsco-account-devices-page';
             },
 
             _onManageApplications: function() {

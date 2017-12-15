@@ -528,7 +528,8 @@
 //                            console.log('Property ' + property + ' change isn\'t supported in log.' );
                     }
 
-                    message += ' ' + this.localize(property) + ' ' + this.localize('account_log_profile_changed', 'fromValue', from, 'toValue', to);
+                    var propertyName = property.replace('_updated', '');
+                    message += ' ' + this.localize(propertyName) + ' ' + this.localize('account_log_profile_changed', 'fromValue', from, 'toValue', to);
                 }
 
                 return message;
@@ -543,7 +544,8 @@
                         from = propertyValue.from,
                         to = propertyValue.to;
 
-                    message += ' ' + this.localize(property) + ' ' + this.localize('application_updated', 'fromValue', from, 'toValue', to);
+                    var propertyName = property.replace('_updated', '');
+                    message += ' ' + this.localize(propertyName) + ' ' + this.localize('application_updated', 'fromValue', from, 'toValue', to);
                 }
 
                 return message;
@@ -558,7 +560,8 @@
                         from = propertyValue.from,
                         to = propertyValue.to;
 
-                    message += ' ' + this.localize(property) + ' ' + this.localize('log_company_settings_updated', 'fromValue', from, 'toValue', to);
+                    var propertyName = property.replace('_updated', '');
+                    message += ' ' + this.localize(propertyName) + ' ' + this.localize('log_company_settings_updated', 'fromValue', from, 'toValue', to);
                 }
 
                 return message;
@@ -623,7 +626,9 @@
 //                            console.log('Property ' + property + ' change isn\'t supported in log.' );
                     }
 
-                    message += ' ' + this.localize(property) + ' ' + this.localize('company_role_account_updated', 'account', item.affected_account_display_name, 'fromValue', from, 'toValue', to);
+                    var propertyName = property.replace('_updated', '');
+
+                    message += ' ' + this.localize(propertyName) + ' ' + this.localize('company_role_account_updated', 'account', item.affected_account_display_name, 'fromValue', from, 'toValue', to);
                 }
 
                 return message;
@@ -712,11 +717,11 @@
                         break;
 
                     case 'account_authorized_application':
-                        event = this.localize('account_log_application_authorized', 'application', item.data.title);
+                        event = this.localize('account_log_application_authorized', 'application', item.data.oauth_authorization.oauth_application.title);
                         break;
 
                     case 'account_revoked_authorization':
-                        event = this.localize('account_log_application_revoked', 'application', item.data.title);
+                        event = this.localize('account_log_application_revoked', 'application', item.data.oauth_authorization.oauth_application.title);
                         break;
 
                     case 'company_role_added':
@@ -740,7 +745,8 @@
                                 from = propertyValue.from,
                                 to = propertyValue.to;
 
-                            message += this.localize('orgunit_updated', 'property', property, 'fromValue', from, 'toValue', to);
+                            var propertyName = property.replace('_updated', '');
+                            message += this.localize('orgunit_updated', 'property', propertyName, 'fromValue', from, 'toValue', to);
                         }
 
                         event = message;
@@ -792,7 +798,7 @@
                         break;
 
                     case 'company_role_removed_from_orgunit':
-                        event = this.localize('company_role_removed_from_orgunit', 'account', item.data.role.account.name, 'orgunit', item.data.org_unit.name);
+                        event = this.localize('company_role_removed_from_orgunit', 'account', item.data.role.account.name, 'orgunit', item.data.orgunit.name);
                         break;
 
                     case 'application_remove_from_orgunit':
@@ -800,7 +806,7 @@
                         break;
 
                     case 'application_created':
-                        event = this.localize('application_created', 'application', item.data.title);
+                        event = this.localize('application_created', 'application', item.data.application.title);
                         break;
 
                     case 'application_updated':
@@ -855,8 +861,8 @@
 
                     case 'credit_card_created':
 
-                        if (item.data.brand) {
-                            event = this.localize('credit_card_created', 'brand', item.data.brand, 'number', item.data.last4);
+                        if (item.data.credit_card.brand) {
+                            event = this.localize('credit_card_created', 'brand', item.data.credit_card.brand, 'number', item.data.credit_card.last4);
                         }
                         else {
                             event = this.localize('credit_card_created_raw');
@@ -873,7 +879,11 @@
                         break;
 
                     case 'company_customer_added':
-                        event = this.localize('customer_added_to_company', 'customer', item.data.customer);
+                        event = this.localize('customer_added_to_company', 'customer', item.data.customer.name);
+                        break;
+
+                    case 'company_customer_removed':
+                        event = this.localize('customer_removed_from_company', 'customer', item.data.customer.name);
                         break;
 
                     case 'company_group_added':
@@ -885,27 +895,27 @@
                         break;
 
                     case 'resource_added_to_company_group':
-                        event = this.localize('company_resource_added_to_company_group', 'group', item.data.group, 'resource', item.data.resource);
+                        event = this.localize('company_resource_added_to_company_group', 'group', item.data.group, 'resource', item.data.application);
                         break;
 
                     case 'resource_removed_from_company_group':
-                        event = this.localize('company_resource_removed_from_company_group', 'group', item.data.group, 'resource', item.data.resource);
+                        event = this.localize('company_resource_removed_from_company_group', 'group', item.data.group, 'resource', item.data.application);
                         break;
 
                     case 'company_role_added_to_company_group':
-                        event = this.localize('company_role_added_to_company_group', 'group', item.data.group, 'account', item.data.account);
+                        event = this.localize('company_role_added_to_company_group', 'group', item.data.group, 'account', item.data.account.name);
                         break;
 
                     case 'company_role_removed_from_company_group':
-                        event = this.localize('company_role_removed_from_company_group', 'group', item.data.group, 'account', item.data.account);
+                        event = this.localize('company_role_removed_from_company_group', 'group', item.data.group, 'account', item.data.account.name);
                         break;
 
                     case 'company_contact_added_to_company_group':
-                        event = this.localize('company_contact_added_to_company_group', 'group', item.data.group, 'account', item.data.account);
+                        event = this.localize('company_contact_added_to_company_group', 'group', item.data.group, 'account', item.data.account.name);
                         break;
 
                     case 'company_contact_removed_from_company_group':
-                        event = this.localize('company_contact_removed_from_company_group', 'group', item.data.group, 'account', item.data.account);
+                        event = this.localize('company_contact_removed_from_company_group', 'group', item.data.group, 'account', item.data.account.name);
                         break;
 
                     case 'application_image_changed':

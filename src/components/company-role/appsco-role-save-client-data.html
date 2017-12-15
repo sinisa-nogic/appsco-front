@@ -66,9 +66,30 @@
             },
 
             _computeGetCompanyRoleApi: function(account) {
-                return account.native_company ?
+                return (account.native_company && this._isAdministratorInNativeCompany(account)) ?
                     (account.native_company.self + '/directory/roles?term=' + account.email) :
                     '';
+            },
+
+            _isAdministratorInNativeCompany: function(account) {
+                var nativeCompany = account.native_company,
+                    companies = account.companies;
+                
+                if (!nativeCompany || !companies.length) {
+                    return false;
+                }
+
+                var result = false;
+
+                companies.forEach(function(company) {
+
+                    if (nativeCompany.alias === company.company.alias) {
+                        result = company.company_admin;
+                        return false;
+                    }
+                });
+
+                return result;
             },
 
             _sendClientDataForRole: function(roleApi) {

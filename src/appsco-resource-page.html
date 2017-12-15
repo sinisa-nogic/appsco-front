@@ -12,6 +12,7 @@
 <link rel="import" href="application/appsco-application-settings-page.html">
 <link rel="import" href="application/appsco-application-subscribers-page.html">
 <link rel="import" href="application/appsco-application-log-page.html">
+<link rel="import" href="application/appsco-resource-image-settings.html">
 
 <link rel="import" href="components/account/appsco-account-image.html">
 
@@ -117,6 +118,12 @@
             :host([mobile-screen]) {
                 --resource-width: 180px;
             }
+            :host .application-icon {
+                width: 64px;
+                height: 64px;
+                margin: 0 auto;
+                display: block;
+            }
         </style>
 
         <iron-media-query query="(max-width: 1200px)" query-matches="{{ mediumScreen }}"></iron-media-query>
@@ -134,14 +141,13 @@
                             title="Share"
                             on-tap="_onShareApplication"></paper-icon-button>
 
-                    <iron-image
-                            class="application-icon"
-                            placeholder="data:image/gif;base64,R0lGODlhAQABAIAAAMLCwgAAACH5BAAAAAAALAAAAAABAAEAAAICRAEAOw=="
-                            preload
-                            fade
-                            src="[[ application.icon_url ]]"
-                            sizing="contain">
-                    </iron-image>
+                    <appsco-resource-image-settings
+                        class="application-icon"
+                        resource="{{ application }}"
+                        authorization-token="[[ authorizationToken ]]"
+                        image-settings-api="[[ _resourceImageSettingsApi ]]"
+                    ></appsco-resource-image-settings>
+
 
                     <appsco-account-image account="[[ account ]]"></appsco-account-image>
                 </div>
@@ -322,6 +328,11 @@
                     }
                 },
 
+                _resourceImageSettingsApi: {
+                    type: String,
+                    computed: '_computeResourceImageSettingsApi(application)'
+                },
+
                 /**
                  * Indicates if it is medium screen size.
                  * It uses iron-media-query.
@@ -419,6 +430,10 @@
                 return {
                     'Authorization': 'token ' + authorizationToken
                 }
+            },
+
+            _computeResourceImageSettingsApi: function (resource) {
+                return resource.meta ? resource.meta.change_application_image : '';
             },
 
             _pageLoaded: function() {

@@ -354,19 +354,31 @@
 
 
             <paper-card heading="Devices" class="appsco-account-device">
-                <div class="card-content">
-                    <appsco-account-devices
-                            id="appscoAccountDevice"
-                            authorization-token="[[ authorizationToken ]]"
-                            devices-api="[[ devicesApi ]]"
-                            account="[[ role ]]"
-                            size="5"
-                            preview></appsco-account-devices>
-                </div>
 
-                <div class="card-actions">
-                    <paper-button on-tap="_onManageDevices">Manage</paper-button>
-                </div>
+                <template is="dom-if" if="[[ _managedUser ]]">
+                    <div class="card-content">
+                        <appsco-account-devices
+                                id="appscoAccountDevice"
+                                authorization-token="[[ authorizationToken ]]"
+                                devices-api="[[ devicesApi ]]"
+                                account="[[ role ]]"
+                                size="5"
+                                preview></appsco-account-devices>
+                    </div>
+
+                    <div class="card-actions">
+                        <paper-button on-tap="_onManageDevices">Manage</paper-button>
+                    </div>
+                </template>
+
+                <template is="dom-if" if="[[ !_managedUser ]]">
+                    <div class="card-content">
+                        <p>
+                            Domain for this user is not managed by the company.
+                            You are not allowed to manage his devices.
+                        </p>
+                    </div>
+                </template>
             </paper-card>
 
         </div>
@@ -619,7 +631,10 @@
             },
 
             _loadDevices: function() {
-                this.$.appscoAccountDevice.loadDevices();
+
+                if (this.$$('#appscoAccountDevice')) {
+                    this.$$('#appscoAccountDevice').loadDevices();
+                }
             },
 
             load2FaApi: function() {

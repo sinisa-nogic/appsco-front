@@ -1,5 +1,4 @@
 <link rel="import" href="../../../bower_components/polymer/polymer.html">
-<link rel="import" href="../../../bower_components/iron-ajax/iron-ajax.html">
 <link rel="import" href="../../../bower_components/iron-ajax/iron-request.html">
 
 <dom-module id="appsco-role-save-client-data">
@@ -10,12 +9,6 @@
                 @apply(--appsco-role-save-client-data);
             }
         </style>
-
-        <iron-ajax auto
-                   headers="[[ _headers ]]"
-                   url="[[ _getCompanyRoleApi ]]"
-                   handle-as="json"
-                   on-response="_onGetCompanyRoleResponse"></iron-ajax>
 
     </template>
 
@@ -40,14 +33,14 @@
                     value: ''
                 },
 
+                saveApi: {
+                    type: String,
+                    value: ''
+                },
+
                 _headers: {
                     type: Object,
                     computed: '_computeHeaders(authorizationToken)'
-                },
-
-                _getCompanyRoleApi: {
-                    type: String,
-                    computed: '_computeGetCompanyRoleApi(account)'
                 },
 
                 _device: {
@@ -55,6 +48,12 @@
                     value: function() {
                         return {};
                     }
+                },
+
+                _requestReady: {
+                    type: Boolean,
+                    computed: '_computeRequestReadyState(account, saveApi, _headers)',
+                    observer: '_readyStateChanged'
                 }
             },
 
@@ -65,53 +64,45 @@
                 };
             },
 
-            _computeGetCompanyRoleApi: function(account) {
-                return (account.native_company && this._isAdministratorInNativeCompany(account)) ?
-                    (account.native_company.self + '/directory/roles?term=' + account.email) :
-                    '';
-            },
+            _computeRequestReadyState: function(account, saveApi, headers) {
 
-            _isAdministratorInNativeCompany: function(account) {
-                var nativeCompany = account.native_company,
-                    companies = account.companies;
-                
-                if (!nativeCompany || !companies.length) {
-                    return false;
+                for (var key in account) {
+                    return (saveApi && headers);
                 }
 
-                var result = false;
-
-                companies.forEach(function(company) {
-
-                    if (nativeCompany.alias === company.company.alias) {
-                        result = company.company_admin;
-                        return false;
-                    }
-                });
-
-                return result;
+                return false;
             },
 
-            _sendClientDataForRole: function(roleApi) {
+            _readyStateChanged: function(state) {
+
+                if (state) {
+                    this._sendClientData();
+                }
+            },
+
+            _sendClientData: function() {
                 var client = new ClientJS(),
                     request = document.createElement('iron-request'),
                     options = {
-                        url: roleApi + '/byod',
+                        url: this.saveApi,
                         method: 'POST',
                         handleAs: 'json',
                         headers: this._headers
-                    };
+                    },
+                    accountName = this.account.name ? this.account.name : '',
+                    unavailable = 'unavailable';
 
-                options.body = 'byod[name]=' + encodeURIComponent(client.getFingerprint()) +
-                    '&byod[device]=' + encodeURIComponent(client.getDevice()) +
-                    '&byod[device_type]=' + (client.getDeviceType() ? encodeURIComponent(client.getDeviceType()) : 'desktop') +
-                    '&byod[device_vendor]=' + encodeURIComponent(client.getDeviceVendor()) +
-                    '&byod[user_agent]=' + encodeURIComponent(client.getUserAgent()) +
-                    '&byod[browser]=' + encodeURIComponent(client.getBrowser()) +
-                    '&byod[browser_version]=' + encodeURIComponent(client.getBrowserVersion()) +
-                    '&byod[browser_fingerprint]=' + encodeURIComponent(client.getFingerprint()) +
-                    '&byod[operating_system]=' + encodeURIComponent(client.getOS()) +
-                    '&byod[operating_system_version]=' + encodeURIComponent(client.getOSVersion());
+                options.body = ('byod[name]=' + encodeURIComponent(client.getFingerprint() ?
+                    (accountName + ' ' + client.getFingerprint()) : accountName)) +
+                    '&byod[device]=' + (client.getDevice() ? encodeURIComponent(client.getDevice()) : unavailable) +
+                    '&byod[device_type]=' + encodeURIComponent(client.getDeviceType() ? client.getDeviceType() : 'desktop') +
+                    '&byod[device_vendor]=' + (client.getDeviceVendor() ? encodeURIComponent(client.getDeviceVendor()) : unavailable) +
+                    '&byod[user_agent]=' + (client.getUserAgent() ? encodeURIComponent(client.getUserAgent()) : unavailable) +
+                    '&byod[browser]=' + (client.getBrowser() ? encodeURIComponent(client.getBrowser()) : unavailable) +
+                    '&byod[browser_version]=' + (client.getBrowserVersion() ? encodeURIComponent(client.getBrowserVersion()) : unavailable) +
+                    '&byod[browser_fingerprint]=' + (client.getFingerprint() ? encodeURIComponent(client.getFingerprint()) : unavailable) +
+                    '&byod[operating_system]=' + (client.getOS() ? encodeURIComponent(client.getOS()) : unavailable) +
+                    '&byod[operating_system_version]=' + (client.getOSVersion() ? encodeURIComponent(client.getOSVersion()) : unavailable);
 
                 request.send(options).then(function() {
 
@@ -119,14 +110,6 @@
                         this.set('_device', request.response);
                     }
                 }.bind(this));
-            },
-
-            _onGetCompanyRoleResponse: function(event) {
-                var response = event.detail.response;
-
-                if (response && response.company_roles && 1 === response.company_roles.length) {
-                    this._sendClientDataForRole(response.company_roles[0]);
-                }
             }
 
         });

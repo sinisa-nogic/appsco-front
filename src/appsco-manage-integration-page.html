@@ -96,6 +96,20 @@
             :host div.tutorial.info a:hover {
                 color: var(--primary-text-color);
                 text-decoration: none;
+                font-size: 14px;
+            }
+            :host div.config-file.info,
+            :host div.config-file.info {
+                color: var(--primary-text-color);
+                text-decoration: none;
+                font-size: 14px;
+                cursor: pointer;
+            }
+            :host div.service-application.info a,
+            :host div.service-application.info a:hover {
+                color: var(--primary-text-color);
+                text-decoration: none;
+                font-size: 14px;
             }
         </style>
 
@@ -136,6 +150,18 @@
                             <a href="[[ integration.tutorialUrl ]]" target="_blank" rel="noopener noreferrer">
                                 If you need help please visit our knowledgebase.
                             </a>
+                    </div>
+                </template>
+
+                <template is="dom-if" if="[[ _hasDownloadableConfig ]]">
+                    <div class="help-title">Need help?</div>
+                    <div class="info config-file" on-tap="_downloadConfig">
+                        You can download preconfigured config file from here.
+                    </div>
+                    <div class="info service-application">
+                        <a href="/appscoAdfsReader" target="_blank">
+                            Or you can download service application from here.
+                        </a>
                     </div>
                 </template>
 
@@ -261,6 +287,11 @@
                 _headers: {
                     type: Object,
                     computed: '_computeHeaders(authorizationToken)'
+                },
+
+                _hasDownloadableConfig: {
+                    type: Boolean,
+                    computed: '_computeHasDownloadableConfig(integration)'
                 },
 
                 mediumScreen: {
@@ -462,6 +493,24 @@
 
             _onManageIntegrationWebhooks: function() {
                 this._showIntegrationWebhooksPage();
+            },
+
+            _computeHasDownloadableConfig: function(integration) {
+                return integration && integration.integration && integration.integration.alias == 3;
+            },
+
+            _downloadConfig: function() {
+                var request = document.createElement('iron-request'),
+                        options = {
+                            url: this.integration.meta.config,
+                            method: 'GET',
+                            handleAs: 'text',
+                            headers: this._headers
+                        };
+
+                request.send(options).then(function() {
+                    window.location = 'data:application/octet-stream;charset=utf-16le;base64,' + request.response;
+                }.bind(this));
             }
 
         });

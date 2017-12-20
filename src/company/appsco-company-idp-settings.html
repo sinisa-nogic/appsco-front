@@ -17,6 +17,8 @@
 <link rel="import" href="../components/components/appsco-loader.html">
 <link rel="import" href="../components/components/appsco-form-error.html">
 
+<link rel="import" href="appsco-company-idp-settings-certificates.html">
+
 <!--
 `appsco-company-idp-settings`
 Update company idP settings component.
@@ -168,15 +170,12 @@ Update company idP settings component.
                          auto-validate
                          error-message="Please type in entity ID."></paper-input>
 
-            <paper-textarea label="Certificate"
-                            name="saml_idp_config[cert]"
-                            value="{{ _idPConfig.cert }}"
-                            rows="5"
-                            required
-                            auto-validate
-                            error-message="Please type in certificate in proper format."></paper-textarea>
-
         </form>
+
+        <appsco-company-idp-settings-certificates
+                id="appscoCompnyIdpSettingsCertificates"
+                certificates="{{ _idPConfig.certs }}"
+        ></appsco-company-idp-settings-certificates>
 
         <paper-button id="submit"
                       class="submit-button"
@@ -399,11 +398,11 @@ Update company idP settings component.
             _fillIdPMetadataFromXML: function(xmlDocument) {
                 var idpEntityDescriptor = xmlDocument.querySelector('[entityID]'),
                     entityId = idpEntityDescriptor.getAttribute('entityID'),
-                    certificateDOM = xmlDocument.querySelector('X509Certificate'),
-                    certificate = certificateDOM.childNodes[0].nodeValue,
+                    certificateDOM = xmlDocument.getElementsByTagName('X509Certificate'),
                     singleSignOnServices = xmlDocument.querySelectorAll('SingleSignOnService'),
                     length = singleSignOnServices.length,
-                    signInURL;
+                    signInURL,
+                    certificates = [];
 
                 for (var i = 0; i < length; i++) {
                     var singleSignOnService = singleSignOnServices[i];
@@ -414,17 +413,27 @@ Update company idP settings component.
                     }
                 }
 
-                this._setIdPConfig(signInURL, entityId, certificate);
+                for (var i = 0; i < certificateDOM.length; i++) {
+                    certificates.push(certificateDOM[i].textContent);
+                }
+
+                this._setIdPConfig(signInURL, entityId, certificates);
             },
 
-            _setIdPConfig: function(signInURL, entityId, certificate) {
+            _setIdPConfig: function(signInURL, entityId, certificates) {
                 var config = JSON.parse(JSON.stringify(this._idPConfig));
 
                 config.idpSSOUrl = signInURL;
                 config.idpEntityId = entityId;
-                config.cert = '-----BEGIN CERTIFICATE-----\n' +
-                    certificate +
-                    '\n-----END CERTIFICATE-----';
+
+                config.certs = [];
+                for (var i = 0; i < certificates.length; i++) {
+                    config.certs.push(
+                        '-----BEGIN CERTIFICATE-----\n' +
+                        certificates[i] +
+                        '\n-----END CERTIFICATE-----'
+                    );
+                }
 
                 this.set('_idPConfig', {});
                 this.set('_idPConfig', config);
@@ -447,6 +456,7 @@ Update company idP settings component.
                 var response = event.detail.response;
 
                 if (response) {
+                    this.set('_idPConfig', {});
                     this.set('_idPConfig', response[0]);
                 }
 
@@ -465,7 +475,8 @@ Update company idP settings component.
             },
 
             _onFormPresubmit: function(event) {
-                var form = event.target;
+                var form = event.target,
+                    certificates = this.$.appscoCompnyIdpSettingsCertificates.getCertificates();
 
                 if (this.domain.hasIdp) {
                     form.request.url = this.domain.samlIdpConfig;
@@ -473,6 +484,10 @@ Update company idP settings component.
                 }
                 else {
                     form.request.body['saml_idp_config[integrationId]'] = encodeURIComponent(this.$.integrationList.selectedItem.value);
+                }
+
+                for (var i = 0; i < certificates.length; i++) {
+                    form.request.body['saml_idp_config[certs][' + i + ']'] = certificates[i];
                 }
 
             },

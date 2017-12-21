@@ -5,7 +5,6 @@
 <link rel="import" href="../../../bower_components/iron-icons/iron-icons.html">
 
 <link rel="import" href="../components/appsco-loader.html">
-<link rel="import" href="../components/appsco-form-error.html">
 
 <!--
 `appsco-account-image-settings`
@@ -95,8 +94,6 @@ Custom property | Description | Default
             }
         </style>
 
-        <appsco-form-error message="[[ _error ]]"></appsco-form-error>
-
         <div class="upload-container">
 
             <appsco-loader active="[[ _loader ]]" loader-alt="Appsco is saving application" multi-color></appsco-loader>
@@ -184,14 +181,8 @@ Custom property | Description | Default
                 _loader: {
                     type: Boolean,
                     value: false
-                },
-
-                /**
-                 * Error message for settings form.
-                 */
-                _error: {
-                    type: String
                 }
+
             },
 
             _validateImageFile: function(file) {
@@ -200,7 +191,7 @@ Custom property | Description | Default
                         valid = true;
 
                 if (file.size > 1048576) {
-                    this._error = 'Image size must be less than 1MB.';
+                    this.fire('image-upload-error', 'Image size must be less than 1MB.');
                     valid = false;
                 }
                 else {
@@ -216,7 +207,7 @@ Custom property | Description | Default
                         }
 
                         if (i === (validFileTypes.length - 1) && !valid) {
-                            this._error = 'Allowed file types are: jpg, jpeg and png.';
+                            this.fire('image-upload-error', 'Allowed file types are: jpg, jpeg and png.');
                         }
                     }
 
@@ -244,13 +235,13 @@ Custom property | Description | Default
             _onUploadImage: function(event) {
                 var input = event.target;
 
-                this._error = '';
-
                 if (input.files && input.files[0]) {
                     var file = input.files[0],
                             formData = new FormData(),
                             request = new XMLHttpRequest();
 
+                    /** To ensure that on-change event will be triggered even if user tries to upload same image again */
+                    this.$$('#accountImage').value = null;
                     if (!this._validateImageFile(file)) {
                         return false;
                     }
@@ -293,8 +284,6 @@ Custom property | Description | Default
 
                 this.account = {};
                 this.account = account;
-
-                this._error = '';
 
             }
         });

@@ -174,7 +174,8 @@ Update company idP settings component.
 
         <appsco-company-idp-settings-certificates
                 id="appscoCompnyIdpSettingsCertificates"
-                certificates="{{ _idPConfig.certs }}"
+                certificates="{{ _idPConfig.certs }}",
+                on-idp-certificate-added="_onCertAdded"
         ></appsco-company-idp-settings-certificates>
 
         <paper-button id="submit"
@@ -469,6 +470,12 @@ Update company idP settings component.
             _submitForm: function() {
 
                 if (this.$.form.validate()) {
+                    var certificates = this.$.appscoCompnyIdpSettingsCertificates.getCertificates();
+                    if (!certificates || certificates.length == 0) {
+                        this._showError('Please enter atleast one certificate');
+                        return;
+                    }
+
                     this._showLoader();
                     this.$.form.submit();
                 }
@@ -509,6 +516,10 @@ Update company idP settings component.
                 });
 
                 this._hideLoader();
+            },
+
+            _onCertAdded: function() {
+                this._error = '';
             }
         });
     </script>

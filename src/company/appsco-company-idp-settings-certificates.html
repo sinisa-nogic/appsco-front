@@ -122,13 +122,19 @@ Custom property | Description | Default
             ],
 
             _computeCertificatesEmpty: function(certificates) {
-                return !certificates || certificates._length == 0;
+                return !certificates || certificates.length == 0;
             },
 
             addCertificate: function(certificate) {
+                if (!this.certificates) {
+                    this.certificates = [];
+                }
                 this.certificates.push(certificate);
                 this.certificates = JSON.parse(JSON.stringify(this.certificates));
-                console.log(this.certificates);
+
+                this.fire('idp-certificate-added', {
+                    source: this
+                });
             },
 
             getCertificates: function() {
@@ -136,17 +142,13 @@ Custom property | Description | Default
             },
 
             _onAddCertificateAction: function() {
-                console.log('Firing add certificate');
-                this.fire('idp-certificate-added', {
+                this.fire('idp-certificate-add', {
                     source: this
                 });
             },
 
             _removeCert: function(event) {
-                console.log('Gonna remove cert: ');
-                console.log(event);
                 var index = this.certificates.indexOf(event.detail.certificate);
-                console.log('Index: ' + index);
                 if (index > -1) {
                     this.certificates.splice(index, 1);
                     this.set('certificates', JSON.parse(JSON.stringify(this.certificates)));

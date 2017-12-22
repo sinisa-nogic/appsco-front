@@ -609,7 +609,8 @@
                 },
 
                 authorizationToken: {
-                    type: String
+                    type: String,
+                    value: ''
                 },
 
                 companyApi: {
@@ -781,6 +782,18 @@
                 this._pageLoaded();
             },
 
+            resetPage: function() {
+                this._onCloseInfoAction();
+                this.set('_subscription', {});
+                this.set('_cc', {});
+                this.set('_upcomingInvoice', {});
+                this.set('_selectedInvoice', {});
+                this.set('_invoices', []);
+                this._paymentMethodInfo = false;
+                this._invoicesExists = false;
+                this._cancelSubscription = false;
+            },
+
             _updateScreen: function(medium, tablet, mobile) {
                 this.updateStyles();
 
@@ -826,7 +839,7 @@
             },
 
             _computePaymentMethod: function(cc) {
-                return cc.id ? true : false;
+                return cc.id;
             },
 
             _computeSubscriptionCanceled: function(subscription) {
@@ -890,6 +903,7 @@
                 var response = event.detail.response;
 
                 if (null == response || 0 === response.length) {
+                    this.set('_cc', {});
                     this._paymentMethodInfo = true;
                     this._ccLoader = false;
                     return false;
@@ -1014,8 +1028,12 @@
 
             _deselectInvoice: function() {
                 this._hideInfo();
-                this.$$('#invoiceItem_' + this._selectedIndex).deselect();
-                this._selectedInvoice = {};
+                this.set('_selectedInvoice', {});
+
+                if (this.$$('#invoiceItem_' + this._selectedIndex)) {
+                    this.$$('#invoiceItem_' + this._selectedIndex).deselect();
+                }
+
                 this._selectedIndex = -1;
             },
 

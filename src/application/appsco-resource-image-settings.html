@@ -5,8 +5,6 @@
 <link rel="import" href="../../bower_components/iron-icons/iron-icons.html">
 
 <link rel="import" href="../components/components/appsco-loader.html">
-<link rel="import" href="../components/components/appsco-form-error.html">
-
 
 <dom-module id="appsco-resource-image-settings">
     <template>
@@ -68,8 +66,6 @@
                 opacity: 0;
             }
         </style>
-
-        <appsco-form-error message="[[ _error ]]"></appsco-form-error>
 
         <div class="upload-container">
 
@@ -157,13 +153,6 @@
                 _loader: {
                     type: Boolean,
                     value: false
-                },
-
-                /**
-                 * Error message for settings form.
-                 */
-                _error: {
-                    type: String
                 }
             },
 
@@ -173,7 +162,7 @@
                         valid = true;
 
                 if (file.size > 1048576) {
-                    this._error = 'Image size must be less than 1MB.';
+                    this.fire('image-upload-error', 'Image size must be less than 1MB.');
                     valid = false;
                 }
                 else {
@@ -189,7 +178,7 @@
                         }
 
                         if (i === (validFileTypes.length - 1) && !valid) {
-                            this._error = 'Allowed file types are: jpg, jpeg and png.';
+                            this.fire('image-upload-error', 'Allowed file types are: jpg, jpeg and png.');
                         }
                     }
 
@@ -219,13 +208,13 @@
             _onUploadImage: function(event) {
                 var input = event.target;
 
-                this._error = '';
-
                 if (input.files && input.files[0]) {
                     var file = input.files[0],
                             formData = new FormData(),
                             request = new XMLHttpRequest();
 
+                    /** To ensure that on-change event will be triggered even if user tries to upload same image again */
+                    this.$$('#resourceImage').value = null;
                     if (!this._validateImageFile(file)) {
                         return false;
                     }
@@ -242,8 +231,6 @@
                     request.open('POST', this.imageSettingsApi, true);
                     request.setRequestHeader('Authorization', this._computedHeaders);
                     request.send(formData);
-                    /** To ensure that on-change event will be triggered even if user tries to upload same image again */
-                    this.$$('#resourceImage').value = null;
                 }
             },
 
@@ -270,8 +257,6 @@
 
                 this.resource = {};
                 this.resource = resource;
-
-                this._error = '';
 
             }
         });

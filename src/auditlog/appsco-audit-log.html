@@ -731,11 +731,11 @@
                         break;
 
                     case 'company_role_added':
-                        event = this.localize('company_role_added', 'account', item.data.role.account.name);
+                        event = this.localize('company_role_added', 'account', item.data.account.display_name);
                         break;
 
                     case 'company_role_removed':
-                        event = this.localize('company_role_removed', 'account', item.data.role.account.name);
+                        event = this.localize('company_role_removed', 'account', item.data.account.display_name);
                         break;
 
                     case 'orgunit_created':
@@ -804,7 +804,7 @@
                         break;
 
                     case 'company_role_removed_from_orgunit':
-                        event = this.localize('company_role_removed_from_orgunit', 'account', item.data.role.account.name, 'orgunit', item.data.orgunit.name);
+                        event = this.localize('company_role_removed_from_orgunit', 'account', item.data.account.display_name, 'orgunit', item.data.orgunit.name);
                         break;
 
                     case 'application_remove_from_orgunit':
@@ -812,11 +812,15 @@
                         break;
 
                     case 'application_created':
-                        event = this.localize('application_created', 'application', item.data.title);
+                        event = this.localize('application_created', 'application', item.data.application.title);
                         break;
 
                     case 'application_updated':
-                        event = this._formatLogApplicationUpdated(item);
+                        if(item.data.length === 0) {
+                            event = this.localize('application_updated_empty');
+                        } else {
+                            event = this._formatLogApplicationUpdated(item);
+                        }
                         break;
 
                     case 'application_removed':
@@ -901,11 +905,11 @@
                         break;
 
                     case 'resource_added_to_company_group':
-                        event = this.localize('company_resource_added_to_company_group', 'group', item.data.group, 'resource', item.data.application);
+                        event = this.localize('company_resource_added_to_company_group', 'group', item.data.group, 'resource', item.data.application.title);
                         break;
 
                     case 'resource_removed_from_company_group':
-                        event = this.localize('company_resource_removed_from_company_group', 'group', item.data.group, 'resource', item.data.application);
+                        event = this.localize('company_resource_removed_from_company_group', 'group', item.data.group, 'resource', item.data.application.title);
                         break;
 
                     case 'company_role_added_to_company_group':
@@ -948,8 +952,29 @@
                         event = this.localize('company_customers_exported');
                         break;
 
+                    case 'company_contact_created':
+
+                        var display_name = item.data.contact.email;
+                        if(item.data.contact.first_name && item.data.contact.last_name) {
+                            display_name = item.data.contact.first_name+" "+item.data.contact.last_name;
+                        }
+                        event = this.localize('company_contact_created', 'display_name', display_name);
+                        break;
+
+                    case 'company_role_2fa_reset':
+                        event = this.localize('company_role_2fa_reset', 'admin', item.initiatior_display_name, 'account', item.data.account.name);
+                        break;
+
+                    case 'company_role_partner_admin_removed':
+                        event = this.localize('company_role_partner_admin_removed', 'admin', item.initiatior_display_name, 'account', item.data.account.name);
+                        break;
+
+                    case 'company_role_partner_admin_created':
+                        event = this.localize('company_role_partner_admin_created', 'admin', item.initiatior_display_name, 'account', item.data.account.name);
+                        break;
+
                     default:
-//                        console.log(item.type + ' not supported yet.');
+                        console.log(item.type + ' not supported yet.');
                 }
 
                 return event;

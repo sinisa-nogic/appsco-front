@@ -105,6 +105,7 @@
 <link rel="import" href="auditlog/appsco-audit-log-page-actions.html">
 
 <link rel="import" href="provisioning/appsco-provisioning-page-actions.html">
+<link rel="import" href="provisioning/appsco-provisioning-settings-page-actions.html">
 <link rel="import" href="provisioning/appsco-manage-integration-page-actions.html">
 <link rel="import" href="provisioning/appsco-add-integration.html">
 <link rel="import" href="components/integration/appsco-remove-integration.html">
@@ -380,10 +381,10 @@
 
         <app-location route="{{route}}"></app-location>
         <app-route
-                route="{{ route }}"
-                pattern="[[ _prefixPath ]]/:page"
-                data="{{ routeData }}"
-                tail="{{ subroute }}"></app-route>
+                route="{{route}}"
+                pattern="[[_prefixPath]]/:page"
+                data="{{routeData}}"
+                tail="{{subroute}}"></app-route>
 
         <paper-toast id="toast"
                      text="[[ _toastMessage ]]"
@@ -554,6 +555,7 @@
 
                             <appsco-upgrade-page-actions
                                     name="upgrade"
+                                    authorization-token="[[ authorizationToken ]]"
                                     on-toggle-pricing="_onUpgradeTogglePricing"></appsco-upgrade-page-actions>
 
                             <appsco-company-home-page-actions id="appscoCompanyHomePageActions"
@@ -679,6 +681,14 @@
                                     name="billing"
                                     on-resource-section="_onResourceActionBillingPage"></appsco-billing-page-actions>
 
+                            <appsco-provisioning-settings-page-actions
+                                    id="appscoProvisioningSettingsPageActions"
+                                    name="provisioning-settings"
+                                    on-back="_showCompanyProvisioningPage"
+                                    on-resource-section="_onResourceActionProvisioningSettingsPage"
+                                    on-sync-accounts="_onSyncAccounts"
+                                    on-refresh-accounts="_onRefreshAccounts"></appsco-provisioning-settings-page-actions>
+
                             <appsco-company-page-actions
                                     id="appscoCompanyPageActions"
                                     name="company"
@@ -719,6 +729,7 @@
                             name="home"
                             application="{{ application }}"
                             account="[[ account ]]"
+                            application-log="[[ application.meta.log ]]"
                             authorization-token="[[ authorizationToken ]]"
                             applications-api="[[ _applicationsApi ]]"
                             on-loaded="_onLoadedPage"
@@ -735,6 +746,7 @@
                             company="[[ _companyPage ]]"
                             application="{{ application }}"
                             applications-api="[[ _applicationsApi ]]"
+                            application-log="[[ application.meta.log ]]"
                             authorization-token="[[ authorizationToken ]]"
                             accounts-api="[[ api.accounts ]]"
                             account="{{ account }}"
@@ -831,6 +843,7 @@
                             name="resources"
                             resource="{{ _companyApplication }}"
                             account="[[ account ]]"
+                            application-log="[[ _companyApplication.meta.log ]]"
                             authorization-token="[[ authorizationToken ]]"
                             computed-headers="[[ _computedHeaders ]]"
                             company-resources-api="[[ _companyApplicationsApi ]]"
@@ -854,6 +867,7 @@
                             company-api="[[ _companyApi ]]"
                             company-idp-saml-metadata-api="[[ _companySamlMetadataApi ]]"
                             domain="[[ domain ]]"
+                            application-log="[[ _companyApplication.meta.log ]]"
                             authorization-token="[[ authorizationToken ]]"
                             accounts-api="[[ api.accounts ]]"
                             account="{{ account }}"
@@ -942,9 +956,13 @@
                             administrator="[[ account ]]"
                             authorization-token="[[ authorizationToken ]]"
                             company-api="[[ _companyApi ]]"
+                            notifications-api="[[ api.notifications ]]"
+                            log-api="[[ api.accountLog ]]"
+                            two-fa-api="[[ api.twoFA ]]"
                             two-fa-enforced="[[ currentCompany.company.enforced_2fa ]]"
                             settings-api="[[ api.me ]]"
                             image-settings-api="[[ api.profileImage ]]"
+                            change-password-api="[[ api.changePassword ]]"
                             on-settings-saved="_onAccountSettingsSaved"
                             on-password-changed="_onCompanyAccountPasswordChanged"
                             on-reset-role-two-fa="_onResetRoleTwoFA"
@@ -1007,12 +1025,14 @@
                             active-integrations-api="[[ _getActiveIntegrationsApi ]]"
                             authorization-token="[[ authorizationToken ]]"
                             on-edit-integration="_onEditIntegrationAction"
+                            on-active-integration="_onIntegrationSetup"
                     ></appsco-provisioning-page>
 
                     <appsco-manage-integration-page
                             id="appscoManageIntegrationPage"
                             name="manage-integration"
                             route="[[ subroute ]]"
+                            integration="[[ _selectedIntegration ]]"
                             integration-api="[[ _companyIntegrationApi ]]"
                             api-errors="[[ _apiErrors ]]"
                             authorization-token="[[ authorizationToken ]]"
@@ -1026,6 +1046,25 @@
                             on-unregister-integration-webhook="_onUnregisterIntegrationWebhookAction"
                             on-integration-settings-changed="_onIntegrationSettingsChanged"
                     ></appsco-manage-integration-page>
+
+                    <appsco-provisioning-settings-page
+                            id="appscoProvisioningSettingsPage"
+                            name="provisioning-settings"
+                            authorization-token="[[ authorizationToken ]]"
+                            integration="[[ _selectedIntegration ]]"
+                            company-roles-api="[[ _companyRolesApi ]]"
+                            api-errors="[[ _apiErrors ]]"
+                            on-back="_showCompanyProvisioningPage"
+                            on-local-account-synced="_onLocalAccountSynced"
+                            on-new-account-synced="_onNewAccountSynced"
+                            on-accounts-sync-new-account-synced="_onNewAccountSynced"
+                            on-accounts-sync-finished="_onAccountsSyncFinished"
+                            on-synced-account-removed="_onSyncedAccountRemoved"
+                            on-initialize-page="_onInitializeProvisioningPage"
+                            on-reset-page="_onResetProvisioningPage"
+                            on-show-bulk-actions="_onShowBulkActionsProvisioningPage"
+                            on-hide-bulk-actions="_onHideBulkActionsProvisioningPage"
+                    ></appsco-provisioning-settings-page>
 
                     <appsco-provisioning-integration-authorization-success-page
                             id="appscoProvisioningIntegrationSuccessPage"
@@ -1084,6 +1123,7 @@
                             id="appscoCompanyPage"
                             name="company"
                             company="{{ currentCompany.company }}"
+                            account="[[ account ]]"
                             authorization-token="[[ authorizationToken ]]"
                             transfer-token-api="[[ _getTransferTokenApi ]]"
                             partners-api-url="[[ api.partners ]]"
@@ -1258,7 +1298,7 @@
                 applications="[[ _selectedApplications ]]"
                 authorization-token="[[ authorizationToken ]]"
                 company-api="[[ _companyApi ]]"
-                api-errors="[[ _apiErrors ]]"
+                api-errors="[[ apiErrors ]]"
                 on-applications-removed="_onApplicationsRemoved"
                 on-applications-remove-failed="_onApplicationsRemoveFailed"></appsco-company-application-remove>
 
@@ -1673,13 +1713,6 @@
 
             properties: {
 
-                routeData: {
-                    type: Object,
-                    value: function() {
-                        return {};
-                    }
-                },
-
                 _companyPage: {
                     type: Boolean,
                     computed: '_computeCompany(page)'
@@ -1959,11 +1992,6 @@
                     value: ''
                 },
 
-                _companyNotificationsApi: {
-                    type: String,
-                    value: ''
-                },
-
                 _companyRolesApi: {
                     type: String,
                     value: ''
@@ -2142,11 +2170,6 @@
                 _brandLogo: {
                     type: String,
                     computed: '_computeBrandLogo(currentCompany, _companyPage)'
-                },
-
-                _brandLogoClickable: {
-                    type: Boolean,
-                    value: false
                 },
 
                 _brandTitle: {
@@ -2371,6 +2394,9 @@
 
                     case 'company':
                         return 'Company Settings';
+
+                    case 'provisioning-settings':
+                        return 'Provisioning > Setup';
 
                     case 'provisioning-integration-authorization-success':
                         return 'Provisioning > Authorization success';
@@ -4083,6 +4109,7 @@
 
             _onCompanyRoleCreated: function(event) {
                 this.$.appscoDirectoryPage.addAccounts([event.detail.role]);
+                this._reloadProvisioningIntegrationAccounts();
                 this._notify('Account ' + event.detail.role.account.email + ' was successfully added.');
             },
 
@@ -4104,6 +4131,7 @@
 
                 if (0 < response.numberOfRoles) {
                     this._reloadCompanyAccounts();
+                    this._reloadProvisioningIntegrationAccounts();
                 }
 
                 if (0 < response.numberOfInvitations) {
@@ -4177,6 +4205,7 @@
                 this.$.appscoDirectoryPage.removeAccounts(event.detail.accounts);
                 this._onHideDirectoryBulkActions();
                 this.set('_selectedAccounts', []);
+                this._reloadProvisioningIntegrationAccounts();
                 this._notify('Selected accounts were successfully removed from company.');
 
                 this._notifyAccountLog();
@@ -4686,6 +4715,7 @@
             _onSubscriptionChanged: function(event) {
                 this._setSubscription(event.detail.subscription);
                 this._reloadSubscription(event.detail.subscription);
+                this._reloadProvisioningIntegrationAccounts();
                 this._evaluateSubscriptionLicences();
                 this._notify('Subscription has been successfully changed.');
             },
@@ -4748,6 +4778,65 @@
             _onRemoveIntegrationAction: function(event) {
                 this.$.appscoRemoveIntegration.setIntegration(event.detail.integration);
                 this.$.appscoRemoveIntegration.open();
+            },
+
+            _onIntegrationSetup: function(event) {
+                this._selectedIntegration = event.detail.integration;
+                this.set('routeData.page', 'provisioning-settings');
+            },
+
+            _onResourceActionProvisioningSettingsPage: function() {
+                this.$.appscoProvisioningSettingsPage.toggleResource();
+            },
+
+            _onLocalAccountSynced: function(event) {
+                this._reloadCompanyAccounts();
+                this._notify('Remote account ' + event.detail.item.remoteAccount.display_name + ' was successfully synced with ' + event.detail.item.localAccount.account.display_name + ' AppsCo account.');
+            },
+
+            _onNewAccountSynced: function(event) {
+                this._reloadCompanyAccounts();
+                this._notify('Remote account ' + event.detail.item.remoteAccount.display_name + ' was successfully imported.');
+            },
+
+            _onAccountsSyncFinished: function(event) {
+                this._reloadCompanyAccounts();
+                this._notify('Selected accounts were successfully synced.');
+            },
+
+            _onSyncAccounts: function() {
+                this.$.appscoProvisioningSettingsPage.syncAccounts();
+            },
+
+            _onRefreshAccounts: function() {
+                this.$.appscoProvisioningSettingsPage.refreshAccounts();
+            },
+
+            _reloadProvisioningIntegrationAccounts: function() {
+
+                if (this.$.appscoProvisioningSettingsPage.$) {
+                    this.$.appscoProvisioningSettingsPage.reloadAccounts();
+                }
+            },
+
+            _onSyncedAccountRemoved: function(event) {
+                this._notify('Synced account ' + event.detail.item.remoteAccount.display_name + ' was successfully removed.');
+            },
+
+            _onInitializeProvisioningPage: function() {
+                this.$.appscoProvisioningSettingsPageActions.initializePage();
+            },
+
+            _onResetProvisioningPage: function() {
+                this.$.appscoProvisioningSettingsPageActions.resetPage();
+            },
+
+            _onShowBulkActionsProvisioningPage: function() {
+                this.$.appscoProvisioningSettingsPageActions.showBulkActions();
+            },
+
+            _onHideBulkActionsProvisioningPage: function() {
+                this.$.appscoProvisioningSettingsPageActions.hideBulkActions();
             },
 
             _onIntegrationSettingsChanged: function(event) {
@@ -5718,6 +5807,10 @@
                         this.$.appscoProvisioningPage.pageLoaded ? this._hideProgressBar() : this._showProgressBar();
                         break;
 
+                    case 'provisioning-settings':
+                        this.$.appscoProvisioningSettingsPage.pageLoaded ? this._hideProgressBar() : this._showProgressBar();
+                        break;
+
                     case 'provisioning-integration-authorization-success':
                         this.$.appscoProvisioningIntegrationSuccessPage.pageLoaded ? this._hideProgressBar() : this._showProgressBar();
                         break;
@@ -5786,6 +5879,7 @@
                         page === 'reports' ||
                         page === 'access-report' ||
                         page === 'provisioning' ||
+                        page === 'provisioning-settings' ||
                         page === 'provisioning-integration-authorization-success' ||
                         page === 'provisioning-integration-authorization-failed' ||
                         page === 'billing' ||
@@ -5878,6 +5972,7 @@
                     case 'manage-group':
                     case 'manage-integration':
                     case 'audit-log':
+                    case 'provisioning-settings':
                     case 'company':
                     case 'company-account':
                     case 'contact-home':
@@ -5901,6 +5996,7 @@
                     case 'home':
                     case 'company-home':
                     case 'resources':
+                    case 'provisioning-settings':
                     case 'contacts':
                     case 'customers':
                     case 'reports':

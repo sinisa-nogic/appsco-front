@@ -14,6 +14,7 @@
 <link rel="import" href="components/customer/appsco-customer-details.html">
 <link rel="import" href="components/customer/appsco-customers.html">
 <link rel="import" href="auditlog/appsco-audit-log.html">
+<link rel="import" href="components/components/appsco-page-behavior.html">
 
 <dom-module id="appsco-customers-page">
     <template>
@@ -288,11 +289,6 @@
                     reflectToAttribute: true
                 },
 
-                _selectedAll: {
-                    type: Boolean,
-                    value: false
-                },
-
                 /**
                  * Animation config.
                  */
@@ -319,12 +315,17 @@
             },
 
             behaviors: [
-                Polymer.NeonAnimatableBehavior
+                Polymer.NeonAnimatableBehavior,
+                Polymer.AppscoPageBehavior
             ],
 
             observers: [
                 '_updateScreen(mobileScreen, tabletScreen, screen992)'
             ],
+
+            attached: function() {
+                this.set('_itemsComponent', this.$.appscoCustomers);
+            },
 
             initializePage: function() {
                 this._setDefaultCustomer();
@@ -332,7 +333,7 @@
 
             resetPage: function() {
                 this.hideInfo();
-                this._selectedAll = false;
+                this._deselectAllItems();
                 this.$.appscoCustomers.reset();
             },
 
@@ -374,20 +375,6 @@
                 this.$.appscoCustomers.removeItems(customers);
                 this._setDefaultCustomer();
                 return customers.length;
-            },
-
-            selectAllCustomers: function() {
-                var customersComponent = this.$.appscoCustomers;
-
-                this._selectedAll = !this._selectedAll;
-
-                if (this._selectedAll) {
-                    customersComponent.selectAllItems();
-                }
-                else {
-                    customersComponent.deselectAllItems();
-                    this._hideBulkActions();
-                }
             },
 
             _computeCustomerLogApi: function(customer) {
@@ -489,6 +476,8 @@
                     }
 
                 }.bind(this), 10);
+
+                this._handleItemsSelectedState();
             },
 
             _onEditCustomerAction: function(event) {

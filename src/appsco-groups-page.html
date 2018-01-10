@@ -13,6 +13,7 @@
 <link rel="import" href="components/group/appsco-company-group-resources.html">
 <link rel="import" href="components/group/appsco-company-group-contacts.html">
 <link rel="import" href="components/group/appsco-company-group-image.html">
+<link rel="import" href="components/components/appsco-page-behavior.html">
 
 <dom-module id="appsco-groups-page">
     <template>
@@ -294,21 +295,21 @@
                 _groupResourcesApi: {
                     type: String,
                     computed: '_computeGroupResourcesApi(group)'
-                },
-
-                _selectedAll: {
-                    type: Boolean,
-                    value: false
                 }
             },
 
             behaviors: [
-                Polymer.NeonAnimatableBehavior
+                Polymer.NeonAnimatableBehavior,
+                Polymer.AppscoPageBehavior
             ],
 
             observers: [
                 '_updateScreen(mobileScreen, tabletScreen, screen992)'
             ],
+
+            attached: function() {
+                this.set('_itemsComponent', this.$.appscoGroups);
+            },
 
             toggleInfo: function() {
 
@@ -356,20 +357,6 @@
 
             filterByTerm: function(term) {
                 this.$.appscoGroups.filterByTerm(term);
-            },
-
-            selectAllGroups: function() {
-                var groupsComponent = this.$.appscoGroups;
-
-                this._selectedAll = !this._selectedAll;
-
-                if (this._selectedAll) {
-                    groupsComponent.selectAllItems();
-                }
-                else {
-                    groupsComponent.deselectAllItems();
-                    this._hideBulkActions();
-                }
             },
 
             getSelectedGroups: function() {
@@ -445,7 +432,7 @@
             },
 
             _resetPageLists: function(page) {
-                this._selectedAll = false;
+                this._deselectAllItems();
                 this.filterByTerm('', page);
                 this.$.appscoGroups.resetAllItems();
             },
@@ -505,6 +492,7 @@
 
             _onSelectGroupAction:function(event) {
                 var group = event.detail.item;
+
                 clearTimeout(this._groupSelectAction);
 
                 this._groupSelectAction = setTimeout(function() {
@@ -514,13 +502,15 @@
                     else {
                         var selectedGroup = this.$.appscoGroups.getFirstSelectedItem();
 
-                        for (key in selectedGroup) {
+                        for (var key in selectedGroup) {
                             return false;
                         }
 
                         this._hideBulkActions();
                     }
                 }.bind(this), 10);
+
+                this._handleItemsSelectedState();
             },
 
             _showBulkActions: function() {

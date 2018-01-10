@@ -16,6 +16,7 @@
 <link rel="import" href="components/components/appsco-search.html">
 <link rel="import" href="components/group/appsco-company-groups.html">
 <link rel="import" href="components/application/company/appsco-company-resources.html">
+<link rel="import" href="components/components/appsco-page-behavior.html">
 
 <dom-module id="appsco-resources-page">
     <template>
@@ -407,16 +408,12 @@
                     type: Number,
                     value: 0,
                     observer: '_onSelectedFilterChanged'
-                },
-
-                _selectedAll: {
-                    type: Boolean,
-                    value: false
                 }
             },
 
             behaviors: [
-                Polymer.NeonAnimatableBehavior
+                Polymer.NeonAnimatableBehavior,
+                Polymer.AppscoPageBehavior
             ],
 
             observers: [
@@ -425,8 +422,8 @@
             ],
 
             attached: function() {
-
                 this.pageLoaded = false;
+                this.set('_itemsComponent', this.$.appscoResources);
 
                 if (this.mobileScreen || this.tabletScreen) {
                     this.updateStyles();
@@ -454,7 +451,7 @@
             },
 
             resetPage: function() {
-                this._selectedAll = false;
+                this._deselectAllItems();
                 this.$.appscoResources.reset();
                 this._resetFilters();
                 this._resetPageActions();
@@ -583,6 +580,8 @@
                     }
 
                 }.bind(this), 10);
+
+                this._handleItemsSelectedState();
             },
 
             _onShareResource: function() {
@@ -610,20 +609,6 @@
             removeResources: function(resources) {
                 this.$.appscoResources.removeItems(resources);
                 this.setDefaultResource();
-            },
-
-            selectAllResources: function() {
-                var resourcesComponent = this.$.appscoResources;
-
-                this._selectedAll = !this._selectedAll;
-
-                if (this._selectedAll) {
-                    resourcesComponent.selectAllItems();
-                }
-                else {
-                    resourcesComponent.deselectAllItems();
-                    this._hideBulkActions();
-                }
             },
 
             getSelectedResources: function() {

@@ -15,9 +15,9 @@
 <link rel="import" href="components/orgunit/appsco-orgunit-tree.html">
 <link rel="import" href="components/account/appsco-invitations.html">
 <link rel="import" href="components/components/appsco-search.html">
-
 <link rel="import" href="components/group/appsco-company-groups.html">
 <link rel="import" href="components/account/appsco-account-image.html">
+<link rel="import" href="components/components/appsco-page-behavior.html">
 
 <dom-module id="appsco-directory-page">
     <template>
@@ -486,11 +486,6 @@
                     value: false
                 },
 
-                _selectedAll: {
-                    type: Boolean,
-                    value: false
-                },
-
                 mobileScreen: {
                     type: Boolean,
                     value: false,
@@ -540,7 +535,8 @@
             },
 
             behaviors: [
-                Polymer.NeonAnimatableBehavior
+                Polymer.NeonAnimatableBehavior,
+                Polymer.AppscoPageBehavior
             ],
 
             observers: [
@@ -549,8 +545,8 @@
             ],
 
             attached: function() {
-
                 this.pageLoaded = false;
+                this.set('_itemsComponent', this.$$('#appscoAccounts'));
 
                 if (this.mobileScreen || this.tabletScreen || this.screen992) {
                     this.updateStyles();
@@ -568,7 +564,7 @@
                 this.$.appscoContent.hideSection('resource');
             },
 
-            _updateScreen: function(mobile, tablet, screen992) {
+            _updateScreen: function() {
                 this.updateStyles();
             },
 
@@ -668,7 +664,7 @@
             },
 
             _resetPageLists: function() {
-                this._selectedAll = false;
+                this._deselectAllItems();
                 this.$$('#appscoAccounts').reset();
                 this.$$('#appscoInvitations').reset();
             },
@@ -771,7 +767,7 @@
                     else {
                         var selectedAccount = this.$$('#appscoAccounts').getFirstSelectedItem();
 
-                        for (key in selectedAccount) {
+                        for (var key in selectedAccount) {
                             return false;
                         }
 
@@ -779,6 +775,8 @@
                     }
 
                 }.bind(this), 10);
+
+                this._handleItemsSelectedState();
             },
 
             _onAccountInfoEdit: function() {
@@ -922,20 +920,6 @@
                 this.$$('#appscoAccounts').removeItems(accounts);
                 this.setDefaultAccount();
                 this._evaluateSubscriptionLicences();
-            },
-
-            selectAllCompanyRoles: function() {
-                var rolesComponent = this.$$('#appscoAccounts');
-
-                this._selectedAll = !this._selectedAll;
-
-                if (this._selectedAll) {
-                    rolesComponent.selectAllItems();
-                }
-                else {
-                    rolesComponent.deselectAllItems();
-                    this._hideBulkActions();
-                }
             },
 
             getSelectedAccounts: function() {

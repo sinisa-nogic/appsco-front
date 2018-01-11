@@ -16,6 +16,7 @@
 <link rel="import" href="components/account/appsco-account-image.html">
 <link rel="import" href="components/account/appsco-account-details.html">
 <link rel="import" href="components/account/appsco-account-log.html">
+<link rel="import" href="components/components/appsco-page-behavior.html">
 
 <dom-module id="appsco-contacts-page">
     <template>
@@ -371,11 +372,6 @@
                     value: 'contacts'
                 },
 
-                _selectAll: {
-                    type: Boolean,
-                    value: false
-                },
-
                 _infoShown: {
                     type: Boolean,
                     value: false
@@ -392,7 +388,8 @@
             },
 
             behaviors: [
-                Polymer.NeonAnimatableBehavior
+                Polymer.NeonAnimatableBehavior,
+                Polymer.AppscoPageBehavior
             ],
 
             observers: [
@@ -402,6 +399,7 @@
 
             attached: function() {
                 this.pageLoaded = false;
+                this.set('_itemsComponent', this.$.appscoContacts);
 
                 if (this.mobileScreen) {
                     this.updateStyles();
@@ -499,18 +497,6 @@
                 }
             },
 
-            selectAllContacts: function() {
-                this._selectAll = !this._selectAll;
-
-                if (this._selectAll) {
-                    this.$.appscoContacts.selectAllItems();
-                }
-                else {
-                    this.$.appscoContacts.deselectAllItems();
-                    this._hideBulkActions();
-                }
-            },
-
             getSelectedContacts: function() {
                 return this.$.appscoContacts.getSelectedItems();
             },
@@ -553,7 +539,7 @@
             },
 
             _resetPageLists: function() {
-                this._selectAll = false;
+                this._deselectAllItems();
                 this.$.appscoContacts.reset();
                 this.$.appscoInvitations.reset();
             },
@@ -687,6 +673,8 @@
                     }
 
                 }.bind(this), 10);
+
+                this._handleItemsSelectedState();
             },
 
             _onEditContactAction: function(event) {

@@ -243,7 +243,7 @@
 
                 <div class="card-actions">
                     <paper-button on-tap="_onManageTwoFA"
-                                  disabled$="[[ !_canManageTwoFA ]]">Manage</paper-button>
+                                  disabled$="[[ !canManage ]]">Manage</paper-button>
                 </div>
             </paper-card>
 
@@ -488,11 +488,6 @@
                     value: false
                 },
 
-                _canManageTwoFA: {
-                    type: Boolean,
-                    computed: '_computeManageTwoFAPermission(canManage, twoFaEnforced)'
-                },
-
                 _managedUser: {
                     type: Boolean,
                     value: true,
@@ -561,10 +556,6 @@
                 return {
                     'Authorization': 'token ' + authorizationToken
                 }
-            },
-
-            _computeManageTwoFAPermission: function(canManage, twoFaEnforced) {
-                return canManage && twoFaEnforced;
             },
 
             _computeUserManaged: function (role) {
@@ -659,7 +650,9 @@
 
             _onManageTwoFA: function(event) {
                 this._setSharedElement(event.target);
-                this.fire('manage-two-fa');
+                this.fire('manage-two-fa',  {
+                    twoFAEnabled: this._twoFAEnabled
+                });
             },
 
             _onManageOrgunits: function(event) {

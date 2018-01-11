@@ -7,6 +7,7 @@
 <link rel="import" href="../bower_components/iron-media-query/iron-media-query.html">
 
 <link rel="import" href="components/page/appsco-content.html">
+<link rel="import" href="components/account/appsco-account-image.html">
 <link rel="import" href="provisioning/appsco-manage-integration-components-page.html">
 <link rel="import" href="provisioning/appsco-integration-settings-page.html">
 <link rel="import" href="provisioning/appsco-integration-rules-page.html">
@@ -115,6 +116,30 @@
                 text-decoration: none;
                 font-size: 14px;
             }
+            appsco-account-image {
+                position: absolute;
+                bottom: -22px;
+                left: 10px;
+                box-sizing: border-box;
+
+                --account-image: {
+                    width: 42px;
+                    height: 42px;
+                    border: 4px solid var(--body-background-color);
+                };
+            }
+            .integration-info {
+                padding-top: 10px;
+            }
+            .reauthorize {
+                @apply(--primary-button);
+                @apply(--secondary-button);
+                border-radius: 0;
+                white-space: nowrap;
+                text-overflow: ellipsis;
+                overflow: hidden;
+            }
+
         </style>
 
         <iron-media-query query="(max-width: 1200px)" query-matches="{{ mediumScreen }}"></iron-media-query>
@@ -142,11 +167,25 @@
                             preload fade>
                         </iron-image>
                     </div>
+
+                    <template is="dom-if" if="[[ integration.authorized_by ]]">
+                        <appsco-account-image account="[[ integration.authorized_by ]]"></appsco-account-image>
+                    </template>
                 </div>
 
                 <div class="integration-info">
                     <p>[[ integration.name ]]</p>
                 </div>
+
+                <template is="dom-if" if="[[ integration.authorized_by ]]">
+                    <div class="info">
+                        Authorized by: [[ integration.authorized_by.display_name ]] ([[ integration.authorized_by.email ]])
+                    </div>
+
+                    <div class="info">
+                        Authorized on: [[ _authorizedDate ]].
+                    </div>
+                </template>
 
                 <template is="dom-if" if="[[ integration.tutorialUrl.length ]]">
                     <div class="info tutorial">
@@ -170,9 +209,13 @@
                 </template>
 
                 <div class="resource-actions flex-horizontal">
-                    <paper-button
-                            class="remove-action flex"
-                            on-tap="_onRemoveIntegration">
+                    <paper-button class="reauthorize flex"
+                                  on-tap="_onReauthorizeIntegration">
+                        Reauthorize
+                    </paper-button>
+
+                    <paper-button class="remove-action flex"
+                                  on-tap="_onRemoveIntegration">
                         Remove
                     </paper-button>
                 </div>
@@ -298,6 +341,11 @@
                     computed: '_computeHasDownloadableConfig(integration)'
                 },
 
+                _authorizedDate: {
+                    type: String,
+                    computed: '_computeAuthorizedDate(integration)'
+                },
+
                 mediumScreen: {
                     type: Boolean,
                     value: false,
@@ -361,6 +409,30 @@
                     this.updateStyles();
                 }
                 this._getIntegration();
+            },
+
+            _computeAuthorizedDate: function(integration) {
+                return (integration && integration.authorized_at) ? this._dateFormat(integration.authorized_at.date) : '';
+            },
+
+            /**
+             * Formats date and returns formatted date as string.
+             *
+             * @param {String} value
+             * @returns {string}
+             * @private
+             */
+            _dateFormat: function(value) {
+
+                if (value) {
+                    var options = {
+                        year: 'numeric', month: 'short', day: 'numeric',
+                        hour: 'numeric', minute: 'numeric', second: 'numeric'
+                    };
+
+                    return (new Date(value)).toLocaleDateString('en', options);
+                }
+
             },
 
             setIntegration: function(integration) {
@@ -469,7 +541,8 @@
              */
             _computeHeaders: function (authorizationToken) {
                 return {
-                    'Authorization': 'token ' + authorizationToken
+                    'Authorization': 'token ' + authorizationToken,
+                    'Content-Type': 'application/x-www-form-urlencoded'
                 }
             },
 
@@ -485,6 +558,34 @@
                 this.fire('remove-integration', {
                     integration: this.integration
                 });
+            },
+
+            _onReauthorizeIntegration: function() {
+                var request = document.createElement('iron-request'),
+                        options = {
+                            url: this.integration.integration.self + '?reauthorize_integration='+ this.integration.alias,
+                            method: 'POST',
+                            body: {
+                                "activate_integration[name]": this.integration.name,
+                                "activate_integration[kind]": this.integration.kind,
+                                "activate_integration[scheduleSyncInterval]":this.integration.scheduleSyncInterval
+                            },
+                            handleAs: 'text',
+                            headers: this._headers
+                        };
+
+                request.send(options).then(function() {
+
+                    if (200 === request.status) {
+                        var response = JSON.parse(request.response);
+                        this.fire('integration-reauthorized', {
+                            authorizationUrl: response.authorization_url
+                        });
+                    }
+
+                }.bind(this), function() {
+                    this.fire('page-error');
+                }.bind(this));
             },
 
             _onManageIntegrationSettings: function() {

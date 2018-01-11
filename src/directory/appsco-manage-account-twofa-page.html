@@ -34,23 +34,29 @@
             }
         </style>
 
-        <paper-card heading="Two-Factor Authentication" id="card">
-            <paper-icon-button
-                    icon="close"
-                    title="Close"
-                    class="page-close-action"
-                    on-tap="_onClosePageAction"></paper-icon-button>
+            <paper-card heading="Two-Factor Authentication" id="card">
+                <paper-icon-button
+                        icon="close"
+                        title="Close"
+                        class="page-close-action"
+                        on-tap="_onClosePageAction"></paper-icon-button>
 
-            <div class="card-content layout vertical">
-                <p class="info">
-                    Resetting two-factor authentication will remove the user’s existing two-factor configuration
-                    and force the user to set it up again on the next login to AppsCo.
-                </p>
+                    <div class="card-content layout vertical">
+                        <template is="dom-if" if="[[ _twoFaEnabled ]]">
+                            <p class="info">
+                                Resetting two-factor authentication will remove the user’s existing two-factor configuration
+                                and force the user to set it up again on the next login to AppsCo.
+                            </p>
 
-                <paper-button class="reset-action"
-                              on-tap="_onResetTwoFA">Reset</paper-button>
-            </div>
-        </paper-card>
+                            <paper-button class="reset-action"
+                                          on-tap="_onResetTwoFA">Reset</paper-button>
+                        </template>
+
+                        <template is="dom-if" if="[[ !_twoFaEnabled ]]">
+                            <p class="info">  Two factor authentication for this user is disabled. </p>
+                        </template>
+                    </div>
+            </paper-card>
 
     </template>
 
@@ -66,6 +72,11 @@
                     value: function() {
                         return {};
                     }
+                },
+
+                _twoFaEnabled: {
+                    type: Boolean,
+                    value: false
                 },
 
                 /**
@@ -114,6 +125,10 @@
             behaviors: [
                 Polymer.NeonSharedElementAnimatableBehavior
             ],
+
+            setTwoFAEnabled: function(twoFAEnabled) {
+                this._twoFaEnabled = twoFAEnabled;
+            },
 
             _onClosePageAction: function() {
                 this.fire('back');

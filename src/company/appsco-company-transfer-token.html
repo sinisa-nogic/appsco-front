@@ -108,7 +108,8 @@
 
             <paper-dropdown-menu id="dropdownPartners"
                                  label="Partner"
-                                 horizontal-align="left">
+                                 horizontal-align="left"
+                                 disabled$="[[ !_tokenGenerated ]]">
                 <paper-listbox id="paperListboxPartners"
                                class="dropdown-content filter"
                                attr-for-selected="value">
@@ -120,6 +121,7 @@
 
             <div>
                 <paper-button class="action-button"
+                              disabled$="[[ !_tokenGenerated ]]"
                               on-tap="_onSendTokenAction">Send</paper-button>
             </div>
         </div>
@@ -226,8 +228,12 @@
                 Polymer.NeonAnimationRunnerBehavior
             ],
 
+            listeners: {
+                'neon-animation-finish': '_onNeonAnimationFinished'
+            },
+
             reset: function() {
-                this.$.token.style.display = 'none';
+                this._hideToken();
                 this._token = '';
                 this._tokenGenerated = false;
                 this.$.paperListboxPartners.selected = -1;
@@ -270,6 +276,10 @@
                 this._error = '';
             },
 
+            _hideToken: function() {
+                this.$.token.style.display = 'none';
+            },
+
             _transferTokenGenerateSuccess: function(token) {
 
                 if (token) {
@@ -294,6 +304,12 @@
                 else {
                     this._showError(this.apiErrors.getError(404));
                 }
+            },
+
+            _transferTokenGenerateFailure: function() {
+                this._token = '';
+                this._tokenGenerated = false;
+                this.playAnimation('exit');
             },
 
             _getTransferToken: function() {
@@ -333,6 +349,7 @@
                     this._hideGenerateTokenLoader();
                 }.bind(this), function(code) {
                     this._showError(this.apiErrors.getError(code));
+                    this._transferTokenGenerateFailure();
                     this._hideGenerateTokenLoader();
                 }.bind(this));
             },
@@ -382,20 +399,18 @@
             },
 
             _onSendTokenAction: function() {
-
+                this._hideError();
                 this._showLoader();
 
                 if (this._token) {
                     this._sendTokenToPartner();
                 }
-                else {
-                    this._getTransferToken().then(function(token) {
-                        this._token = token;
-                        this._sendTokenToPartner();
-                    }.bind(this), function(code) {
-                        this._showError(this.apiErrors.getError(code));
-                        this._hideLoader();
-                    }.bind(this));
+            },
+
+            _onNeonAnimationFinished: function() {
+
+                if (!this._tokenGenerated) {
+                    this._hideToken();
                 }
             }
         });

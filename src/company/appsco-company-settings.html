@@ -1,5 +1,6 @@
 <link rel="import" href="../../bower_components/polymer/polymer.html">
 <link rel="import" href="../../bower_components/iron-form/iron-form.html">
+<link rel="import" href="../../bower_components/iron-ajax/iron-request.html">
 <link rel="import" href="../../bower_components/paper-input/paper-input.html">
 <link rel="import" href="../../bower_components/gold-email-input/gold-email-input.html">
 <link rel="import" href="../../bower_components/paper-button/paper-button.html">
@@ -43,10 +44,13 @@ Custom property | Description | Default
             :host .info {
                 margin-bottom: 0;
             }
+            :host .info + .info {
+                margin-top: 0;
+            }
             :host .info-between {
                 margin-top: 20px;
             }
-            .toggle-button-container {
+            .mt-30 {
                 margin-top: 30px;
             }
             .toggle-button-container paper-toggle-button {
@@ -113,7 +117,7 @@ Custom property | Description | Default
                               error-message="Please type in correct email."
             ></gold-email-input>
 
-            <div class="toggle-button-container">
+            <div class="toggle-button-container mt-30">
                 <p class="info">
                     If you turn off the personal dashboard for managed users they will no longer be able to view, add and share private resources.
                     Once it's turned back on, users will get back the private dashboard. This applies to all managed users including admins in your company.
@@ -124,7 +128,7 @@ Custom property | Description | Default
                                      checked$="[[ _isPersonalDashboardAllowed ]]">Allow personal dashboard</paper-toggle-button>
             </div>
 
-            <div class="toggle-button-container">
+            <div class="toggle-button-container mt-30">
                 <p class="info">
                     Managed users can create companies. If you disable this option,
                     managed users will be prevented from creating a company.
@@ -132,12 +136,12 @@ Custom property | Description | Default
                 </p>
 
                 <paper-toggle-button name="company_settings[userAllowedToCreateCompany]"
-                                     checked="[[ company.user_allowed_to_create_company ]]">
+                                     checked$="[[ company.user_allowed_to_create_company ]]">
                     Managed users can create company
                 </paper-toggle-button>
             </div>
 
-            <div class="toggle-button-container">
+            <div class="toggle-button-container mt-30">
                 <p class="info">
                     Force managed users to enable two-factor authentication.
                     Your managed users will be prompted to set up two-factor authentication.
@@ -151,20 +155,48 @@ Custom property | Description | Default
 
                 <paper-toggle-button name="company_settings[enforced2fa]"
                                      id="switchForce2FA"
-                                     checked="[[ company.enforced_2fa ]]"
+                                     checked$="[[ company.enforced_2fa ]]"
                                      on-change="_enforced2faChanged">
                     Enforce Two-factor authentication policy
                 </paper-toggle-button>
             </div>
+
+            <div class="toggle-button-container mt-30">
+                <p class="info">
+                    You can prevent the users coming from TOR browsers and anonymous networks
+                    from logging in by turning on this option.
+                </p>
+
+                <paper-toggle-button name="company_settings[torBlocked]"
+                                     checked$="[[ company.torBlocked ]]">
+                    Block TOR
+                </paper-toggle-button>
+            </div>
         </form>
+
+        <div class="mt-30">
+            <p class="info">
+                You can allow your users to login only from a specific IP address.
+                This means that users will not be able to login from an IP which is not whitelisted.
+            </p>
+            <p class="info">
+                You can enter the comma separated IP addresses in order to whitelist them.
+            </p>
+
+            <paper-input id="ipWhiteList"
+                         label="IP whitelist"
+                         name="company_whitelist[whitelist]"
+                         value="[[ _ipWhiteList ]]"
+                         on-keyup="_onKeyUp"></paper-input>
+        </div>
 
         <paper-button id="submit"
                       class="submit-button"
-                      on-tap="_submitForm">Save</paper-button>
+                      on-tap="_onSaveAction">Save</paper-button>
 
         <iron-a11y-keys target="[[ _target ]]"
                         keys="enter"
-                        on-keys-pressed="_onEnter"></iron-a11y-keys>
+                        on-keys-pressed="_onEnterAction"></iron-a11y-keys>
 
     </template>
     <script>
@@ -198,6 +230,11 @@ Custom property | Description | Default
                  */
                 settingsApi: {
                     type: String
+                },
+
+                saveIpWhiteListApi: {
+                    type: String,
+                    value: ''
                 },
 
                 apiErrors: {
@@ -243,13 +280,25 @@ Custom property | Description | Default
                 _target: {
                     type: Object,
                     value: function() {
-                        return this.$.form
+                        return this;
                     }
                 },
 
                 _isPersonalDashboardAllowed: {
                     type: Boolean,
                     computed: '_computeDashboardAllowed(company)'
+                },
+
+                _ipWhiteList: {
+                    type: String,
+                    computed: '_computeIPWhiteList(company)'
+                },
+
+                _ipWhiteListInput: {
+                    type: Object,
+                    value: function() {
+                        return this.$.ipWhiteList;
+                    }
                 }
             },
 
@@ -269,6 +318,10 @@ Custom property | Description | Default
 
             _computeDashboardAllowed: function(company) {
                 return company.personal_dashboards_allowed;
+            },
+
+            _computeIPWhiteList: function(company) {
+                return company.ip_whitelist ? company.ip_whitelist : '';
             },
 
             _format: function (name) {
@@ -296,17 +349,48 @@ Custom property | Description | Default
                 this._error = '';
             },
 
-            /**
-             * Submits form on ENTER key using iron-a11y-keys component.
-             *
-             * @private
-             */
-            _onEnter: function() {
-                this._submitForm();
+            _submitSettingsForm: function() {
+                this.$.form.submit();
             },
 
-            _submitForm: function() {
-                this.$.form.submit();
+            _onEnterAction: function(event) {
+                event.stopPropagation();
+                this._onSaveAction();
+            },
+
+            _onSaveAction: function() {
+
+                if (this._isValid()) {
+                    this._submitSettingsForm();
+                }
+            },
+
+            _isValid: function() {
+                var valid,
+                    ipWhiteList = this._ipWhiteListInput.value;
+
+                if (ipWhiteList) {
+                    ipWhiteList = ipWhiteList.split(',');
+
+                    var ipAddressRegex = /^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/,
+                        length = ipWhiteList.length - 1;
+
+                    for (var i = 0; i <= length; i++) {
+
+                        if (!ipAddressRegex.test(ipWhiteList[i].trim())) {
+                            this._setInvalidIPWhiteList();
+                            valid = false;
+                        }
+                        else if (i === length) {
+                            valid = true;
+                        }
+                    }
+                }
+                else {
+                    valid = true;
+                }
+
+                return valid;
             },
 
             _onFormPresubmit: function() {
@@ -317,27 +401,89 @@ Custom property | Description | Default
             _onFormError: function(event) {
                 this._showError(this.apiErrors.getError(event.detail.request.response.code));
                 this._hideLoader();
+                this._saveIPWhiteList();
             },
 
             _onFormResponse: function(event) {
-                this.set('company', event.detail.response);
-
-                this.fire('company-settings-changed', {
-                    company: this.company
-                });
+                this._saveIPWhiteList();
 
                 this.$.contactEmail.invalid = false;
                 this.$.billingEmail.invalid = false;
 
                 this._hideLoader();
 
+                this.fire('company-settings-changed', {
+                    company: event.detail.response
+                });
+
                 if (this._2faChangedToEnable) {
                     this._reloadPage();
                 }
             },
 
-            _onKeyUp: function() {
-                this._hideError();
+            _setInvalidIPWhiteList: function() {
+                this._ipWhiteListInput.invalid = true;
+                this._showError('IP whitelist input is not valid. Please check IP addresses you have entered.');
+            },
+
+            _resetIPWhiteList: function() {
+                this._ipWhiteListInput.invalid = false;
+            },
+
+            _saveIPWhiteList: function() {
+                var ipWhiteList = this._ipWhiteListInput.value;
+
+                if (!ipWhiteList) {
+                    return false;
+                }
+                else {
+                    ipWhiteList = ipWhiteList.split(',');
+                }
+
+                var request = document.createElement('iron-request'),
+                    options = {
+                        url: this.saveIpWhiteListApi,
+                        method: 'PUT',
+                        headers: this._computedHeaders,
+                        handleAs: 'json'
+                    },
+                    body = '',
+                    length = ipWhiteList.length - 1;
+
+                for (var i = 0; i <= length; i++) {
+                    var ipAddress = ipWhiteList[i].trim(),
+                        next = (i === length) ? '' : '&';
+
+                    body += 'company_whitelist[whitelist][' + i + ']=' + encodeURIComponent(ipAddress) + next;
+                }
+
+                options.body = body;
+
+                request.send(options).then(function() {
+
+                    if (200 === request.status) {
+//                        this.set('company', request.response);
+
+                        this.fire('company-ip-whitelist-changed', {
+                            company: request.response
+                        });
+
+                        this._resetIPWhiteList();
+                        this._hideLoader();
+                    }
+
+                }.bind(this), function() {
+                    this._showError(this.apiErrors.getError(request.response.code));
+                    this._hideLoader();
+                }.bind(this));
+            },
+
+            _onKeyUp: function(event) {
+
+                if (13 !== event.keyCode) {
+                    this._hideError();
+                    event.target.invalid = false;
+                }
             },
 
             _reloadPage: function() {

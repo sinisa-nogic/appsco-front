@@ -1,0 +1,306 @@
+<link rel="import" href="../../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../../bower_components/iron-flex-layout/iron-flex-layout.html">
+<link rel="import" href="../../../bower_components/paper-button/paper-button.html">
+<link rel="import" href="../../../bower_components/iron-form/iron-form.html">
+<link rel="import" href="../../../bower_components/paper-input/paper-input.html">
+<link rel="import" href="../../../bower_components/paper-input/paper-textarea.html">
+<link rel="import" href="../../../bower_components/paper-dialog/paper-dialog.html">
+<link rel="import" href="../../../bower_components/paper-dialog-scrollable/paper-dialog-scrollable.html">
+<link rel="import" href="../../../bower_components/neon-animation/animations/scale-up-animation.html">
+<link rel="import" href="../../../bower_components/neon-animation/animations/fade-out-animation.html">
+<link rel="import" href="../../../bower_components/iron-a11y-keys/iron-a11y-keys.html">
+<link rel="import" href="../../../bower_components/iron-image/iron-image.html">
+
+<link rel="import" href="../../components/components/appsco-loader.html">
+<link rel="import" href="../../components/components/appsco-form-error.html">
+
+<dom-module id="appsco-add-oauth-application">
+    <template>
+        <style>
+            :host {
+                display: block;
+                position: relative;
+            }
+            :host paper-dialog {
+                width: 670px;
+                top: 10vh;
+                @apply(--appsco-paper-dialog);
+            }
+            :host paper-dialog-scrollable > * {
+                @apply(--paper-dialog-scrollable-child);
+            }
+            :host appsco-loader {
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+            :host .buttons paper-button {
+                @apply(--paper-dialog-button);
+            }
+            :host .buttons paper-button[dialog-dismiss] {
+                @apply(--paper-dialog-dismiss-button);
+            }
+            :host .application-image {
+                width: 64px;
+                height: 64px;
+                margin-left: 20px;
+            }
+            :host .horizontal-align {
+                @apply(--layout-horizontal);
+            }
+            :host .flex {
+                @apply(--layout-flex);
+            }
+            :host .no-flex {
+                @apply(--layout-flex-none);
+            }
+        </style>
+
+        <paper-dialog id="dialog"
+                      with-backdrop
+                      entry-animation="scale-up-animation"
+                      exit-animation="fade-out-animation"
+                      on-iron-overlay-opened="_onDialogOpened"
+                      on-iron-overlay-closed="_onDialogClosed">
+
+            <h2>Add OAuth application</h2>
+
+            <appsco-loader active="[[ _loader ]]"
+                           loader-alt="AppsCo is processing request"
+                           multi-color></appsco-loader>
+
+            <paper-dialog-scrollable>
+                <div class="dialog-container">
+
+                    <appsco-form-error message="[[ _error ]]"></appsco-form-error>
+
+                    <form is="iron-form"
+                          id="form"
+                          method="POST"
+                          action="[[ oauthApplicationsApi ]]"
+                          headers="[[ _headers ]]"
+                          on-iron-form-error="_onFormError"
+                          on-iron-form-response="_onFormResponse">
+
+                        <div class="input-container">
+                            <paper-input id="title"
+                                         label="Title"
+                                         name="oauth_application[title]"
+                                         required
+                                         auto-validate
+                                         error-message="Please enter title of the application."></paper-input>
+                        </div>
+
+                        <div class="input-container">
+                            <paper-input label="Redirect URL"
+                                         name="oauth_application[redirect_url]"
+                                         pattern="https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)"
+                                         required
+                                         auto-validate
+                                         error-message="Please enter valid URL."></paper-input>
+                        </div>
+
+                        <div class="input-container">
+                            <paper-input label="Website URL"
+                                         name="oauth_application[website_url]"
+                                         pattern="https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)"
+                                         required
+                                         auto-validate
+                                         error-message="Please enter valid URL."></paper-input>
+                        </div>
+
+                        <div class="input-container horizontal-align">
+                            <paper-input label="Icon"
+                                         name="oauth_application[icon_url]"
+                                         value$="[[ _applicationIcon ]]"
+                                         pattern="https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)"
+                                         required
+                                         auto-validate
+                                         error-message="Please enter valid icon URL."
+                                         class="flex"
+                                         on-value-changed="_onIconInputValueChanged"></paper-input>
+
+                            <iron-image class="application-image no-flex"
+                                        src="[[ _applicationIcon ]]"
+                                        alt="Application image"
+                                        preload fade
+                                        placeholder="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAABGdBTUEAALGPC/xhBQAAAI5JREFUeAHt1YEJwCAQBEFN/60KYgMRbGMnHXjs5Ofa5x/h7wu//T3dAAqIL4BAPIChAAXEF0AgHoCfIAIIxBdAIB6AK4AAAvEFEIgH4AoggEB8AQTiAbgCCCAQXwCBeACuAAIIxBdAIB6AK4AAAvEFEIgH4AoggEB8AQTiAbgCCCAQXwCBeACuAAIIxBe4yV0EThqVC64AAAAASUVORK5CYII="
+                                        sizing="contain"></iron-image>
+                        </div>
+
+                        <div class="input-container">
+                            <paper-textarea label="Description"
+                                            name="oauth_application[description]"
+                                            value=""
+                                            rows="3"></paper-textarea>
+                        </div>
+                    </form>
+                </div>
+            </paper-dialog-scrollable>
+
+            <div class="buttons">
+                <paper-button dialog-dismiss>Cancel</paper-button>
+                <paper-button autofocus on-tap="_onAddAction">Add</paper-button>
+            </div>
+        </paper-dialog>
+
+        <iron-a11y-keys target="[[ _target ]]"
+                        keys="enter"
+                        on-keys-pressed="_onEnterAction"></iron-a11y-keys>
+
+    </template>
+    <script>
+        Polymer({
+
+            is: 'appsco-add-oauth-application',
+
+            properties: {
+
+                authorizationToken: {
+                    type: String,
+                    value: ''
+                },
+
+                oauthApplicationsApi: {
+                    type: String,
+                    value: ''
+                },
+
+                company: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    }
+                },
+
+                apiErrors: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    }
+                },
+
+                _headers: {
+                    type: Object,
+                    computed: '_computeHeaders(authorizationToken)'
+                },
+
+                _loader: {
+                    type: Boolean,
+                    value: false
+                },
+
+                _error: {
+                    type: String
+                },
+
+                _target: {
+                    type: Object,
+                    value: function() {
+                        return this.$.form
+                    }
+                },
+
+                _applicationIcon: {
+                    type: String,
+                    value: ''
+                }
+            },
+
+            observers: [
+                '_onCompanyChanged(company)'
+            ],
+
+            open: function() {
+                this.$.dialog.open();
+            },
+
+            close: function() {
+                this.$.dialog.close();
+            },
+
+            toggle: function() {
+                this.$.dialog.toggle();
+            },
+
+            _showLoader: function() {
+                this._loader = true;
+            },
+
+            _hideLoader: function() {
+                this._loader = false;
+            },
+
+            _showError: function(message) {
+                this._error = message;
+            },
+
+            _hideError: function() {
+                this._error = '';
+            },
+
+            _initialize: function() {
+                this._onCompanyChanged(this.company);
+                this.$.title.focus();
+            },
+
+            _reset: function() {
+                this._target.reset();
+            },
+
+            _computeHeaders: function (authorizationToken) {
+                return {
+                    'Authorization': 'token ' + authorizationToken,
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                };
+            },
+
+            _onDialogOpened: function() {
+                this._initialize();
+            },
+
+            _onDialogClosed: function() {
+                this._hideLoader();
+                this._hideError();
+                this._reset();
+            },
+
+            _onCompanyChanged: function(company) {
+                this._applicationIcon = company.image ? company.image : '';
+            },
+
+            _onIconInputValueChanged: function(event) {
+
+                this.debounce('setIconURL', function() {
+                    this._applicationIcon = event.detail.value;
+                }.bind(this), 500);
+            },
+
+            _onEnterAction: function() {
+                this._onAddAction();
+            },
+
+            _onAddAction: function() {
+                this._hideError();
+
+                if (this._target.validate()) {
+                    this._showLoader();
+                    this._target.submit();
+                }
+
+            },
+
+            _onFormError: function(event) {
+                this._showError(this.apiErrors.getError(event.detail.request.response.code));
+                this._hideLoader();
+            },
+
+            _onFormResponse: function(event) {
+                this.close();
+
+                this.fire('oauth-application-added', {
+                    application: event.detail.response
+                });
+            }
+        });
+    </script>
+</dom-module>

@@ -156,6 +156,8 @@
 <link rel="import" href="components/company/appsco-company-notice.html">
 <link rel="import" href="components/notifications/appsco-send-notification.html">
 
+<link rel="import" href="components/oauth-application/appsco-add-oauth-application.html">
+
 <link rel="import" href="shared-styles.html">
 <link rel="import" href="webkit-scrollbar-style.html">
 
@@ -1672,6 +1674,14 @@
                                       save-api="[[ api.saveClientDataApi ]]"
                                       authorization-token="[[ authorizationToken ]]"></appsco-role-save-client-data>
 
+        <appsco-add-oauth-application
+                id="appscoAddOauthApplication"
+                authorization-token="[[ authorizationToken ]]"
+                oauth-applications-api="[[ _companyOAuthApplicationsApi ]]"
+                company="[[ currentCompany.company ]]"
+                api-errors="[[ _apiErrors ]]"
+                on-oauth-application-added="_onOauthApplicationAdded"></appsco-add-oauth-application>
+
         <template is="dom-if" if="[[ api.me ]]">
             <iron-ajax auto
                        id = "getAccountRequest"
@@ -2131,6 +2141,11 @@
                     value: ''
                 },
 
+                _companyOAuthApplicationsApi: {
+                    type: String,
+                    value: ''
+                },
+
                 _subscription: {
                     type: Object,
                     value: function() {
@@ -2563,6 +2578,7 @@
                     this._saveIPWhiteListApi = companyApi + '/ip-white-list';
                     this._getAvailableIntegrationsApi = companyApi + '/integrations/available';
                     this._getActiveIntegrationsApi = companyApi + '/integrations/active';
+                    this._companyOAuthApplicationsApi = companyApi + '/oauth/applications';
                 }
             },
 
@@ -5741,6 +5757,22 @@
             },
             /**
              * Access Report page END
+             */
+
+            /**
+             * Oauth applications page START
+             */
+            _onAddOauthApplicationAction: function() {
+                this.$.appscoAddOauthApplication.open();
+            },
+
+            _onOauthApplicationAdded: function(event) {
+                var application = event.detail.application;
+                
+                this._notify('OAuth application ' + application.title + ' has been successfully added.');
+            },
+            /**
+             * Oauth applications page END
              */
 
             /**

@@ -25,6 +25,7 @@
 <link rel="import" href="../bower_components/paper-button/paper-button.html">
 <link rel="import" href="../bower_components/paper-icon-button/paper-icon-button.html">
 <link rel="import" href="../bower_components/iron-icons/iron-icons.html">
+<link rel="import" href="../bower_components/iron-icons/device-icons.html">
 <link rel="import" href="../bower_components/paper-listbox/paper-listbox.html">
 <link rel="import" href="../bower_components/paper-item/paper-item.html">
 <link rel="import" href="../bower_components/paper-dropdown-menu/paper-dropdown-menu.html">
@@ -108,6 +109,10 @@
 <link rel="import" href="provisioning/appsco-provisioning-settings-page-actions.html">
 <link rel="import" href="provisioning/appsco-manage-integration-page-actions.html">
 <link rel="import" href="provisioning/appsco-add-integration.html">
+
+<link rel="import" href="components/oauth-application/appsco-oauth-applications-page-actions.html">
+<link rel="import" href="components/oauth-application/appsco-remove-oauth-application.html">
+
 <link rel="import" href="components/integration/appsco-remove-integration.html">
 <link rel="import" href="components/integration/appsco-add-integration-rule.html">
 <link rel="import" href="components/integration/appsco-edit-integration-rule.html">
@@ -476,6 +481,9 @@
                                 <a name="provisioning" href="#">
                                     <iron-icon icon="icons:compare-arrows"></iron-icon> <span class="menu-text">Provisioning</span>
                                 </a>
+                                <a name="oauth-applications" href="#">
+                                    <iron-icon icon="device:widgets"></iron-icon> <span class="menu-text">OAuth applications</span>
+                                </a>
                                 <a name="audit-log" href="#">
                                     <iron-icon icon="icons:reorder"></iron-icon> <span class="menu-text">Audit</span>
                                 </a>
@@ -711,6 +719,10 @@
                             <appsco-provisioning-page-actions id="appscoProvisioningPageActions"
                                                               name="provisioning"
                                                               on-add-integration="_onAddIntegrationAction"></appsco-provisioning-page-actions>
+
+                            <appsco-oauth-applications-page-actions id="appscoOAuthApplicationsPageActions"
+                                                              name="oauth-applications"
+                                                              on-add-oauth-application="_onAddOAuthApplicationAction"></appsco-oauth-applications-page-actions>
                         </neon-animated-pages>
 
                     </app-toolbar>
@@ -1087,6 +1099,15 @@
                             authorization-token="[[ authorizationToken ]]"
                             audit-log-api="[[ _companyAuditLogApi ]]"
                             company-api="[[ _companyApi ]]"></appsco-audit-log-page>
+
+                    <appsco-oauth-applications-page
+                            id="appscoOAuthApplicationsPage"
+                            name="oauth-applications"
+                            authorization-token="[[ authorizationToken ]]"
+                            o-auth-applications-api="[[ _companyOAuthApplicationsApi ]]"
+                            on-remove-oauth-application="_onRemoveOauthApplicationAction"
+                            on-edit-oauth-application="_onEditOAuthApplicationAction"
+                    ></appsco-oauth-applications-page>
 
                     <appsco-statistics-page
                             id="appscoStatisticsPage"
@@ -1667,6 +1688,12 @@
                 api-errors="[[ _apiErrors ]]"
                 on-action-canceled="_onToggleCustomerSubscriptionPaidExternallyActionCanceled"></appsco-toggle-customer-subscription-paid-externally>
 
+        <appsco-remove-oauth-application
+                id="appscoRemoveOAuthApplication"
+                authorization-token="[[ authorizationToken ]]"
+                api-errors="[[ _apiErrors ]]"
+                on-oauth-application-removed="_onOAuthApplicationRemoved"></appsco-remove-oauth-application>
+
         <appsco-company-notice
                 id="appscoCompanyNotice"></appsco-company-notice>
 
@@ -2066,6 +2093,11 @@
                     value: ''
                 },
 
+                _companyOAuthApplicationsApi: {
+                    type: String,
+                    value: ''
+                },
+
                 _companyCustomersApi: {
                     type: String,
                     value: ''
@@ -2429,6 +2461,9 @@
 
                     case 'audit-log':
                         return 'Audit Log';
+
+                    case 'oauth-applications':
+                        return 'oAuth applications';
 
                     case 'trybusiness':
                         return 'Try Appsco Business';
@@ -2965,6 +3000,10 @@
                         return this.$.appscoCustomersPage;
                         break;
 
+                    case 'oauth-applications':
+                        return this.$.appscoOAuthApplicationsPage;
+                        break;
+
                     case 'reports':
                         return this.$.appscoReportsPage;
                         break;
@@ -3012,6 +3051,10 @@
 
                     case 'provisioning':
                         return this.$.appscoProvisioningPageActions;
+                        break;
+
+                    case 'oauth-applications':
+                        return this.$.appscoOAuthApplicationsPageActions;
                         break;
                 }
 
@@ -5762,15 +5805,35 @@
             /**
              * Oauth applications page START
              */
-            _onAddOauthApplicationAction: function() {
+            _onAddOAuthApplicationAction: function() {
                 this.$.appscoAddOauthApplication.open();
+            },
+
+            _onEditOAuthApplicationAction: function(event) {
+                //TODO Implement oAuth application edit
+            },
+
+            _onRemoveOauthApplicationAction: function(event) {
+                this.$.appscoRemoveOAuthApplication.setOAuthApplication(event.detail.oAuthApplication);
+                this.$.appscoRemoveOAuthApplication.open();
             },
 
             _onOauthApplicationAdded: function(event) {
                 var application = event.detail.application;
-                
+
+                this.$.appscoOAuthApplicationsPage.reloadOAuthApplications();
+                this.$.appscoOAuthApplicationsPage.hideInfo();
+
                 this._notify('OAuth application ' + application.title + ' has been successfully added.');
             },
+
+            _onOAuthApplicationRemoved: function(event) {
+                this.$.appscoOAuthApplicationsPage.reloadOAuthApplications();
+                this.$.appscoOAuthApplicationsPage.hideInfo();
+
+                this._notify('oAuth application ' + event.detail.oAuthApplication.title + ' was successfully removed.');
+            },
+
             /**
              * Oauth applications page END
              */
@@ -5853,6 +5916,10 @@
                         this.$.appscoProvisioningPage.pageLoaded ? this._hideProgressBar() : this._showProgressBar();
                         break;
 
+                    case 'oauth-applications':
+                        this.$.appscoOAuthApplicationsPage.pageLoaded ? this._hideProgressBar() : this._showProgressBar();
+                        break;
+
                     case 'provisioning-settings':
                         this.$.appscoProvisioningSettingsPage.pageLoaded ? this._hideProgressBar() : this._showProgressBar();
                         break;
@@ -5928,6 +5995,7 @@
                         page === 'provisioning-settings' ||
                         page === 'provisioning-integration-authorization-success' ||
                         page === 'provisioning-integration-authorization-failed' ||
+                        page === 'oauth-applications' ||
                         page === 'billing' ||
                         page === 'company' ||
                         page === 'audit-log' ||
@@ -6019,6 +6087,7 @@
                     case 'manage-integration':
                     case 'audit-log':
                     case 'provisioning-settings':
+                    case 'oauth-applications':
                     case 'company':
                     case 'company-account':
                     case 'contact-home':

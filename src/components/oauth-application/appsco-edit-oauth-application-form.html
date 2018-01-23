@@ -1,0 +1,215 @@
+<link rel="import" href="../../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../../bower_components/paper-button/paper-button.html">
+<link rel="import" href="../../../bower_components/iron-form/iron-form.html">
+<link rel="import" href="../../../bower_components/paper-input/paper-input.html">
+<link rel="import" href="../../../bower_components/paper-input/paper-textarea.html">
+<link rel="import" href="../../../bower_components/iron-a11y-keys/iron-a11y-keys.html">
+
+<link rel="import" href="../../components/components/appsco-loader.html">
+<link rel="import" href="../../components/components/appsco-form-error.html">
+
+<dom-module id="appsco-edit-oauth-application-form">
+    <template>
+        <style>
+            :host {
+                display: block;
+                position: relative;
+            }
+            :host .save-action {
+                margin: 20px 0 0 0;
+                @apply(--form-action);
+            }
+        </style>
+
+        <appsco-loader active="[[ _loader ]]"
+                       loader-alt="AppsCo is processing request"
+                       multi-color></appsco-loader>
+
+        <div class="dialog-container">
+
+            <appsco-form-error message="[[ _error ]]"></appsco-form-error>
+
+            <form is="iron-form"
+                  id="form"
+                  method="POST"
+                  action="[[ _oauthApplicationUpdateApi ]]"
+                  headers="[[ _headers ]]"
+                  on-iron-form-presubmit="_onFormPresubmit"
+                  on-iron-form-error="_onFormError"
+                  on-iron-form-response="_onFormResponse">
+
+                <div class="input-container">
+                    <paper-input id="title"
+                                 label="Title"
+                                 name="oauth_application[title]"
+                                 value="[[ application.title ]]"
+                                 required
+                                 auto-validate
+                                 error-message="Please enter title of the application."></paper-input>
+                </div>
+
+                <div class="input-container">
+                    <paper-input label="Redirect URL"
+                                 name="oauth_application[redirect_url]"
+                                 value="[[ application.redirect_url ]]"
+                                 pattern="https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)"
+                                 required
+                                 auto-validate
+                                 error-message="Please enter valid URL."></paper-input>
+                </div>
+
+                <div class="input-container">
+                    <paper-input label="Website URL"
+                                 name="oauth_application[website_url]"
+                                 value="[[ application.website_url ]]"
+                                 pattern="https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)"
+                                 required
+                                 auto-validate
+                                 error-message="Please enter valid URL."></paper-input>
+                </div>
+
+                <div class="input-container">
+                    <paper-textarea label="Description"
+                                    name="oauth_application[description]"
+                                    value="[[ application.description ]]"
+                                    rows="3"></paper-textarea>
+                </div>
+            </form>
+        </div>
+
+        <div class="buttons">
+            <paper-button class="save-action"
+                          autofocus
+                          on-tap="_onSaveAction">Save</paper-button>
+        </div>
+
+        <iron-a11y-keys target="[[ _target ]]"
+                        keys="enter"
+                        on-keys-pressed="_onEnterAction"></iron-a11y-keys>
+
+    </template>
+    <script>
+        Polymer({
+
+            is: 'appsco-edit-oauth-application-form',
+
+            properties: {
+
+                application: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    }
+                },
+
+                authorizationToken: {
+                    type: String,
+                    value: ''
+                },
+
+                apiErrors: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    }
+                },
+
+                _headers: {
+                    type: Object,
+                    computed: '_computeHeaders(authorizationToken)'
+                },
+
+                _oauthApplicationUpdateApi: {
+                    type: Object,
+                    computed: '_computeUpdateApi(application)'
+                },
+
+                _loader: {
+                    type: Boolean,
+                    value: false
+                },
+
+                _error: {
+                    type: String
+                },
+
+                _target: {
+                    type: Object,
+                    value: function() {
+                        return this.$.form
+                    }
+                }
+            },
+
+            initialize: function() {
+                var application = JSON.parse(JSON.stringify(this.application));
+
+                this.set('application', {});
+                this.set('application', application);
+                this.$.title.focus();
+            },
+
+            reset: function() {
+                this._target.reset();
+            },
+
+            _showLoader: function() {
+                this._loader = true;
+            },
+
+            _hideLoader: function() {
+                this._loader = false;
+            },
+
+            _showError: function(message) {
+                this._error = message;
+            },
+
+            _hideError: function() {
+                this._error = '';
+            },
+
+            _computeHeaders: function (authorizationToken) {
+                return {
+                    'Authorization': 'token ' + authorizationToken,
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                };
+            },
+
+            _computeUpdateApi: function(application) {
+                return application.self ? application.self : '';
+            },
+
+            _onEnterAction: function() {
+                this._onSaveAction();
+            },
+
+            _onSaveAction: function() {
+                this._hideError();
+
+                if (this._target.validate()) {
+                    this._showLoader();
+                    this._target.submit();
+                }
+
+            },
+
+            _onFormPresubmit: function(event) {
+                event.target.request.method = 'PUT';
+            },
+
+            _onFormError: function(event) {
+                this._showError(this.apiErrors.getError(event.detail.request.response.code));
+                this._hideLoader();
+            },
+
+            _onFormResponse: function(event) {
+                this._hideLoader();
+
+                this.fire('oauth-application-updated', {
+                    application: event.detail.response
+                });
+            }
+        });
+    </script>
+</dom-module>

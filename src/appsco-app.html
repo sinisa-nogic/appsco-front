@@ -729,7 +729,8 @@
                                                               on-add-oauth-application="_onAddOAuthApplicationAction"></appsco-oauth-applications-page-actions>
 
                             <appsco-manage-oauth-application-page-actions id="appscoManageOAuthApplicationPageActions"
-                                                                          name="manage-oauth-application"></appsco-manage-oauth-application-page-actions>
+                                                                          name="manage-oauth-application"
+                                                                          on-back="_showOAuthApplicationsPage"></appsco-manage-oauth-application-page-actions>
                         </neon-animated-pages>
 
                     </app-toolbar>
@@ -1112,7 +1113,7 @@
                             name="oauth-applications"
                             authorization-token="[[ authorizationToken ]]"
                             o-auth-applications-api="[[ _companyOAuthApplicationsApi ]]"
-                            on-remove-oauth-application="_onRemoveOauthApplicationAction"
+                            on-remove-oauth-application="_onRemoveOAuthApplicationAction"
                             on-edit-oauth-application="_onEditOAuthApplicationAction"
                     ></appsco-oauth-applications-page>
 
@@ -2588,8 +2589,9 @@
                 this._showPage('access-report');
             },
 
-            // TODO - after OAuth applications page is implemented
-            _showOAuthAppplicationsPage: function() {},
+            _showOAuthApplicationsPage: function() {
+                this._showPage('oauth-applications');
+            },
 
             _showPage404: function() {
                 this.page = '404';
@@ -5854,7 +5856,14 @@
                 }
             },
 
-            _onAddOauthApplicationAction: function() {
+            _reloadOAuthApplications: function() {
+
+                if (this.$.appscoOAuthApplicationsPage.$) {
+                    this.$.appscoOAuthApplicationsPage.reloadOAuthApplications();
+                }
+            },
+
+            _onAddOAuthApplicationAction: function() {
                 this.$.appscoAddOauthApplication.open();
             },
 
@@ -5868,12 +5877,19 @@
             },
 
             _onEditOAuthApplicationAction: function(event) {
-                //TODO Implement oAuth application edit
+                var application = event.detail.application;
+
+                if (this.$.appscoManageOAuthApplicationPage.$) {
+                    this.$.appscoManageOAuthApplicationPage.setApplication(application);
+                }
+
+                this._showManagePage('manage-oauth-application/' + application.alias);
             },
 
             _onOAuthApplicationUpdated: function(event) {
                 var application = event.detail.application;
 
+                this._reloadOAuthApplications();
                 this._notify('OAuth application ' + application.title + ' has been successfully saved.');
             },
 
@@ -5885,8 +5901,8 @@
             },
 
             _onOAuthApplicationRemoved: function(event) {
-                this._showOAuthAppplicationsPage();
-                this.$.appscoOAuthApplicationsPage.reloadOAuthApplications();
+                this._showOAuthApplicationsPage();
+                this._reloadOAuthApplications();
                 this.$.appscoOAuthApplicationsPage.hideInfo();
                 this._notify('OAuth application ' + event.detail.application.title + ' has been successfully removed.');
             },

@@ -4,6 +4,7 @@
 <link rel="import" href="../../../bower_components/paper-input/paper-input.html">
 <link rel="import" href="../../../bower_components/paper-input/paper-textarea.html">
 <link rel="import" href="../../../bower_components/iron-a11y-keys/iron-a11y-keys.html">
+<link rel="import" href="../../../bower_components/iron-image/iron-image.html">
 
 <link rel="import" href="../../components/components/appsco-loader.html">
 <link rel="import" href="../../components/components/appsco-form-error.html">
@@ -18,6 +19,20 @@
             :host .save-action {
                 margin: 20px 0 0 0;
                 @apply(--form-action);
+            }
+            :host .application-image {
+                width: 64px;
+                height: 64px;
+                margin-left: 20px;
+            }
+            :host .horizontal-align {
+                @apply(--layout-horizontal);
+            }
+            :host .flex {
+                @apply(--layout-flex);
+            }
+            :host .no-flex {
+                @apply(--layout-flex-none);
             }
         </style>
 
@@ -66,6 +81,25 @@
                                  required
                                  auto-validate
                                  error-message="Please enter valid URL."></paper-input>
+                </div>
+
+                <div class="input-container horizontal-align">
+                    <paper-input label="Icon"
+                                 name="oauth_application[icon_url]"
+                                 value$="[[ _applicationIcon ]]"
+                                 pattern="https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)"
+                                 required
+                                 auto-validate
+                                 error-message="Please enter valid icon URL."
+                                 class="flex"
+                                 on-value-changed="_onIconInputValueChanged"></paper-input>
+
+                    <iron-image class="application-image no-flex"
+                                src="[[ _applicationIcon ]]"
+                                alt="Application image"
+                                preload fade
+                                placeholder="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAABGdBTUEAALGPC/xhBQAAAI5JREFUeAHt1YEJwCAQBEFN/60KYgMRbGMnHXjs5Ofa5x/h7wu//T3dAAqIL4BAPIChAAXEF0AgHoCfIAIIxBdAIB6AK4AAAvEFEIgH4AoggEB8AQTiAbgCCCAQXwCBeACuAAIIxBdAIB6AK4AAAvEFEIgH4AoggEB8AQTiAbgCCCAQXwCBeACuAAIIxBe4yV0EThqVC64AAAAASUVORK5CYII="
+                                sizing="contain"></iron-image>
                 </div>
 
                 <div class="input-container">
@@ -138,8 +172,17 @@
                     value: function() {
                         return this.$.form
                     }
+                },
+
+                _applicationIcon: {
+                    type: String,
+                    value: ''
                 }
             },
+
+            observers: [
+                '_onApplicationChanged(application)'
+            ],
 
             initialize: function() {
                 var application = JSON.parse(JSON.stringify(this.application));
@@ -178,6 +221,17 @@
 
             _computeUpdateApi: function(application) {
                 return application.self ? application.self : '';
+            },
+
+            _onApplicationChanged: function(application) {
+                this._applicationIcon = application.icon_url ? application.icon_url : '';
+            },
+
+            _onIconInputValueChanged: function(event) {
+
+                this.debounce('setIconURL', function() {
+                    this._applicationIcon = event.detail.value;
+                }.bind(this), 500);
             },
 
             _onEnterAction: function() {

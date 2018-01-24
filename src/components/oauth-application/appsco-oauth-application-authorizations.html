@@ -1,0 +1,155 @@
+<link rel="import" href="../../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../../bower_components/neon-animation/neon-animation-runner-behavior.html">
+<link rel="import" href="../../../bower_components/neon-animation/animations/fade-in-animation.html">
+<link rel="import" href="../../../bower_components/neon-animation/animations/fade-out-animation.html">
+<link rel="import" href="../../../bower_components/paper-styles/typography.html">
+<link rel="import" href="../../../bower_components/iron-flex-layout/iron-flex-layout.html">
+<link rel="import" href="../../../bower_components/iron-ajax/iron-ajax.html">
+
+<link rel="import" href="../components/appsco-form-error.html">
+
+<dom-module id="appsco-oauth-application-authorizations">
+    <template>
+        <style>
+            :host {
+                @apply(--appsco-oauth-application-authorizations);
+                display: none;
+            }
+            :host .info {
+                @apply(--info-message);
+            }
+        </style>
+
+        <iron-ajax auto
+                   url="[[ _getAuthorizationsApi ]]"
+                   headers="[[ _headers ]]"
+                   on-error="_onGetAuthorizationsError"
+                   on-response="_onGetAuthorizationsResponse"></iron-ajax>
+
+        <appsco-form-error message="[[ _error ]]"></appsco-form-error>
+
+        <p class="info">
+            Number of authorizations: [[ _numberOfAuthorizations ]].
+        </p>
+        
+    </template>
+
+    <script>
+        Polymer({
+
+            is: 'appsco-oauth-application-authorizations',
+
+            properties: {
+
+                application: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    }
+                },
+
+                authorizationToken: {
+                    type: String,
+                    value: ''
+                },
+
+                apiErrors: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    }
+                },
+
+                _headers: {
+                    type: Object,
+                    computed: '_computeHeaders(authorizationToken)'
+                },
+
+                _getAuthorizationsApi: {
+                    type: String,
+                    computed: '_computeGetAuthorizationsApi(application)'
+                },
+
+                _numberOfAuthorizations: {
+                    type: Number,
+                    value: 0
+                },
+
+                _error: {
+                    type: String
+                },
+
+                animationConfig: {
+                    value: function() {
+                        return {
+                            'entry': {
+                                name: 'fade-in-animation',
+                                node: this,
+                                timing: {
+                                    duration: 500
+                                }
+                            },
+                            'exit': {
+                                name: 'fade-out-animation',
+                                node: this,
+                                timing: {
+                                    duration: 100
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+
+            behaviors: [
+                Polymer.NeonAnimationRunnerBehavior
+            ],
+
+            listeners: {
+                'application-changed': '_onApplicationChanged'
+            },
+
+            attached: function() {
+                this._showApplicationAuthorizations();
+            },
+
+            _computeHeaders: function(authorizationToken) {
+                return {
+                    'Authorization': 'token ' + authorizationToken
+                };
+            },
+
+            _computeGetAuthorizationsApi: function(application) {
+                return application.self ? (application.self + '/authorizations-count') : '';
+            },
+
+            _showError: function(message) {
+                this._error = message;
+            },
+
+            _hideError: function() {
+                this._error = '';
+            },
+
+            _onApplicationChanged: function() {
+                this._showApplicationAuthorizations();
+            },
+
+            _showApplicationAuthorizations: function() {
+                this.style.display = 'block';
+                this.playAnimation('entry');
+            },
+
+            _onGetAuthorizationsError: function(event) {
+                this._numberOfAuthorizations = 0;
+                this._showError(this.apiErrors.getError(event.detail.request.response.code));
+            },
+
+            _onGetAuthorizationsResponse: function(event) {
+                var response = event.detail.response;
+
+                this._numberOfAuthorizations = (response && response.authorizations_count) ? response.authorizations_count : 0;
+            }
+        });
+    </script>
+</dom-module>

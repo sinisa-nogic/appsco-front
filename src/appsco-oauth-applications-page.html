@@ -89,16 +89,34 @@
                 margin: auto;
                 --iron-icon-fill-color: var(--primary-text-color, #ffffff);
             }
+            :host div[info] {
+                height: 100%;
+            }
+            :host .info-content {
+                height: calc(100% - 50px - 40px);
+                margin-top: 10px;
+                overflow: auto;
+            }
             :host .info-header {
                 border-bottom: 1px solid var(--divider-color);
                 height: 50px;
                 @apply(--layout-flex-none);
                 color: var(--primary-text-color);
             }
-
             :host .application-name {
                 @apply(--paper-font-subhead);
                 font-size: 18px;
+            }
+            :host div[info] .info-actions {
+                padding: 0;
+                position: absolute;
+                bottom: 0;
+                left: 0;
+                right: 0;
+            }
+            :host .edit-action{
+                @apply(--primary-button);
+                border-radius: 0;
             }
         </style>
 
@@ -147,8 +165,15 @@
                     <span class="application-name flex">[[ oAuthApplication.title ]]</span>
                 </div>
 
-                <div class="details">
+                <div class="info-content flex-vertical">
                     <appsco-oauth-application-info o-auth-application="[[ oAuthApplication ]]"></appsco-oauth-application-info>
+                </div>
+
+                <div class="info-actions flex-horizontal">
+                    <paper-button class="edit-action flex"
+                                  on-tap="_onInfoEditAction">
+                        Edit
+                    </paper-button>
                 </div>
 
             </div>
@@ -267,8 +292,13 @@
                 this.fire('page-loaded');
             },
 
+            _resetPageList: function() {
+                this.$.oAuthApplications.resetAllItems();
+            },
+
             resetPage: function() {
                 this.hideInfo();
+                this._resetPageList();
             },
 
             _onOAuthApplicationsLoaded: function() {
@@ -300,6 +330,12 @@
                     this.hideInfo();
                     this._setDefaultOAuthApplication();
                 }
+            },
+
+            _onInfoEditAction: function() {
+                this.fire('edit-oauth-application', {
+                    application: this.oAuthApplication
+                });
             }
         });
 

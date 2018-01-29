@@ -23,6 +23,9 @@
                 top: 0;
                 left: 0;
             }
+            .info {
+                @apply(--info-message);
+            }
         </style>
 
         <div>
@@ -37,6 +40,12 @@
             <paper-progress id="paperProgress"
                             class="progress-bar"
                             indeterminate></paper-progress>
+
+            <p class="info">
+                Webhooks are system events. They are triggered by some event, such as "user added" or "user removed".
+                In this section, you can setup AppsCo to listen to these events and run one of the pre-defined rules.
+                <br /> Once event occurred in the integrating system, AppsCo will be notified by the system and run the rule that is defined for the specific event.
+            </p>
 
             <template is="dom-if" if="[[ _message ]]">
                 <p class="message">[[ _message ]]</p>
@@ -190,19 +199,23 @@
             _onResponse: function(event) {
                 var response = event.detail.response;
                 if (response && response.web_hooks) {
+
                     var webhooks = response.web_hooks,
                         meta = response.meta,
                         webhooksCount = webhooks.length - 1;
 
+
+
                     if (meta.total === 0) {
                         this._message = 'There are no webhooks for this integration.';
                         this._handleEmptyLoad();
+                        this._fireWebHooksLoadedEvent(webhooks);
                         return false;
                     }
 
                     this._clearWebhooks();
-                    this._message = 'Manage webhooks settings.';
 
+                    this._message = "";
                     webhooks.forEach(function(el, index) {
 
                         this._loaders.push(setTimeout(function() {
@@ -221,10 +234,14 @@
 
                     }.bind(this));
 
-                    this.fire('web-hooks-loaded', {
-                        web_hooks: webhooks
-                    });
+                    this._fireWebHooksLoadedEvent(webhooks);
                 }
+            },
+
+            _fireWebHooksLoadedEvent: function(webHooks) {
+                this.fire('web-hooks-loaded', {
+                    web_hooks: webHooks
+                });
             },
 
             _showProgressBar: function() {

@@ -95,7 +95,10 @@
             }
             :host .info {
                 @apply(--paper-font-body1);
-                margin-top: 10px;
+                margin-top: 11px;
+            }
+            :host .kind-info {
+                font-size: 12px;
             }
             :host div.tutorial.info a,
             :host div.tutorial.info a:hover {
@@ -176,6 +179,20 @@
                 <div class="integration-info">
                     <p>[[ integration.name ]]</p>
                 </div>
+
+                <template is="dom-if" if="[[ _isIntegrationRA ]]">
+                    <div class="kind-info">
+                        <strong>[[ integration.integration.title ]]</strong> is integrated with <strong>AppsCo</strong> in such a way that data is moved
+                        from <strong>[[ integration.integration.title ]]</strong> to <strong>AppsCo</strong> either through sync or through the user of events.
+                    </div>
+                </template>
+
+                <template is="dom-if" if="[[ _isIntegrationPST ]]">
+                    <div class="kind-info">
+                        <strong>AppsCo</strong> is integrated with <strong>[[ integration.integration.title ]]</strong> in such a way that data is moved from
+                        <strong>AppsCo</strong> to <strong>[[ integration.integration.title ]]</strong>.
+                    </div>
+                </template>
 
                 <template is="dom-if" if="[[ integration.authorized_by ]]">
                     <div class="info">
@@ -318,6 +335,16 @@
                 authorizationToken: {
                     type: String,
                     value: ''
+                },
+
+                _isIntegrationRA: {
+                    type: Boolean,
+                    computed: '_computeIsIntegrationRA(integration)'
+                },
+
+                _isIntegrationPST: {
+                    type: Boolean,
+                    computed: '_computeIsIntegrationPST(integration)'
                 },
 
                 apiErrors: {
@@ -548,6 +575,14 @@
 
             _computeWebhookApi: function(integration) {
                 return integration && integration.meta && integration.meta.webHooks ? integration.meta.webHooks : '';
+            },
+
+            _computeIsIntegrationRA: function(integration) {
+                return integration && integration.integration && integration.kind == 'ra';
+            },
+
+            _computeIsIntegrationPST: function(integration) {
+                return integration && integration.integration && integration.kind == 'pst';
             },
 
             _onResourceBack: function() {

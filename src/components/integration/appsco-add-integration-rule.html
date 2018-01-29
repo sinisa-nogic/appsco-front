@@ -27,7 +27,7 @@
                 position: relative;
             }
             :host paper-dialog {
-                width: 670px;
+                width: 980px;
                 top: 10vh;
                 @apply(--appsco-paper-dialog);
             }
@@ -93,7 +93,7 @@
                       on-iron-overlay-opened="_onDialogOpened"
                       on-iron-overlay-closed="_onDialogClosed">
 
-            <h2>Add integration rule</h2>
+            <h2>Create integration rule</h2>
 
             <appsco-loader active="[[ _loader ]]"
                            loader-alt="AppsCo is processing request"
@@ -115,23 +115,49 @@
 
                         <div class="input-container">
                             <paper-input id="title"
-                                         label="Title"
+                                         label="Rule name"
                                          name="integration_recipe[name]"
                                          required
                                          auto-validate
                                          error-message="Please enter rule name."></paper-input>
                         </div>
 
-                        <div class="subtitle">From</div>
+                        <template is="dom-if" if="[[ _integrationKindRA ]]">
+                            <div class="subtitle">Define reaction to event in [[ integration.name ]]</div>
+                            <p>
+                                Here you can define interaction with [[ integration.name ]] and AppsCo.
+                                Define events in [[ integration.name ]] and object to which this rule should react.
+                            </p>
+                            <p>
+                                Lookup - query the [[ integration.name ]] for list of defined incoming objects<br>
+                                Added - react to added event in the [[ integration.name ]]<br>
+                                Modified - react to modified event in the [[ integration.name ]]<br>
+                                Removed - react to removed event in the [[ integration.name ]]
+                            </p>
+                        </template>
+                        <template is="dom-if" if="[[ !_integrationKindRA ]]">
+                            <div class="subtitle">Events in AppsCo</div>
+                            <p>
+                                Here you can define interaction with [[ integration.name ]] and AppsCo.
+                                Define events in AppsCo and object to which this rule should react.
+                            </p>
+                            <p>
+                                Lookup - this option is not applicable to AppsCo<br>
+                                Added - react to when user is added in AppsCo directory<br>
+                                Modified - react to when user in your company is modified inside AppsCo<br>
+                                Removed - react to when user is removed from your company in AppsCo
+                            </p>
+                        </template>
+
                         <div class="input-container">
                             <paper-dropdown-menu id="fromMethod"
-                                                 label="Method"
+                                                 label="Choose event or query the system"
                                                  name="integration_recipe[fromMethod]"
                                                  horizontal-align="left"
                                                  on-iron-overlay-opened="_onIronOverlayEvents"
                                                  on-iron-overlay-closed="_onIronOverlayEvents"
                                                  required
-                                                 error-message="Please select method."
+                                                 error-message="Please select at least one option."
                                                  auto-validate>
                                 <paper-listbox id="fromMethodList"
                                                class="dropdown-content"
@@ -144,7 +170,7 @@
                         </div>
                         <div class="input-container">
                             <paper-dropdown-menu id="fromPSO"
-                                                 label="Object"
+                                                 label="Incoming object (user, group)"
                                                  name="integration_recipe[fromPSO]"
                                                  horizontal-align="left"
                                                  on-iron-overlay-opened="_onIronOverlayEvents"
@@ -162,14 +188,18 @@
                                 </paper-listbox>
                             </paper-dropdown-menu>
                         </div>
-                        <div class="input-container">
-                            <paper-button class="primary-button"
-                                          on-tap="_onToggleConditionAction"
-                                          disabled$="[[ !_fromPSOSelected ]]"
-                                          toggles>Advanced</paper-button>
-                        </div>
+                        <template is="dom-if" if="[[ _fromConditionListExist ]]">
+                            <div class="input-container">
+                                <p>Further filter incoming object</p>
+                                <paper-button class="primary-button"
+                                              on-tap="_onToggleConditionAction"
+                                              disabled$="[[ !_fromPSOSelected ]]"
+                                              toggles>Advanced</paper-button>
+                            </div>
+                        </template>
                         <div id="fromConditionField"
                              class="input-container display-none">
+                            <p>Define regular expression for fields to further filter the object. </p>
                             <div class="input-container-title">Conditions:</div>
                             <template is="dom-repeat" items="[[ _fromConditionList ]]">
                                 <div class="input-container">
@@ -178,10 +208,32 @@
                             </template>
                         </div>
 
-                        <div class="subtitle">To</div>
+
+                        <template is="dom-if" if="[[ _integrationKindRA ]]">
+                            <div class="subtitle">Define action that should be performed on AppsCo</div>
+                            <p>
+                                Define action and object to which this will be applied in AppsCo.
+                            </p>
+                            <p>
+                                Add - add object into AppsCo<br>
+                                Modify - modify object in AppsCo<br>
+                                Remove - remove object from AppsCo
+                            </p>
+                        </template>
+                        <template is="dom-if" if="[[ !_integrationKindRA ]]">
+                            <div class="subtitle">Defined action that should be performed in [[ integration.name ]]</div>
+                            <p>
+                                Define action and object to which this will be applied in [[ integration.name ]].
+                            </p>
+                            <p>
+                                Add - add object into [[ integration.name ]]<br>
+                                Modify - modify object in [[ integration.name ]]<br>
+                                Remove - remove object from [[ integration.name ]]
+                            </p>
+                        </template>
                         <div class="input-container">
                             <paper-dropdown-menu id="toMethod"
-                                                 label="Method"
+                                                 label="Action to be performed"
                                                  name="integration_recipe[toMethod]"
                                                  horizontal-align="left"
                                                  on-iron-overlay-opened="_onIronOverlayEvents"
@@ -200,7 +252,7 @@
                         </div>
                         <div class="input-container">
                             <paper-dropdown-menu id="toPSO"
-                                                 label="Object"
+                                                 label="Affected object"
                                                  name="integration_recipe[toPSO]"
                                                  horizontal-align="left"
                                                  on-iron-overlay-opened="_onIronOverlayEvents"
@@ -218,21 +270,25 @@
                                 </paper-listbox>
                             </paper-dropdown-menu>
                         </div>
-                        <div class="input-container">
-                            <paper-button class="primary-button"
-                                          on-tap="_onToggleParamsAction"
-                                          disabled$="[[ !_toPSOSelected ]]"
-                                          toggles>Advanced</paper-button>
-                        </div>
-                        <div id="toParamField"
-                             class="input-container" hidden$="[[ !_paramsVisible ]]">
-                            <div class="input-container-title">Fields:</div>
-                            <template is="dom-repeat" items="[[ _toParamsList ]]">
-                                <div class="input-container">
-                                    <paper-input label="[[ item.key ]]" value="{{ item.value }}"></paper-input>
-                                </div>
-                            </template>
-                        </div>
+                        <template is="dom-if" if="[[ _toParamsListExist ]]">
+                            <div class="input-container">
+                                <p>Further define affected object</p>
+                                <paper-button class="primary-button"
+                                              on-tap="_onToggleParamsAction"
+                                              disabled$="[[ !_toPSOSelected ]]"
+                                              toggles>Advanced</paper-button>
+                            </div>
+                            <div id="toParamField"
+                                 class="input-container" hidden$="[[ !_paramsVisible ]]">
+                                <p>Set default values that should be applied in affected object</p>
+                                <div class="input-container-title">Fields:</div>
+                                <template is="dom-repeat" items="[[ _toParamsList ]]">
+                                    <div class="input-container">
+                                        <paper-input label="[[ item.key ]]" value="{{ item.value }}"></paper-input>
+                                    </div>
+                                </template>
+                            </div>
+                        </template>
 
                         <div class="input-container">
                             <paper-toggle-button id="active"
@@ -342,11 +398,21 @@
                     }
                 },
 
+                _fromConditionListExist: {
+                    type: Boolean,
+                    computed: '_computeEmptyArray(_fromConditionList)'
+                },
+
                 _toParamsList: {
                     type: Array,
                     value: function() {
                         return [];
                     }
+                },
+
+                _toParamsListExist: {
+                    type: Boolean,
+                    computed: '_computeEmptyArray(_toParamsList)'
                 },
 
                 _toMethodList: {
@@ -521,6 +587,10 @@
                 return (integration.kind && 'ra' === integration.kind);
             },
 
+            _computeEmptyArray: function(items) {
+                return items.length > 0;
+            },
+
             _onDialogOpened: function() {
                 this.$.title.focus();
             },
@@ -579,6 +649,8 @@
                 var selectedItem = event.detail.selected;
 
                 this._fromPSOSelected = true;
+                this._hideConditionFields();
+                this._conditionVisible = false;
                 this._fromPSOList.forEach(function(element) {
 
                     if (selectedItem === element.key) {
@@ -628,6 +700,7 @@
 
             _hideConditionFields: function() {
                 this.playAnimation('exit');
+                this.animationConfig.entry.node.style.display = 'none';
             },
 
             _onToggleParamsAction: function() {

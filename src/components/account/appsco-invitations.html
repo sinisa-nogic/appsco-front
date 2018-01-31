@@ -6,6 +6,7 @@
 <link rel="import" href="../../../bower_components/neon-animation/neon-animation-runner-behavior.html">
 <link rel="import" href="../../../bower_components/neon-animation/animations/transform-animation.html">
 
+<link rel="import" href="../components/appsco-list-observer-behavior.html">
 <link rel="import" href="appsco-invitation-item.html">
 
 <!--
@@ -282,8 +283,18 @@ Custom property | Description | Default
             },
 
             behaviors: [
-                Polymer.NeonAnimationRunnerBehavior
+                Polymer.NeonAnimationRunnerBehavior,
+                Polymer.AppscoListObserverBehavior
             ],
+
+            observers: [
+                '_observeItems(_invitations)',
+            ],
+
+            _observeItems: function(items) {
+                this.setObservableType('invitations');
+                this.populateItems(items);
+            },
 
             _computeInvitationsApiUrl: function(invitationsApi, size, type) {
                 return (invitationsApi && size) ? (invitationsApi + '?page=1&extended=1&limit=' + size + '&type=' + type) : '';
@@ -354,6 +365,7 @@ Custom property | Description | Default
 
                     setTimeout( function() {
                         this.push('_invitations', el);
+                        this._invitations = JSON.parse(JSON.stringify(this._invitations));
                         this.push('_allInvitations', el);
 
                         if (index == invitationsCount) {
@@ -430,6 +442,7 @@ Custom property | Description | Default
 
                 for (var i = 0; i < length; i++) {
                     this.unshift('_invitations', invitations[i]);
+                    this._invitations = JSON.parse(JSON.stringify(this._invitations));
                     this.unshift('_allInvitations', invitations[i]);
 
                     this._totalInvitations++;
@@ -491,6 +504,7 @@ Custom property | Description | Default
 
                         if (invitation.self === _invitations[j].self) {
                             this.splice('_invitations', j, 1);
+                            this._invitations = JSON.parse(JSON.stringify(this._invitations));
                             break;
                         }
                     }
@@ -621,6 +635,7 @@ Custom property | Description | Default
 
                     if (this._invitationsEmpty) {
                         this.set('_searchedInvitations', []);
+                        this.set('_invitations', []);
                         this.fire('filter-done');
                         return false;
                     }
@@ -633,11 +648,13 @@ Custom property | Description | Default
                             var invitation = this._allInvitations[i];
                             if (elem.self === invitation.self) {
                                 this.push('_invitations', invitation);
+                                this._invitations = JSON.parse(JSON.stringify(this._invitations));
                                 break;
                             }
                             else {
                                 if (i === length - 1) {
                                     this.push('_invitations', elem);
+                                    this._invitations = JSON.parse(JSON.stringify(this._invitations));
                                 }
                             }
                         }

@@ -17,6 +17,7 @@
 <link rel="import" href="components/group/appsco-company-groups.html">
 <link rel="import" href="components/application/company/appsco-company-resources.html">
 <link rel="import" href="components/components/appsco-page-behavior.html">
+<link rel="import" href="components/components/appsco-list-observer-behavior.html">
 
 <dom-module id="appsco-resources-page">
     <template>
@@ -206,7 +207,9 @@
                         on-edit-item="_onResourceEditAction"
                         on-items-removed="_onResourcesRemoved"
                         on-list-loaded="_pageLoaded"
-                        on-list-empty="_onResourcesEmptyLoad"></appsco-company-resources>
+                        on-list-empty="_onResourcesEmptyLoad"
+                        on-observable-list-empty="_onObservableItemListChange"
+                        on-observable-list-filled="_onObservableItemListChange"></appsco-company-resources>
             </div>
 
             <div class="flex-vertical" info>
@@ -413,7 +416,8 @@
 
             behaviors: [
                 Polymer.NeonAnimatableBehavior,
-                Polymer.AppscoPageBehavior
+                Polymer.AppscoPageBehavior,
+                Polymer.AppscoListObserverBehavior
             ],
 
             observers: [
@@ -463,6 +467,14 @@
                 if (resource.alias === this.resource.alias) {
                     this.$.appscoApplicationAssignees.removeAssignee(assignee);
                 }
+            },
+
+            _onObservableItemListChange: function(event, data) {
+                this.setObservableType('resources-page');
+                if(data.type === 'resources') {
+                    this.populateItems(data.items);
+                }
+                event.stopPropagation();
             },
 
             _onResourcesEmptyLoad: function() {

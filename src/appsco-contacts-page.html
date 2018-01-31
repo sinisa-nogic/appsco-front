@@ -190,7 +190,10 @@
                                 type="contact"
                                 on-remove="_onRemoveInvitationAction"
                                 on-loaded="_onInvitationsLoaded"
-                                on-empty-load="_onInvitationsEmptyLoad"></appsco-invitations>
+                                on-empty-load="_onInvitationsEmptyLoad"
+                                on-observable-list-empty="_onObservableItemListChange"
+                                on-observable-list-filled="_onObservableItemListChange"
+                        ></appsco-invitations>
 
                         <appsco-contacts
                                 id="appscoContacts"
@@ -205,7 +208,10 @@
                                 on-list-empty="_onContactsEmptyLoad"
                                 on-item="_onContactAction"
                                 on-edit-item="_onEditContactAction"
-                                on-select-item="_onSelectContactAction"></appsco-contacts>
+                                on-select-item="_onSelectContactAction"
+                                on-observable-list-empty="_onObservableItemListChange"
+                                on-observable-list-filled="_onObservableItemListChange"
+                        ></appsco-contacts>
                     </neon-animated-pages>
                 </div>
             </div>
@@ -389,7 +395,8 @@
 
             behaviors: [
                 Polymer.NeonAnimatableBehavior,
-                Polymer.AppscoPageBehavior
+                Polymer.AppscoPageBehavior,
+                Polymer.AppscoListObserverBehavior
             ],
 
             observers: [
@@ -404,6 +411,14 @@
                 if (this.mobileScreen) {
                     this.updateStyles();
                 }
+            },
+
+            _onObservableItemListChange: function(event, data) {
+                this.setObservableType('contact-page');
+                if(data.type === this._page) {
+                    this.populateItems(data.items);
+                }
+                event.stopPropagation();
             },
 
             _hideFilters: function(mobile) {

@@ -5,6 +5,7 @@
 
 <link rel="import" href="appsco-account-item.html">
 <link rel="import" href="../components/appsco-list-behavior.html">
+<link rel="import" href="../components/appsco-list-observer-behavior.html">
 <link rel="import" href="../components/appsco-list-styles.html">
 
 <!--
@@ -93,7 +94,12 @@ Custom property | Description | Default
             is: 'appsco-accounts',
 
             behaviors: [
-                Polymer.AppscoListBehavior
+                Polymer.AppscoListBehavior,
+                Polymer.AppscoListObserverBehavior
+            ],
+
+            observers: [
+                '_observeItems(_listItems)'
             ],
 
             updateAccount: function(account) {
@@ -121,6 +127,11 @@ Custom property | Description | Default
 
                 this.set('_allListItems', []);
                 this.set('_allListItems', allListItems);
+            },
+
+            _observeItems: function(items) {
+                this.setObservableType('accounts');
+                this.populateItems(items);
             },
 
             filterByType: function(filter) {
@@ -173,12 +184,14 @@ Custom property | Description | Default
 
                             if (elem.self === currentListItem.self) {
                                 this.push('_listItems', currentListItem);
+                                this._listItems = JSON.parse(JSON.stringify(this._listItems));
                                 break;
                             }
                             else {
 
                                 if (i === allLength - 1) {
                                     this.push('_listItems', elem);
+                                    this._listItems = JSON.parse(JSON.stringify(this._listItems));
                                 }
                             }
                         }

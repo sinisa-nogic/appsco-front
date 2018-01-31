@@ -180,30 +180,19 @@
                         headers: this._headers
                     };
 
-                this._showLoader();
+                request.send(options);
 
-                request.send(options).then(function() {
+                /**
+                 * Fired when rule is scheduled for execution.
+                 *
+                 * @event integration-rule-run
+                 * @param {Object} integration
+                 */
+                this.fire('integration-rule-run', {
+                    integration: this.integration
+                });
 
-                    if (200 === request.status) {
-
-                        /**
-                         * Fired when rule is applied.
-                         *
-                         * @event integration-rule-run
-                         * @param {Object} integration, {Object} rule
-                         */
-                        this.fire('integration-rule-run', {
-                            integration: this.integration,
-                            rule: request.response
-                        });
-
-                        this.close();
-                    }
-
-                }.bind(this), function() {
-                    this._showError(this.apiErrors.getError(request.response.code));
-                    this._hideLoader();
-                }.bind(this));
+                this.close();
             }
         });
     </script>

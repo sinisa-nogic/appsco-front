@@ -2701,7 +2701,7 @@
                 this.$$('#getDashboardsLink').generateRequest();
                 this.$$('#getCompaniesAccountIsContactIn').generateRequest();
                 setTimeout(function() {
-                   this._getCurrentCompanyFromAccount();
+                    this._getCurrentCompanyFromAccount();
                 }.bind(this), 400);
 
 
@@ -2710,9 +2710,28 @@
             _getCurrentCompanyFromAccount: function() {
                 if (this._companiesAccountHasPermissionTo.length > 0) {
                     var companies = this._companiesAccountHasPermissionTo,
-                            length = companies.length,
-                            currentCompany = companies[0],
-                            companyAlias = this._getStoredValue('company');
+                        length = companies.length,
+                        currentCompany = companies[0],
+                        companyAlias = this._getStoredValue('company');
+
+                    if (!this._getCurrentCompanyFromAccount.personal_dashboard_allowed && this.account.native_company) {
+                        var lastNativeRedirect = {};
+                        try {
+                            lastNativeRedirect = JSON.parse(this._getStoredValue('native_redirected'));
+                        } catch (Error) {}
+                        if (!lastNativeRedirect
+                            || !lastNativeRedirect.accountId
+                            || !lastNativeRedirect.login_date
+                            || lastNativeRedirect.login_date != this.account.last_login.date
+                            || lastNativeRedirect.accountId != this.account.id
+                        ) {
+                            this._storeValue('native_redirected', JSON.stringify({
+                                accountId: this.account.id,
+                                login_date: this.account.last_login.date
+                            }));
+                            companyAlias = this.account.native_company.alias;
+                        }
+                    }
 
                     if (companyAlias && companyAlias.length > 0) {
 

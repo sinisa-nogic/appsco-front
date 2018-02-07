@@ -37,6 +37,20 @@
             </paper-input>
         </div>
 
+        <div class="input-container url" >
+            <paper-input type="text"
+                         label="Url"
+                         name="activate_integration[service_url]"
+                         value="[[ integration.service_url ]]"
+                         error-message="Please enter valid integration url."
+                         auto-validate
+                         required
+                         pattern="[[ _urlValidationPattern ]]"
+                         disabled="[[ !hasOwnUrl ]]"
+            >
+            </paper-input>
+        </div>
+
         <div class="input-container">
             <p class="input-info">Integration type determines the way in which AppsCo integrates with [[ integration.integration.title ]].</p>
             <paper-dropdown-menu id="integrationKindSelect"
@@ -118,6 +132,12 @@
                     value: ''
                 },
 
+                hasOwnUrl: {
+                    type: Boolean,
+                    value: false,
+                    computed: '_computeHasOwnUrl(integration)'
+                },
+
                 _disableIntegrationTypeChange: {
                     type: Boolean,
                     computed: '_computeDisableIntegrationTypeChange(formType)'
@@ -137,6 +157,11 @@
                             }
                         ];
                     }
+                },
+
+                _urlValidationPattern: {
+                    type: String,
+                    value: 'https?:\\/\\/(www\\.)?[-a-zA-Z0-9@:%._\\+~#=]{2,256}\\.[a-z]{2,6}\\b([-a-zA-Z0-9@:%_\\+.~#?&//=]*)'
                 },
 
                 _preselectedIntegrationKind: {
@@ -166,7 +191,7 @@
                 _isIntegrationActive: {
                     type: String,
                     computed: '_computeIsIntegrationActive(integration)'
-                },
+                }
             },
 
             _onSelectClosed: function(event) {
@@ -185,6 +210,19 @@
             setToggleChecked: function(checked) {
                 this.$.toggleIntegrationActive.checked = checked;
             },
+
+            _computeHasOwnUrl: function(integration) {
+                if (integration.integration) {
+                    return integration.integration.alias == 4;
+                }
+
+                if (integration) {
+                    return integration.alias == 4;
+                }
+
+                return false;
+            },
+
             _computeIsIntegrationActive: function(integration) {
                 return integration && integration.active;
             },

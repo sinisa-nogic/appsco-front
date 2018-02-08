@@ -5,7 +5,12 @@
 <link rel="import" href="../../../bower_components/paper-progress/paper-progress.html">
 <link rel="import" href="../../../bower_components/neon-animation/neon-animation-runner-behavior.html">
 <link rel="import" href="../../../bower_components/neon-animation/animations/transform-animation.html">
+<link rel="import" href="../../../bower_components/paper-listbox/paper-listbox.html">
+<link rel="import" href="../../../bower_components/paper-item/paper-icon-item.html">
+<link rel="import" href="../../../bower_components/iron-icon/iron-icon.html">
+<link rel="import" href="../../../bower_components/iron-icons/iron-icons.html">
 
+<link rel="import" href="../vaadin-context-menu/vaadin-context-menu-override.html">
 <link rel="import" href="appsco-application-item.html">
 
 <!--
@@ -133,19 +138,32 @@ Custom property | Description | Default
             </template>
 
             <template is="dom-if" if="[[ !_applicationsEmpty ]]">
-                <div applications company$="[[ company ]]">
-                    <template is="dom-repeat"
-                              items="{{ _applications }}"
-                              on-dom-change="_onItemsDomChange">
 
-                        <appsco-application-item id="appscoApplicationItem_[[ index ]]"
-                                                 class="application-item"
-                                                 application="{{ item }}"
-                                                 company="[[ company ]]"
-                                                 on-application="_onApplicationAction"></appsco-application-item>
+                <vaadin-context-menu-override selector="appsco-application-item">
 
+                    <template>
+                        <paper-listbox >
+                            <paper-icon-item list-item="[[ target ]]" on-click="_openMoveToDialog">
+                                <iron-icon icon="folder" list-item="[[ target ]]" item-icon></iron-icon>
+                                Move to
+                            </paper-icon-item>
+                        </paper-listbox>
                     </template>
-                </div>
+
+                    <div applications company$="[[ company ]]">
+                        <template is="dom-repeat"
+                                  items="{{ _applications }}"
+                                  on-dom-change="_onItemsDomChange">
+                            <appsco-application-item id="appscoApplicationItem_[[ index ]]"
+                                                     class="application-item"
+                                                     application="{{ item }}"
+                                                     company="[[ company ]]"
+                                                     on-application="_onApplicationAction"></appsco-application-item>
+                        </template>
+                    </div>
+
+                </vaadin-context-menu-override>
+
             </template>
         </div>
 
@@ -1011,6 +1029,17 @@ Custom property | Description | Default
                     this._renderedIndex = -1;
                 }
 
+            },
+
+            _openMoveToDialog: function(event) {
+                var menuItem = event.target,
+                        applicationItem = menuItem.listItem;
+
+                if (applicationItem && applicationItem.application) {
+                    this.fire('open-move-to-folder-dialog', {
+                        applicationIcon: applicationItem.application
+                    });
+                }
             },
 
             initialize: function() {

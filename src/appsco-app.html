@@ -46,6 +46,7 @@
 <link rel="import" href="components/application/appsco-application-revoke.html">
 <link rel="import" href="components/application/company/appsco-company-application-add.html">
 <link rel="import" href="components/application/company/appsco-company-sso-application-add.html">
+<link rel="import" href="components/folder/appsco-folders-application-add.html">
 <link rel="import" href="components/resource/appsco-share-resource.html">
 <link rel="import" href="components/application/company/appsco-company-application-remove.html">
 <link rel="import" href="components/application/company/appsco-application-assignee-claims.html">
@@ -762,6 +763,7 @@
                             on-info-edit-application="_onInfoEditApplication"
                             on-share-application="_onShareApplication"
                             on-revoke-application="_onRevokeApplication"
+                            on-open-move-to-folder-dialog="_onOpenMoveToFolderDialog"
                             on-applications-removed="_onApplicationsRemovedFromHomePage"></appsco-home-page>
 
                     <appsco-resource-page
@@ -853,6 +855,7 @@
                             netscaler-api="[[ _companyNetscalerFeatureApi ]]"
                             account="[[ account ]]"
                             on-loaded="_onLoadedPage"
+                            on-open-move-to-folder-dialog="_onOpenMoveToFolderDialog"
                     ></appsco-company-home-page>
 
                     <appsco-contact-home-page
@@ -861,6 +864,7 @@
                             authorization-token="[[ authorizationToken ]]"
                             applications-api="[[ _contactIconsApi ]]"
                             on-loaded="_onLoadedPage"
+                            on-open-move-to-folder-dialog="_onOpenMoveToFolderDialog"
                     ></appsco-contact-home-page>
 
                     <appsco-resources-page
@@ -1275,6 +1279,14 @@
                 authorization-token="[[ authorizationToken ]]"
                 on-application-instance-removed="_onApplicationInstanceRevoked"
         ></appsco-application-revoke>
+
+        <appsco-folders-application-add
+                id="appscoFoldersApplicationAdd"
+                authorization-token="[[ authorizationToken ]]"
+                folders-api="[[ api.foldersApi ]]"
+                api-errors="[[ _apiErrors ]]"
+                on-aplication-icon-moved-to-folder="_onApplicationIconMovedToFolder">
+        </appsco-folders-application-add>
 
         <appsco-vault-remove
                 id="appscoVaultItemRemove"
@@ -4182,6 +4194,36 @@
 
             _onImageUploadError: function(event) {
                 this._notify('Upload failed: ' + event.detail);
+            },
+
+            _onOpenMoveToFolderDialog: function(event) {
+                var company = null;
+                if (this.page != 'home') {
+                    company = this.currentCompany;
+                }
+                var applicationIcon = event.detail.applicationIcon;
+                this.$.appscoFoldersApplicationAdd.setApplicationIcon(applicationIcon);
+                this.$.appscoFoldersApplicationAdd.setCompany(company);
+                this.$.appscoFoldersApplicationAdd.toggle();
+            },
+
+            _onApplicationIconMovedToFolder: function(event) {
+                var applicationIcon = event.detail.icon,
+                        folder = event.detail.folder;
+
+                switch (this.page) {
+                    case 'home':
+                        this._reloadHomePageApplications();
+                        break;
+                    case 'company-home':
+                        this._reloadCompanyHomePageApplications();
+                        break;
+                    case 'contact-home':
+                        this._reloadContactHomePageApplications();
+                        break;
+                }
+
+                this._notify('Application icon ' + applicationIcon.title + ' has been moved to folder ' + folder.title + '.');
             },
 
             /**

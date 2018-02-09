@@ -1793,6 +1793,11 @@
                        on-response="_onGetIsUserLoggedInResponse"
                        on-error="_onIsUserLoggedInError"></iron-ajax>
 
+            <iron-ajax id="getNotifications"
+                       url="[[ api.notifications ]]"
+                       headers="[[ _computedHeaders ]]"
+                       handle-as="json"
+                       on-response="_onGetNotificationsResponse"></iron-ajax>
         </template>
 
         <template is="dom-if" if="[[ api.dashboards ]]">
@@ -2298,6 +2303,11 @@
                 _accessBilling: {
                     type: Boolean,
                     computed: "_computeAccessBilling(currentCompany)"
+                },
+
+                _notificationsHash: {
+                    type: String,
+                    value: ''
                 }
             },
 
@@ -2352,6 +2362,7 @@
                 }
 
                 this._getIsUserLoggedIn();
+                this._getNotifications();
             },
 
             _updateScreen: function(mobile, tablet) {
@@ -2868,6 +2879,25 @@
 
             _onGetIsUserLoggedInResponse: function() {
                 this._getIsUserLoggedIn();
+            },
+
+            _onGetNotificationsResponse: function(event, response) {
+                var responseHash = response.xhr.getResponseHeader('x-appsco-hash');
+                if (this._notificationsHash !== '' && this._notificationsHash !== responseHash) {
+                    this._notifyNewNotifications();
+                }
+                this._notificationsHash = responseHash;
+                this._getNotifications();
+            },
+
+            _getNotifications: function() {
+                this.async(function() {
+                    this.$$('#getNotifications').generateRequest();
+                }, 30000);
+            },
+
+            _notifyNewNotifications: function () {
+                this.$.appscoHeader.notifyNewNotifications();
             },
 
             _setGetApplicationsApi: function() {

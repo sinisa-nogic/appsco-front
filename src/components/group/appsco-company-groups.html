@@ -5,6 +5,7 @@
 
 <link rel="import" href="appsco-company-group-item.html">
 <link rel="import" href="../components/appsco-list-behavior.html">
+<link rel="import" href="../components/appsco-list-observer-behavior.html">
 <link rel="import" href="../components/appsco-list-styles.html">
 
 <dom-module id="appsco-company-groups">
@@ -87,7 +88,12 @@
             },
 
             behaviors: [
-                Polymer.AppscoListBehavior
+                Polymer.AppscoListBehavior,
+                Polymer.AppscoListObserverBehavior
+            ],
+
+            observers: [
+                '_observeItems(_listItems)'
             ],
 
             recalculateTotals: function(group) {
@@ -112,6 +118,13 @@
 
             removeGroupCompanyRoles: function(group, roles) {
                 this._decreaseGroupRoleCount(group, roles.length);
+            },
+
+            _observeItems: function(items) {
+                if (this.preview === false) {
+                    this.setObservableType('groups');
+                    this.populateItems(items);
+                }
             },
 
             _increaseGroupRoleCount: function(group, count) {

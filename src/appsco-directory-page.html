@@ -18,6 +18,7 @@
 <link rel="import" href="components/group/appsco-company-groups.html">
 <link rel="import" href="components/account/appsco-account-image.html">
 <link rel="import" href="components/components/appsco-page-behavior.html">
+<link rel="import" href="components/components/appsco-list-observer-behavior.html">
 
 <dom-module id="appsco-directory-page">
     <template>
@@ -242,7 +243,9 @@
                             invitations-api="[[ companyInvitationsApi ]]"
                             on-remove="_onRemoveInvitation"
                             on-loaded="_onInvitationsLoaded"
-                            on-empty-load="_onInvitationsEmptyLoad"></appsco-invitations>
+                            on-empty-load="_onInvitationsEmptyLoad"
+                            on-observable-list-empty="_onObservableItemListChange"
+                            on-observable-list-filled="_onObservableItemListChange"></appsco-invitations>
 
                     <appsco-accounts
                             hidden$="[[ !_accountsVisible ]]"
@@ -257,7 +260,9 @@
                             on-select-item="_onAccountSelectAction"
                             on-edit-item="_onAccountEditAction"
                             on-list-loaded="_onAccountsLoaded"
-                            on-list-empty="_onAccountsEmptyLoad"></appsco-accounts>
+                            on-list-empty="_onAccountsEmptyLoad"
+                            on-observable-list-empty="_onObservableItemListChange"
+                            on-observable-list-filled="_onObservableItemListChange"></appsco-accounts>
                 </div>
 
             </div>
@@ -536,7 +541,8 @@
 
             behaviors: [
                 Polymer.NeonAnimatableBehavior,
-                Polymer.AppscoPageBehavior
+                Polymer.AppscoPageBehavior,
+                Polymer.AppscoListObserverBehavior
             ],
 
             observers: [
@@ -552,6 +558,14 @@
                     this.updateStyles();
                 }
 
+            },
+
+            _onObservableItemListChange: function(event, data) {
+                if((data.type === 'accounts' && this._accountsVisible) || (data.type === 'invitations' && this._invitationsVisible)) {
+                    this.setObservableType('account-page');
+                    this.populateItems(data.items);
+                }
+                event.stopPropagation();
             },
 
             _hideFilters: function(mobile) {
@@ -631,6 +645,13 @@
 
             toggleResource: function() {
                 this.$.appscoContent.toggleSection('resource');
+            },
+
+            pageSelected: function () {
+                this._showAccounts();
+                this._hideInvitations();
+                this.reloadInvitations();
+                this.reloadAccounts();
             },
 
             reloadAccounts: function() {
@@ -938,16 +959,16 @@
                     case 'all':
                     case 'managed':
                     case 'unmanaged':
-                        this.$$('#appscoAccounts').filterByType(filter);
                         this._hideInvitations();
                         this._showAccounts();
+                        this.$$('#appscoAccounts').filterByType(filter);
                         break;
                         
                     case 'invitations':
                         this._invitationsLoaded = false;
-                        this.$$('#appscoInvitations').filterInvitations();
                         this._hideAccounts();
                         this._showInvitations();
+                        this.$$('#appscoInvitations').filterInvitations();
                         break;
 
                     default:

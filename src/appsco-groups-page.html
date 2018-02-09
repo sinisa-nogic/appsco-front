@@ -14,6 +14,7 @@
 <link rel="import" href="components/group/appsco-company-group-contacts.html">
 <link rel="import" href="components/group/appsco-company-group-image.html">
 <link rel="import" href="components/components/appsco-page-behavior.html">
+<link rel="import" href="components/components/appsco-list-observer-behavior.html">
 
 <dom-module id="appsco-groups-page">
     <template>
@@ -130,7 +131,10 @@
                                            on-list-empty="_onGroupsEmptyLoad"
                                            on-item="_onGroupAction"
                                            selectable
-                                           on-select-item="_onSelectGroupAction"></appsco-company-groups>
+                                           on-select-item="_onSelectGroupAction"
+                                           on-observable-list-empty="_onObservableItemListChange"
+                                           on-observable-list-filled="_onObservableItemListChange"
+                    ></appsco-company-groups>
                 </div>
             </div>
 
@@ -300,7 +304,8 @@
 
             behaviors: [
                 Polymer.NeonAnimatableBehavior,
-                Polymer.AppscoPageBehavior
+                Polymer.AppscoPageBehavior,
+                Polymer.AppscoListObserverBehavior
             ],
 
             observers: [
@@ -387,6 +392,10 @@
                 this._setDefaultGroup();
             },
 
+            pageSelected: function () {
+                this.reloadGroups();
+            },
+
             resetPage: function() {
                 this._resetPageActions();
                 this._resetPageLists();
@@ -400,6 +409,14 @@
 
             _onGroupsEmptyLoad: function() {
                 this._groupsLoaded = true;
+            },
+
+            _onObservableItemListChange: function(event, data) {
+                if(data.type === 'groups') {
+                    this.setObservableType('groups-page');
+                    this.populateItems(data.items);
+                }
+                event.stopPropagation();
             },
 
             _recalculateTotalsForDefaultGroup: function(type) {

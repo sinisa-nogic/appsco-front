@@ -190,7 +190,10 @@
                                 type="contact"
                                 on-remove="_onRemoveInvitationAction"
                                 on-loaded="_onInvitationsLoaded"
-                                on-empty-load="_onInvitationsEmptyLoad"></appsco-invitations>
+                                on-empty-load="_onInvitationsEmptyLoad"
+                                on-observable-list-empty="_onObservableItemListChange"
+                                on-observable-list-filled="_onObservableItemListChange"
+                        ></appsco-invitations>
 
                         <appsco-contacts
                                 id="appscoContacts"
@@ -205,7 +208,10 @@
                                 on-list-empty="_onContactsEmptyLoad"
                                 on-item="_onContactAction"
                                 on-edit-item="_onEditContactAction"
-                                on-select-item="_onSelectContactAction"></appsco-contacts>
+                                on-select-item="_onSelectContactAction"
+                                on-observable-list-empty="_onObservableItemListChange"
+                                on-observable-list-filled="_onObservableItemListChange"
+                        ></appsco-contacts>
                     </neon-animated-pages>
                 </div>
             </div>
@@ -389,13 +395,20 @@
 
             behaviors: [
                 Polymer.NeonAnimatableBehavior,
-                Polymer.AppscoPageBehavior
+                Polymer.AppscoPageBehavior,
+                Polymer.AppscoListObserverBehavior
             ],
 
             observers: [
                 '_updateScreen(mobileScreen, tabletScreen, screen992)',
                 '_hideFilters(mobileScreen)'
             ],
+
+            pageSelected: function () {
+                this._showContacts();
+                this.reloadInvitations();
+                this.reloadContacts();
+            },
 
             attached: function() {
                 this.pageLoaded = false;
@@ -404,6 +417,14 @@
                 if (this.mobileScreen) {
                     this.updateStyles();
                 }
+            },
+
+            _onObservableItemListChange: function(event, data) {
+                if(data.type === this._page) {
+                    this.setObservableType('contact-page');
+                    this.populateItems(data.items);
+                }
+                event.stopPropagation();
             },
 
             _hideFilters: function(mobile) {
@@ -526,15 +547,19 @@
             },
 
             resetPage: function() {
-                this._resetPageActions();
                 this._resetPageLists();
+                this._resetFilter();
+                this._resetPageActions();
                 this._showContacts();
                 this.hideInfo();
             },
 
-            _resetPageActions: function() {
+            _resetFilter: function () {
                 this._onSearchGroupsClear();
-                this.$.appscoCompanyGroups.resetAllItems();
+                this.$.appscoCompanyGroups.reset();
+            },
+
+            _resetPageActions: function() {
                 this.fire('reset-page-actions');
             },
 

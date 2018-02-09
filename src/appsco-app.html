@@ -167,6 +167,8 @@
 <link rel="import" href="components/oauth-application/appsco-remove-oauth-application-certificate.html">
 <link rel="import" href="components/oauth-application/appsco-manage-oauth-application-page-actions.html">
 
+<link rel="import" href="components/folder/appsco-add-folder.html">
+
 <link rel="import" href="shared-styles.html">
 <link rel="import" href="webkit-scrollbar-style.html">
 
@@ -575,7 +577,8 @@
                             <appsco-company-home-page-actions id="appscoCompanyHomePageActions"
                                                       name="company-home"
                                                       on-search="_onSearchApplications"
-                                                      on-search-clear="_onSearchApplicationsClear"></appsco-company-home-page-actions>
+                                                      on-search-clear="_onSearchApplicationsClear"
+                                                      on-add-new-folder="_onAddNewFolderAction"></appsco-company-home-page-actions>
 
                             <appsco-contact-home-page-actions id="appscoContactHomePageActions"
                                                               name="contact-home"
@@ -1750,6 +1753,12 @@
                 authorization-token="[[ authorizationToken ]]"
                 api-errors="[[ _apiErrors ]]"
                 on-oauth-application-certificate-removed="_onOAuthApplicationCertificateRemoved"></appsco-remove-oauth-application-certificate>
+
+        <appsco-add-folder id="appscoAddFolder"
+                           authorization-token="[[ authorizationToken ]]"
+                           folders-api="[[ api.foldersApi ]]"
+                           api-errors="[[ _apiErrors ]]"
+                           on-folder-added="_onFolderAdded"></appsco-add-folder>
 
         <template is="dom-if" if="[[ api.me ]]">
             <iron-ajax auto
@@ -5252,6 +5261,35 @@
             },
             /**
              * Company page END
+             */
+
+            /**
+             * Company Home page START
+             */
+            _onAddNewFolderAction: function() {
+                var component = this.$.appscoAddFolder;
+
+                if (component.$) {
+                    component.open();
+                }
+            },
+
+            _addFolder: function(folder) {
+                var companyHomePage = this.$.appscoCompanyHomePage;
+
+                if (companyHomePage.$) {
+                    companyHomePage.addFolder(folder);
+                }
+            },
+
+            _onFolderAdded: function(event) {
+                var folder = event.detail.folder;
+
+                this._addFolder(folder);
+                this._notify('Dashboard folder ' + folder.title + ' has been successfully created.');
+            },
+            /**
+             * Company Home page END
              */
 
             /**

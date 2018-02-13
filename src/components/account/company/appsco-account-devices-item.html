@@ -24,6 +24,9 @@
                 font-size: 12px;
                 opacity: 0.8;
                 width: 500px;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
             }
             .browser-hash {
                 font-size: 11px;
@@ -49,6 +52,12 @@
                     Device: <span class="value">[[ device.device ]]</span>
                     Device vendor: <span class="value">[[ device.vendor ]]</span>
                 </div>
+                <template is="dom-if" if="[[ _showTrustedIPs ]]">
+                    <div class="info-additional">
+                        2FA trusted IP list: <span class="value">[[ device.trustedIpList ]]</span>
+                    </div>
+                </template>
+
                 <div class="info-additional">
                     Browser: <span class="value">[[ device.browser ]]</span>
                     Browser version: <span class="value">[[ device.browserVersion ]]</span>
@@ -103,6 +112,11 @@
                     computed: '_computeApproved(device)'
                 },
 
+                _showTrustedIPs: {
+                    type: Boolean,
+                    computed: '_computeShowTrustedIPs(device)'
+                },
+
                 /**
                  * Animation for loader appearance.
                  */
@@ -139,6 +153,10 @@
 
             _computeApproved: function(device) {
                 return device.approved;
+            },
+
+            _computeShowTrustedIPs: function(device) {
+                return device && device.trustedIpList && device.trustedIpList.length > 0;
             },
 
             _onApproveAction: function(event) {

@@ -1793,6 +1793,17 @@
                        on-response="_onGetIsUserLoggedInResponse"
                        on-error="_onIsUserLoggedInError"></iron-ajax>
 
+            <iron-ajax id="checkNewNotifications"
+                       url="[[ api.checkNewNotifications ]]"
+                       headers="[[ _computedHeaders ]]"
+                       handle-as="json"
+                       on-response="_onCheckNewNotificationsResponse"></iron-ajax>
+
+            <iron-ajax id="notificationsSeen"
+                       method="PUT"
+                       url="[[ api.notificationsSeen ]]"
+                       headers="[[ _computedHeaders ]]"
+                       handle-as="json"></iron-ajax>
         </template>
 
         <template is="dom-if" if="[[ api.dashboards ]]">
@@ -2298,6 +2309,11 @@
                 _accessBilling: {
                     type: Boolean,
                     computed: "_computeAccessBilling(currentCompany)"
+                },
+
+                _notificationsHash: {
+                    type: String,
+                    value: ''
                 }
             },
 
@@ -2342,7 +2358,8 @@
                 'export-access-report-failed': '_onExportAccessReportFailed',
                 'user-session-expired': '_onUserSessionExpired',
                 'add-item-to-group-event': '_onAddItemToGroupAction',
-                'customer-subscription-state-changed': '_onCustomerSubscriptionStateChanged'
+                'customer-subscription-state-changed': '_onCustomerSubscriptionStateChanged',
+                'notifications-seen': '_onNotificationsSeen'
             },
 
             attached: function() {
@@ -2352,6 +2369,7 @@
                 }
 
                 this._getIsUserLoggedIn();
+                this._checkNewNotifications();
             },
 
             _updateScreen: function(mobile, tablet) {
@@ -2868,6 +2886,33 @@
 
             _onGetIsUserLoggedInResponse: function() {
                 this._getIsUserLoggedIn();
+            },
+
+            _onCheckNewNotificationsResponse: function(event, response) {
+                var newNotifications = event.detail.response;
+                if (newNotifications) {
+                    this._notifyNewNotifications();
+                }
+                this._checkNewNotifications();
+            },
+
+            _checkNewNotifications: function() {
+                this.async(function() {
+                    this.$$('#checkNewNotifications').generateRequest();
+                }, 30000);
+            },
+
+            _notifyNewNotifications: function () {
+                this.$.appscoHeader.notifyNewNotifications();
+            },
+
+            _notifyNotificationsSeen: function () {
+                this.$.appscoHeader.notifyNotificationsSeen();
+            },
+
+            _onNotificationsSeen: function () {
+                this._notifyNotificationsSeen();
+                this.$$('#notificationsSeen').generateRequest();
             },
 
             _setGetApplicationsApi: function() {

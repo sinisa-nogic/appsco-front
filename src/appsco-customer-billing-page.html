@@ -1,0 +1,255 @@
+<link rel="import" href="../bower_components/polymer/polymer.html">
+<link rel="import" href="../bower_components/neon-animation/animations/fade-in-animation.html">
+<link rel="import" href="../bower_components/neon-animation/animations/fade-out-animation.html">
+<link rel="import" href="../bower_components/iron-flex-layout/iron-flex-layout.html">
+<link rel="import" href="../bower_components/iron-media-query/iron-media-query.html">
+
+<link rel="import" href="components/page/appsco-content.html">
+
+<dom-module id="appsco-customer-billing-page">
+    <template>
+        <style include="shared-styles webkit-scrollbar-style">
+            :host {
+                display: block;
+
+                --resource-width: 300px;
+                --info-width: 300px;
+            }
+            :host .resource-header {
+                border-bottom: 1px solid var(--divider-color);
+                margin-bottom:20px;
+                font-size:18px;
+            }
+            :host div[resource] {
+                height: 100%;
+                overflow: auto;
+            }
+            :host div[content] > * {
+                padding: 0 10px 10px 10px;
+            }
+            .customer-billing-container {
+                margin-top: 10px;
+            }
+            :host div[resource] > *, :host div[info] > * {
+                padding: 10px;
+                box-sizing: border-box;
+            }
+            :host div[info] {
+                height: 100%;
+            }
+            :host div[info] > * {
+                padding: 10px;
+                box-sizing: border-box;
+            }
+            :host .flex-horizontal {
+                @apply(--layout-horizontal);
+                @apply(--layout-center);
+            }
+            :host .flex-vertical {
+                @apply(--layout-vertical);
+            }
+            :host .flex {
+                @apply(--layout-flex);
+            }
+            :host([tablet-screen]) {
+                --info-width: 100%;
+                --resource-width: 240px;
+            }
+            :host([mobile-screen]) {
+                --resource-width: 180px;
+            }
+            :host .manage-button {
+                @apply(--primary-button);
+                @apply(--secondary-button);
+                border-radius: 0;
+            }
+            div[resource] .resource-actions {
+                position: absolute;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                padding: 0;
+            }
+            :host .info-header {
+                background-color: var(--app-primary-color);
+                padding: 10px 0 5px 10px;
+            }
+            :host .info-content-container {
+                height: calc(100% - 64px - 38px - 40px);
+                position: relative;
+            }
+            :host .info-content {
+                padding: 10px;
+                overflow: auto;
+                position: absolute;
+                top: 0;
+                right: 0;
+                bottom: 0;
+                left: 0;
+            }
+        </style>
+
+        <iron-media-query query="(max-width: 1200px)" query-matches="{{ mediumScreen }}"></iron-media-query>
+        <iron-media-query query="(max-width: 800px)" query-matches="{{ tabletScreen }}"></iron-media-query>
+        <iron-media-query query="(max-width: 600px)" query-matches="{{ mobileScreen }}"></iron-media-query>
+
+        <appsco-content id="appscoContent" resource-active>
+
+            <div class="flex-vertical" resource>
+
+                <div class="resource-header">
+                    Payment Method
+                </div>
+
+                <div class="resource-actions flex-horizontal">
+                    <paper-button
+                            class="manage-button flex"
+                            on-tap="_onManageCreditCard">
+                        Add payment method
+                    </paper-button>
+                </div>
+            </div>
+
+            <div content>
+
+                <div class="customer-billing-container"></div>
+
+            </div>
+
+            <div info class="flex-vertical">
+                <div class="info-header">
+                    <appsco-brand
+                            logo="/images/appsco-logo-white.png"
+                            logo-width="118"
+                            logo-height="38">
+                    </appsco-brand>
+
+                </div>
+
+                <div class="info-content-container">
+                    <div class="info-content">
+                        <div class="flex-horizontal">
+
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+        </appsco-content>
+
+    </template>
+
+    <script>
+        Polymer({
+            is: 'appsco-customer-billing-page',
+
+            properties: {
+
+                authorizationToken: {
+                    type: String,
+                    value: ''
+                },
+
+                /**
+                 * Computed headers.
+                 * It contains authorization token.
+                 */
+                computedHeaders: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    }
+                },
+
+                _paymentMethod: {
+                    type: Boolean,
+                },
+
+                mediumScreen: {
+                    type: Boolean,
+                    value: false,
+                    reflectToAttribute: true
+                },
+
+                mobileScreen: {
+                    type: Boolean,
+                    value: false,
+                    reflectToAttribute: true
+                },
+
+                tabletScreen: {
+                    type: Boolean,
+                    value: false,
+                    reflectToAttribute: true
+                },
+
+                /**
+                 * Animation config.
+                 */
+                animationConfig: {
+                    value: function() {
+                        return {
+                            'entry': {
+                                name: 'fade-in-animation',
+                                node: this,
+                                timing: {
+                                    duration: 300
+                                }
+                            },
+                            'exit': {
+                                name: 'fade-out-animation',
+                                node: this,
+                                timing: {
+                                    duration: 200
+                                }
+                            }
+                        }
+                    }
+                },
+
+                pageLoaded: {
+                    type: Boolean,
+                    value: false
+                }
+            },
+
+            behaviors: [
+                Polymer.NeonAnimatableBehavior
+            ],
+
+            observers: [
+                '_updateScreen(mediumScreen, tabletScreen, mobileScreen)'
+            ],
+
+            attached: function() {
+                this.pageLoaded = false;
+
+                if (this.mobileScreen || this.tabletScreen || this.mediumScreen) {
+                    this.updateStyles();
+                }
+
+                this._pageLoaded();
+            },
+
+            _updateScreen: function(medium, tablet, mobile) {
+                this.updateStyles();
+
+                if (mobile) {
+                    this.$.appscoContent.hideSection('resource');
+                }
+                else if(!this.$.appscoContent.resourceActive) {
+                    this.$.appscoContent.showSection('resource');
+                }
+            },
+
+            _pageLoaded: function() {
+                this.pageLoaded = true;
+                this.fire('page-loaded');
+            },
+
+            _onManageCreditCard: function() {
+            }
+        });
+    </script>
+</dom-module>

@@ -87,6 +87,37 @@
                 bottom: 0;
                 left: 0;
             }
+            div[resource] > .resource-content {
+                padding-top: 20px;
+                font-size: 15px;
+            }
+
+            .payment-info {
+                line-height: 90%;
+            }
+
+            .message {
+                @apply(--info-message);
+            }
+
+            paper-card {
+                min-height: 150px;
+                margin-bottom: 10px;
+                box-sizing: border-box;
+                width: 100%;
+
+                --paper-card-content: {
+                    min-height: 70px;
+                    box-sizing: border-box;
+                };
+                --paper-card-header-text: {
+                    padding: 8px 16px;
+                    color: var(--primary-text-color);
+                    font-size: 18px;
+                    border-bottom: 1px solid var(--divider-color);
+                };
+            }
+
         </style>
 
         <iron-media-query query="(max-width: 1200px)" query-matches="{{ mediumScreen }}"></iron-media-query>
@@ -101,19 +132,38 @@
                     Payment Method
                 </div>
 
-                <div class="resource-actions flex-horizontal">
-                    <paper-button
-                            class="manage-button flex"
-                            on-tap="_onManageCreditCard">
-                        Add payment method
-                    </paper-button>
+                <div class="resource-content">
+                    <template is="dom-if" if="[[ _isPaidByInvoice ]]">
+                        <div class="payment-info">
+                            <p>
+                                Payment method: Invoice
+                            </p>
+                            <p>
+                                Available licences: [[ _numberOfDistributedLicences ]]
+                            </p>
+                        </div>
+                    </template>
                 </div>
             </div>
 
             <div content>
 
-                <div class="customer-billing-container"></div>
+                <div class="customer-billing-container">
+                    <template is="dom-if" if="[[ _isPaidByInvoice ]]">
+                        <paper-card heading="Upcoming invoice"
+                                    class="upcoming-invoice">
+                            <div class="card-content">
+                                <p class="message">
+                                    Purchasing customer licenses is done by invoice. If you require more licenses please contact AppsCo Sales at sales@appsco.com.
+                                </p>
 
+                                <p class="message">
+                                    Available licences: [[ _numberOfDistributedLicences ]]
+                                </p>
+                            </div>
+                        </paper-card>
+                    </template>
+                </div>
             </div>
 
             <div info class="flex-vertical">
@@ -162,8 +212,25 @@
                     }
                 },
 
+                currentCompany: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    }
+                },
+
                 _paymentMethod: {
+                    type: Boolean
+                },
+
+                _isPaidByInvoice: {
                     type: Boolean,
+                    computed: '_computeIsPaidByInvoice(currentCompany)'
+                },
+
+                _numberOfDistributedLicences: {
+                    type: String,
+                    computed: '_computeNumberOfDistributedLicences(currentCompany)'
                 },
 
                 mediumScreen: {
@@ -249,6 +316,14 @@
             },
 
             _onManageCreditCard: function() {
+            },
+
+            _computeIsPaidByInvoice: function(currentCompany) {
+                return currentCompany && currentCompany.payingForCustomerType === 'invoice';
+            },
+
+            _computeNumberOfDistributedLicences: function(currentCompany) {
+                return currentCompany && currentCompany.distributedLicences ? currentCompany.distributedLicences : '0';
             }
         });
     </script>

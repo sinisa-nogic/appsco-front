@@ -87,6 +87,7 @@
 <link rel="import" href="billing/appsco-subscription-cancel.html">
 <link rel="import" href="billing/appsco-credit-card.html">
 <link rel="import" href="billing/appsco-billing-send-invoice.html">
+<link rel="import" href="billing/appsco-update-subscription-action.html">
 
 <link rel="import" href="vault/appsco-vault-page-actions.html">
 <link rel="import" href="vault/appsco-vault-manage-item.html">
@@ -1244,8 +1245,11 @@
                             name="customer-billing"
                             company-api="[[ _companyApi ]]"
                             account="[[ account ]]"
+                            company-api="[[ _companyApi ]]"
                             current-company="[[ currentCompany.company ]]"
                             authorization-token="[[ authorizationToken ]]"
+                            on-manage-credit-card="_onManageCreditCard"
+                            on-update-subscription="_onUpdateSubscription"
                     ></appsco-customer-billing-page>
 
                     <appsco-logout-page name="logout"
@@ -1500,6 +1504,13 @@
                 company-api="[[ _companyApi ]]"
                 on-subscription-changed="_onSubscriptionChanged">
         </appsco-upgrade-action>
+
+        <appsco-update-subscription-action
+                id="appscoUpdateSubscriptionAction"
+                authorization-token="[[ authorizationToken ]]"
+                company-api="[[ _companyApi ]]"
+                on-subscription-updated="_onSubscriptionUpdated">
+        </appsco-update-subscription-action>
 
         <appsco-subscription-cancel
                 id="appscoSubscriptionCancel"
@@ -2732,7 +2743,7 @@
                     this._companyImportAccountsApi = companyApi + '/directory/roles/import';
                     this._companyContactsApi = companyApi + '/contacts';
                     this._companyOrgunitsApi = companyApi + '/org-units?extended=1';
-                    this._companySubscriptionApi = companyApi + '/billing/subscription';
+                    this._companySubscriptionApi = companyApi + '/billing/subscriptions';
                     this._companyDomainsApi = companyApi + '/domains';
                     this._companyGroupsApi = companyApi + '/groups';
                     this._companyGroupApi = companyApi + '/group';
@@ -4997,6 +5008,13 @@
                 this.$.appscoUpgradeAction.toggle();
             },
 
+            _onUpdateSubscription: function(event) {
+                if (this.$.appscoUpdateSubscriptionAction.$) {
+                    this.$.appscoUpdateSubscriptionAction.setSubscription(event.detail.subscription);
+                    this.$.appscoUpdateSubscriptionAction.toggle();
+                }
+            },
+
             _setSubscription: function(subscription) {
 
                 if (this.$.appscoDirectoryPage.$) {
@@ -5013,6 +5031,16 @@
                 if (this.$.appscoBillingPage.$) {
                     this.$.appscoBillingPage.reloadSubscription();
                 }
+
+                if (this.$.appscoCustomerBillingPage.$) {
+                    this.$.appscoCustomerBillingPage.reloadSubscription();
+                }
+
+            },
+
+            _onSubscriptionUpdated: function(event) {
+                this._reloadSubscription(event.detail.subscription);
+                this._notify('Subscription has been successfully changed.');
             },
 
             _onSubscriptionChanged: function(event) {
@@ -5038,7 +5066,12 @@
             },
 
             _onCreditCardAdded: function(event) {
-                this.$.appscoBillingPage.setCreditCard(event.detail.credit_card);
+                if (this.$.appscoBillingPage.$) {
+                    this.$.appscoBillingPage.setCreditCard(event.detail.credit_card);
+                }
+                if (this.$.appscoCustomerBillingPage.$) {
+                    this.$.appscoCustomerBillingPage.setCreditCard(event.detail.credit_card);
+                }
                 this._notify('Credit card has been successfully saved.');
             },
 

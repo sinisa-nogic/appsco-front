@@ -1,8 +1,16 @@
 <link rel="import" href="../bower_components/polymer/polymer.html">
-<link rel="import" href="../bower_components/neon-animation/animations/fade-in-animation.html">
-<link rel="import" href="../bower_components/neon-animation/animations/fade-out-animation.html">
-<link rel="import" href="../bower_components/iron-flex-layout/iron-flex-layout.html">
+<link rel="import" href="../bower_components/paper-icon-button/paper-icon-button.html">
+<link rel="import" href="../bower_components/iron-icons/iron-icons.html">
+<link rel="import" href="../bower_components/paper-material/paper-material.html">
 <link rel="import" href="../bower_components/iron-media-query/iron-media-query.html">
+<link rel="import" href="../bower_components/iron-ajax/iron-ajax.html">
+<link rel="import" href="../bower_components/iron-icon/iron-icon.html">
+<link rel="import" href="../bower_components/iron-image/iron-image.html">
+
+<link rel="import" href="components/page/appsco-content.html">
+<link rel="import" href="components/components/appsco-loader.html">
+<link rel="import" href="components/components/appsco-date-format.html">
+<link rel="import" href="components/components/appsco-price.html">
 
 <link rel="import" href="components/page/appsco-content.html">
 
@@ -11,9 +19,30 @@
         <style include="shared-styles webkit-scrollbar-style">
             :host {
                 display: block;
+                color: #000;
+                font-size: 14px;
 
                 --resource-width: 300px;
                 --info-width: 300px;
+
+                --paper-card: {
+                    min-height: 150px;
+                    box-sizing: border-box;
+                };
+                --paper-card-content: {
+                    min-height: 70px;
+                    box-sizing: border-box;
+                };
+                --paper-card-actions: {
+                    padding: 0;
+                    border-color: var(--divider-color);
+                };
+                --paper-card-header-text: {
+                    padding: 8px 16px;
+                    font-size: 18px;
+                    color: var(--primary-text-color);
+                    border-bottom: 1px solid var(--divider-color);
+                };
             }
             :host .resource-header {
                 border-bottom: 1px solid var(--divider-color);
@@ -91,34 +120,64 @@
                 padding-top: 20px;
                 font-size: 15px;
             }
-
             .payment-info {
                 line-height: 90%;
             }
-
             .message {
                 @apply(--info-message);
             }
-
-            paper-card {
-                min-height: 150px;
+            :host .credit-card-logo {
+                width: auto;
+                height: auto;
+                max-height: 48px;
+            }
+            :host .subscription-plan {
+                width: 45%;
+            }
+            :host .subscription-plan-label {
+                opacity: 0.6;
+                padding: 2px 5px 2px 0;
+            }
+            :host .subscription-info {
+                @apply(--info-box);
+                margin-bottom: 20px;
+            }
+            :host([medium-screen]) .subscription-plan {
+                min-width: inherit;
+                @apply(--layout-flex);
+            }
+            :host([tablet-screen]) .subscription-plan {
+                margin-right: 0;
                 margin-bottom: 10px;
-                box-sizing: border-box;
+            }
+            :host .paper-card-action {
+                padding: 6px 0;
+                margin: 0;
+                border-radius: 0;
                 width: 100%;
-
-                --paper-card-content: {
-                    min-height: 70px;
-                    box-sizing: border-box;
-                };
-                --paper-card-header-text: {
-                    padding: 8px 16px;
-                    color: var(--primary-text-color);
-                    font-size: 18px;
-                    border-bottom: 1px solid var(--divider-color);
-                };
+                color: var(--primary-text-color);
+                font-weight: 400;
             }
 
         </style>
+
+        <iron-ajax
+                id="billingCCRequest"
+                url="[[ _creditCardApi ]]"
+                handle-as="json"
+                headers="[[ _computedHeaders ]]"
+                auto
+                on-response="_handleCCResponse"
+        ></iron-ajax>
+
+        <iron-ajax
+                id="billingSubscriptionRequest"
+                url="[[ _subscriptionApi ]]"
+                handle-as="json"
+                headers="[[ _computedHeaders ]]"
+                auto
+                on-response="_handleSubscriptionResponse"
+        ></iron-ajax>
 
         <iron-media-query query="(max-width: 1200px)" query-matches="{{ mediumScreen }}"></iron-media-query>
         <iron-media-query query="(max-width: 800px)" query-matches="{{ tabletScreen }}"></iron-media-query>
@@ -143,10 +202,73 @@
                             </p>
                         </div>
                     </template>
+
+                    <template is="dom-if" if="[[ _isPaidByCC ]]">
+
+                        <appsco-loader active="[[ _ccLoader ]]"
+                                       loader-alt="Appsco is loading payment method"
+                                       multi-color></appsco-loader>
+
+                        <template is="dom-if" if="[[ _paymentMethod ]]">
+                            <img class="credit-card-logo"
+                                 src="[[ _computedCCLogo ]]"
+                                 alt="[[ _cc.brand ]]">
+
+                            <div class="mt20">
+                                <p>
+                                    Payment method: Credit Card
+                                </p>
+                                <p>
+                                    Available licences: [[ _numberOfAvailableLicences ]]
+                                </p>
+                                <p>
+                                    [[ _cc.brand]] **** **** **** [[ _cc.last4 ]]
+                                </p>
+                                <p>
+                                    Expires [[ _cc.exp_month ]]/[[ _cc.exp_year  ]]
+                                </p>
+                                <p>
+                                    Cardholder: [[ _cc.name ]]
+                                </p>
+                            </div>
+                        </template>
+
+                        <template is="dom-if" if="[[ !_paymentMethod ]]">
+                            No payment method has been created yet.
+                            Please go and add new one.
+                        </template>
+
+                        <div class="resource-actions flex-horizontal">
+                            <template is="dom-if" if="[[ !_paymentMethod ]]">
+                                <paper-button
+                                        class="manage-button flex"
+                                        on-tap="_onManageCreditCard">
+                                    Add payment method
+                                </paper-button>
+                            </template>
+
+                            <template is="dom-if" if="[[ _paymentMethod ]]">
+                                <paper-button
+                                        class="manage-button flex"
+                                        on-tap="_onManageCreditCard">
+                                    Change payment method
+                                </paper-button>
+                            </template>
+                        </div>
+
+                    </template>
                 </div>
             </div>
 
             <div content>
+
+                <template is="dom-if" if="[[ _isPaidByCC ]]">
+                    <template is="dom-if" if="[[ _paymentMethodInfo ]]">
+                        <div class="subscription-info">
+                            Please add payment method before you subscribe to one of AppsCo packages.
+                        </div>
+                    </template>
+                </template>
 
                 <div class="customer-billing-container">
                     <template is="dom-if" if="[[ _isPaidByInvoice ]]">
@@ -162,6 +284,72 @@
                                 </p>
                             </div>
                         </paper-card>
+                    </template>
+
+                    <template is="dom-if" if="[[ _isPaidByCC ]]">
+                        <template is="dom-if" if="[[ _cc.brand ]]">
+                            <paper-card heading="Subscription plan" class="subscription-plan">
+                                <appsco-loader active="[[ _subscriptionLoader ]]"
+                                               loader-alt="Appsco is loading subscription model"
+                                               multi-color></appsco-loader>
+                                <div class="card-content flex-vertical">
+                                    <template is="dom-if" if="[[ _subscription.plan ]]">
+                                        <div class="flex-horizontal">
+                                            <span class="subscription-plan-label">Started on:</span>
+                                            <appsco-date-format
+                                                    date="[[ _subscription.startedAt.date ]]"
+                                            ></appsco-date-format>
+                                        </div>
+                                        <div class="flex-horizontal">
+                                            <span class="subscription-plan-label">Activity period:</span>
+                                            <div>
+                                                <appsco-date-format
+                                                        date="[[ _subscription.currentPeriodStart.date ]]"
+                                                ></appsco-date-format> /
+                                                <appsco-date-format
+                                                        date="[[ _subscription.currentPeriodEnd.date ]]"
+                                                ></appsco-date-format>
+                                            </div>
+                                        </div>
+                                        <div class="flex-horizontal">
+                                            <span class="subscription-plan-label">Plan:</span>
+                                            <span>[[ _subscription.plan.display_text ]]</span>
+                                        </div>
+                                        <div class="flex-horizontal">
+                                            <span class="subscription-plan-label">Price:</span>
+                                            <appsco-price
+                                                    price="[[ _subscription.plan.amount ]]"
+                                                    currency="[[ _subscription.plan.currency ]]"
+                                            ></appsco-price>
+                                            <span class="per-user-label">&nbsp per licence</span>
+                                        </div>
+                                        <div class="flex-horizontal">
+                                            <span class="subscription-plan-label">Customer Licenses:</span>
+                                            <span>[[ _subscription.quantity ]]</span>
+                                        </div>
+                                        <div class="flex-horizontal">
+                                            <span class="subscription-plan-label">Status:</span>
+                                            <span>[[ _subscription.status ]]</span>
+                                        </div>
+                                    </template>
+
+                                    <template is="dom-if" if="[[ !_subscription.plan ]]">
+                                        <p class="message">Subscription plan hasn't been added yet. Please go and subscribe.</p>
+                                    </template>
+                                </div>
+
+                                <div class="card-actions">
+                                    <template is="dom-if" if="[[ _subscription.plan ]]">
+                                        <paper-button on-tap="_onChangePlan" class="paper-card-action">Change Plan</paper-button>
+                                    </template>
+
+                                    <template is="dom-if" if="[[ !_subscription.plan ]]">
+                                        <paper-button on-tap="_onChangePlan" class="paper-card-action">Subscribe</paper-button>
+                                    </template>
+                                </div>
+
+                            </paper-card>
+                        </template>
                     </template>
                 </div>
             </div>
@@ -201,14 +389,15 @@
                     value: ''
                 },
 
-                /**
-                 * Computed headers.
-                 * It contains authorization token.
-                 */
-                computedHeaders: {
+                _computedHeaders: {
                     type: Object,
+                    computed: '_computeHeaders(authorizationToken)'
+                },
+
+                companyApi: {
+                    type: String,
                     value: function() {
-                        return {};
+                        return '';
                     }
                 },
 
@@ -219,8 +408,57 @@
                     }
                 },
 
+                _subscription: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    }
+                },
+
+                _creditCardApi: {
+                    type: String,
+                    computed: '_computeCreditCardApi(companyApi)',
+                    observer: '_showCCLoader'
+                },
+
+                _subscriptionApi: {
+                    type: String,
+                    computed: '_computeSubscriptionApi(companyApi)',
+                    observer: '_showSubscriptionLoader'
+                },
+
+
+                _cc: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    }
+                },
+
+                _ccLoader: {
+                    type: Boolean,
+                    value: true
+                },
+
+                _subscriptionLoader: {
+                    type: Boolean,
+                    value: true
+                },
+
                 _paymentMethod: {
-                    type: Boolean
+                    type: Boolean,
+                    computed: '_computePaymentMethod(_cc)'
+                },
+
+                _paymentMethodInfo: {
+                    type: Boolean,
+                    value: false
+                },
+
+
+                _computedCCLogo: {
+                    type: String,
+                    computed: '_computeCCLogo(_cc)'
                 },
 
                 _isPaidByInvoice: {
@@ -228,9 +466,19 @@
                     computed: '_computeIsPaidByInvoice(currentCompany)'
                 },
 
+                _isPaidByCC: {
+                    type: Boolean,
+                    computed: '_computeIsPaidByCC(currentCompany)'
+                },
+
                 _numberOfDistributedLicences: {
                     type: String,
                     computed: '_computeNumberOfDistributedLicences(currentCompany)'
+                },
+
+                _numberOfAvailableLicences: {
+                    type: String,
+                    computed: '_computeNumberOfAvailableLicences(_subscription)'
                 },
 
                 mediumScreen: {
@@ -299,6 +547,27 @@
                 this._pageLoaded();
             },
 
+            resetPage: function() {
+                this._paymentMethodInfo = false;
+                this._numberOfAvailableLicences = '0';
+                this._numberOfDistributedLicences = '0';
+            },
+
+            setCreditCard: function(cc) {
+                this._paymentMethodInfo = false;
+                this._ccLoader = true;
+                this.set('_cc', cc);
+
+                setTimeout(function() {
+                    this._ccLoader = false;
+                }.bind(this), 1000);
+            },
+
+            reloadSubscription: function() {
+                this._subscriptionLoader = true;
+                this.$.billingSubscriptionRequest.generateRequest();
+            },
+
             _updateScreen: function(medium, tablet, mobile) {
                 this.updateStyles();
 
@@ -315,16 +584,107 @@
                 this.fire('page-loaded');
             },
 
+            _computeHeaders: function (authorizationToken) {
+                return {
+                    'Authorization': 'token ' + authorizationToken
+                }
+            },
+
+            _showSubscriptionLoader: function() {
+                this._subscriptionLoader = true;
+            },
+
+            _showCCLoader: function() {
+                this._ccLoader = true;
+            },
+
             _onManageCreditCard: function() {
+                this.fire('manage-credit-card');
+            },
+
+            _onChangePlan: function() {
+                this.fire('update-subscription', {subscription: this._subscription});
             },
 
             _computeIsPaidByInvoice: function(currentCompany) {
                 return currentCompany && currentCompany.payingForCustomerType === 'invoice';
             },
 
+            _computeIsPaidByCC: function(currentCompany) {
+                return currentCompany && (currentCompany.payingForCustomerType === 'cc' || !currentCompany.payingForCustomerType);
+            },
+
             _computeNumberOfDistributedLicences: function(currentCompany) {
                 return currentCompany && currentCompany.distributedLicences ? currentCompany.distributedLicences : '0';
+            },
+
+            _computeNumberOfAvailableLicences: function(subscription) {
+                return subscription && subscription.quantity ? subscription.quantity : '0';
+            },
+
+            _computePaymentMethod: function(cc) {
+                for (var key in cc) {
+                    return true;
+                }
+                return false;
+            },
+
+            _computeCCLogo: function(cc) {
+                var logoUrl = '/images/cc/';
+
+                if (cc.brand) {
+                    if (cc.brand === 'American Express') {
+                        logoUrl += 'amex.png';
+                    }
+                    else {
+                        logoUrl += cc.brand.toLowerCase().replace(' ', '_') + '.png';
+                    }
+                }
+                else {
+                    logoUrl += 'unknown.png';
+                }
+
+                return logoUrl;
+            },
+
+            _computeCreditCardApi: function(companyApi) {
+                return companyApi ? companyApi + '/billing/cc' : '';
+            },
+
+            _computeSubscriptionApi: function(companyApi) {
+                return companyApi ? companyApi + '/billing/subscriptions' : '';
+            },
+
+            _handleCCResponse: function(event) {
+                var response = event.detail.response;
+                this.set('_cc', {});
+
+                if (null == response || 0 === response.length) {
+                    this._paymentMethodInfo = true;
+                    this._ccLoader = false;
+                    return false;
+                }
+
+                this.set('_cc', response);
+                this._paymentMethodInfo = false;
+                this._ccLoader = false;
+            },
+
+            _handleSubscriptionResponse: function(e) {
+                this.set('_subscription', {});
+                if(null == e.detail.response) {
+                    return;
+                }
+                var subscriptions = e.detail.response;
+                subscriptions.forEach(function(subscription) {
+                    if (subscription.type == 'distribution') {
+                        this._subscription = subscription;
+                    }
+                }, this);
+
+                this._subscriptionLoader = false;
             }
+
         });
     </script>
 </dom-module>

@@ -170,6 +170,7 @@
 <link rel="import" href="components/oauth-application/appsco-manage-oauth-application-page-actions.html">
 
 <link rel="import" href="components/folder/appsco-add-folder.html">
+<link rel="import" href="components/folder/appsco-dashboard-folder-page-actions.html">
 
 <link rel="import" href="shared-styles.html">
 <link rel="import" href="webkit-scrollbar-style.html">
@@ -762,6 +763,12 @@
                             <appsco-manage-oauth-application-page-actions id="appscoManageOAuthApplicationPageActions"
                                                                           name="manage-oauth-application"
                                                                           on-back="_showOAuthApplicationsPage"></appsco-manage-oauth-application-page-actions>
+
+                            <appsco-dashboard-folder-page-actions id="appscoDashboardFolderPageActions"
+                                                                  name="dashboard-folder"
+                                                                  on-search="_onSearchApplications"
+                                                                  on-search-clear="_onSearchApplicationsClear"
+                                                                  on-back="_showCompanyHomePage"></appsco-dashboard-folder-page-actions>
                         </neon-animated-pages>
 
                     </app-toolbar>
@@ -879,10 +886,12 @@
                             name="company-home"
                             authorization-token="[[ authorizationToken ]]"
                             applications-api="[[ _companyIconsApi ]]"
+                            folders-api="[[ _companyFoldersApi ]]"
                             netscaler-api="[[ _companyNetscalerFeatureApi ]]"
                             account="[[ account ]]"
                             on-loaded="_onLoadedPage"
                             on-open-move-to-folder-dialog="_onOpenMoveToFolderDialog"
+                            on-folder-tapped="_onFolderTapped"
                     ></appsco-company-home-page>
 
                     <appsco-contact-home-page
@@ -1252,6 +1261,16 @@
                             on-send-invoice="_onSendInvoice"
                     ></appsco-customer-billing-page>
 
+                    <appsco-dashboard-folder-page
+                            id="appscoDashboardFolderPage"
+                            name="dashboard-folder"
+                            route="[[ subroute ]]"
+                            authorization-token="[[ authorizationToken ]]"
+                            folders-api="[[ _companyFoldersApi ]]"
+                            netscaler-api="[[ _companyNetscalerFeatureApi ]]"
+                            account="[[ account ]]"
+                            on-loaded="_onLoadedPage"></appsco-dashboard-folder-page>
+
                     <appsco-logout-page name="logout"
                                         logout-api="[[ api.logout ]]"></appsco-logout-page>
 
@@ -1323,8 +1342,7 @@
                 id="appscoFoldersApplicationAdd"
                 authorization-token="[[ authorizationToken ]]"
                 folders-api="[[ api.foldersApi ]]"
-                api-errors="[[ _apiErrors ]]"
-                on-aplication-icon-moved-to-folder="_onApplicationIconMovedToFolder">
+                api-errors="[[ _apiErrors ]]">
         </appsco-folders-application-add>
 
         <appsco-vault-remove
@@ -1816,6 +1834,7 @@
         <appsco-add-folder id="appscoAddFolder"
                            authorization-token="[[ authorizationToken ]]"
                            folders-api="[[ api.foldersApi ]]"
+                           company="[[ currentCompany.company ]]"
                            api-errors="[[ _apiErrors ]]"
                            on-folder-added="_onFolderAdded"></appsco-add-folder>
 
@@ -2294,6 +2313,11 @@
                     value: ''
                 },
 
+                _companyFoldersApi: {
+                    type: String,
+                    value: ''
+                },
+
                 _subscription: {
                     type: Object,
                     value: function() {
@@ -2406,7 +2430,8 @@
                 'user-session-expired': '_onUserSessionExpired',
                 'add-item-to-group-event': '_onAddItemToGroupAction',
                 'customer-subscription-state-changed': '_onCustomerSubscriptionStateChanged',
-                'notifications-seen': '_onNotificationsSeen'
+                'notifications-seen': '_onNotificationsSeen',
+                'resource-moved-to-folder': '_onResourceMoverToFolder'
             },
 
             attached: function() {
@@ -2575,6 +2600,7 @@
                         return 'Manage Integration';
 
                     case 'company-home':
+                    case 'dashboard-folder':
                         return 'Dashboard';
 
                     case 'contact-home':
@@ -2760,6 +2786,7 @@
                     this._getAvailableIntegrationsApi = companyApi + '/integrations/available';
                     this._getActiveIntegrationsApi = companyApi + '/integrations/active';
                     this._companyOAuthApplicationsApi = companyApi + '/oauth/applications';
+                    this._companyFoldersApi = companyApi + '/dashboard-groups';
                 }
             },
 
@@ -3211,8 +3238,13 @@
                     case 'manage-oauth-application':
                         return this.$.appscoManageOAuthApplicationPage;
                         break;
+
                     case 'audit-log':
                         return this.$.appscoAuditLogPage;
+                        break;
+
+                    case 'dashboard-folder':
+                        return this.$.appscoDashboardFolderPage;
                         break;
                 }
             },
@@ -3262,6 +3294,10 @@
 
                     case 'manage-oauth-application':
                         return this.$.appscoManageOAuthApplicationPageActions;
+                        break;
+
+                    case 'dashboard-folder':
+                        return this.$.appscoDashboardFolderPageActions;
                         break;
                 }
 
@@ -3433,6 +3469,10 @@
 
                         if (this.$.appscoCompanyHomePage.$) {
                             this.$.appscoCompanyHomePage.setApplication(application);
+                        }
+
+                        if (this.$.appscoDashboardFolderPage.$) {
+                            this.$.appscoDashboardFolderPage.setApplication(application);
                         }
 
                         this._reloadCompanyApplications();
@@ -4311,23 +4351,25 @@
                 this.$.appscoFoldersApplicationAdd.toggle();
             },
 
-            _onApplicationIconMovedToFolder: function(event) {
-                var applicationIcon = event.detail.icon,
-                        folder = event.detail.folder;
+            _onResourceMoverToFolder: function(event) {
+                var resource = event.detail.resource,
+                    folder = event.detail.folder;
 
                 switch (this.page) {
                     case 'home':
                         this._reloadHomePageApplications();
                         break;
+
                     case 'company-home':
                         this._reloadCompanyHomePageApplications();
                         break;
+
                     case 'contact-home':
                         this._reloadContactHomePageApplications();
                         break;
                 }
 
-                this._notify('Application icon ' + applicationIcon.title + ' has been moved to folder ' + folder.title + '.');
+                this._notify('Application icon ' + resource.title + ' has been moved to folder ' + folder.title + '.');
             },
 
             /**
@@ -5470,6 +5512,19 @@
                 this._addFolder(folder);
                 this._notify('Dashboard folder ' + folder.title + ' has been successfully created.');
             },
+
+            _openFolder: function(folder) {
+
+                if (this.$.appscoDashboardFolderPage.$) {
+                    this.$.appscoDashboardFolderPage.setFolder(folder);
+                }
+
+                this._showManagePage('dashboard-folder/' + folder.alias);
+            },
+
+            _onFolderTapped: function(event) {
+                this._openFolder(event.detail.folder);
+            },
             /**
              * Company Home page END
              */
@@ -6327,6 +6382,10 @@
                         this.$.appscoCustomerBillingPage.pageLoaded ? this._hideProgressBar() : this._showProgressBar();
                         break;
 
+                    case 'dashboard-folder':
+                        this.$.appscoDashboardFolderPage.pageLoaded ? this._hideProgressBar() : this._showProgressBar();
+                        break;
+
                     default:
                         this._hideProgressBar();
                 }
@@ -6377,7 +6436,8 @@
                         page === 'company-account' ||
                         page === 'contact-home' ||
                         page === 'manage-oauth-application' ||
-                        page === 'customer-billing');
+                        page === 'customer-billing' ||
+                        page === 'dashboard-folder');
             },
 
             _computeContactPage: function(page) {
@@ -6475,6 +6535,7 @@
                     case 'billing':
                     case 'manage-oauth-application':
                     case 'customer-billing':
+                    case 'dashboard-folder':
 
                         if (fromPage.$) {
                             fromPage.resetPage();
@@ -6494,6 +6555,7 @@
                     case 'contacts':
                     case 'customers':
                     case 'reports':
+                    case 'dashboard-folder':
 
                         if (toPage.$) {
                             toPage.initializePage();

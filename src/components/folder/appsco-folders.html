@@ -1,0 +1,115 @@
+<link rel="import" href="../../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../../bower_components/iron-ajax/iron-ajax.html">
+<link rel="import" href="../../../bower_components/paper-button/paper-button.html">
+<link rel="import" href="../../../bower_components/paper-progress/paper-progress.html">
+
+<link rel="import" href="appsco-folders-item.html">
+<link rel="import" href="../components/appsco-list-behavior.html">
+<link rel="import" href="../components/appsco-list-observer-behavior.html">
+<link rel="import" href="../components/appsco-list-styles.html">
+
+<dom-module id="appsco-folders">
+    <template>
+        <style include="appsco-list-styles"></style>
+
+        <style>
+            :host {
+                --folder-item-host: {
+                    width: calc(20% - 10px);
+                };
+
+                --appsco-list-item: {
+                    height: 50px;
+                };
+
+                --item-basic-info: {
+                    padding: 0;
+                    box-sizing: border-box;
+                };
+            }
+            :host .list {
+                @apply(--layout-horizontal);
+                @apply(--layout-wrap);
+                @apply(--layout-start);
+                margin-right: -10px;
+            }
+            :host .list-container {
+                min-height: auto;
+            }
+            :host appsco-folders-item {
+                margin: 0 10px 10px 0;
+                @apply(--appsco-folders-item);
+            }
+        </style>
+
+        <iron-ajax id="getListApiRequest"
+                   url="[[ _listApi ]]"
+                   on-error="_onGetListError"
+                   on-response="_onGetListResponse"
+                   headers="[[ _headers ]]"
+                   debounce-duration="300"></iron-ajax>
+
+        <div class="list-container">
+
+            <paper-progress id="paperProgress"
+                            class="list-progress-bar"
+                            indeterminate></paper-progress>
+
+            <template is="dom-if" if="[[ _message ]]">
+                <p class="message">[[ _message ]]</p>
+            </template>
+
+            <template is="dom-if" if="[[ !_listEmpty ]]">
+                <div class="list">
+                    <template is="dom-repeat"
+                              items="[[ _listItems ]]"
+                              on-dom-change="_onItemsDomChange">
+
+                        <appsco-folders-item id="appscoListItem_[[ index ]]"
+                                             item="[[ item ]]"
+                                             type="[[ type ]]"
+                                             request-headers="[[ _headers ]]"
+                                             preview="[[ preview ]]"
+                                             selectable="[[ selectable ]]"
+                                             on-item="_onListItemAction"
+                                             on-select-item="_onSelectListItemAction"></appsco-folders-item>
+
+                    </template>
+                </div>
+            </template>
+        </div>
+
+        <template is="dom-if" if="[[ !_listEmpty ]]">
+            <div class="load-more-box" hidden$="[[ !_loadMore ]]">
+                <paper-progress id="loadMoreProgress"
+                                indeterminate></paper-progress>
+                <paper-button class="load-more-action" on-tap="_onLoadMoreAction">Load More</paper-button>
+            </div>
+        </template>
+    </template>
+
+    <script>
+        Polymer({
+
+            is: 'appsco-folders',
+
+            properties: {
+
+                preview: {
+                    type: Boolean,
+                    value: false
+                },
+
+                selectable: {
+                    type: Boolean,
+                    value: true
+                }
+            },
+
+            behaviors: [
+                Polymer.AppscoListBehavior,
+                Polymer.AppscoListObserverBehavior
+            ]
+        });
+    </script>
+</dom-module>

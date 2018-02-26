@@ -29,6 +29,10 @@
                     min-height: 150px;
                     box-sizing: border-box;
                 };
+
+                --appsco-content-sections: {
+                    padding: 0;
+                };
                 --paper-card-content: {
                     min-height: 70px;
                     box-sizing: border-box;
@@ -53,8 +57,9 @@
                 height: 100%;
                 overflow: auto;
             }
-            :host div[content] > * {
-                padding: 0 10px 10px 10px;
+            :host div[content] {
+                padding: 10px;
+                color: var(--primary-text-color);
             }
             .customer-billing-container {
                 margin-top: 10px;
@@ -99,6 +104,12 @@
                 right: 0;
                 padding: 0;
             }
+            :host .mt20 {
+                margin-top: 20px;
+            }
+            :host .plan-upcoming-invoice {
+                min-height: 260px;
+            }
             :host .info-header {
                 background-color: var(--app-primary-color);
                 padding: 10px 0 5px 10px;
@@ -134,6 +145,9 @@
             :host .subscription-plan {
                 width: 45%;
             }
+            :host .upcoming {
+                margin-left: 10px;
+            }
             :host .subscription-plan-label {
                 opacity: 0.6;
                 padding: 2px 5px 2px 0;
@@ -159,6 +173,10 @@
                 font-weight: 400;
             }
 
+            :host .flex-start {
+                @apply(--layout-start);
+            }
+
         </style>
 
         <iron-ajax
@@ -177,6 +195,13 @@
                 headers="[[ _computedHeaders ]]"
                 auto
                 on-response="_handleSubscriptionResponse"
+        ></iron-ajax>
+
+        <iron-ajax id="upcomingInvoiceCall"
+                   url="[[ _upcomingInvoiceApi ]]"
+                   handle-as="json"
+                   headers="[[ _computedHeaders ]]"
+                   on-response="_handleUpcomingInvoiceResponse"
         ></iron-ajax>
 
         <iron-media-query query="(max-width: 1200px)" query-matches="{{ mediumScreen }}"></iron-media-query>
@@ -286,71 +311,112 @@
                         </paper-card>
                     </template>
 
-                    <template is="dom-if" if="[[ _isPaidByCC ]]">
-                        <template is="dom-if" if="[[ _cc.brand ]]">
-                            <paper-card heading="Subscription plan" class="subscription-plan">
-                                <appsco-loader active="[[ _subscriptionLoader ]]"
-                                               loader-alt="Appsco is loading subscription model"
-                                               multi-color></appsco-loader>
-                                <div class="card-content flex-vertical">
-                                    <template is="dom-if" if="[[ _subscription.plan ]]">
-                                        <div class="flex-horizontal">
-                                            <span class="subscription-plan-label">Started on:</span>
-                                            <appsco-date-format
-                                                    date="[[ _subscription.startedAt.date ]]"
-                                            ></appsco-date-format>
-                                        </div>
-                                        <div class="flex-horizontal">
-                                            <span class="subscription-plan-label">Activity period:</span>
-                                            <div>
+                    <div class="plan-upcoming-invoice flex-horizontal flex-start">
+                        <template is="dom-if" if="[[ _isPaidByCC ]]">
+                            <template is="dom-if" if="[[ _cc.brand ]]">
+                                <paper-card heading="Subscription plan" class="subscription-plan">
+                                    <appsco-loader active="[[ _subscriptionLoader ]]"
+                                                   loader-alt="Appsco is loading subscription model"
+                                                   multi-color></appsco-loader>
+                                    <div class="card-content flex-vertical">
+                                        <template is="dom-if" if="[[ _subscription.plan ]]">
+                                            <div class="flex-horizontal">
+                                                <span class="subscription-plan-label">Started on:</span>
                                                 <appsco-date-format
-                                                        date="[[ _subscription.currentPeriodStart.date ]]"
-                                                ></appsco-date-format> /
-                                                <appsco-date-format
-                                                        date="[[ _subscription.currentPeriodEnd.date ]]"
+                                                        date="[[ _subscription.startedAt.date ]]"
                                                 ></appsco-date-format>
                                             </div>
-                                        </div>
+                                            <div class="flex-horizontal">
+                                                <span class="subscription-plan-label">Activity period:</span>
+                                                <div>
+                                                    <appsco-date-format
+                                                            date="[[ _subscription.currentPeriodStart.date ]]"
+                                                    ></appsco-date-format> /
+                                                    <appsco-date-format
+                                                            date="[[ _subscription.currentPeriodEnd.date ]]"
+                                                    ></appsco-date-format>
+                                                </div>
+                                            </div>
+                                            <div class="flex-horizontal">
+                                                <span class="subscription-plan-label">Plan:</span>
+                                                <span>[[ _subscription.plan.display_text ]]</span>
+                                            </div>
+                                            <div class="flex-horizontal">
+                                                <span class="subscription-plan-label">Price:</span>
+                                                <appsco-price
+                                                        price="[[ _subscription.plan.amount ]]"
+                                                        currency="[[ _subscription.plan.currency ]]"
+                                                ></appsco-price>
+                                                <span class="per-user-label">&nbsp per licence</span>
+                                            </div>
+                                            <div class="flex-horizontal">
+                                                <span class="subscription-plan-label">Customer Licenses:</span>
+                                                <span>[[ _subscription.quantity ]]</span>
+                                            </div>
+                                            <div class="flex-horizontal">
+                                                <span class="subscription-plan-label">Status:</span>
+                                                <span>[[ _subscription.status ]]</span>
+                                            </div>
+                                        </template>
+
+                                        <template is="dom-if" if="[[ !_subscription.plan ]]">
+                                            <p class="message">Subscription plan hasn't been added yet. Please go and subscribe.</p>
+                                        </template>
+                                    </div>
+
+                                    <div class="card-actions">
+                                        <template is="dom-if" if="[[ _subscription.plan ]]">
+                                            <paper-button on-tap="_onChangePlan" class="paper-card-action">Change Plan</paper-button>
+                                        </template>
+
+                                        <template is="dom-if" if="[[ !_subscription.plan ]]">
+                                            <paper-button on-tap="_onChangePlan" class="paper-card-action">Subscribe</paper-button>
+                                        </template>
+                                    </div>
+
+                                </paper-card>
+                            </template>
+
+
+                            <template is="dom-if" if="[[ _subscription.plan ]]">
+                                <paper-card heading="Upcoming invoice" class="flex upcoming">
+                                    <appsco-loader active="[[ _upcomingInvoiceLoader ]]"
+                                                   loader-alt="Appsco is loading subscription model"
+                                                   multi-color></appsco-loader>
+                                    <div class="card-content flex-vertical">
                                         <div class="flex-horizontal">
-                                            <span class="subscription-plan-label">Plan:</span>
-                                            <span>[[ _subscription.plan.display_text ]]</span>
+                                            Your next automatic payment is scheduled for&nbsp;
+                                            <appsco-date-format
+                                                    date="[[ _upcomingInvoice.date.date ]]"
+                                                    options='{"year": "numeric", "month": "long", "day": "numeric"}'
+                                            ></appsco-date-format>.
                                         </div>
+
                                         <div class="flex-horizontal">
-                                            <span class="subscription-plan-label">Price:</span>
+                                            Total amount:&nbsp;
                                             <appsco-price
-                                                    price="[[ _subscription.plan.amount ]]"
-                                                    currency="[[ _subscription.plan.currency ]]"
-                                            ></appsco-price>
-                                            <span class="per-user-label">&nbsp per licence</span>
+                                                    price="[[ _upcomingInvoice.total ]]"
+                                                    currency="[[ _upcomingInvoice.currency ]]"
+                                            ></appsco-price>.
                                         </div>
-                                        <div class="flex-horizontal">
-                                            <span class="subscription-plan-label">Customer Licenses:</span>
-                                            <span>[[ _subscription.quantity ]]</span>
+                                        <div class="mt20 flex-horizontal">
+                                            <iron-icon icon="icons:event" class="icon-20"></iron-icon>
+                                            &nbsp;Last payment on&nbsp;
+                                            <appsco-date-format
+                                                    date="[[ lastInvoice.date.date ]]"
+                                                    options='{"year": "numeric", "month": "long", "day": "numeric"}'
+                                            ></appsco-date-format>
+                                            &nbsp;for&nbsp;
+                                            <appsco-price
+                                                    price="[[ lastInvoice.total ]]"
+                                                    currency="[[ lastInvoice.currency ]]"
+                                            ></appsco-price>.
                                         </div>
-                                        <div class="flex-horizontal">
-                                            <span class="subscription-plan-label">Status:</span>
-                                            <span>[[ _subscription.status ]]</span>
-                                        </div>
-                                    </template>
-
-                                    <template is="dom-if" if="[[ !_subscription.plan ]]">
-                                        <p class="message">Subscription plan hasn't been added yet. Please go and subscribe.</p>
-                                    </template>
-                                </div>
-
-                                <div class="card-actions">
-                                    <template is="dom-if" if="[[ _subscription.plan ]]">
-                                        <paper-button on-tap="_onChangePlan" class="paper-card-action">Change Plan</paper-button>
-                                    </template>
-
-                                    <template is="dom-if" if="[[ !_subscription.plan ]]">
-                                        <paper-button on-tap="_onChangePlan" class="paper-card-action">Subscribe</paper-button>
-                                    </template>
-                                </div>
-
-                            </paper-card>
+                                    </div>
+                                </paper-card>
+                            </template>
                         </template>
-                    </template>
+                    </div>
                 </div>
             </div>
 
@@ -412,7 +478,8 @@
                     type: Object,
                     value: function() {
                         return {};
-                    }
+                    },
+                    observer: '_onSubscriptionChanged'
                 },
 
                 _creditCardApi: {
@@ -427,6 +494,11 @@
                     observer: '_showSubscriptionLoader'
                 },
 
+                _upcomingInvoiceApi: {
+                    type: String,
+                    computed: '_computeUpcomingInvoiceApi(companyApi, _subscription)',
+                    observer: '_showUpcomingInvoiceLoader'
+                },
 
                 _cc: {
                     type: Object,
@@ -441,6 +513,11 @@
                 },
 
                 _subscriptionLoader: {
+                    type: Boolean,
+                    value: true
+                },
+
+                _upcomingInvoiceLoader: {
                     type: Boolean,
                     value: true
                 },
@@ -568,6 +645,19 @@
                 this.$.billingSubscriptionRequest.generateRequest();
             },
 
+            _onSubscriptionChanged: function(subscription) {
+
+                for (key in subscription) {
+                    this._loadUpcomingInvoice();
+                    return false;
+                }
+            },
+
+            _loadUpcomingInvoice: function() {
+                this._upcomingInvoiceLoader = true;
+                this.$.upcomingInvoiceCall.generateRequest();
+            },
+
             _updateScreen: function(medium, tablet, mobile) {
                 this.updateStyles();
 
@@ -596,6 +686,10 @@
 
             _showCCLoader: function() {
                 this._ccLoader = true;
+            },
+
+            _showUpcomingInvoiceLoader: function() {
+                this._upcomingInvoiceLoader = true;
             },
 
             _onManageCreditCard: function() {
@@ -655,6 +749,10 @@
                 return companyApi ? companyApi + '/billing/subscriptions' : '';
             },
 
+            _computeUpcomingInvoiceApi: function(companyApi, subscription) {
+                return companyApi && subscription && subscription.id ? companyApi + '/billing/invoice/upcoming/' + subscription.id : '';
+            },
+
             _handleCCResponse: function(event) {
                 var response = event.detail.response;
                 this.set('_cc', {});
@@ -683,6 +781,15 @@
                 }, this);
 
                 this._subscriptionLoader = false;
+            },
+
+            _handleUpcomingInvoiceResponse: function(e) {
+                if (null == e.detail.response) {
+                    return;
+                }
+
+                this._upcomingInvoice = e.detail.response;
+                this._upcomingInvoiceLoader = false;
             }
 
         });

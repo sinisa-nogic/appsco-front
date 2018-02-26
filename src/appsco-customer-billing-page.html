@@ -11,6 +11,7 @@
 <link rel="import" href="components/components/appsco-loader.html">
 <link rel="import" href="components/components/appsco-date-format.html">
 <link rel="import" href="components/components/appsco-price.html">
+<link rel="import" href="billing/appsco-billing-invoice.html">
 
 <link rel="import" href="components/page/appsco-content.html">
 
@@ -107,6 +108,9 @@
             :host .mt20 {
                 margin-top: 20px;
             }
+            :host .mt10 {
+                margin-top: 10px;
+            }
             :host .plan-upcoming-invoice {
                 min-height: 260px;
             }
@@ -172,9 +176,60 @@
                 color: var(--primary-text-color);
                 font-weight: 400;
             }
-
+            :host appsco-billing-invoice {
+                margin-bottom: 5px;
+            }
+            :host .invoice-list {
+                margin-top: 10px;
+                position: relative;
+            }
+            .invoice-list-title {
+                font-weight: 400;
+                margin: 20px 0 0 0;
+            }
             :host .flex-start {
                 @apply(--layout-start);
+            }
+            :host .border-bottom {
+                border-bottom: 1px solid #dbdbdb;
+            }
+            :host .op3 {
+                opacity: 0.6;
+                font-size: 14px;
+            }
+            :host .item-quantity {
+                text-align: right;
+                width:45px;
+                padding: 5px 20px 5px 5px;
+            }
+            :host .item-price {
+                text-align: right;
+                padding:5px;
+            }
+            :host .item-item {
+                padding:5px 0 5px 5px;
+            }
+            :host div[info] .info-actions {
+                padding: 0;
+                position: absolute;
+                bottom: 0;
+                left: 0;
+                right: 0;
+            }
+            :host .send-invoice-button {
+                @apply(--primary-button);
+                border-radius: 0;
+            }
+            :host div[info] .close-info-icon {
+                position: absolute;
+                top: 5px;
+                right: 0;
+                padding: 0;
+                color: #ffffff;
+            }
+            :host .small {
+                font-size:12px;
+                margin-right: 10px;
             }
 
         </style>
@@ -202,6 +257,13 @@
                    handle-as="json"
                    headers="[[ _computedHeaders ]]"
                    on-response="_handleUpcomingInvoiceResponse"
+        ></iron-ajax>
+
+        <iron-ajax id="invoiceListCall"
+                   url="[[ _invoiceListApi ]]"
+                   handle-as="json"
+                   headers="[[ _computedHeaders ]]"
+                   on-response="_handleInvoicesResponse"
         ></iron-ajax>
 
         <iron-media-query query="(max-width: 1200px)" query-matches="{{ mediumScreen }}"></iron-media-query>
@@ -418,6 +480,31 @@
                         </template>
                     </div>
                 </div>
+
+                <template is="dom-if" if="[[ _subscription.plan ]]">
+                    <div class="invoice-list flex-vertical">
+
+                        <appsco-loader active="[[ _invoiceListLoader ]]"
+                                       loader-alt="Appsco is loading invoices"
+                                       multi-color></appsco-loader>
+
+                        <h2 class="invoice-list-title">Invoice list</h2>
+
+                        <template is="dom-if" if="[[ _invoicesExists ]]">
+                            <template is="dom-repeat" items="[[ _invoices ]]">
+                                <appsco-billing-invoice id="invoiceItem_[[ index ]]"
+                                                        class="appsco-billing-invoice"
+                                                        invoice="[[ item ]]"
+                                                        on-tap="_onInvoiceAction"></appsco-billing-invoice>
+                            </template>
+                        </template>
+
+                        <template is="dom-if" if="[[ !_invoicesExists ]]">
+                            <p class="message">There are no invoices yet.</p>
+                        </template>
+                    </div>
+                </template>
+
             </div>
 
             <div info class="flex-vertical">
@@ -428,16 +515,82 @@
                             logo-height="38">
                     </appsco-brand>
 
+                    <paper-icon-button icon="icons:close"
+                                       class="close-info-icon"
+                                       on-tap="_onCloseInfoAction"></paper-icon-button>
                 </div>
+
+                <appsco-date-format class="small"
+                                    date="[[ _selectedInvoice.date.date ]]"
+                                    options='{"year": "numeric", "month": "long", "day": "numeric", "hour": "2-digit", "minute": "2-digit"}'
+                ></appsco-date-format>
 
                 <div class="info-content-container">
                     <div class="info-content">
                         <div class="flex-horizontal">
-
+                            <span class="item-quantity small op3 border-bottom">Quantity</span>
+                            <span class="item-item flex op3 border-bottom">Item</span>
+                            <span class="item-price op3 border-bottom">Price</span>
                         </div>
 
+                        <template is="dom-repeat" items="{{ _selectedInvoice.items }}">
+                            <div class="flex-horizontal">
+                                <span class="item-quantity border-bottom font12">[[ item.quantity ]]</span>
+                                <span class="flex item-item border-bottom font12">AppsCo Licenses</span>
+                            <span class="item-price border-bottom font12">
+                                <appsco-price
+                                        price="[[ item.amount ]]"
+                                        currency="[[ item.currency ]]"
+                                ></appsco-price>
+                            </span>
+                            </div>
+                        </template>
+
+                        <div class="flex-horizontal">
+                            <span class="item-quantity font12">&nbsp;</span>
+                            <span class="flex item-item font12">Tax</span>
+                            <span class="item-price font12">[[ _selectedInvoice.tax ]]</span>
+                        </div>
+                        <div class="flex-horizontal">
+                            <span class="item-quantity font12  border-bottom">&nbsp;</span>
+                            <span class="flex item-item font12  border-bottom">Tax Percent</span>
+                            <span class="item-price font12  border-bottom">[[ _selectedInvoice.tax_percent ]]</span>
+                        </div>
+                        <div class="flex-horizontal">
+                            <span class="item-quantity font12">&nbsp;</span>
+                            <span class="flex item-item font12"><strong>Total</strong></span>
+                        <span class="item-price font12"><strong>
+                            <appsco-price
+                                    price="[[ _selectedInvoice.total ]]"
+                                    currency="[[ _selectedInvoice.currency ]]"
+                            ></appsco-price>
+                        </strong></span>
+                        </div>
+
+                        <div class="flex-vertical mt20">
+                            <span class="font12">Invoice ID</span>
+                            <span class="font12">[[ _selectedInvoice.id ]]</span>
+                        </div>
+
+                        <div class="flex-vertical mt10">
+                            <span class="font12">Purchased from</span>
+                            <span class="font12">AppsCo Inc.</span>
+                            <span class="font12">911 Washington Avenue</span>
+                            <span class="font12">Suite 848</span>
+                            <span class="font12">St. Louis, MO 63101</span>
+                            <span class="font12">United States</span>
+                        </div>
                     </div>
                 </div>
+
+                <div class="info-actions flex-horizontal">
+                    <paper-button
+                            class="send-invoice-button flex"
+                            on-tap="_onSendInvoice">
+                        Send invoice
+                    </paper-button>
+                </div>
+            </div>
             </div>
 
         </appsco-content>
@@ -482,6 +635,25 @@
                     observer: '_onSubscriptionChanged'
                 },
 
+                _invoices: {
+                    type: Array,
+                    value: function() {
+                        return [];
+                    }
+                },
+
+                _selectedInvoice: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    }
+                },
+
+                _selectedIndex: {
+                    type: Number,
+                    value: -1
+                },
+
                 _creditCardApi: {
                     type: String,
                     computed: '_computeCreditCardApi(companyApi)',
@@ -498,6 +670,12 @@
                     type: String,
                     computed: '_computeUpcomingInvoiceApi(companyApi, _subscription)',
                     observer: '_showUpcomingInvoiceLoader'
+                },
+
+                _invoiceListApi: {
+                    type: String,
+                    computed: '_computeInvoiceListApi(companyApi, _subscription)',
+                    observer: '_showInvoiceListLoader'
                 },
 
                 _cc: {
@@ -522,6 +700,11 @@
                     value: true
                 },
 
+                _invoiceListLoader: {
+                    type: Boolean,
+                    value: true
+                },
+
                 _paymentMethod: {
                     type: Boolean,
                     computed: '_computePaymentMethod(_cc)'
@@ -531,7 +714,6 @@
                     type: Boolean,
                     value: false
                 },
-
 
                 _computedCCLogo: {
                     type: String,
@@ -556,6 +738,18 @@
                 _numberOfAvailableLicences: {
                     type: String,
                     computed: '_computeNumberOfAvailableLicences(_subscription)'
+                },
+
+                _invoicesExists: {
+                    type: Boolean,
+                    value: false
+                },
+
+                lastInvoice: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    }
                 },
 
                 mediumScreen: {
@@ -628,6 +822,7 @@
                 this._paymentMethodInfo = false;
                 this._numberOfAvailableLicences = '0';
                 this._numberOfDistributedLicences = '0';
+                this._onCloseInfoAction();
             },
 
             setCreditCard: function(cc) {
@@ -649,6 +844,7 @@
 
                 for (key in subscription) {
                     this._loadUpcomingInvoice();
+                    this._loadInvoiceList();
                     return false;
                 }
             },
@@ -656,6 +852,12 @@
             _loadUpcomingInvoice: function() {
                 this._upcomingInvoiceLoader = true;
                 this.$.upcomingInvoiceCall.generateRequest();
+            },
+
+            _loadInvoiceList: function() {
+                this._invoicesExists = false;
+                this._invoiceListLoader = true;
+                this.$.invoiceListCall.generateRequest();
             },
 
             _updateScreen: function(medium, tablet, mobile) {
@@ -690,6 +892,10 @@
 
             _showUpcomingInvoiceLoader: function() {
                 this._upcomingInvoiceLoader = true;
+            },
+
+            _showInvoiceListLoader: function() {
+                this._invoiceListLoader = true;
             },
 
             _onManageCreditCard: function() {
@@ -753,6 +959,10 @@
                 return companyApi && subscription && subscription.id ? companyApi + '/billing/invoice/upcoming/' + subscription.id : '';
             },
 
+            _computeInvoiceListApi: function(companyApi, subscription) {
+                return companyApi && subscription && subscription.id ? companyApi + '/billing/invoice/list/' + subscription.id : '';
+            },
+
             _handleCCResponse: function(event) {
                 var response = event.detail.response;
                 this.set('_cc', {});
@@ -790,6 +1000,96 @@
 
                 this._upcomingInvoice = e.detail.response;
                 this._upcomingInvoiceLoader = false;
+            },
+
+            _handleInvoicesResponse: function(event) {
+                var response = event.detail.response;
+
+                this.set('_invoices', []);
+
+                if (null == response) {
+                    this._invoiceListLoader = false;
+                    return false;
+                }
+
+                if (response.length > 0) {
+
+                    this._invoicesExists = true;
+
+                    response.forEach(function(el, index) {
+
+                        if (0 === index) {
+                            this.lastInvoice = el;
+                        }
+
+                        setTimeout(function() {
+                            this.push('_invoices', el);
+
+                            if (index === response.length - 1) {
+                                this._invoiceListLoader = false;
+                            }
+
+                        }.bind(this), (index + 1) * 30);
+
+                    }.bind(this));
+                }
+                else {
+                    this._invoiceListLoader = false;
+                }
+            },
+
+            _onInvoiceAction: function(event) {
+                var selectedInvoice = event.model.item;
+
+                if (selectedInvoice.id != this._selectedInvoice.id) {
+                    this._selectedInvoice = selectedInvoice;
+
+                    if (this._selectedIndex !== -1) {
+                        this.$$('#invoiceItem_' + this._selectedIndex).deselect();
+                    }
+
+                    this._selectedIndex = event.model.index;
+
+                    this.$$('#invoiceItem_' + this._selectedIndex).select();
+
+                    if (!this._infoShown) {
+                        this._showInfo();
+                    }
+                }
+                else {
+                    this._onCloseInfoAction();
+                }
+            },
+
+            _deselectInvoice: function() {
+                this._hideInfo();
+                this.set('_selectedInvoice', {});
+
+                if (this.$$('#invoiceItem_' + this._selectedIndex)) {
+                    this.$$('#invoiceItem_' + this._selectedIndex).deselect();
+                }
+
+                this._selectedIndex = -1;
+            },
+
+            _onCloseInfoAction: function() {
+                this._hideInfo();
+                this._deselectInvoice();
+            },
+
+            _showInfo: function() {
+                this.$.appscoContent.showSection('info');
+                this._infoShown = true;
+            },
+
+            _hideInfo: function() {
+                this.$.appscoContent.hideSection('info');
+                this._infoShown = false;
+            },
+            _onSendInvoice: function() {
+                this.fire('send-invoice', {
+                    invoice: this._selectedInvoice
+                });
             }
 
         });

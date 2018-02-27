@@ -128,33 +128,35 @@
                                     name="subscription[numUsers]"
                                     error-message="Please enter number of subscriptions."
                                     auto-validate
-                                    on-keyup="_reCalculate"
+                                    on-keyup="_reCalculateAllPlans"
                             ></paper-input>
                             <div style="width:100%">
-                                <paper-radio-group selected="usd-yearly" class="flex-horizontal" id="subscriptionPlan">
-                                    <paper-radio-button name="usd-yearly"  class="flex" value="usd-yearly">Annually</paper-radio-button>
-                                    <paper-radio-button name="usd-monthly" class="flex" value="usd-monthly">Monthly</paper-radio-button>
+                                <paper-radio-group selected="[[ _selectedPlan ]]" class="flex-horizontal" id="subscriptionPlan">
+                                    <template is="dom-repeat" items="[[ _plans ]]">
+                                        <paper-radio-button name="[[ item.id ]]"  class="flex" value="[[ item.id ]]">[[ item.displayText ]]</paper-radio-button>
+                                    </template>
                                 </paper-radio-group>
                             </div>
                             <div style="width:100%" class="flex-horizontal">
-                                <div class="flex">
-                                    <appsco-price
-                                            price="{{ _subscriptionYear }}"
-                                            currency="USD"
-                                    ></appsco-price> / year
-                                    <br/>
-                                    <span class="op6">24 USD per user / year</span>
-                                    <br/>
-                                    <span class="savings">20% Savings</span>
-                                </div>
-                                <div class="flex">
-                                    <appsco-price
-                                            price="{{ _subscriptionMonth }}"
-                                            currency="USD"
-                                    ></appsco-price> / month
-                                    <br/>
-                                    <span class="op6">2.5 USD per user / month</span>
-                                </div>
+                                <template is="dom-repeat" items="[[ _plans ]]">
+                                    <div class="flex">
+                                        <appsco-price
+                                                price="{{ _reCalculate(item) }}"
+                                                currency="[[ item.currency ]]"
+                                        ></appsco-price> / year
+                                        <br/>
+                                        <span class="op6">
+                                            <appsco-price
+                                                    price="[[ item.amount ]]"
+                                                    currency="[[ item.currency ]]"
+                                            ></appsco-price>
+                                            per user / [[ item.interval ]]</span>
+                                        <br/>
+                                        <template is="dom-if" if="[[ _isPlanYearly(item) ]]">
+                                            <span class="savings">20% Savings</span>
+                                        </template>
+                                    </div>
+                                </template>
                             </div>
                             <paper-input
                                     class="coupon-code text-center"
@@ -212,13 +214,62 @@
                 _subscriptionMonth: {
                     type: Number,
                     value: 0
+                },
+
+                _subscription: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    }
+                },
+
+                _plans: {
+                    type: Array,
+                    value: function() {
+                        return [];
+                    }
+                },
+
+                _currency: {
+                    type: Number,
+                    value: 0
+                },
+
+                _selectedPlan: {
+                    type: String,
+                    value: ''
                 }
 
             },
 
-            _reCalculate: function(e, d) {
-                this._subscriptionMonth = this.$.quantity.value * 2.5 * 100;
-                this._subscriptionYear = this.$.quantity.value * 24 * 100;
+
+            initializePage: function () {
+                this._preselectPlan();
+            },
+
+            setSubscription: function (subscription) {
+                this._subscription = subscription;
+            },
+
+            setPlans: function (plans) {
+                this._plans = plans;
+            },
+
+            _preselectPlan: function () {
+                if (this._subscription && this._subscription.plan) {
+                    this.set('_selectedPlan', this._subscription.plan.id);
+                } else {
+                    this.set('_selectedPlan', this._getFirstPlan());
+                }
+                this.$.subscriptionPlan.selected = this._selectedPlan;
+            },
+
+            _getFirstPlan: function() {
+                return this._plans && this._plans.length > 0 ? this._plans[0].id : '';
+            },
+
+            _reCalculate: function(plan) {
+                return this.$.quantity && this.$.quantity.value ? plan.amount * this.$.quantity.value : plan.amount;
             },
 
             /**
@@ -249,6 +300,10 @@
                 this.$.quantity.invalid = false;
             },
 
+            _onSelectedPlanChanged: function (selectedPlan) {
+                this.$.subscriptionPlan.selected = selectedPlan;
+            },
+
             _onPurchaseAction: function() {
                 var subscriptionsInput = this.$.quantity;
 
@@ -258,10 +313,19 @@
                     return false;
                 }
 
+                var url, method = '';
+                if (this._subscription.id !== undefined) {
+                    url = this.companyApi + '/billing/subscriptions/' + this._subscription.id;
+                    method = 'PUT';
+                } else {
+                    url = this.companyApi + '/billing/subscriptions';
+                    method = 'POST';
+                }
+
                 var request = document.createElement('iron-request'),
                     options = {
-                        url: this.companyApi + '/billing/subscription',
-                        method: 'POST',
+                        url: url,
+                        method: method,
                         handleAs: 'json',
                         headers: {
                             'Authorization': 'token ' + this.authorizationToken,
@@ -308,6 +372,16 @@
                             this._purchaseLoader = false;
                         }.bind(this)
                 );
+            },
+
+            _reCalculateAllPlans: function() {
+                var plansList = JSON.parse(JSON.stringify(this._plans));
+                this.set('_plans', []);
+                this.set('_plans', plansList);
+            },
+
+            _isPlanYearly: function(plan) {
+                return plan &&  'year' === plan.interval;
             }
         });
     </script>

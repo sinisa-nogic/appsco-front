@@ -3027,12 +3027,16 @@
 
             _onSubscriptionResponse: function(event) {
                 var status = event.detail.status,
-                    response = event.detail.response;
+                    subscriptions = event.detail.response;
 
-                if (200 === status && response) {
-                    this._subscription = response;
-                    this._setSubscription(response);
-                    this._evaluateSubscriptionLicences();
+                if (200 === status && subscriptions) {
+                    subscriptions.forEach(function(element) {
+                        if (element.type === 'company' && element.status === 'active') {
+                            this._subscription = element;
+                            this._setSubscription(element);
+                            this._evaluateSubscriptionLicences();
+                        }
+                    }.bind(this));
                 }
             },
 
@@ -5005,7 +5009,10 @@
                 this.$.appscoBillingPage.toggleResource();
             },
 
-            _fireUpgrade: function() {
+            _fireUpgrade: function(event) {
+                this.$.appscoUpgradeAction.setSubscription(event.detail.subscription);
+                this.$.appscoUpgradeAction.setPlans(event.detail.plans);
+                this.$.appscoUpgradeAction.initializePage();
                 this.$.appscoUpgradeAction.toggle();
             },
 
@@ -5052,7 +5059,8 @@
                 this._notify('Subscription has been successfully changed.');
             },
 
-            _onCancelSubscription: function() {
+            _onCancelSubscription: function(event) {
+                this.$.appscoSubscriptionCancel.setSubscription(event.detail.subscription);
                 this.$.appscoSubscriptionCancel.toggle();
             },
 

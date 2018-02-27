@@ -276,6 +276,15 @@
                 on-response="_handleSubscriptionResponse"
         ></iron-ajax>
 
+        <iron-ajax
+                id="billingPlansRequest"
+                url="[[ _plansApi ]]"
+                handle-as="json"
+                headers="[[ _computedHeaders ]]"
+                auto
+                on-response="_handlePlansResponse"
+        ></iron-ajax>
+
         <iron-ajax id="upcomingInvoiceCall"
                    url="[[ _upcomingInvoiceApi ]]"
                    handle-as="json"
@@ -629,9 +638,22 @@
                     computed: '_computeSubscriptionApi(companyApi)'
                 },
 
+                _plansApi: {
+                    type: String,
+                    computed: '_computePlansApi(companyApi)'
+                },
+
                 _creditCardApi: {
                     type: String,
                     computed: '_computeCreditCardApi(companyApi)'
+                },
+
+                _subscription: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    },
+                    observer: '_onSubscriptionChanged'
                 },
 
                 _upcomingInvoiceApi: {
@@ -649,12 +671,11 @@
                     computed: '_computeTrialPeriod(account, _subscription)'
                 },
 
-                _subscription: {
-                    type: Object,
+                _plans: {
+                    type: Array,
                     value: function() {
-                        return {};
-                    },
-                    observer: '_onSubscriptionChanged'
+                        return [];
+                    }
                 },
 
                 _cc: {
@@ -823,6 +844,10 @@
                 return companyApi ? companyApi + '/billing/subscriptions' : '';
             },
 
+            _computePlansApi: function(companyApi) {
+                return companyApi ? companyApi + '/billing/plans' : '';
+            },
+
             _computeCreditCardApi: function(companyApi) {
                 return companyApi ? companyApi + '/billing/cc' : '';
             },
@@ -940,8 +965,37 @@
                 if(null == e.detail.response) {
                     return;
                 }
-                this._subscription = e.detail.response;
+
+                var subscriptions = e.detail.response,
+                    activeSubscription = '';
+
+                subscriptions.forEach(function(element) {
+                    if (element.type === 'company' && element.status === 'active') {
+                        this._subscription = activeSubscription = element;
+                    }
+                }.bind(this));
+
+                if (!activeSubscription) {
+                    this._subscription = {};
+                    this._cancelSubscription = false;
+                }
+
                 this._subscriptionLoader = false;
+            },
+
+            _handlePlansResponse: function (e) {
+                if(null == e.detail.response) {
+                    return;
+                }
+
+                var response = e.detail.response,
+                    plans = [];
+                response.forEach(function (element) {
+                    if (element.type === 'company') {
+                        plans.push(element);
+                    }
+                }.bind(this));
+                this._plans = plans;
             },
 
             _loadUpcomingInvoice: function() {
@@ -1052,11 +1106,16 @@
             },
 
             _onChangePlan: function() {
-                this.fire('upgrade-active');
+                this.fire('upgrade-active', {
+                    'subscription': this._subscription,
+                    'plans': this._plans
+                });
             },
 
             _onCancelSubscription: function() {
-                this.fire('cancel-subscription');
+                this.fire('cancel-subscription', {
+                    'subscription': this._subscription
+                });
             },
 
             _onSendInvoice: function() {

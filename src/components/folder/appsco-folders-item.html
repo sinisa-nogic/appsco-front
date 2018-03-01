@@ -10,6 +10,7 @@
 <link rel="import" href="../components/appsco-list-item-behavior.html">
 <link rel="import" href="../components/appsco-list-item-styles.html">
 <link rel="import" href="../components/appsco-drop-html-element-behavior.html">
+<link rel="import" href="../components/appsco-loader.html">
 
 <dom-module id="appsco-folders-item">
     <template>
@@ -56,11 +57,14 @@
         <iron-media-query query="(max-width: 800px)" query-matches="{{ tabletScreen }}"></iron-media-query>
 
         <div class="item" on-tap="_onItemAction" data-drop-to-zone>
+            <appsco-loader active="[[ _loader ]]"
+                           loader-alt="AppsCo is processing request"
+                           multi-color></appsco-loader>
+
             <iron-icon icon="folder" class="folder-icon"></iron-icon>
             <div class="item-info item-basic-info">
                 <span class="info-label item-title">[[ item.title ]] </span>
             </div>
-
         </div>
 
     </template>
@@ -83,6 +87,11 @@
                     type: Boolean,
                     value: false,
                     reflectToAttribute: true
+                },
+
+                _loader: {
+                    type: Boolean,
+                    value: false
                 }
             },
 
@@ -98,6 +107,14 @@
 
             attached: function() {
                 this.initializeDropBehavior();
+            },
+
+            _showLoader: function() {
+                this._loader = true;
+            },
+
+            _hideLoader: function() {
+                this._loader = false;
             },
 
             _onItemDropped: function(event) {
@@ -123,6 +140,8 @@
                     return false;
                 }
 
+                this._showLoader();
+
                 request.send(options).then(function() {
 
                     if (200 === request.status) {
@@ -131,12 +150,16 @@
                             resource: request.response,
                             folder: this.item
                         });
+
+                        this._hideLoader();
                     }
                 }.bind(this), function() {
                     this.fire('resource-moved-to-folder-failed', {
                         resource: request.response,
                         folder: this.item
                     });
+
+                    this._hideLoader();
                 }.bind(this));
             }
         });

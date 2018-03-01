@@ -146,13 +146,13 @@
 <link rel="import" href="components/customer/appsco-customers-page-actions.html">
 <link rel="import" href="components/customer/appsco-add-customer.html">
 <link rel="import" href="components/customer/appsco-remove-customers.html">
+<link rel="import" href="components/customer/appsco-manage-customer-subscription.html">
 <link rel="import" href="components/customer/appsco-add-partner-admin-to-customers.html">
 <link rel="import" href="components/customer/appsco-manage-customer-page-actions.html">
 <link rel="import" href="components/customer/appsco-customer-partner-admin-remove.html">
 
 <link rel="import" href="components/customer/appsco-import-customers.html">
 <link rel="import" href="components/customer/appsco-import-customer-resources.html">
-<link rel="import" href="components/customer/appsco-toggle-customer-subscription-paid-externally.html">
 
 <link rel="import" href="components/report/appsco-reports-page-actions.html">
 <link rel="import" href="components/report/appsco-access-report-page-actions.html">
@@ -1065,8 +1065,7 @@
                             on-page-error="_onError"
                             on-remove-partner-admin-from-customer="_onRemovePartnerAdminFromCustomer"
                             on-add-partner-admin="_onAddPartnerAdminAction"
-                            on-enable-customer-subscription-paid-externally="_onToggleCustomerSubscriptionPaidExternallyAction"
-                            on-disable-customer-subscription-paid-externally="_onToggleCustomerSubscriptionPaidExternallyAction"
+                            on-manage-customer-subscription="_onManageCustomerSubscription"
                     ></appsco-manage-customer-page>
 
                     <appsco-manage-group-page
@@ -1635,6 +1634,13 @@
                 api-errors="[[ _apiErrors ]]"
                 on-customer-removed="_onCustomerRemoved"></appsco-remove-customer>
 
+        <appsco-manage-customer-subscription
+                id="appscoManageCustomerSubscription"
+                authorization-token="[[ authorizationToken ]]"
+                api-errors="[[ _apiErrors ]]"
+                partner="[[ currentCompany.company ]]"
+                on-customer-licences-managed="_onCustomerLicencesManaged"></appsco-manage-customer-subscription>
+
         <appsco-resource-add-groups
                 id="appscoShareToGroupDialog"
                 authorization-token="[[ authorizationToken ]]"
@@ -1773,12 +1779,6 @@
                 api-errors="[[ _apiErrors ]]"
                 on-notification-sent="_onNotificationSent"
         ></appsco-send-notification>
-
-        <appsco-toggle-customer-subscription-paid-externally
-                id="appscoToggleCustomerSubscriptionPaidExternally"
-                authorization-token="[[ authorizationToken ]]"
-                api-errors="[[ _apiErrors ]]"
-                on-action-canceled="_onToggleCustomerSubscriptionPaidExternallyActionCanceled"></appsco-toggle-customer-subscription-paid-externally>
 
         <appsco-company-notice
                 id="appscoCompanyNotice"></appsco-company-notice>
@@ -4978,6 +4978,16 @@
                 this._notify('Customer ' + customer.name + ' has been deleted from company.');
             },
 
+            _onCustomerLicencesManaged: function(event) {
+                var customer = event.detail.customer;
+
+                if (this.$.appscoManageCustomerPage.$) {
+                    this.$.appscoManageCustomerPage.reloadCustomer(customer);
+                }
+
+                this._notify('Licences successfully assigned.');
+            },
+
             _onContactDeleted: function(event) {
                 var contact = event.detail.contact;
 
@@ -5995,24 +6005,22 @@
                 this._notify(message, true);
             },
 
-            _onToggleCustomerSubscriptionPaidExternallyAction: function(event) {
-                var component = this.$.appscoToggleCustomerSubscriptionPaidExternally;
-
-                component.setCustomer(event.detail.customer);
-                component.open();
-            },
-
-            _onToggleCustomerSubscriptionPaidExternallyActionCanceled: function() {
-                this.$.appscoManageCustomerPage.resetCustomer();
-            },
-
             _onCustomerSubscriptionStateChanged: function(event) {
                 var customer = event.detail.customer;
-
                 this._setCustomer(customer);
+
                 this._notify('Subscription paid externally has been turned ' +
                     (customer.subscription_paid_externally ? 'on' : 'off') +
                     ' for customer ' + customer.name + '.');
+            },
+
+            _onManageCustomerSubscription: function(event) {
+                var customer = event.detail.customer;
+
+                if (this.$.appscoManageCustomerSubscription.$) {
+                    this.$.appscoManageCustomerSubscription.setCustomer(customer);
+                    this.$.appscoManageCustomerSubscription.toggle();
+                }
             },
             /**
              * Customers page END

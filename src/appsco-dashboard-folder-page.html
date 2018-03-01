@@ -16,7 +16,7 @@
 <link rel="import" href="components/application/appsco-application-details.html">
 <link rel="import" href="components/application/appsco-application-log.html">
 
-<dom-module id="appsco-company-home-page">
+<dom-module id="appsco-dashboard-folder-page">
     <template>
         <style include="shared-styles webkit-scrollbar-style">
             :host {
@@ -87,14 +87,6 @@
                 box-sizing: border-box;
                 @apply(--layout-flex-none);
             }
-            :host .info {
-                margin-top: 20px;
-                color: var(--primary-text-color);
-            }
-            :host .info p {
-                margin: 0;
-                font-size: 14px;
-            }
             :host div[info] .details-log {
                 height: calc(100% - 50px - 65px);
             }
@@ -127,17 +119,6 @@
             }
             :host .share-button {
                 @apply(--secondary-button);
-            }
-            appsco-application-share {
-                --appsco-application-share-button: {
-                    border-radius: 0;
-                    margin: 0;
-                    padding: 6px 12px;
-                    background-color: var(--app-secondary-color);
-                    color: #ffffff;
-                    font-size: 14px;
-                    height: 34px;
-                };
             }
             appsco-application-details {
                 --appsco-application-icons-color: var(--primary-text-color);
@@ -201,15 +182,18 @@
             }
         </style>
 
-        <iron-ajax
-                auto
-                id="netscalerApiRequest"
-                url="[[ netscalerApi ]]"
-                on-error="_onError"
-                on-response="_onResponseNetscaler"
-                headers="{{ _computedHeaders }}"
-                debounce-duration="300"
-        ></iron-ajax>
+        <iron-ajax id="ironAjaxGetFolder"
+                   on-error="_onGetFolderError"
+                   on-response="_onGetFolderResponse"
+                   headers="[[ _headers ]]"></iron-ajax>
+
+        <iron-ajax auto 
+                   id="netscalerApiRequest" 
+                   url="[[ netscalerApi ]]"
+                   on-error="_onError" 
+                   on-response="_onResponseNetscaler"
+                   headers="[[ _headers ]]"
+                   debounce-duration="300"></iron-ajax>
 
         <iron-media-query query="(max-width: 1366px)" query-matches="{{ laptopScreen }}"></iron-media-query>
         <iron-media-query query="(max-width: 1280px)" query-matches="{{ tabletS1280Screen }}"></iron-media-query>
@@ -222,27 +206,18 @@
             <div content>
 
                 <div class="items-container folders-container">
-                    <h4 class="subtitle">Folders</h4>
-                    <appsco-folders
-                            id="appscoFolders"
-                            size="100"
-                            type="folder"
-                            load-more
-                            authorization-token="[[ authorizationToken ]]"
-                            list-api="[[ foldersApi ]]"
-                            on-item="_onFolderAction"></appsco-folders>
+                    <h3 class="subtitle">Dashboard / [[ folder.name ]]</h3>
                 </div>
 
                 <div class="items-container resources-container">
-                    <h4 class="subtitle">Resources</h4>
                     <appsco-applications
                             id="appscoApplications"
                             size="100"
                             load-more
                             is-on-company
                             authorization-token="[[ authorizationToken ]]"
-                            applications-api="[[ applicationsApi ]]"
-                            account ="[[ account ]]"
+                            applications-api="[[ _applicationsApi ]]"
+                            account="[[ account ]]"
                             on-info="_onViewApplicationInfo"
                             on-edit="_onApplicationEdit"
                             on-application="_onApplication"
@@ -252,8 +227,7 @@
                 </div>
 
                 <template is="dom-repeat"
-                          items="{{ _applications }}"
-                >
+                          items="{{ _applications }}">
 
                     <appsco-application-item id="appscoApplicationItem_[[ index ]]"
                                              class="application-item citrix-item"
@@ -374,9 +348,21 @@
 
     <script>
         Polymer({
-            is: 'appsco-company-home-page',
+            is: 'appsco-dashboard-folder-page',
 
             properties: {
+
+                folder: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    }
+                },
+
+                authorizationToken: {
+                    type: String,
+                    value: ''
+                },
 
                 application: {
                     type: Object,
@@ -395,7 +381,13 @@
 
                 foldersApi: {
                     type: String,
-                    value: ''
+                    value: '',
+                    observer: '_onFoldersApiChanged'
+                },
+
+                _headers: {
+                    type: Object,
+                    computed: '_computeHeaders(authorizationToken)'
                 },
 
                 _shared: {
@@ -419,17 +411,12 @@
                     type: Number
                 },
 
-                authorizationToken: {
-                    type: String,
-                    value: ''
-                },
-
                 /**
                  * Get applications from dashboard link.
                  */
-                applicationsApi: {
+                _applicationsApi: {
                     type: String,
-                    value: ''
+                    computed: '_computeApplicationsApi(folder)'
                 },
 
                 netscalerApi: {
@@ -472,11 +459,6 @@
                     type: Boolean,
                     value: false,
                     reflectToAttribute: true
-                },
-
-                _computedHeaders: {
-                    type: Object,
-                    computed: '_computeHeaders(authorizationToken)'
                 },
 
                 /**
@@ -527,7 +509,7 @@
                 }
             },
 
-            _updateScreen: function(mobile, tablet, tabletS1024Screen, tabletS1280Screen, laptop) {
+            _updateScreen: function() {
                 this.updateStyles();
             },
 
@@ -535,6 +517,10 @@
                 return {
                     'Authorization': 'token ' + authorizationToken
                 }
+            },
+
+            _computeApplicationsApi: function(folder) {
+                return folder.meta ? folder.meta.applications : '';
             },
 
             _computeApplicationShared: function(application) {
@@ -551,6 +537,46 @@
                 this._initializeResourcesDragBehavior();
             },
 
+            _onFoldersApiChanged: function() {
+                this._getFolder();
+            },
+
+            _getFolder: function() {
+
+                if (!this.folder.self && this.foldersApi && this._headers) {
+                    var folderApi = this.foldersApi + this.route.path,
+                        getFolderRequest = this.$.ironAjaxGetFolder;
+
+                    if (getFolderRequest.lastRequest) {
+                        getFolderRequest.lastRequest.abort();
+                    }
+
+                    // Missing from API: get folder API
+                    getFolderRequest.url = folderApi;
+                    getFolderRequest.generateRequest();
+                }
+            },
+
+            _onGetFolderResponse: function(event) {
+
+                if (200 === event.detail.status && event.detail.response) {
+                    this.setFolder(event.detail.response);
+                }
+
+                this._pageLoaded();
+            },
+
+            _onGetFolderError: function(event) {
+
+                if (!event.detail.request.aborted) {
+                    this.fire('page-error');
+                }
+            },
+
+            setFolder: function(folder) {
+                this.set('folder', folder);
+            },
+
             initializePage: function() {
                 this.setDefaultApplication();
             },
@@ -558,7 +584,6 @@
             resetPage: function() {
                 this.$.appscoApplications.reset();
                 this.$.appscoApplications.reloadApplications();
-                this.$.appscoFolders.resetAllItems();
                 this._hideInfo();
             },
 
@@ -669,15 +694,18 @@
                 if (!e.detail.response) {
                     return false;
                 }
+
                 var icons = e.detail.response.icons;
-                icons.forEach(function(el, index) {
+
+                icons.forEach(function(el) {
                     var item = {
                         application_url: el.imgsrc,
                         icon_url: el.imgsrc,
                         launchurl: el.launchurl,
                         icocontent: el.icocontent,
                         title: el.name
-                    }
+                    };
+
                     this.push('_applications', item);
                 }.bind(this));
             },

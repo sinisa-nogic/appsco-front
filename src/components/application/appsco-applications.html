@@ -12,6 +12,7 @@
 
 <link rel="import" href="../vaadin-context-menu/vaadin-context-menu-override.html">
 <link rel="import" href="appsco-application-item.html">
+<link rel="import" href="../components/appsco-drag-html-element-behavior.html">
 
 <!--
 `appsco-applications`
@@ -65,6 +66,7 @@ Custom property | Description | Default
             }
             :host appsco-application-item {
                 margin: 0 10px 10px 0;
+                position: relative;
                 @apply(--appsco-applications-item);
             }
             :host([company]) appsco-application-item {
@@ -114,6 +116,16 @@ Custom property | Description | Default
                 @apply(--paper-font-body2);
                 @apply(--info-message);
             }
+            *[draggable="true"] {
+                -moz-user-select: none;
+                -khtml-user-select: none;
+                -webkit-user-select: none;
+                user-select: none;
+                /* Required to make elements draggable in old WebKit */
+                -khtml-user-drag: element;
+                -webkit-user-drag: element;
+                cursor: move;
+            }
         </style>
 
         <div class="applications-container">
@@ -126,8 +138,6 @@ Custom property | Description | Default
                     headers="{{ _computedHeaders }}"
                     debounce-duration="300"
             ></iron-ajax>
-
-
 
             <paper-progress id="paperProgress"
                             class="applications-progress-bar"
@@ -155,10 +165,12 @@ Custom property | Description | Default
                                   items="{{ _applications }}"
                                   on-dom-change="_onItemsDomChange">
                             <appsco-application-item id="appscoApplicationItem_[[ index ]]"
-                                                     class="application-item"
+                                                     class="application-item drag-item"
                                                      application="{{ item }}"
                                                      company="[[ company ]]"
-                                                     on-application="_onApplicationAction"></appsco-application-item>
+                                                     on-application="_onApplicationAction"
+                                                     draggable="true"
+                                                     data-drag-item="[[ item ]]"></appsco-application-item>
                         </template>
                     </div>
 
@@ -346,7 +358,8 @@ Custom property | Description | Default
             },
 
             behaviors: [
-                Polymer.NeonAnimationRunnerBehavior
+                Polymer.NeonAnimationRunnerBehavior,
+                Polymer.AppscoDragHTMLElementBehavior
             ],
 
             listeners: {
@@ -373,6 +386,12 @@ Custom property | Description | Default
                     };
 
                 }
+            },
+
+            initializeResourcesDragBehavior: function() {
+                setTimeout(function() {
+                    this.initializeDragBehavior();
+                }.bind(this), 500);
             },
 
             _computeSearchApplicationsApi: function(applicationsApi, term) {

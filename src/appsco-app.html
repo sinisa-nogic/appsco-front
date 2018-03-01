@@ -2436,7 +2436,7 @@
                 'add-item-to-group-event': '_onAddItemToGroupAction',
                 'customer-subscription-state-changed': '_onCustomerSubscriptionStateChanged',
                 'notifications-seen': '_onNotificationsSeen',
-                'resource-moved-to-folder': '_onResourceMoverToFolder'
+                'resource-moved-to-folder': '_onResourceMovedToFolder'
             },
 
             attached: function() {
@@ -4348,38 +4348,6 @@
                 this._notify('Upload failed: ' + event.detail);
             },
 
-            _onOpenMoveToFolderDialog: function(event) {
-                var company = null;
-                if (this.page != 'home') {
-                    company = this.currentCompany;
-                }
-                var applicationIcon = event.detail.applicationIcon;
-                this.$.appscoFoldersApplicationAdd.setApplicationIcon(applicationIcon);
-                this.$.appscoFoldersApplicationAdd.setCompany(company);
-                this.$.appscoFoldersApplicationAdd.toggle();
-            },
-
-            _onResourceMoverToFolder: function(event) {
-                var resource = event.detail.resource,
-                    folder = event.detail.folder;
-
-                switch (this.page) {
-                    case 'home':
-                        this._reloadHomePageApplications();
-                        break;
-
-                    case 'company-home':
-                        this._reloadCompanyHomePageApplications();
-                        break;
-
-                    case 'contact-home':
-                        this._reloadContactHomePageApplications();
-                        break;
-                }
-
-                this._notify('Application icon ' + resource.title + ' has been moved to folder ' + folder.title + '.');
-            },
-
             /**
              * Resources page END
              */
@@ -5532,6 +5500,55 @@
 
             _onFolderTapped: function(event) {
                 this._openFolder(event.detail.folder);
+            },
+
+            _onOpenMoveToFolderDialog: function(event) {
+                var company = null;
+                if (this.page != 'home') {
+                    company = this.currentCompany;
+                }
+                var applicationIcon = event.detail.applicationIcon;
+                this.$.appscoFoldersApplicationAdd.setApplicationIcon(applicationIcon);
+                this.$.appscoFoldersApplicationAdd.setCompany(company);
+                this.$.appscoFoldersApplicationAdd.toggle();
+            },
+
+            _removeCompanyHomeResource: function(resource) {
+
+                if (this.$.appscoCompanyHomePage.$) {
+                    this.$.appscoCompanyHomePage.removeApplications([resource]);
+                }
+            },
+
+            _addCompanyHomeResourceToFolder: function(resource, folder) {
+                var dashboardFolderPage = this.$.appscoDashboardFolderPage;
+
+                if (dashboardFolderPage.$ && (folder.alias === dashboardFolderPage.getFolder().alias)) {
+                    dashboardFolderPage.addApplications([resource]);
+                }
+            },
+
+            _onResourceMovedToFolder: function(event) {
+                var resource = event.detail.resource,
+                    folder = event.detail.folder;
+
+                switch (this.page) {
+                    case 'home':
+                        this._reloadHomePageApplications();
+                        break;
+
+                    case 'company-home':
+                        this._removeCompanyHomeResource(resource);
+                        this._addCompanyHomeResourceToFolder(resource, folder);
+
+                        break;
+
+                    case 'contact-home':
+                        this._reloadContactHomePageApplications();
+                        break;
+                }
+
+                this._notify('Application icon ' + resource.title + ' has been moved to folder ' + folder.title + '.');
             },
             /**
              * Company Home page END

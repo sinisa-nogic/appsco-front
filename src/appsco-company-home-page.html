@@ -221,7 +221,8 @@
 
             <div content>
 
-                <div class="items-container folders-container">
+                <div class="items-container folders-container"
+                     hidden$="[[ _foldersEmpty ]]">
                     <h4 class="subtitle">Folders</h4>
                     <appsco-folders
                             id="appscoFolders"
@@ -230,11 +231,13 @@
                             load-more
                             authorization-token="[[ authorizationToken ]]"
                             list-api="[[ foldersApi ]]"
+                            on-list-loaded="_showFolders"
                             on-item="_onFolderAction"></appsco-folders>
                 </div>
 
                 <div class="items-container resources-container">
-                    <h4 class="subtitle">Resources</h4>
+                    <h4 class="subtitle"
+                        hidden$="[[ _foldersEmpty ]]">Resources</h4>
                     <appsco-applications
                             id="appscoApplications"
                             size="100"
@@ -442,6 +445,11 @@
                     value: function () {
                         return [];
                     }
+                },
+
+                _foldersEmpty: {
+                    type: Boolean,
+                    value: true
                 },
 
                 mobileScreen: {
@@ -662,6 +670,7 @@
             },
 
             addFolder: function(folder) {
+                this._showFolders();
                 this.$.appscoFolders.addItems([folder]);
             },
 
@@ -684,6 +693,11 @@
 
             _initializeResourcesDragBehavior: function() {
                 this.$.appscoApplications.initializeResourcesDragBehavior();
+            },
+
+            _showFolders: function() {
+                console.log('_foldersEmpty');
+                this._foldersEmpty = false;
             },
 
             _onFolderAction: function(event) {

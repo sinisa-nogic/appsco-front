@@ -1270,7 +1270,8 @@
                             netscaler-api="[[ _companyNetscalerFeatureApi ]]"
                             account="[[ account ]]"
                             on-loaded="_onLoadedPage"
-                            on-open-move-to-folder-dialog="_onOpenMoveToFolderDialog"></appsco-dashboard-folder-page>
+                            on-open-move-to-folder-dialog="_onOpenMoveToFolderDialog"
+                            on-show-page="_onShowPage"></appsco-dashboard-folder-page>
 
                     <appsco-saml-authn-request-invalid-page
                             id="appscoSamlAuthnRequestInvalidPage"
@@ -2442,7 +2443,8 @@
                 'add-item-to-group-event': '_onAddItemToGroupAction',
                 'customer-subscription-state-changed': '_onCustomerSubscriptionStateChanged',
                 'notifications-seen': '_onNotificationsSeen',
-                'resource-moved-to-folder': '_onResourceMovedToFolder'
+                'resource-moved-to-folder': '_onResourceMovedToFolder',
+                'resource-removed-from-folder': '_onResourceRemovedFromFolder'
             },
 
             attached: function() {
@@ -2661,6 +2663,10 @@
 
             _onMenuItemSelected: function(event) {
                 this._showPage(event.detail.item.name);
+            },
+
+            _onShowPage: function(event) {
+                this._showPage(event.detail.page);
             },
 
             _showPage: function(name) {
@@ -5524,18 +5530,33 @@
                 this.$.appscoFoldersApplicationAdd.toggle();
             },
 
-            _removeCompanyHomeResource: function(resource) {
+            _addResourceToCompanyHomePage: function(resource) {
+
+                if (this.$.appscoCompanyHomePage.$) {
+                    this.$.appscoCompanyHomePage.addApplications([resource]);
+                }
+            },
+
+            _removeResourceFromCompanyHomePage: function(resource) {
 
                 if (this.$.appscoCompanyHomePage.$) {
                     this.$.appscoCompanyHomePage.removeApplications([resource]);
                 }
             },
 
-            _addCompanyHomeResourceToFolder: function(resource, folder) {
+            _addResourceToDashboardFolderPage: function(resource, folder) {
                 var dashboardFolderPage = this.$.appscoDashboardFolderPage;
 
                 if (dashboardFolderPage.$ && (folder.alias === dashboardFolderPage.getFolder().alias)) {
                     dashboardFolderPage.addApplications([resource]);
+                }
+            },
+
+            _removeResourceFromDashboardFolderPage: function(resource, folder) {
+                var dashboardFolderPage = this.$.appscoDashboardFolderPage;
+
+                if (dashboardFolderPage.$ && (folder.alias === dashboardFolderPage.getFolder().alias)) {
+                    dashboardFolderPage.removeApplications([resource]);
                 }
             },
 
@@ -5549,23 +5570,29 @@
                         break;
 
                     case 'company-home':
-                        this._removeCompanyHomeResource(resource);
-                        this._addCompanyHomeResourceToFolder(resource, folder);
+                        this._removeResourceFromCompanyHomePage(resource);
+                        this._addResourceToDashboardFolderPage(resource, folder);
 
                         break;
-
-//                    case 'dashboard-folder':
-//                        this._removeCompanyHomeResource(resource);
-//                        this._addCompanyHomeResourceToFolder(resource, folder);
-//
-//                        break;
 
                     case 'contact-home':
                         this._reloadContactHomePageApplications();
                         break;
                 }
 
-                this._notify('Application icon ' + resource.title + ' has been moved to folder ' + folder.title + '.');
+                this._notify('Resource ' + resource.title + ' has been moved to folder ' + folder.title + '.');
+            },
+
+            _onResourceRemovedFromFolder: function(event) {
+                var resource = event.detail.resource,
+                    folder = event.detail.folder;
+
+                this._removeResourceFromDashboardFolderPage(resource, folder);
+                this._addResourceToCompanyHomePage(resource);
+                this._reloadHomePageApplications();
+                this._reloadContactHomePageApplications();
+
+                this._notify('Resource ' + resource.title + ' has been removed from folder ' + folder.title + '.');
             },
             /**
              * Company Home page END

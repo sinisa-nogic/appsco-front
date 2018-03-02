@@ -15,6 +15,7 @@
 <link rel="import" href="components/application/appsco-application-subscribers.html">
 <link rel="import" href="components/application/appsco-application-details.html">
 <link rel="import" href="components/application/appsco-application-log.html">
+<link rel="import" href="components/components/appsco-drop-html-element-behavior.html">
 
 <dom-module id="appsco-dashboard-folder-page">
     <template>
@@ -124,10 +125,29 @@
                 --appsco-application-icons-color: var(--primary-text-color);
             }
             :host .breadcrumbs {
-                margin-top: 0;
+                @apply(--layout-horizontal);
+                @apply(--layout-center);
                 margin-bottom: 10px;
-                font-weight: normal;
+            }
+            :host .breadcrumbs > * {
+                margin-top: 0;
+                margin-bottom: 0;
                 color: var(--primary-text-color);
+                font-weight: normal;
+            }
+            :host .breadcrumb {
+                padding-left: 10px;
+                padding-right: 10px;
+                border-radius: 3px;
+                transition: all 0.2s linear;
+            }
+            :host .breadcrumb[data-page]:hover {
+                color: var(--secondary-text-color);
+                cursor: pointer;
+            }
+            :host .breadcrumb.dropover {
+                background: var(--primary-text-color);
+                color: var(--secondary-text-color);
             }
             :host .flex-horizontal {
                 @apply(--layout-horizontal);
@@ -202,8 +222,13 @@
 
             <div content>
 
-                <div>
-                    <h3 class="breadcrumbs">Dashboard / [[ folder.title ]]</h3>
+                <div class="breadcrumbs">
+                    <h3 class="breadcrumb"
+                        on-tap="_onBreadcrumbAction"
+                        data-page="company-home"
+                        data-drop-to-zone>Dashboard</h3>
+                    <h3>/</h3>
+                    <h3 class="breadcrumb">[[ folder.title ]]</h3>
                 </div>
 
                 <div class="items-container resources-container">
@@ -490,12 +515,17 @@
 
             behaviors: [
                 Polymer.NeonAnimatableBehavior,
+                Polymer.AppscoDropHTMLElementBehavior,
                 Polymer.AppscoDropHTMLElementBehavior
             ],
 
             observers: [
                 '_updateScreen(mobileScreen, tabletScreen, tabletS1024Screen, tabletS1280Screen, laptopScreen)'
             ],
+
+            listeners: {
+                'item-dropped': '_onItemDropped'
+            },
 
             attached: function() {
 
@@ -532,6 +562,7 @@
                 this.pageLoaded = true;
                 this.fire('page-loaded');
                 this._initializeResourcesDragBehavior();
+                this.initializeDropBehavior();
             },
 
             _onFoldersApiChanged: function() {
@@ -658,6 +689,7 @@
             setApplication: function(application) {
                 this.application = application;
                 this.$.appscoApplications.modifyApplications([application]);
+                this._initializeResourcesDragBehavior();
             },
 
             reloadApplications: function() {
@@ -666,10 +698,12 @@
 
             addApplications: function(applications) {
                 this.$.appscoApplications.addApplications(applications);
+                this._initializeResourcesDragBehavior();
             },
 
             removeApplications: function(applications) {
                 this.$.appscoApplications.removeApplications(applications);
+                this._initializeResourcesDragBehavior();
             },
 
             _onApplicationRemoved: function() {
@@ -716,6 +750,55 @@
                 this.fire('folder-tapped', {
                     folder: event.detail.item
                 });
+            },
+
+            _onItemDropped: function(event) {
+                var item = event.detail.item;
+
+                this._removeResourceFromFolder(item);
+            },
+
+            _getRemoveResourceFromFolderApi: function(resource) {
+                return (this.folder.self && resource.alias) ? (this.folder.self + '/resource/' + resource.alias) : '';
+            },
+
+            _removeResourceFromFolder: function(item) {
+                var request = document.createElement('iron-request'),
+                    options = {
+                        url: this._getRemoveResourceFromFolderApi(item),
+                        method: 'DELETE',
+                        handleAs: 'json',
+                        headers: this._headers
+                    };
+
+                if (!options.url) {
+                    return false;
+                }
+
+                request.send(options).then(function() {
+
+                    if (200 === request.status) {
+
+                        this.fire('resource-removed-from-folder', {
+                            resource: request.response,
+                            folder: this.folder
+                        });
+                    }
+                }.bind(this), function() {
+                    this.fire('resource-remove-from-folder-failed', {
+                        resource: request.response,
+                        folder: this.folder
+                    });
+                }.bind(this));
+            },
+
+            _onBreadcrumbAction: function(event) {
+
+                if (event.target.getAttribute('data-page')) {
+                    this.fire('show-page', {
+                        page: event.target.getAttribute('data-page')
+                    });
+                }
             }
         });
     </script>

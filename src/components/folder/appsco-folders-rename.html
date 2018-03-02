@@ -1,0 +1,172 @@
+<link rel="import" href="../../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../../bower_components/iron-flex-layout/iron-flex-layout.html">
+<link rel="import" href="../../../bower_components/iron-ajax/iron-request.html">
+<link rel="import" href="../../../bower_components/iron-ajax/iron-ajax.html">
+<link rel="import" href="../../../bower_components/paper-button/paper-button.html">
+<link rel="import" href="../../../bower_components/paper-dialog/paper-dialog.html">
+<link rel="import" href="../../../bower_components/paper-dialog-scrollable/paper-dialog-scrollable.html">
+<link rel="import" href="../../../bower_components/iron-form/iron-form.html">
+
+<link rel="import" href="../components/appsco-form-error.html">
+<link rel="import" href="../components/appsco-search.html">
+<link rel="import" href="../components/appsco-loader.html">
+<link rel="import" href="appsco-folders-item.html">
+
+<dom-module id="appsco-folders-rename">
+    <template>
+        <style>
+            :host {
+                display: block;
+                position: relative;
+            }
+            :host paper-dialog {
+                width: 670px;
+                top: 10vh;
+                @apply(--appsco-paper-dialog);
+            }
+
+            :host .buttons paper-button {
+                @apply(--paper-dialog-button);
+            }
+            :host .buttons paper-button[dialog-dismiss] {
+                @apply(--paper-dialog-dismiss-button);
+            }
+        </style>
+
+        <paper-dialog id="dialog"
+                      with-backdrop
+                      entry-animation="scale-up-animation"
+                      exit-animation="fade-out-animation">
+
+            <h2>Rename dashboard folder </h2>
+
+            <div>
+                <appsco-form-error message="[[ _error ]]"></appsco-form-error>
+
+                <paper-input
+                            id="title"
+                            label="Enter dashboard folder name"
+                            value="[[ folderItem.title]]"
+                            name="title"
+                            required
+                            auto-validate
+                            error-message="Please enter folder title."
+                    ></paper-input>
+            </div>
+
+            <div class="buttons">
+                <paper-button on-click="_renameFolder">Save</paper-button>
+                <paper-button dialog-dismiss>Cancel</paper-button>
+            </div>
+        </paper-dialog>
+
+    </template>
+    <script>
+        Polymer({
+
+            is: 'appsco-folders-rename',
+
+            properties: {
+
+                /**
+                 * Authorization token.
+                 */
+                authorizationToken: {
+                    type: String
+                },
+
+                apiErrors: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    }
+                },
+
+                foldersApi: {
+                    type: String,
+                    value: ''
+                },
+
+                folderItem: {
+                    type: String,
+                    value: ''
+                },
+
+                _company: {
+                    type: String,
+                    value: ''
+                },
+
+                _error: {
+                    type: String
+                },
+
+                _loader: {
+                    type: Boolean,
+                    value: false
+                }
+            },
+
+            _renameFolder: function() {
+                var request = document.createElement('iron-request'),
+                        options = {
+                            url: this.folderItem.self,
+                            body: 'dashboardGroup[title]=' + this.$.title.value,
+                            method: 'PATCH',
+                            handleAs: 'json',
+                            headers: {
+                                'Authorization': 'token ' + this.authorizationToken,
+                                'Content-Type': 'application/x-www-form-urlencoded'
+                            }
+                        };
+
+                this._showLoader();
+                this._hideError();
+
+                request.send(options).then(function() {
+
+                    if (200 === request.status) {
+
+                        this.fire('folder-renamed', {
+                            folder: this.folderItem
+                        });
+
+                        this._hideLoader();
+                        this.$.dialog.close();
+                    }
+                }.bind(this), function() {
+                    this._showError(this.apiErrors.getError(request.response.code));
+                    this._hideLoader();
+                }.bind(this));
+            },
+
+            _showLoader: function() {
+                this._loader = true;
+            },
+
+            _hideLoader: function() {
+                this._loader = false;
+            },
+
+            _showError: function(message) {
+                this._error = message;
+            },
+
+            _hideError: function() {
+                this._error = '';
+            },
+
+            setCompany: function(company) {
+                this._company = company;
+            },
+
+            setFolderItem: function(folderItem) {
+                this.folderItem = folderItem;
+            },
+
+            toggle: function() {
+                this.$.dialog.toggle();
+            }
+        });
+    </script>
+</dom-module>

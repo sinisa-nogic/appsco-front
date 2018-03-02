@@ -8,6 +8,14 @@
 <link rel="import" href="../components/appsco-list-observer-behavior.html">
 <link rel="import" href="../components/appsco-list-styles.html">
 
+<link rel="import" href="../../../bower_components/paper-listbox/paper-listbox.html">
+<link rel="import" href="../../../bower_components/paper-item/paper-icon-item.html">
+<link rel="import" href="../../../bower_components/iron-icon/iron-icon.html">
+<link rel="import" href="../../../bower_components/iron-icons/iron-icons.html">
+
+<link rel="import" href="../vaadin-context-menu/vaadin-context-menu-override.html">
+
+
 <dom-module id="appsco-folders">
     <template>
         <style include="appsco-list-styles"></style>
@@ -25,6 +33,10 @@
                 --item-basic-info: {
                     padding: 0;
                     box-sizing: border-box;
+                };
+                --paper-item-focused: {
+                    background-color: white;
+                    font-weight: normal;
                 };
             }
             :host .list {
@@ -60,22 +72,39 @@
             </template>
 
             <template is="dom-if" if="[[ !_listEmpty ]]">
-                <div class="list">
-                    <template is="dom-repeat"
-                              items="[[ _listItems ]]"
-                              on-dom-change="_onItemsDomChange">
 
-                        <appsco-folders-item id="appscoListItem_[[ index ]]"
-                                             item="[[ item ]]"
-                                             type="[[ type ]]"
-                                             request-headers="[[ _headers ]]"
-                                             preview="[[ preview ]]"
-                                             selectable="[[ selectable ]]"
-                                             on-item="_onListItemAction"
-                                             on-select-item="_onSelectListItemAction"></appsco-folders-item>
+                <vaadin-context-menu-override selector="appsco-folders-item">
 
+                    <template>
+                        <paper-listbox>
+                            <paper-icon-item class="popup-menu-item" list-item="[[ target ]]" on-click="_openRenameDialog">
+                                <iron-icon icon="create" list-item="[[ target ]]" item-icon></iron-icon> Rename
+                            </paper-icon-item>
+
+                            <paper-icon-item list-item="[[ target ]]" on-click="_openRemoveDialog">
+                                <iron-icon icon="delete" list-item="[[ target ]]" item-icon></iron-icon> Remove
+                            </paper-icon-item>
+                        </paper-listbox>
                     </template>
-                </div>
+
+                    <div class="list">
+                        <template is="dom-repeat"
+                                  items="[[ _listItems ]]"
+                                  on-dom-change="_onItemsDomChange">
+
+                            <appsco-folders-item id="appscoListItem_[[ index ]]"
+                                                 item="[[ item ]]"
+                                                 type="[[ type ]]"
+                                                 request-headers="[[ _headers ]]"
+                                                 preview="[[ preview ]]"
+                                                 selectable="[[ selectable ]]"
+                                                 on-item="_onListItemAction"
+                                                 on-select-item="_onSelectListItemAction"></appsco-folders-item>
+
+                        </template>
+                    </div>
+
+                </vaadin-context-menu-override>
             </template>
         </div>
 
@@ -109,7 +138,29 @@
             behaviors: [
                 Polymer.AppscoListBehavior,
                 Polymer.AppscoListObserverBehavior
-            ]
+            ],
+
+            _openRenameDialog: function(event) {
+                var menuItem = event.target,
+                        folderItem = menuItem.listItem;
+
+                if (folderItem && folderItem.item) {
+                    this.fire('open-rename-folder-dialog', {
+                        folderItem: folderItem.item
+                    });
+                }
+            },
+
+            _openRemoveDialog: function(event) {
+                var menuItem = event.target,
+                        folderItem = menuItem.listItem;
+
+                if (folderItem && folderItem.item) {
+                    this.fire('open-remove-folder-dialog', {
+                        folderItem: folderItem.item
+                    });
+                }
+            }
         });
     </script>
 </dom-module>

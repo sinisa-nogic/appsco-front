@@ -1,0 +1,153 @@
+<link rel="import" href="../../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../../bower_components/paper-button/paper-button.html">
+<link rel="import" href="../../../bower_components/iron-ajax/iron-request.html">
+<link rel="import" href="../../../bower_components/paper-dialog/paper-dialog.html">
+<link rel="import" href="../../../bower_components/paper-dialog-scrollable/paper-dialog-scrollable.html">
+<link rel="import" href="../../../bower_components/neon-animation/animations/fade-out-animation.html">
+<link rel="import" href="../../../bower_components/neon-animation/animations/scale-up-animation.html">
+
+<link rel="import" href="../../components/components/appsco-form-error.html">
+<link rel="import" href="../components/appsco-loader.html">
+
+<dom-module id="appsco-folders-remove">
+    <template>
+        <style>
+            :host {
+                display: block;
+                position: relative;
+            }
+            :host paper-dialog {
+                width: 670px;
+                top: 20vh;
+                @apply(--appsco-paper-dialog);
+            }
+            :host paper-dialog-scrollable > * {
+                @apply(--paper-dialog-scrollable-child);
+            }
+            :host .buttons paper-button {
+                @apply(--paper-dialog-button);
+            }
+            :host .buttons paper-button[dialog-confirm] {
+                @apply(--paper-dialog-confirm-button);
+            }
+            :host .buttons paper-button[dialog-dismiss] {
+                @apply(--paper-dialog-dismiss-button);
+            }
+        </style>
+        <paper-dialog
+                with-backdrop
+                id="dialog"
+                entry-animation="scale-up-animation"
+                exit-animation="fade-out-animation">
+
+            <div class="header">
+                <h2>Remove dashboard folder</h2>
+            </div>
+
+            <paper-dialog-scrollable>
+                <appsco-form-error message="[[ _error ]]"></appsco-form-error>
+                <div class="remove-container">
+                    <p>Confirm removing [[ folder.name ]] from dashboard?</p>
+                </div>
+            </paper-dialog-scrollable>
+
+            <div class="buttons">
+                <paper-button dialog-dismiss>Cancel</paper-button>
+                <paper-button autofocus on-tap="_onDeleteAction">Confirm</paper-button>
+            </div>
+        </paper-dialog>
+
+    </template>
+    <script>
+        Polymer({
+
+            is: 'appsco-folders-remove',
+
+            properties: {
+
+                /**
+                 * Authorization token.
+                 */
+                authorizationToken: {
+                    type: String
+                },
+
+                folder: {
+                    type: Object,
+                    value: function () { return {}; }
+                },
+
+                _loader: {
+                    type: Boolean,
+                    value: false
+                },
+
+                _company: {
+                    type: String,
+                    value: ''
+                },
+
+                _error: {
+                    type: String
+                }
+            },
+
+            toggle: function () {
+                this._hideError();
+                this.$.dialog.toggle();
+            },
+
+            setCompany: function(company) {
+                this._company = company;
+            },
+
+            setFolderItem: function(folderItem) {
+                this._hideError();
+                this.folderItem = folderItem;
+            },
+
+            _showError: function(message) {
+                this._error = message;
+            },
+
+            _hideError: function() {
+                this._error = '';
+            },
+
+            _onDeleteAction: function() {
+                var request = document.createElement('iron-request'),
+                    options = {
+                        url: this.folderItem.self,
+                        method: 'DELETE',
+                        handleAs: 'json',
+                        headers: {
+                            'Authorization': 'token ' + this.authorizationToken,
+                            'Content-Type': 'application/x-www-form-urlencoded'
+                        }
+                    };
+
+                this._loader = true;
+
+                request.send(options).then(function() {
+                    if (200 == request.status) {
+                        this.$.dialog.close();
+                        this.set('folder', {});
+                        /**
+                         * Fired when groups are removed.
+                         *
+                         * @event groups-removed
+                         */
+                        this.fire('folder-removed', {
+                            folder: this.folder
+                        });
+                    }
+                    this._loader = false;
+
+                }.bind(this), function() {
+                    this._showError(this.apiErrors.getError(request.response.code));
+                    this._loader = false;
+                }.bind(this));
+            }
+        });
+    </script>
+</dom-module>

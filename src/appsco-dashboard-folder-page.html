@@ -123,11 +123,11 @@
             appsco-application-details {
                 --appsco-application-icons-color: var(--primary-text-color);
             }
-            :host .subtitle {
+            :host .breadcrumbs {
                 margin-top: 0;
                 margin-bottom: 10px;
                 font-weight: normal;
-                color: var(--secondary-text-color);
+                color: var(--primary-text-color);
             }
             :host .flex-horizontal {
                 @apply(--layout-horizontal);
@@ -203,7 +203,7 @@
             <div content>
 
                 <div>
-                    <h3 class="subtitle">Dashboard / [[ folder.name ]]</h3>
+                    <h3 class="breadcrumbs">Dashboard / [[ folder.title ]]</h3>
                 </div>
 
                 <div class="items-container resources-container">
@@ -548,7 +548,6 @@
                         getFolderRequest.lastRequest.abort();
                     }
 
-                    // Missing from API: get folder API
                     getFolderRequest.url = folderApi;
                     getFolderRequest.generateRequest();
                 }
@@ -557,10 +556,8 @@
             _onGetFolderResponse: function(event) {
 
                 if (200 === event.detail.status && event.detail.response) {
-                    this.setFolder(event.detail.response);
+                    this.setFolder(event.detail.response.dashboardGroup);
                 }
-
-                this._pageLoaded();
             },
 
             _onGetFolderError: function(event) {
@@ -571,6 +568,7 @@
             },
 
             setFolder: function(folder) {
+                this.pageLoaded = false;
                 this.set('folder', folder);
             },
 
@@ -584,7 +582,6 @@
 
             resetPage: function() {
                 this.$.appscoApplications.reset();
-                this.$.appscoApplications.reloadApplications();
                 this._hideInfo();
             },
 

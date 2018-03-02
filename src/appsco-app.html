@@ -885,7 +885,7 @@
                             id="appscoCompanyHomePage"
                             name="company-home"
                             authorization-token="[[ authorizationToken ]]"
-                            applications-api="[[ _companyIconsApi ]]"
+                            applications-api="[[ _companyIconsWithoutFolderApi ]]"
                             folders-api="[[ _companyFoldersApi ]]"
                             netscaler-api="[[ _companyNetscalerFeatureApi ]]"
                             account="[[ account ]]"
@@ -1266,10 +1266,11 @@
                             name="dashboard-folder"
                             route="[[ subroute ]]"
                             authorization-token="[[ authorizationToken ]]"
-                            folders-api="[[ _companyFoldersApi ]]"
+                            folders-api="[[ api.foldersApi ]]"
                             netscaler-api="[[ _companyNetscalerFeatureApi ]]"
                             account="[[ account ]]"
-                            on-loaded="_onLoadedPage"></appsco-dashboard-folder-page>
+                            on-loaded="_onLoadedPage"
+                            on-open-move-to-folder-dialog="_onOpenMoveToFolderDialog"></appsco-dashboard-folder-page>
 
                     <appsco-saml-authn-request-invalid-page
                             id="appscoSamlAuthnRequestInvalidPage"
@@ -2323,6 +2324,11 @@
                     value: ''
                 },
 
+                _companyIconsWithoutFolderApi: {
+                    type: String,
+                    computed: '_computeCompanyIconsWithoutFolderApi(_companyFoldersApi)'
+                },
+
                 _subscription: {
                     type: Object,
                     value: function() {
@@ -2832,6 +2838,10 @@
 
             _computeExportAccessReportApi: function(getAccessReportApi) {
                 return getAccessReportApi ? (getAccessReportApi + '/export') : '';
+            },
+
+            _computeCompanyIconsWithoutFolderApi: function(companyFoldersApi) {
+                return companyFoldersApi ? (companyFoldersApi + '/icons') : '';
             },
 
             _getLoggedAccount: function() {
@@ -5544,6 +5554,12 @@
 
                         break;
 
+//                    case 'dashboard-folder':
+//                        this._removeCompanyHomeResource(resource);
+//                        this._addCompanyHomeResourceToFolder(resource, folder);
+//
+//                        break;
+
                     case 'contact-home':
                         this._reloadContactHomePageApplications();
                         break;
@@ -6643,6 +6659,7 @@
                     case 'contacts':
                     case 'customers':
                     case 'account':
+                    case 'dashboard-folder':
 
                         if (fromPage.$) {
                             fromPage.resetPage();

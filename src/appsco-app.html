@@ -47,6 +47,8 @@
 <link rel="import" href="components/application/company/appsco-company-application-add.html">
 <link rel="import" href="components/application/company/appsco-company-sso-application-add.html">
 <link rel="import" href="components/folder/appsco-folders-application-add.html">
+<link rel="import" href="components/folder/appsco-folders-rename.html">
+<link rel="import" href="components/folder/appsco-folders-remove.html">
 <link rel="import" href="components/resource/appsco-share-resource.html">
 <link rel="import" href="components/application/company/appsco-company-application-remove.html">
 <link rel="import" href="components/application/company/appsco-application-assignee-claims.html">
@@ -798,6 +800,8 @@
                             on-share-application="_onShareApplication"
                             on-revoke-application="_onRevokeApplication"
                             on-open-move-to-folder-dialog="_onOpenMoveToFolderDialog"
+                            on-open-rename-folder-dialog="_onOpenRenameFolderDialog"
+                            on-open-remove-folder-dialog="_onOpenRemoveFolderDialog"
                             on-applications-removed="_onApplicationsRemovedFromHomePage"></appsco-home-page>
 
                     <appsco-resource-page
@@ -891,6 +895,8 @@
                             account="[[ account ]]"
                             on-loaded="_onLoadedPage"
                             on-open-move-to-folder-dialog="_onOpenMoveToFolderDialog"
+                            on-open-rename-folder-dialog="_onOpenRenameFolderDialog"
+                            on-open-remove-folder-dialog="_onOpenRemoveFolderDialog"
                             on-folder-tapped="_onFolderTapped"
                     ></appsco-company-home-page>
 
@@ -901,6 +907,8 @@
                             applications-api="[[ _contactIconsApi ]]"
                             on-loaded="_onLoadedPage"
                             on-open-move-to-folder-dialog="_onOpenMoveToFolderDialog"
+                            on-open-rename-folder-dialog="_onOpenRenameFolderDialog"
+                            on-open-remove-folder-dialog="_onOpenRemoveFolderDialog"
                     ></appsco-contact-home-page>
 
                     <appsco-resources-page
@@ -1351,6 +1359,22 @@
                 folders-api="[[ api.foldersApi ]]"
                 api-errors="[[ _apiErrors ]]">
         </appsco-folders-application-add>
+
+        <appsco-folders-rename
+                id="appscoFoldersRename"
+                authorization-token="[[ authorizationToken ]]"
+                folders-api="[[ api.foldersApi ]]"
+                api-errors="[[ _apiErrors ]]"
+                on-folder-renamed="_onFolderRenamed">
+        </appsco-folders-rename>
+
+        <appsco-folders-remove
+                id="appscoFoldersRemove"
+                authorization-token="[[ authorizationToken ]]"
+                folders-api="[[ api.foldersApi ]]"
+                api-errors="[[ _apiErrors ]]"
+                on-folder-removed="_onFolderRemoved">
+        </appsco-folders-remove>
 
         <appsco-vault-remove
                 id="appscoVaultItemRemove"
@@ -4364,6 +4388,39 @@
                 this._notify('Upload failed: ' + event.detail);
             },
 
+            _onOpenMoveToFolderDialog: function(event) {
+                var company = null;
+                if (this.page != 'home') {
+                    company = this.currentCompany;
+                }
+                var applicationIcon = event.detail.applicationIcon;
+                this.$.appscoFoldersApplicationAdd.setApplicationIcon(applicationIcon);
+                this.$.appscoFoldersApplicationAdd.setCompany(company);
+                this.$.appscoFoldersApplicationAdd.toggle();
+            },
+
+            _onOpenRenameFolderDialog: function(event) {
+                var company = null;
+                if (this.page != 'home') {
+                    company = this.currentCompany;
+                }
+                var folderItem = event.detail.folderItem;
+                this.$.appscoFoldersRename.setFolderItem(folderItem);
+                this.$.appscoFoldersRename.setCompany(company);
+                this.$.appscoFoldersRename.toggle();
+            },
+
+            _onOpenRemoveFolderDialog: function(event) {
+                var company = null;
+                if (this.page != 'home') {
+                    company = this.currentCompany;
+                }
+                var folderItem = event.detail.folderItem;
+                this.$.appscoFoldersRemove.setFolderItem(folderItem);
+                this.$.appscoFoldersRemove.setCompany(company);
+                this.$.appscoFoldersRemove.toggle();
+            },
+
             /**
              * Resources page END
              */
@@ -5499,11 +5556,41 @@
                 }
             },
 
+            _renameFolder: function(folder) {
+                var companyHomePage = this.$.appscoCompanyHomePage;
+
+                if (companyHomePage.$) {
+                    companyHomePage.renameFolder(folder);
+                }
+            },
+
+            _removeFolder: function(folder) {
+                var companyHomePage = this.$.appscoCompanyHomePage;
+
+                if (companyHomePage.$) {
+                    companyHomePage.removeFolder(folder);
+                }
+            },
+
             _onFolderAdded: function(event) {
                 var folder = event.detail.folder;
 
                 this._addFolder(folder);
                 this._notify('Dashboard folder ' + folder.title + ' has been successfully created.');
+            },
+
+            _onFolderRenamed: function(event) {
+                var folder = event.detail.folder;
+
+                this._renameFolder(folder);
+                this._notify('Dashboard folder ' + folder.title + ' has been renamed.');
+            },
+
+            _onFolderRemoved: function(event) {
+                var folder = event.detail.folder;
+
+                this._removeFolder(folder);
+                this._notify('Dashboard folder ' + folder.title + ' has been removed.');
             },
 
             _openFolder: function(folder) {
@@ -5517,17 +5604,6 @@
 
             _onFolderTapped: function(event) {
                 this._openFolder(event.detail.folder);
-            },
-
-            _onOpenMoveToFolderDialog: function(event) {
-                var company = null;
-                if (this.page != 'home') {
-                    company = this.currentCompany;
-                }
-                var applicationIcon = event.detail.applicationIcon;
-                this.$.appscoFoldersApplicationAdd.setApplicationIcon(applicationIcon);
-                this.$.appscoFoldersApplicationAdd.setCompany(company);
-                this.$.appscoFoldersApplicationAdd.toggle();
             },
 
             _addResourceToCompanyHomePage: function(resource) {

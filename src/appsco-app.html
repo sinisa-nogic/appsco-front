@@ -4393,8 +4393,10 @@
                 if (this.page != 'home') {
                     company = this.currentCompany;
                 }
-                var applicationIcon = event.detail.applicationIcon;
+                var applicationIcon = event.detail.applicationIcon,
+                    currentFolder = event.detail.currentFolder;
                 this.$.appscoFoldersApplicationAdd.setApplicationIcon(applicationIcon);
+                this.$.appscoFoldersApplicationAdd.setCurrentFolder(currentFolder);
                 this.$.appscoFoldersApplicationAdd.setCompany(company);
                 this.$.appscoFoldersApplicationAdd.toggle();
             },
@@ -5638,7 +5640,12 @@
 
             _onResourceMovedToFolder: function(event) {
                 var resource = event.detail.resource,
-                    folder = event.detail.folder;
+                    folder = event.detail.folder,
+                    sourceFolder = event.detail.sourceFolder;
+
+                if (sourceFolder && folder.alias !== sourceFolder.alias) {
+                    this._removeResourceFromDashboardFolderPage(resource, sourceFolder);
+                }
 
                 switch (this.page) {
                     case 'home':

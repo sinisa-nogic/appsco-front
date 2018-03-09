@@ -970,6 +970,7 @@
                             company-invitations-api="[[ _companyInvitationsApi ]]"
                             company-directory-roles-api="[[ _companyRolesApi ]]"
                             company-orgunits-api="[[ _companyOrgunitsApi ]]"
+                            company-subscription-api="[[ _companySubscriptionApi ]]"
                             domains-api="[[ _companyDomainsApi ]]"
                             groups-api="[[ _companyGroupsApi ]]"
                             on-invitation-resent="_onInvitationResent"
@@ -985,7 +986,8 @@
                             on-remove-orgunit="_onRemoveOrgunit"
                             on-reset-type-filter="_onResetDirectoryTypeFilter"
                             on-observable-list-empty="_onObservableListEmpty"
-                            on-observable-list-filled="_onObservableListFilled"></appsco-directory-page>
+                            on-observable-list-filled="_onObservableListFilled"
+                            on-company-subscription-loaded="_onSubscriptionLoaded"></appsco-directory-page>
 
                     <appsco-contacts-page
                             id="appscoContactsPage"
@@ -1910,12 +1912,7 @@
                        headers="[[ _computedHeaders ]]"></iron-ajax>
         </template>
 
-        <iron-ajax
-                   id="companySubscriptionInfo"
-                   url="[[ _companySubscriptionApi ]]"
-                   headers="[[ _computedHeaders ]]"
-                   handle-as="json"
-                   on-response="_onSubscriptionResponse"></iron-ajax>
+
     </template>
 
     <script>
@@ -2235,8 +2232,7 @@
 
                 _companySubscriptionApi: {
                     type: String,
-                    value: '',
-                    observer: '_onCompanySubscriptionApiChanged'
+                    value: ''
                 },
 
                 _companyDomainsApi: {
@@ -2528,12 +2524,6 @@
                 }
                 else {
                     this._setProduct(false);
-                }
-            },
-
-            _onCompanySubscriptionApiChanged: function(newValue, oldValue) {
-                if (this._accessBilling) {
-                    this.$.companySubscriptionInfo.generateRequest();
                 }
             },
 
@@ -3100,19 +3090,11 @@
                 }
             },
 
-            _onSubscriptionResponse: function(event) {
-                var status = event.detail.status,
-                    subscriptions = event.detail.response;
-
-                if (200 === status && subscriptions) {
-                    subscriptions.forEach(function(element) {
-                        if (element.type === 'company' && element.status === 'active') {
-                            this._subscription = element;
-                            this._setSubscription(element);
-                            this._evaluateSubscriptionLicences();
-                        }
-                    }.bind(this));
-                }
+            _onSubscriptionLoaded: function(event) {
+                var subscription = event.detail.subscription;
+                this._subscription = subscription;
+                this._setSubscription(subscription);
+                this._evaluateSubscriptionLicences();
             },
 
             _computeAccountManagedState: function(account) {

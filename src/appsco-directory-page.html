@@ -187,6 +187,13 @@
                    headers="[[ computedHeaders ]]"
                    on-response="_onDomainResponse"></iron-ajax>
 
+        <iron-ajax
+                id="companySubscriptionInfo"
+                url="[[ companySubscriptionApi ]]"
+                headers="[[ computedHeaders ]]"
+                handle-as="json"
+                auto
+                on-response="_onSubscriptionResponse"></iron-ajax>
 
         <appsco-content id="appscoContent" resource-active>
 
@@ -357,6 +364,11 @@
                 },
 
                 authorizationToken: {
+                    type: String,
+                    value: ''
+                },
+
+                companySubscriptionApi: {
                     type: String,
                     value: ''
                 },
@@ -1017,6 +1029,21 @@
             _onGroupSelected: function(event) {
                 this._loadCompanyRolesForGroup(event.detail.item);
                 this._resetTypeFilter();
+            },
+
+            _onSubscriptionResponse: function(event) {
+                var status = event.detail.status,
+                        subscriptions = event.detail.response;
+
+                if (200 === status && subscriptions) {
+                    subscriptions.forEach(function(element) {
+                        if (element.type === 'company' && element.status === 'active') {
+                            this.fire('company-subscription-loaded', {
+                                subscription: element
+                            });
+                        }
+                    }.bind(this));
+                }
             }
         });
     </script>

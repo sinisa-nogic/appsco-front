@@ -227,29 +227,31 @@ Custom property | Description | Default
             </div>
         </template>
 
-        <div class="action flex-none">
-            <paper-button id="addItemAction"
-                          class="add-item-action"
-                          on-tap="_onAddItemAction">Add</paper-button>
-            <paper-icon-button id="addItemActionIconButton"
-                               icon="icons:add-circle"
-                               class="add-item-icon-button"
-                               alt="Add item"
-                               on-tap="_onAddItemAction"></paper-icon-button>
-            <paper-tooltip for="addItemActionIconButton"
-                           position="bottom">Add resource</paper-tooltip>
+        <template is="dom-if" if="[[ addingResourceAllowed ]]">
+            <div class="action flex-none">
+                <paper-button id="addItemAction"
+                              class="add-item-action"
+                              on-tap="_onAddItemAction">Add</paper-button>
+                <paper-icon-button id="addItemActionIconButton"
+                                   icon="icons:add-circle"
+                                   class="add-item-icon-button"
+                                   alt="Add item"
+                                   on-tap="_onAddItemAction"></paper-icon-button>
+                <paper-tooltip for="addItemActionIconButton"
+                               position="bottom">Add resource</paper-tooltip>
 
-            <paper-listbox id="actionList"
-                           class="item-action-list"
-                           on-iron-select="_onAddItemActionSelect">
+                <paper-listbox id="actionList"
+                               class="item-action-list"
+                               on-iron-select="_onAddItemActionSelect">
 
-                <template is="dom-repeat" items="[[ _actionList ]]">
-                    <paper-item value="[[ item.value ]]" tpl="[[ item.tpl ]]">
-                        <iron-icon icon="[[ item.icon ]]" class="item-icon"></iron-icon>
-                        [[ item.name ]]</paper-item>
-                </template>
-            </paper-listbox>
-        </div>
+                    <template is="dom-repeat" items="[[ _actionList ]]">
+                        <paper-item value="[[ item.value ]]" tpl="[[ item.tpl ]]">
+                            <iron-icon icon="[[ item.icon ]]" class="item-icon"></iron-icon>
+                            [[ item.name ]]</paper-item>
+                    </template>
+                </paper-listbox>
+            </div>
+        </template>
 
         <template is="dom-if" if="[[ company ]]">
             <div class="action flex-none">
@@ -301,6 +303,11 @@ Custom property | Description | Default
                 company: {
                     type: Boolean,
                     value: false
+                },
+
+                addingResourceAllowed: {
+                    type: Boolean,
+                    value: true
                 },
 
                 /**
@@ -463,8 +470,8 @@ Custom property | Description | Default
             _handleDocumentClick: function(event) {
                 var path = Polymer.dom(event).path;
 
-                if (!this._isInPath(path, this.$.addItemAction) && !this._isInPath(path, this.$.addItemActionIconButton)
-                        && !this._isInPath(path, this.$.importItemActionIconButton))
+                if (!this._isInPath(path, this.$$('#addItemAction')) && !this._isInPath(path, this.$$('#addItemActionIconButton'))
+                        && !this._isInPath(path, this.$$('#addItemActionIconButton')))
                 {
                     this._addItemActionsVisible = false;
                 }

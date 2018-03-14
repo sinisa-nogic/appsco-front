@@ -112,6 +112,7 @@
         <iron-media-query query="(max-width: 600px)" query-matches="{{ mobileScreen }}"></iron-media-query>
 
         <appsco-application-actions id="appscoApplicationActions"
+                                    adding-resource-allowed="[[ _isAddingResourceAllowed ]]"
                                     on-search-icon="_onSearchIcon"
                                     on-close-search="_closeSearch"></appsco-application-actions>
 
@@ -126,6 +127,13 @@
             is: 'appsco-home-page-actions',
 
             properties: {
+
+                account: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    }
+                },
 
                 mobileScreen: {
                     type: Boolean,
@@ -142,6 +150,11 @@
                 _searchActive: {
                     type: Boolean,
                     value: false
+                },
+
+                _isAddingResourceAllowed: {
+                    type: Boolean,
+                    computed: '_computeIsAddingResourceAllowed(account)'
                 },
 
                 /**
@@ -215,6 +228,10 @@
             _onSearchIcon: function() {
                 this._searchActive = !this._searchActive;
                 this._searchActive ? this._showSearch() : this._closeSearch();
+            },
+
+            _computeIsAddingResourceAllowed: function(account) {
+                return account && account.native_company && account.native_company.adding_resource_on_personal_allowed;
             },
 
             resetPage: function() {

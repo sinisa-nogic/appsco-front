@@ -86,7 +86,7 @@ Custom property | Description | Default
              };
             }
             .input-container-profile-public {
-                margin-top: 10px;
+                margin-top: 30px;
                 margin-bottom: 10px;
             }
 
@@ -205,6 +205,25 @@ Custom property | Description | Default
                 </paper-dropdown-menu>
             </div>
 
+            <div class="input-container">
+                <paper-dropdown-menu id="dropdownCompanies"
+                                     name="profile[default_company]"
+                                     label="Default company dashboard"
+                                     horizontal-align="left">
+                    <paper-listbox id="paperListboxCompanies"
+                                   class="dropdown-content filter"
+                                   attr-for-selected="value">
+                        <template is="dom-repeat" items="[[ _companiesList ]]">
+                            <paper-item value="[[ item.company.alias ]]">[[ item.company.name ]]</paper-item>
+                        </template>
+                    </paper-listbox>
+                </paper-dropdown-menu>
+                <p class="info">
+                    The dashboard you choose will be set as your default dashboard upon login.
+                </p>
+            </div>
+
+
             <div class="input-container input-container-profile-public">
                 <paper-toggle-button id="publicAccountSwitch"
                                      name="profile[public]"
@@ -273,6 +292,11 @@ Custom property | Description | Default
                     },
                     notify: true,
                     observer: '_onAccountChange'
+                },
+
+                _companiesList: {
+                    type: Array,
+                    computed: '_computeCompaniesList(account)'
                 },
 
                 /**
@@ -404,6 +428,7 @@ Custom property | Description | Default
                     this.$.paperListboxTimezone.select(account.timezone);
                     this.$.paperListboxCountry.select(account.country);
                     this.$.paperListboxGender.select(account.gender);
+                    this.$.paperListboxCompanies.select(account.default_company ? account.default_company.alias : '');
                 }
             },
 
@@ -496,6 +521,7 @@ Custom property | Description | Default
                 this.$.accountSettingsForm.request.body['profile[timezone]'] = this.$.dropdownTimezone.selectedItem ? this.$.dropdownTimezone.selectedItem.value : '';
                 this.$.accountSettingsForm.request.body['profile[country]'] = this.$.dropdownCountry.selectedItem ? this.$.dropdownCountry.selectedItem.value : '';
                 this.$.accountSettingsForm.request.body['profile[gender]'] = this.$.dropdownGender.selectedItem ? this.$.dropdownGender.selectedItem.value : '';
+                this.$.accountSettingsForm.request.body['profile[default_company]'] = this.$.dropdownCompanies.selectedItem ? this.$.dropdownCompanies.selectedItem.value : '';
 
                 if (this.$.publicAccountSwitch.checked) {
                     this.$.accountSettingsForm.request.body['profile[public]'] = true;
@@ -554,7 +580,21 @@ Custom property | Description | Default
 
                 this._error = '';
 
+            },
+
+            _computeCompaniesList: function(changedAccount) {
+                var account = JSON.parse(JSON.stringify(changedAccount));
+                var personal = {
+                    company : {
+                        alias : '',
+                        name : 'Default'
+                    }
+                };
+                var companies =  account && account.companies && account.companies.length > 0 ? account.companies : [];
+                companies.unshift(personal);
+                return companies;
             }
+
         });
     </script>
 </dom-module>

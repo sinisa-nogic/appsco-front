@@ -2035,6 +2035,11 @@
                     observer: '_onCurrentCompanyChanged'
                 },
 
+                _defaultCompany: {
+                    type: String,
+                    computed: '_computeDefaultCompany(account)'
+                },
+
                 _companiesAccountIsContactIn: {
                     type: Array,
                     value: function() {
@@ -2518,7 +2523,6 @@
                             && company.company.personal_dashboards_allowed !== oldCompany.company.personal_dashboards_allowed) {
                             this._getLoggedAccount();
                         }
-
                         return false;
                     }
                 }
@@ -2527,9 +2531,47 @@
                 }
             },
 
+            _computeDefaultCompany: function(account) {
+                var defaultCompany = '';
+
+                if (account.default_company) {
+                    var defaultCompanyRedirect = {};
+                    try {
+                        defaultCompanyRedirect = JSON.parse(this._getStoredValue('default_company_redirected'));
+                    } catch (Error) {}
+                    if (!defaultCompanyRedirect
+                            || !defaultCompanyRedirect.accountId
+                            || !defaultCompanyRedirect.login_date
+                            || defaultCompanyRedirect.login_date != this.account.last_login.date
+                            || defaultCompanyRedirect.accountId != this.account.id
+                    ) {
+                        this._storeValue('default_company_redirected', JSON.stringify({
+                            accountId: account.id,
+                            login_date: account.last_login.date
+                        }));
+                        defaultCompany = account.default_company.alias;
+                    }
+                }
+
+                return defaultCompany;
+            },
+
             _redirectToCompany: function(page, currentCompany, account) {
                 if (account.self && currentCompany.company && page) {
                     this._checkPersonalDashboardPermission(page, account);
+                    this._redirectToDefaultCompany(page);
+                }
+            },
+
+            _redirectToDefaultCompany: function(page) {
+                if (this._defaultCompany != '') {
+                    this._setProduct(true);
+
+                    if (this._isPersonalPage(page)) {
+                        this._showCompanyHomePage();
+                    }
+
+                    this.set('account', JSON.parse(JSON.stringify(this.account)));
                 }
             },
 
@@ -2906,6 +2948,10 @@
                             }));
                             companyAlias = this.account.native_company.alias;
                         }
+                    }
+
+                    if (this.account.default_company && this._defaultCompany) {
+                        companyAlias = this._defaultCompany;
                     }
 
                     if (companyAlias && companyAlias.toString().length > 0) {

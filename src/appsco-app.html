@@ -571,7 +571,8 @@
                                     account="[[ account ]]"
                                     on-add-item-action="_onAddItemAction"
                                     on-search="_onSearchApplications"
-                                    on-search-clear="_onSearchApplicationsClear"></appsco-home-page-actions>
+                                    on-search-clear="_onSearchApplicationsClear"
+                                    on-add-new-folder="_onAddNewFolderAction"></appsco-home-page-actions>
 
                             <appsco-resource-page-actions
                                     id="appscoApplicationPageActions"
@@ -770,7 +771,7 @@
                                                                   name="dashboard-folder"
                                                                   on-search="_onSearchApplications"
                                                                   on-search-clear="_onSearchApplicationsClear"
-                                                                  on-back="_showCompanyHomePage"></appsco-dashboard-folder-page-actions>
+                                                                  on-back="_backFromFolderPage"></appsco-dashboard-folder-page-actions>
                         </neon-animated-pages>
 
                     </app-toolbar>
@@ -794,6 +795,7 @@
                             application-log="[[ application.meta.log ]]"
                             authorization-token="[[ authorizationToken ]]"
                             applications-api="[[ _applicationsApi ]]"
+                            folders-api="[[ api.foldersApi ]]"
                             on-loaded="_onLoadedPage"
                             on-edit-application="_onEditApplication"
                             on-info-edit-application="_onInfoEditApplication"
@@ -802,6 +804,7 @@
                             on-open-move-to-folder-dialog="_onOpenMoveToFolderDialog"
                             on-open-rename-folder-dialog="_onOpenRenameFolderDialog"
                             on-open-remove-folder-dialog="_onOpenRemoveFolderDialog"
+                            on-folder-tapped="_onFolderTapped"
                             on-applications-removed="_onApplicationsRemovedFromHomePage"></appsco-home-page>
 
                     <appsco-resource-page
@@ -1287,6 +1290,7 @@
                             id="appscoDashboardFolderPage"
                             name="dashboard-folder"
                             route="[[ subroute ]]"
+                            is-on-personal="[[ _personalFolderPage ]]"
                             authorization-token="[[ authorizationToken ]]"
                             folders-api="[[ api.foldersApi ]]"
                             netscaler-api="[[ _companyNetscalerFeatureApi ]]"
@@ -2434,6 +2438,11 @@
                 _notificationsHash: {
                     type: String,
                     value: ''
+                },
+
+                _personalFolderPage: {
+                    type: Boolean,
+                    value: false
                 }
             },
 
@@ -2525,6 +2534,7 @@
 
             _onCurrentCompanyChanged: function(company, oldCompany) {
                 if (company && company.company) {
+                    this._personalFolderPage = false;
                     for (key in company.company) {
                         this._storeValue('company', company.company.alias);
 
@@ -2569,7 +2579,7 @@
             },
 
             _redirectToCompany: function(page, currentCompany, account) {
-                if (account.self && currentCompany.company && page) {
+                if (account.self && currentCompany.company && page && !this._personalFolderPage) {
                     this._checkPersonalDashboardPermission(page, account);
                     this._redirectToDefaultCompany(page);
                 }
@@ -2770,6 +2780,14 @@
 
             _showCompanyHomePage: function() {
                 this._showPage('company-home');
+            },
+
+            _backFromFolderPage: function() {
+                if (this._personalFolderPage) {
+                    this._showHomePage();
+                } else {
+                    this._showCompanyHomePage();
+                }
             },
 
             _showCompanyPage: function() {
@@ -3098,7 +3116,7 @@
             },
 
             _setGetApplicationsApi: function() {
-                this._applicationsApi = this.api.icons;
+                this._applicationsApi = this.api.foldersApi + '/icons';
             },
 
             _createDefaultDashboard: function() {
@@ -3541,6 +3559,10 @@
 
                         if (this.$.appscoHomePage.$) {
                             this.$.appscoHomePage.setApplication(application);
+                        }
+
+                        if (this.$.appscoDashboardFolderPage.$) {
+                            this.$.appscoDashboardFolderPage.setApplication(application);
                         }
 
                         break;
@@ -4428,7 +4450,7 @@
 
             _onOpenMoveToFolderDialog: function(event) {
                 var company = null;
-                if (this.page != 'home') {
+                if (this.page != 'home' && !this._personalFolderPage) {
                     company = this.currentCompany;
                 }
                 var applicationIcon = event.detail.applicationIcon,
@@ -4441,7 +4463,7 @@
 
             _onOpenRenameFolderDialog: function(event) {
                 var company = null;
-                if (this.page != 'home') {
+                if (this.page != 'home' && !this._personalFolderPage) {
                     company = this.currentCompany;
                 }
                 var folderItem = event.detail.folderItem;
@@ -4452,7 +4474,7 @@
 
             _onOpenRemoveFolderDialog: function(event) {
                 var company = null;
-                if (this.page != 'home') {
+                if (this.page != 'home' && !this._personalFolderPage) {
                     company = this.currentCompany;
                 }
                 var folderItem = event.detail.folderItem;
@@ -5580,35 +5602,53 @@
             /**
              * Company Home page START
              */
-            _onAddNewFolderAction: function() {
+            _onAddNewFolderAction: function(event) {
                 var component = this.$.appscoAddFolder;
 
                 if (component.$) {
+                    if (event.detail.personal == true) {
+                        component.setOnPersonal();
+                    }
                     component.open();
                 }
             },
 
             _addFolder: function(folder) {
-                var companyHomePage = this.$.appscoCompanyHomePage;
+                var companyHomePage = this.$.appscoCompanyHomePage,
+                        homePage = this.$.appscoHomePage;
 
                 if (companyHomePage.$) {
                     companyHomePage.addFolder(folder);
                 }
+
+                if (homePage.$) {
+                    homePage.addFolder(folder);
+                }
             },
 
             _renameFolder: function(folder) {
-                var companyHomePage = this.$.appscoCompanyHomePage;
+                var companyHomePage = this.$.appscoCompanyHomePage,
+                        homePage = this.$.appscoHomePage;
 
                 if (companyHomePage.$) {
                     companyHomePage.renameFolder(folder);
                 }
+
+                if (homePage.$) {
+                    homePage.renameFolder(folder);
+                }
             },
 
             _removeFolder: function(folder) {
-                var companyHomePage = this.$.appscoCompanyHomePage;
+                var companyHomePage = this.$.appscoCompanyHomePage,
+                        homePage = this.$.appscoHomePage;
 
                 if (companyHomePage.$) {
                     companyHomePage.removeFolder(folder);
+                }
+
+                if (homePage.$) {
+                    homePage.removeFolder(folder);
                 }
             },
 
@@ -5643,6 +5683,7 @@
             },
 
             _onFolderTapped: function(event) {
+                this._personalFolderPage = event.detail.personal;
                 this._openFolder(event.detail.folder);
             },
 
@@ -6637,7 +6678,7 @@
                         page === 'manage-oauth-application' ||
                         page === 'customer-billing' ||
                         page === 'dashboard-folder' ||
-                        page === 'saml-authn-request-invalid');
+                        page === 'saml-authn-request-invalid') && !this._personalFolderPage;
             },
 
             _computeContactPage: function(page) {
@@ -6704,7 +6745,7 @@
 
                     case 'home':
                         if (fromPage.$) {
-                            this._applicationsApi = this.api.icons;
+                            this._applicationsApi = this.api.foldersApi + '/icons';
                             fromPage.resetPage();
                         }
 

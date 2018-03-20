@@ -13,6 +13,8 @@
 <link rel="import" href="components/application/appsco-application-subscribers.html">
 <link rel="import" href="components/application/appsco-application-details.html">
 <link rel="import" href="components/application/appsco-application-log.html">
+<link rel="import" href="components/folder/appsco-folders.html">
+
 
 <dom-module id="appsco-home-page">
     <template>
@@ -60,6 +62,9 @@
                 height: 50px;
                 box-sizing: border-box;
                 @apply(--layout-flex-none);
+            }
+            :host div[content] > *:first-child {
+                padding-top: 10px;
             }
             appsco-application-security {
                 --security-score: {
@@ -172,6 +177,15 @@
                      @apply(--layout-around-justified);
                  };
             }
+            :host .items-container {
+                margin-bottom: 30px;
+            }
+            :host .items-container .subtitle {
+                margin-top: 0;
+                margin-bottom: 10px;
+                font-weight: normal;
+                color: var(--secondary-text-color);
+            }
         </style>
 
         <iron-media-query query="(max-width: 1366px)" query-matches="{{ laptopScreen }}"></iron-media-query>
@@ -183,6 +197,24 @@
         <appsco-content id="appscoContent">
 
             <div content>
+
+                <div class="items-container folders-container"
+                     hidden$="[[ _foldersEmpty ]]">
+                    <h4 class="subtitle">Folders</h4>
+                    <appsco-folders
+                            id="appscoFolders"
+                            size="100"
+                            type="folder"
+                            load-more
+                            authorization-token="[[ authorizationToken ]]"
+                            list-api="[[ foldersApi ]]"
+                            on-list-loaded="_showFolders"
+                            on-item="_onFolderAction"></appsco-folders>
+                </div>
+
+                <div class="items-container resources-container">
+                    <h4 class="subtitle"
+                        hidden$="[[ _foldersEmpty ]]">Resources</h4>
                 <appsco-applications
                         id="appscoApplications"
                         size="100"
@@ -196,6 +228,7 @@
                         on-application-removed="_onApplicationRemoved"
                         on-loaded="_pageLoaded"
                         on-empty-load="_pageLoaded"></appsco-applications>
+                </div>
             </div>
 
             <div class="flex-vertical" info>
@@ -324,6 +357,16 @@
                     }
                 },
 
+                foldersApi: {
+                    type: String,
+                    value: ''
+                },
+
+                _foldersEmpty: {
+                    type: Boolean,
+                    value: true
+                },
+
                 _shared: {
                     type: Boolean,
                     computed: '_computeApplicationShared(application)'
@@ -424,7 +467,8 @@
             },
 
             behaviors: [
-                Polymer.NeonAnimatableBehavior
+                Polymer.NeonAnimatableBehavior,
+                Polymer.AppscoDropHTMLElementBehavior
             ],
 
             observers: [
@@ -456,6 +500,7 @@
             _pageLoaded: function() {
                 this.pageLoaded = true;
                 this.fire('page-loaded');
+                this._initializeResourcesDragBehavior();
             },
 
             initializePage: function() {
@@ -465,6 +510,7 @@
             resetPage: function() {
                 this.$.appscoApplications.reset();
                 this.$.appscoApplications.reloadApplications();
+                this.$.appscoFolders.resetAllItems();
                 this._hideInfo();
             },
 
@@ -555,6 +601,45 @@
 
             filterApplicationsByTerm: function(term) {
                 this.$.appscoApplications.filterByTerm(term);
+            },
+
+            addFolder: function(folder) {
+                this._showFolders();
+                this.$.appscoFolders.addItems([folder]);
+            },
+
+            removeFolder: function() {
+                this.$.appscoFolders.reloadItems();
+
+                if (this.$.appscoFolders.getCurrentCount() > 0) {
+                    this._showFolders();
+                } else {
+                    this._hideFolders();
+                }
+            },
+
+            renameFolder: function() {
+                this._showFolders();
+                this.$.appscoFolders.reloadItems();
+            },
+
+            _showFolders: function() {
+                this._foldersEmpty = false;
+            },
+
+            _hideFolders: function() {
+                this._foldersEmpty = true;
+            },
+
+            _initializeResourcesDragBehavior: function() {
+                this.$.appscoApplications.initializeResourcesDragBehavior();
+            },
+
+            _onFolderAction: function(event) {
+                this.fire('folder-tapped', {
+                    folder: event.detail.item,
+                    personal: true
+                });
             }
         });
     </script>

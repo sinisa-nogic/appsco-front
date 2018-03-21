@@ -7,17 +7,17 @@
 <link rel="import" href="../../../bower_components/neon-animation/animations/fade-out-animation.html">
 
 <!--
-`appsco-access-report-details`
-Component holds details about access report.
+`appsco-report-details`
+Component holds details about report.
 
 Example:
     <body>
-        <appsco-access-report-details access-report-api="">
-        </appsco-access-report-details>
+        <appsco-report-details report-api="">
+        </appsco-report-details>
 
 ### Styling
 
-`<appsco-access-report-details>` provides the following custom properties and mixins for styling:
+`<appsco-report-details>` provides the following custom properties and mixins for styling:
 
 Custom property | Description | Default
 ----------------|-------------|----------
@@ -27,7 +27,7 @@ Custom property | Description | Default
 
 -->
 
-<dom-module id="appsco-access-report-details">
+<dom-module id="appsco-report-details">
     <template>
         <style>
             :host {
@@ -58,12 +58,12 @@ Custom property | Description | Default
             }
         </style>
 
-        <iron-ajax id="getAccessReportApiRequest"
-                   url="[[ accessReportApi ]]"
+        <iron-ajax id="getReportApiRequest"
+                   url="[[ reportApi ]]"
                    headers="[[ _headers ]]"
                    debounce-duration="300"
-                   on-error="_onGetAccessReportError"
-                   on-response="_onGetAccessReportResponse"></iron-ajax>
+                   on-error="_onGetReportError"
+                   on-response="_onGetReportResponse"></iron-ajax>
 
         <div class="details-info">
             <div class="details-label">Users:&nbsp</div>
@@ -85,33 +85,35 @@ Custom property | Description | Default
             <div class="details-value">[[ _report.unshared ]]</div>
         </div>
 
-        <div class="auth-types">
-            <div class="subtitle">Authentication Types</div>
+        <template is="dom-if" if="[[ showAuthTypes ]]">
+            <div class="auth-types">
+                <div class="subtitle">Authentication Types</div>
 
-            <template is="dom-repeat" items="[[ _report.authTypes ]]">
-                <div class="details-info">
-                    <div class="details-label">
-                        [[ item.type ]]:&nbsp
+                <template is="dom-repeat" items="[[ _report.authTypes ]]">
+                    <div class="details-info">
+                        <div class="details-label">
+                            [[ item.type ]]:&nbsp
+                        </div>
+                        <div class="details-value">[[ item.value ]]</div>
                     </div>
-                    <div class="details-value">[[ item.value ]]</div>
-                </div>
-            </template>
+                </template>
 
-            <div class="details-info">
-                <div class="details-label">Individual:&nbsp</div>
-                <div class="details-value">[[ _report.individual ]]</div>
+                <div class="details-info">
+                    <div class="details-label">Individual:&nbsp</div>
+                    <div class="details-value">[[ _report.individual ]]</div>
+                </div>
             </div>
-        </div>
+        </template>
     </template>
 
     <script>
         Polymer({
 
-            is: 'appsco-access-report-details',
+            is: 'appsco-report-details',
 
             properties: {
 
-                accessReportApi: {
+                reportApi: {
                     type: String,
                     value: ''
                 },
@@ -123,6 +125,13 @@ Custom property | Description | Default
 
                 apiErrors: {
                     type: Object,
+                    value: function() {
+                        return {};
+                    }
+                },
+
+                showAuthTypes: {
+                    type: Boolean,
                     value: function() {
                         return {};
                     }
@@ -172,7 +181,7 @@ Custom property | Description | Default
             ],
 
             observers: [
-                '_onApiReadyForLoad(accessReportApi, _headers)'
+                '_onApiReadyForLoad(reportApi, _headers)'
             ],
 
             reload: function() {
@@ -194,17 +203,17 @@ Custom property | Description | Default
             },
 
             _abortPreviousRequest: function() {
-                var getAccessReportApiRequest = this.$.getAccessReportApiRequest;
+                var getReportApiRequest = this.$.getReportApiRequest;
 
-                if (getAccessReportApiRequest.lastRequest) {
-                    getAccessReportApiRequest.lastRequest.abort();
+                if (getReportApiRequest.lastRequest) {
+                    getReportApiRequest.lastRequest.abort();
                 }
             },
 
             _generateNewRequest: function() {
                 this.set('_report', {});
                 this._abortPreviousRequest();
-                this.$.getAccessReportApiRequest.generateRequest();
+                this.$.getReportApiRequest.generateRequest();
             },
 
             _onApiReadyForLoad: function(api, headers) {
@@ -223,7 +232,7 @@ Custom property | Description | Default
                 this.fire('loaded');
             },
 
-            _onGetAccessReportError: function(event) {
+            _onGetReportError: function(event) {
 
                 if (!event.detail.request.aborted) {
                     this._showMessage(this.apiErrors.getError(event.detail.request.response.code));
@@ -232,7 +241,7 @@ Custom property | Description | Default
                 this._fireAfterLoadEvent();
             },
 
-            _onGetAccessReportResponse: function(event) {
+            _onGetReportResponse: function(event) {
                 var response = event.detail.response;
 
                 if (response) {

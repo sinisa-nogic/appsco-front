@@ -158,6 +158,7 @@
 
 <link rel="import" href="components/report/appsco-reports-page-actions.html">
 <link rel="import" href="components/report/appsco-access-report-page-actions.html">
+<link rel="import" href="components/report/appsco-compliance-report-page-actions.html">
 
 <link rel="import" href="components/company-role/appsco-role-reset-two-fa.html">
 <link rel="import" href="components/company-role/appsco-role-save-client-data.html">
@@ -753,6 +754,12 @@
                                     name="access-report"
                                     on-back="_showReportsPage"
                                     on-resource-section="_onResourceActionPage"></appsco-access-report-page-actions>
+
+                            <appsco-compliance-report-page-actions
+                                    id="appscoComplianceReportPageActions"
+                                    name="compliance-report"
+                                    on-back="_showReportsPage"
+                                    on-resource-section="_onResourceActionPage"></appsco-compliance-report-page-actions>
 
                             <appsco-provisioning-page-actions id="appscoProvisioningPageActions"
                                                               name="provisioning"
@@ -2312,9 +2319,19 @@
                     value: ''
                 },
 
+                _getComplianceReportApi: {
+                    type: String,
+                    value: ''
+                },
+
                 _exportAccessReportApi: {
                     type: String,
                     computed: '_computeExportAccessReportApi(_getAccessReportApi)'
+                },
+
+                _exportComplianceReportApi: {
+                    type: String,
+                    computed: '_computeExportComplianceReportApi(_getComplianceReportApi)'
                 },
 
                 _getTransferTokenApi: {
@@ -2463,9 +2480,12 @@
                 'token-generated': '_onTokenGenerated',
                 'reset-page-actions': '_onResetPageActions',
                 'export-access-report': '_onExportAccessReportAction',
+                'export-compliance-report': '_onExportComplianceReportAction',
                 'export-access-report-finished': '_onExportAccessReportFinished',
+                'export-compliance-report-finished': '_onExportComplianceReportFinished',
                 'export-company-log-finished' : '_onExportCompanyLogFinished',
                 'export-access-report-failed': '_onExportAccessReportFailed',
+                'export-compliance-report-failed': '_onExportComplianceReportFailed',
                 'user-session-expired': '_onUserSessionExpired',
                 'add-item-to-group-event': '_onAddItemToGroupAction',
                 'customer-subscription-state-changed': '_onCustomerSubscriptionStateChanged',
@@ -2858,6 +2878,7 @@
                     this._companyConvertToCustomerApi = partnerApi + '/customers/convert';
                     this._companyIntegrationApi = companyApi + '/integrations';
                     this._getAccessReportApi = companyApi + '/reports/application-access';
+                    this._getComplianceReportApi = companyApi + '/reports/application-compliance';
                     this._getTransferTokenApi = companyApi + '/transfer-token';
                     this._sendTransferTokenApi = companyApi + '/send_token';
                     this._saveIPWhiteListApi = companyApi + '/ip-white-list';
@@ -2902,6 +2923,10 @@
 
             _computeExportAccessReportApi: function(getAccessReportApi) {
                 return getAccessReportApi ? (getAccessReportApi + '/export') : '';
+            },
+
+            _computeExportComplianceReportApi: function(getComplianceReportApi) {
+                return getComplianceReportApi ? (getComplianceReportApi + '/export') : '';
             },
 
             _computeCompanyIconsWithoutFolderApi: function(companyFoldersApi) {
@@ -6320,12 +6345,89 @@
                 }.bind(this));
             },
 
+            _exportComplianceReport: function(url) {
+
+                var filters = this.$.appscoComplianceReportPage.getComplianceReportFilters(),
+                    body = '',
+                    request = document.createElement('iron-request'),
+                        options = {
+                            url: url,
+                            method: 'POST',
+                            handleAs: 'blob',
+                            headers: {
+                                'Authorization': 'token ' + this.authorizationToken,
+                                'Content-Type': 'application/x-www-form-urlencoded'
+                            }
+                        };
+
+                switch (filters.type) {
+                    case 'users':
+                        body += 'assignee_type=user';
+                        break;
+
+                    case 'contacts':
+                        body += 'assignee_type=contact';
+                        break;
+                }
+
+                if (filters.group && filters.group.alias && filters.group.alias !== 'all') {
+                    body += ('' !== body) ? '&' : '';
+                    body += 'groups[]=' + filters.group.alias;
+                }
+
+                if (filters.term) {
+                    body += ('' !== body) ? '&' : '';
+                    body += 'term=' + filters.term;
+                }
+
+                options.body = body;
+
+                request.send(options).then(function() {
+                    var fileReader = new FileReader();
+
+                    fileReader.onload = function(event) {
+                        var link = document.createElement('a');
+
+                        link.href = event.target.result;
+                        link.setAttribute('download', 'Compliance Report.xlsx');
+                        document.body.appendChild(link);
+
+                        if (link.click) {
+                            link.click();
+                        }
+                        else if (document.createEvent) {
+                            var clickEvent = document.createEvent('MouseEvents');
+
+                            clickEvent.initEvent('click', true, true);
+                            link.dispatchEvent(clickEvent);
+                        }
+
+                        document.body.removeChild(link);
+                    };
+
+                    fileReader.readAsDataURL(request.response);
+
+                    this.fire('export-compliance-report-finished');
+                }.bind(this), function() {
+                    this.fire('export-compliance-report-failed');
+                }.bind(this));
+            },
+
             _onExportAccessReportAction: function() {
                 this._showProgressBar();
                 this._exportAccessReport(('access-report' === this.page) ? this._computeExportAccessReportApiUrl() : this._exportAccessReportApi);
             },
 
+            _onExportComplianceReportAction: function() {
+                this._showProgressBar();
+                this._exportComplianceReport(this._exportComplianceReportApi);
+            },
+
             _onExportAccessReportFinished: function() {
+                this._hideProgressBar();
+            },
+
+            _onExportComplianceReportFinished: function() {
                 this._hideProgressBar();
             },
 
@@ -6337,6 +6439,12 @@
                 this._hideProgressBar();
                 this._notify('Export of Access Report failed. Please contact AppsCo support.');
             },
+
+            _onExportComplianceReportFailed: function() {
+                this._hideProgressBar();
+                this._notify('Export of Access Report failed. Please contact AppsCo support.');
+            },
+
             /**
              * Access Report page END
              */

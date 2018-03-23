@@ -6409,10 +6409,7 @@
             },
 
             _exportComplianceReport: function(url) {
-
-                var filters = this.$.appscoComplianceReportPage.getComplianceReportFilters(),
-                    body = '',
-                    request = document.createElement('iron-request'),
+                var request = document.createElement('iron-request'),
                         options = {
                             url: url,
                             method: 'POST',
@@ -6423,27 +6420,7 @@
                             }
                         };
 
-                switch (filters.type) {
-                    case 'users':
-                        body += 'assignee_type=user';
-                        break;
-
-                    case 'contacts':
-                        body += 'assignee_type=contact';
-                        break;
-                }
-
-                if (filters.group && filters.group.alias && filters.group.alias !== 'all') {
-                    body += ('' !== body) ? '&' : '';
-                    body += 'groups[]=' + filters.group.alias;
-                }
-
-                if (filters.term) {
-                    body += ('' !== body) ? '&' : '';
-                    body += 'term=' + filters.term;
-                }
-
-                options.body = body;
+                options.body = this._computeExportComplianceReportBody();
 
                 request.send(options).then(function() {
                     var fileReader = new FileReader();
@@ -6474,6 +6451,36 @@
                 }.bind(this), function() {
                     this.fire('export-compliance-report-failed');
                 }.bind(this));
+            },
+
+            _computeExportComplianceReportBody: function() {
+
+                if ('compliance-report' != this.page) {
+                    return '';
+                }
+
+                var filters = this.$.appscoComplianceReportPage.getComplianceReportFilters(),
+                        body = '';
+                switch (filters.type) {
+                    case 'users':
+                        body += 'assignee_type=user';
+                        break;
+
+                    case 'contacts':
+                        body += 'assignee_type=contact';
+                        break;
+                }
+
+                if (filters.group && filters.group.alias && filters.group.alias !== 'all') {
+                    body += ('' !== body) ? '&' : '';
+                    body += 'groups[]=' + filters.group.alias;
+                }
+
+                if (filters.term) {
+                    body += ('' !== body) ? '&' : '';
+                    body += 'term=' + filters.term;
+                }
+                return body;
             },
 
             _onExportAccessReportAction: function() {

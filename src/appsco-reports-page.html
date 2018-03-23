@@ -9,9 +9,11 @@
 <link rel="import" href="../bower_components/iron-icons/iron-icons.html">
 
 <link rel="import" href="components/page/appsco-content.html">
-<link rel="import" href="components/report/appsco-access-report-item.html">
-<link rel="import" href="components/report/appsco-access-report-details.html">
+<link rel="import" href="components/report/appsco-report-details.html">
 <link rel="import" href="appsco-page-styles.html">
+<link rel="import" href="components/report/appsco-reports-list.html">
+<link rel="import" href="components/components/appsco-page-behavior.html">
+<link rel="import" href="components/components/appsco-list-observer-behavior.html">
 
 <dom-module id="appsco-reports-page">
     <template>
@@ -48,10 +50,16 @@
         <appsco-content id="appscoContent">
             <div content>
                 <div class="content-container">
-                    <appsco-access-report-item id="appscoAccessReportItem"
-                                               item="[[ report ]]"
-                                               on-item="_onAccessReportAction"
-                                               on-component-ready="_onPageLoaded"></appsco-access-report-item>
+                    <appsco-reports-list id="reportsList"
+                                         type="reports"
+                                         on-item="_onReportAction"
+                                         on-component-ready="_onPageLoaded"
+                                         type="reports"
+                                         on-list-loaded="_onPageLoaded"
+                                         on-observable-list-empty="_onObservableItemListChange"
+                                         on-observable-list-filled="_onObservableItemListChange">
+
+                    </appsco-reports-list>
                 </div>
             </div>
 
@@ -59,15 +67,17 @@
                 <div class="info-header flex-horizontal">
                     <iron-icon icon="icons:description"
                                class="info-icon"></iron-icon>
-                    <span class="info-title flex">Access report</span>
+                    <span class="info-title flex">[[ report.title ]]</span>
                 </div>
 
                 <div class="info-content flex-vertical">
-                    <appsco-access-report-details id="appscoAccessReportDetails"
-                                                  access-report-api="[[ getAccessReportApi ]]"
+                    <appsco-report-details id="appscoReportDetails"
+                                                  report-api="[[ getAccessReportApi ]]"
                                                   authorization-token="[[ authorizationToken ]]"
                                                   api-errors="[[ apiErrors ]]"
-                                                  on-loaded="_onPageLoaded"></appsco-access-report-details>
+                                                  on-loaded="_onPageLoaded"
+                                                  show-auth-types="[[ _showAuthTypes ]]"
+                                                  report="[[ report ]]"></appsco-report-details>
                 </div>
 
                 <div class="info-actions flex-horizontal">
@@ -158,27 +168,48 @@
                     value: false
                 },
 
+                _showAuthTypes: {
+                    type: Boolean,
+                    value: true
+                },
+
                 _infoVisible: {
                     type: Boolean,
                     value: false
                 },
 
-                _accessReport: {
-                    type: Object,
+                items: {
+                    type: Array,
                     value: function() {
-                        return {
-                            type: 'access-report',
-                            icon: 'icons:description',
-                            title: 'Access report',
-                            description: 'This report shows which users and contacts have access to which resources.',
-                            activated: false
-                        }
+                        return [
+                            {
+                                type: 'access-report',
+                                icon: 'icons:description',
+                                title: 'Access report',
+                                description: 'This report shows which users and contacts have access to which resources.',
+                                activated: false,
+                                openEvent: 'open-access-report',
+                                self: 'access-report'
+                            },
+                            {
+                                type: 'compliance-report',
+                                icon: 'icons:description',
+                                title: 'Compliance report',
+                                description: 'This report shows which fields with personal data are used in each shared resource. ',
+                                activated: false,
+                                openEvent: 'open-compliance-report',
+                                self: 'compliance-report'
+                            }
+
+                        ]
                     }
                 }
             },
 
             behaviors: [
-                Polymer.NeonAnimatableBehavior
+                Polymer.NeonAnimatableBehavior,
+                Polymer.AppscoPageBehavior,
+                Polymer.AppscoListObserverBehavior
             ],
 
             observers: [
@@ -207,6 +238,7 @@
                     this.set('report', report);
                 }
                 else {
+                    this.$.reportsList.deactivateItem(this.report);
                     this._setDefaultReport();
                 }
             },
@@ -214,11 +246,13 @@
             hideInfo: function() {
                 this.$.appscoContent.hideSection('info');
                 this._infoVisible = false;
+                this.$.reportsList.deactivateItem(this.report);
             },
 
             initializePage: function() {
                 this._setDefaultReport();
-                this._reloadAccessReport();
+                this.$.reportsList.addItems(this.items);
+                this._reloadReportDetails();
             },
 
             resetPage: function() {
@@ -234,8 +268,8 @@
                 this.updateStyles();
             },
 
-            _reloadAccessReport: function() {
-                this.$.appscoAccessReportDetails.reload();
+            _reloadReportDetails: function() {
+                this.$.appscoReportDetails.reload();
             },
 
             _onPageLoaded: function() {
@@ -244,7 +278,7 @@
             },
 
             _setDefaultReport: function() {
-                this.set('report', JSON.parse(JSON.stringify(this._accessReport)));
+                this.set('report', JSON.parse(JSON.stringify(this.items[0])));
             },
 
             _showInfo: function() {
@@ -254,6 +288,7 @@
 
             _handleInfo: function(report) {
                 this.set('report', report);
+                this.set('_showAuthTypes', 'access-report' === report.type);
 
                 if (!this._infoVisible) {
                     this._showInfo();
@@ -264,7 +299,8 @@
                 this._handleInfo(event.detail.item);
             },
 
-            _onAccessReportAction: function(event) {
+            _onReportAction: function(event) {
+
 
                 if (event.detail.item.activated) {
                     this._onViewInfo(event);
@@ -276,12 +312,21 @@
             },
 
             _onOpenReportAction: function() {
-                this.$.appscoAccessReportItem.openReport();
+                this.fire(this.report.openEvent);
             },
 
             _onExportReportAction: function() {
                 this.fire('export-access-report');
+            },
+
+            _onObservableItemListChange: function(event, data) {
+                if(data.type === 'reports') {
+                    this.setObservableType('reports-page');
+                    this.populateItems(data.items);
+                }
+                event.stopPropagation();
             }
+
         });
 
     </script>

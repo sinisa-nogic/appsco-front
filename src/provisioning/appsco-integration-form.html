@@ -52,6 +52,36 @@
             </paper-input>
         </div>
 
+        <div class="input-container instance" >
+            <paper-input type="text"
+                         label="Instance id"
+                         name="activate_integration[instance_id]"
+                         value="[[ integration.instance_id ]]"
+                         required
+                         disabled="[[ !requiresInstanceId ]]"
+                         hidden="[[ !requiresInstanceId ]]"
+            ></paper-input>
+        </div>
+
+        <div class="input-container claims" >
+            <paper-input type="text"
+                         label="Client id"
+                         name="activate_integration[claims][client_id]"
+                         value="[[ integration.claims.client_id ]]"
+                         required
+                         disabled="[[ !requiresClaims ]]"
+                         hidden="[[ !requiresClaims ]]"
+            ></paper-input>
+            <paper-input type="text"
+                      label="Client secret"
+                      name="activate_integration[claims][client_secret]"
+                      value="[[ integration.claims.client_secret ]]"
+                      required
+                      disabled="[[ !requiresClaims ]]"
+                      hidden="[[ !requiresClaims ]]"
+            ></paper-input>
+        </div>
+
         <div class="input-container">
             <p class="input-info">Integration type determines the way in which AppsCo integrates with [[ integration.integration.title ]].</p>
             <paper-dropdown-menu id="integrationKindSelect"
@@ -136,7 +166,22 @@
                 hasOwnUrl: {
                     type: Boolean,
                     value: false,
-                    computed: '_computeHasOwnUrl(integration)'
+                    computed: '_computeHasOwnUrl(integration)',
+                    reflectToAttribute: true
+                },
+
+                requiresClaims: {
+                    type: Boolean,
+                    value: false,
+                    computed: '_computeRequiresClaims(integration)',
+                    reflectToAttribute: true
+                },
+
+                requiresInstanceId: {
+                    type: Boolean,
+                    value: false,
+                    computed: '_computeRequiresInstanceId(integration)',
+                    reflectToAttribute: true
                 },
 
                 _disableIntegrationTypeChange: {
@@ -219,6 +264,30 @@
 
                 if (integration) {
                     return integration.alias == 4;
+                }
+
+                return false;
+            },
+
+            _computeRequiresClaims: function(integration) {
+                if (integration && integration.integration) {
+                    return integration.integration.alias == 6;
+                }
+
+                if (integration) {
+                    return integration.alias == 6;
+                }
+
+                return false;
+            },
+
+            _computeRequiresInstanceId: function(integration) {
+                if (integration && integration.integration) {
+                    return integration.integration.alias == 6;
+                }
+
+                if (integration) {
+                    return integration.alias == 6;
                 }
 
                 return false;

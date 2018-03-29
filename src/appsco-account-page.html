@@ -16,6 +16,7 @@
 <link rel="import" href="account/appsco-account-authorized-apps-page.html">
 <link rel="import" href="account/appsco-account-log-page.html">
 <link rel="import" href="account/appsco-account-change-password-page.html">
+<link rel="import" href="components/account/appsco-account-remove-personal.html">
 
 <dom-module id="appsco-account-page">
     <template>
@@ -78,6 +79,11 @@
                 @apply(--secondary-button);
                 border-radius: 0;
             }
+            :host .delete-account-button {
+                @apply(--primary-button);
+                @apply(--danger-button);
+                border-radius: 0;
+            }
             :host .flex-horizontal {
                 @apply(--layout-horizontal);
                 @apply(--layout-center);
@@ -118,7 +124,14 @@
         <iron-media-query query="(max-width: 800px)" query-matches="{{ tabletScreen }}"></iron-media-query>
         <iron-media-query query="(max-width: 600px)" query-matches="{{ mobileScreen }}"></iron-media-query>
 
+        <appsco-account-remove-personal id="accountRemoveDialog"
+                                        authorization-token="[[ authorizationToken ]]"
+                                        remove-account-api="[[ removeAccountApi ]]"
+                                        logout-api="[[ logoutApi ]]"></appsco-account-remove-personal>
+
         <appsco-content id="appscoContent" resource-active>
+
+
 
             <div class="flex-vertical" resource>
 
@@ -154,6 +167,14 @@
                             on-tap="_onChangePassword">
                         Change password
                     </paper-button>
+                    <template is="dom-if" if="![[ accountManaged ]]">
+                        <paper-button
+                                class="delete-account-button flex"
+                                on-tap="_onRemoveAccount">
+                            Remove account
+                        </paper-button>
+                    </template>
+
                 </div>
 
             </div>
@@ -349,6 +370,10 @@
                     type: String
                 },
 
+                removeAccountApi: {
+                    type: String
+                },
+
                 /**
                  * If attribute is set account display will contain account display name.
                  * Otherwise, account display will contain account picture_url only.
@@ -388,6 +413,10 @@
                     type: Boolean,
                     value: false,
                     reflectToAttribute: true
+                },
+
+                accountManaged: {
+                    type: Boolean
                 },
 
                 /**
@@ -517,6 +546,11 @@
 
             _onPasswordChanged: function() {
                 this._showAccountComponentsPage();
+            },
+
+            _onRemoveAccount: function() {
+                this.$.accountRemoveDialog.open();
+
             },
 
             reloadAuthorizedApplications: function() {

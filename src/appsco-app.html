@@ -54,6 +54,7 @@
 <link rel="import" href="components/application/company/appsco-application-assignee-claims.html">
 <link rel="import" href="components/application/company/appsco-application-assignee-revoke.html">
 <link rel="import" href="components/application/appsco-import-resources.html">
+<link rel="import" href="components/application/appsco-import-personal-resources.html">
 <link rel="import" href="components/application/appsco-application-remove-group.html">
 
 <link rel="import" href="components/group/appsco-company-remove-group.html">
@@ -854,6 +855,7 @@
                             api-errors="[[ _apiErrors ]]"
                             on-settings-saved="_onAccountSettingsSaved"
                             on-password-changed="_onAccountPasswordChanged"
+                            on-import-personal-resources="_onImportPersonalResourcesAction"
                             on-image-upload-error="_onImageUploadError"></appsco-account-page>
 
                     <appsco-company-account-page
@@ -874,6 +876,7 @@
                             api-errors="[[ _apiErrors ]]"
                             on-settings-saved="_onAccountSettingsSaved"
                             on-password-changed="_onAccountPasswordChanged"
+                            on-import-personal-resources="_onImportPersonalResourcesAction"
                             on-image-upload-error="_onImageUploadError"></appsco-company-account-page>
 
                     <appsco-vault-page
@@ -1457,7 +1460,13 @@
                 authorization-token="[[ authorizationToken ]]"
                 import-api="[[ _companyImportResourcesApi ]]"
                 on-import-finished="_onImportCompanyResourcesFinished"></appsco-import-resources>
-        
+
+        <appsco-import-personal-resources
+                id="appscoImportPersonalResources"
+                authorization-token="[[ authorizationToken ]]"
+                application-template-api="[[ api.applicationTemplates ]]"
+                on-import-finished="_onImportPersonalResourcesFinished"></appsco-import-personal-resources>
+
         <appsco-share-resource
                 id="appscoShareResource"
                 resources="[[ _applicationsToShare ]]"
@@ -4221,6 +4230,10 @@
                 this.$.appscoImportResources.toggle();
             },
 
+            _onImportPersonalResourcesAction: function() {
+                this.$.appscoImportPersonalResources.toggle();
+            },
+
             _onImportCompanyResourcesFinished: function(event) {
                 var response = event.detail.response,
                     message;
@@ -4233,6 +4246,24 @@
 
                 if (0 < response.numberOfCustomApplications || 0 < response.numberOfSecureNotes) {
                     this._reloadCompanyApplications();
+                }
+
+                this._notify(message, true);
+                this._notifyAccountLog();
+            },
+
+            _onImportPersonalResourcesFinished: function(event) {
+                var response = event.detail.response,
+                        message;
+
+                message = response.numberOfCustomApplications + response.numberOfSecureNotes + ' resources imported out of '
+                        + response.total + ', '
+                        + response.numberOfCustomApplications + ' custom applications created, '
+                        + response.numberOfSecureNotes + ' secure notes created, '
+                        + 'number of failed imports ' + response.numberOfFailed + '.';
+
+                if (0 < response.numberOfCustomApplications || 0 < response.numberOfSecureNotes) {
+                    this._reloadHomePageApplications();
                 }
 
                 this._notify(message, true);

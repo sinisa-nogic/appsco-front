@@ -1,0 +1,139 @@
+<link rel="import" href="../bower_components/polymer/polymer.html">
+<link rel="import" href="../bower_components/neon-animation/neon-animated-pages.html">
+<link rel="import" href="../bower_components/neon-animation/animations/fade-in-animation.html">
+<link rel="import" href="../bower_components/neon-animation/animations/fade-out-animation.html">
+<link rel="import" href="../bower_components/iron-flex-layout/iron-flex-layout.html">
+<link rel="import" href="../bower_components/iron-media-query/iron-media-query.html">
+
+<link rel="import" href="components/page/appsco-content.html">
+<link rel="import" href="components/components/appsco-page-behavior.html">
+<link rel="import" href="appsco-page-styles.html">
+
+<dom-module id="appsco-billing-report-page">
+    <template>
+        <style include="shared-styles webkit-scrollbar-style appsco-page-styles">
+            :host {
+                display: block;
+
+                --resource-width: 318px;
+            }
+            :host div[resource] {
+                height: 100%;
+                overflow: auto;
+            }
+            :host div[content] > * {
+                padding: 0 10px 10px 10px;
+            }
+            .resource-container {
+                @apply(--layout-vertical);
+                height: 100%;
+            }
+            :host div[resurce] > * {
+                padding: 10px;
+                box-sizing: border-box;
+            }
+            :host .flex-vertical {
+                @apply(--layout-vertical);
+            }
+            :host([tablet-screen]) {
+                --resource-width: 250px;
+            }
+            :host([mobile-screen]) {
+                --resource-width: 100%;
+            }
+        </style>
+
+        <iron-media-query query="(max-width: 992px)" query-matches="{{ screen992 }}"></iron-media-query>
+        <iron-media-query query="(max-width: 880px)" query-matches="{{ tabletScreen }}"></iron-media-query>
+        <iron-media-query query="(max-width: 600px)" query-matches="{{ mobileScreen }}"></iron-media-query>
+
+        <appsco-content id="appscoContent" resource-active on-component-ready="_onPageLoaded">
+            <div class="flex-vertical" resource>
+                <div class="resource-container"></div>
+            </div>
+
+            <div content></div>
+        </appsco-content>
+        
+    </template>
+
+    <script>
+
+        Polymer({
+            is: 'appsco-billing-report-page',
+
+            properties: {
+                screen992: {
+                    type: Boolean,
+                    value: false,
+                    reflectToAttribute: true
+                },
+
+                tabletScreen: {
+                    type: Boolean,
+                    value: false,
+                    reflectToAttribute: true
+                },
+
+                mobileScreen: {
+                    type: Boolean,
+                    value: false,
+                    reflectToAttribute: true
+                },
+
+                animationConfig: {
+                    value: function () {
+                        return {
+                            'entry': {
+                                name: 'fade-in-animation',
+                                node: this,
+                                timing: {
+                                    duration: 300
+                                }
+                            },
+                            'exit': {
+                                name: 'fade-out-animation',
+                                node: this,
+                                timing: {
+                                    duration: 200
+                                }
+                            }
+                        }
+                    }
+                },
+
+                pageLoaded: {
+                    type: Boolean,
+                    value: false
+                }
+
+            },
+
+            behaviours: [
+                Polymer.NeonAnimatableBehavior,
+                Polymer.AppscoPageBehavior
+            ],
+
+            observers: [
+                '_updateScreen(mobileScreen, tabletScreen, screen992)'
+            ],
+
+            attached: function() {
+                this.pageLoaded = false;
+
+                if (this.mobileScreen || this.tabletScreen || this.screen992) {
+                    this.updateStyles();
+                }
+            },
+
+            _onPageLoaded: function() {
+                console.log('loaded');
+            },
+
+            _updateScreen: function() {
+                this.updateStyles();
+            }
+
+        });
+    </script>
+</dom-module>

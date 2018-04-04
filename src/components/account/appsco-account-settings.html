@@ -90,6 +90,11 @@ Custom property | Description | Default
                 margin-bottom: 10px;
             }
 
+            .input-container-shared-resource {
+                margin-top: 30px;
+                margin-bottom: 10px;
+            }
+
         </style>
 
         <appsco-loader active="[[ _loader ]]" loader-alt="Appsco is saving application" multi-color></appsco-loader>
@@ -242,6 +247,27 @@ Custom property | Description | Default
                 </template>
             </div>
 
+        </form>
+
+        <form is="iron-form"
+              id="accountEmailNotificationsForm"
+              method="PUT"
+              action="[[ accountEmailNotificationsApi ]]"
+              headers="{{ _computedHeaders }}"
+              on-iron-form-presubmit="_onEmailNotificationsFormPresubmit"
+              on-iron-form-response="_onEmailNotificationsFormResponse">
+
+            <div class="input-container input-container-shared-resource">
+                <paper-toggle-button id="sharedResourceNotifications"
+                                    name="notification_settings[notifications][0]"
+                                    checked$="[[ _sharedResourceNotifications ]]">Shared resource notifications
+                </paper-toggle-button>
+                <p class="info">
+                    Receive email notifications when a resource is shared to you.
+                </p>
+            </div>
+        </form>
+
             <!--<div class="input-container input-access">-->
             <!--<paper-checkbox name="profile[profileOptions][public]">-->
             <!--Allow other users to search & share apps with you-->
@@ -263,7 +289,6 @@ Custom property | Description | Default
             <!--class="sized"-->
             <!--sizing="contain"></iron-image>-->
             <!--</div>-->
-        </form>
 
         <paper-button id="submit"
                       class="submit-button"
@@ -364,11 +389,20 @@ Custom property | Description | Default
                     }
                 },
 
+                _sharedResourceNotifications: {
+                    type: Boolean,
+                    computed: '_computeSharedResourceNotifications(account)'
+                },
+
                 /**
                  * Account settings api link.
                  */
                 accountSettingsApi: {
                     type: String
+                },
+
+                accountEmailNotificationsApi: {
+                    computed: '_computeAccountEmailNotificationsApi(accountSettingsApi)'
                 },
 
                 /**
@@ -528,6 +562,16 @@ Custom property | Description | Default
                 }
             },
 
+            _onEmailNotificationsFormPresubmit: function () {
+
+                this._loader = true;
+                this.$.accountEmailNotificationsForm.request.body = [];
+
+                if (this.$.sharedResourceNotifications.checked) {
+                    this.$.accountEmailNotificationsForm.request.body['notification_settings[notifications][0]'] = true;
+                }
+            },
+
             /**
              * Called on form error when trying to save settings.
              *
@@ -547,8 +591,21 @@ Custom property | Description | Default
              */
             _onFormResponse: function(event) {
                 var account = event.detail.response.account;
-
                 this.set('account', account);
+
+                this.$.accountEmailNotificationsForm.submit();
+            },
+
+            /**
+             * Called after settings have been submited.
+             *
+             * @param {Object} event
+             * @private
+             */
+            _onEmailNotificationsFormResponse: function(event) {
+                this.account.notificationSettings = event.detail.response.notification_settings;
+
+                this.set('account', this.account);
 
                 /**
                  * Fired after successful settings saving.
@@ -556,7 +613,7 @@ Custom property | Description | Default
                  * @event settings-saved
                  */
                 this.fire('settings-saved', {
-                    account: account
+                    account: this.account
                 });
 
                 this._loader = false;
@@ -593,6 +650,14 @@ Custom property | Description | Default
                 var companies =  account && account.companies && account.companies.length > 0 ? account.companies : [];
                 companies.unshift(personal);
                 return companies;
+            },
+
+            _computeAccountEmailNotificationsApi: function(accountSettingsApi) {
+                return accountSettingsApi ? accountSettingsApi + '/notification-settings' : '';
+            },
+
+            _computeSharedResourceNotifications: function (account) {
+                return account.notificationSettings && account.notificationSettings['shared_resource'] ? account.notificationSettings['shared_resource'] : false;
             }
 
         });

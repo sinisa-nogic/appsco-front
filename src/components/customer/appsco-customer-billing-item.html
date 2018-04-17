@@ -1,0 +1,311 @@
+<link rel="import" href="../../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../../bower_components/iron-image/iron-image.html">
+<link rel="import" href="../../../bower_components/iron-media-query/iron-media-query.html">
+<link rel="import" href="../../../bower_components/paper-button/paper-button.html">
+<link rel="import" href="../../../bower_components/iron-collapse/iron-collapse.html">
+<link rel="import" href="../../../bower_components/iron-ajax/iron-ajax.html">
+
+<link rel="import" href="../components/appsco-list-item-behavior.html">
+<link rel="import" href="../components/appsco-list-item-styles.html">
+
+<dom-module id="appsco-customer-billing-item">
+    <template>
+
+        <style include="appsco-list-item-styles"></style>
+
+        <style>
+            :host .customer-logo {
+                @apply(--layout-vertical);
+                @apply(--layout-center-justified);
+                width: 52px;
+                height: 52px;
+                margin: 0;
+                border-radius: 50%;
+            }
+
+            :host .customer-logo::shadow #sizedImgDiv ,:host .customer-logo::shadow #placeholder {
+                border-radius: 50%;
+            }
+
+            :host .customer-logo {
+                background-color: var(--account-initials-background-color, #f5f8fa);
+                color: var(--primary-text-color);
+            }
+
+            :host .customer-initials .initials {
+                text-align: center;
+                text-transform: uppercase;
+                font-size: var(--account-initials-font-size, 18px);
+                line-height: var(--account-initials-font-size, 18px);
+                color: var(--account-initials-font-color);
+            }
+
+            :host([mobile-screen]) .item-additional-info {
+                display: none;
+            }
+
+            iron-collapse {
+                @apply(--shadow-elevation-2dp);
+            }
+
+            :host .reports-container {
+                padding: 20px;
+                @apply(--layout-horizontal);
+                @apply(--layout-vertical);
+                background-color: var(--collapsible-content-background-color);
+                display: grid;
+                grid-template-columns: 45% 45%;
+                grid-gap: 10%;
+            }
+
+            :host .report {
+                display: grid;
+                grid-template-columns: 45% 45%;
+                grid-gap: 10%;
+            }
+
+            :host .report .info-label {
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                font-size: 13px;
+                line-height: 18px;
+            }
+
+            :host .report .info-value {
+                font-size: 13px;
+                line-height: 18px;
+                white-space: nowrap;
+                color: var(--secondary-text-color);
+            }
+
+        </style>
+
+        <iron-ajax id="getBillingReportApiRequest"
+                   url="[[ _getBillingReportApiUrl ]]"
+                   headers="[[ _headers ]]"
+                   auto
+                   on-error="_onGetBillingReportError"
+                   on-response="_onGetBillingReportResponse"
+        ></iron-ajax>
+
+        <iron-media-query query="(max-width: 600px)" query-matches="{{ mobileScreen }}"></iron-media-query>
+
+        <div class="item">
+            <template is="dom-if" if="[[ item.image ]]">
+                <iron-image class="customer-logo"
+                            sizing="cover"
+                            src="[[ item.image ]]"></iron-image>
+            </template>
+
+            <template is="dom-if" if="[[ !item.image ]]">
+                <div class="customer-logo customer-initials">
+                    <span class="initials">[[ _customerInitials ]]</span>
+                </div>
+            </template>
+
+            <div class="item-info item-basic-info">
+                <span class="info-label group-title">[[ item.name ]]</span>
+                <span class="info-value">[[ item.billing_email ]]</span>
+            </div>
+
+            <div class="item-info item-additional-info">
+                <div class="info">
+                    <span class="info-label">Assigned licences: </span>
+
+                    <template is="dom-if" if="[[ item.subscription_paid_externally ]]">
+                        <span class="info-value">[[ item.max_subscription_size ]]</span>
+                    </template>
+
+                    <template is="dom-if" if="[[ !item.subscription_paid_externally ]]">
+                        <span class="info-value">0</span>
+                    </template>
+
+
+                </div>
+
+                <div class="info">
+                    <span class="info-label">Payment status: </span>
+
+                    <template is="dom-if" if="[[ item.subscription_paid_externally ]]">
+                        <span class="info-value">Payed by partner</span>
+                    </template>
+
+                    <template is="dom-if" if="[[ !item.subscription_paid_externally ]]">
+                        <span class="info-value">Payed by customer</span>
+                    </template>
+
+                </div>
+            </div>
+
+            <div class="actions">
+                <paper-button on-tap="_onShowLicences"
+                              hidden$="[[ _licencesVisible ]]">Show</paper-button>
+                <paper-button on-tap="_onHideLicences"
+                              hidden$="[[ !_licencesVisible ]]">Hide</paper-button>
+            </div>
+        </div>
+
+        <iron-collapse id="licences">
+            <div class="reports-container">
+                <template is="dom-repeat" items="[[ _licences ]]" as="licence">
+                    <div class="report">
+                        <span class="info-label">[[ licence.month ]] [[ licence.year ]]</span>
+                        <span class="info-value">Licences: [[ licence.used_licences ]]</span>
+                    </div>
+                </template>
+            </div>
+        </iron-collapse>
+
+    </template>
+
+    <script>
+        Polymer({
+            is: 'appsco-customer-billing-item',
+
+            properties: {
+
+                listApi: {
+                    type: String,
+                    value: ''
+                },
+
+                authorizationToken: {
+                    type: String,
+                    value: ''
+                },
+
+                mobileScreen: {
+                    type: Boolean,
+                    value: false,
+                    reflectToAttribute: true
+                },
+
+                _headers: {
+                    type: Object,
+                    computed: '_computeHeaders(authorizationToken)'
+                },
+
+                _customerInitials: {
+                    type: String,
+                    computed: "_computeInitials(item)"
+                },
+
+                _licencesVisible: {
+                    type: Boolean,
+                    value: false
+                },
+
+                _getBillingReportApiUrl: {
+                    type: String,
+                    value: '',
+                    computed: '_computeBillingReportApiUrl(item)'
+                },
+
+                _licences: {
+                    type: Array,
+                    value: function() {
+                        return [];
+                    }
+                }
+            },
+
+            behaviors: [
+                Polymer.NeonAnimationRunnerBehavior,
+                Polymer.AppscoListItemBehavior
+            ],
+
+            _computeInitials: function(item) {
+                var initials = '';
+                var name = item.name;
+                if (name) {
+                    var array = name.split(' ');
+                    if (array.length > 1) {
+                        initials = array[0].substring(0, 1) + array[1].substring(0, 1);
+                    } else {
+                        initials = array[0].substring(0, 2);
+                    }
+                }
+                return initials;
+            },
+
+            _computeHeaders: function(authorizationToken) {
+                return {
+                    'Authorization': 'token ' + authorizationToken
+                }
+            },
+
+            _onShowLicences: function() {
+                this.$.licences.show();
+                this._licencesVisible = true;
+            },
+
+            _onHideLicences: function() {
+                this.$.licences.hide();
+                this._licencesVisible = false;
+            },
+
+            _computeBillingReportApiUrl: function(item) {
+                return item.meta ? item.meta.billing_report + '?extended=1' : '';
+            },
+
+            _onGetBillingReportError: function() {
+                this.set('_licences', []);
+            },
+
+            _onGetBillingReportResponse: function(event) {
+                var reports = event.detail.response.reports;
+                if (reports) {
+                    reports.forEach(function(element, index) {
+                        element.month = this.getMonthName(element.month);
+                        this.push('_licences', element);
+                    }.bind(this));
+                }
+            },
+
+            getMonthName: function(month) {
+                var name = '';
+                switch (month) {
+                    case 1:
+                        name = 'January';
+                        break;
+                    case 2:
+                        name = 'February';
+                        break;
+                    case 3:
+                        name = 'March';
+                        break;
+                    case 4:
+                        name = 'April';
+                        break;
+                    case 5:
+                        name = 'May';
+                        break;
+                    case 6:
+                        name = 'June';
+                        break;
+                    case 7:
+                        name = 'July';
+                        break;
+                    case 8:
+                        name = 'August';
+                        break;
+                    case 9:
+                        name = 'September';
+                        break;
+                    case 10:
+                        name = 'October';
+                        break;
+                    case 11:
+                        name = 'November';
+                        break;
+                    case 12:
+                        name = 'December';
+                        break;
+                }
+                return name;
+            }
+
+        });
+    </script>
+</dom-module>

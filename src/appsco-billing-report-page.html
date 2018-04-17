@@ -8,6 +8,7 @@
 <link rel="import" href="components/page/appsco-content.html">
 <link rel="import" href="components/components/appsco-page-behavior.html">
 <link rel="import" href="appsco-page-styles.html">
+<link rel="import" href="components/customer/appsco-customers-billing.html">
 
 <dom-module id="appsco-billing-report-page">
     <template>
@@ -28,6 +29,9 @@
                 @apply(--layout-vertical);
                 height: 100%;
             }
+            .customers-container {
+                margin-top: 10px;
+            }
             :host div[resurce] > * {
                 padding: 10px;
                 box-sizing: border-box;
@@ -39,7 +43,7 @@
                 --resource-width: 250px;
             }
             :host([mobile-screen]) {
-                --resource-width: 100%;
+                --resource-width: 0;
             }
         </style>
 
@@ -52,7 +56,20 @@
                 <div class="resource-container"></div>
             </div>
 
-            <div content></div>
+            <div content>
+                <div class="customers-container">
+                    <appsco-customers-billing
+                            id="appscoCustomers"
+                            type="customer"
+                            size="100"
+                            load-more
+                            authorization-token="[[ authorizationToken ]]"
+                            list-api="[[ customersApi ]]"
+                            on-list-loaded="_onCustomersLoaded"
+                            on-list-empty="_onCustomersEmptyLoad"
+                    ></appsco-customers-billing>
+                </div>
+            </div>
         </appsco-content>
         
     </template>
@@ -105,8 +122,17 @@
                 pageLoaded: {
                     type: Boolean,
                     value: false
-                }
+                },
 
+                customersApi: {
+                    type: String,
+                    value: ''
+                },
+
+                authorizationToken: {
+                    type: String,
+                    value: ''
+                }
             },
 
             behaviours: [
@@ -127,11 +153,20 @@
             },
 
             _onPageLoaded: function() {
-                console.log('loaded');
+                this.pageLoaded = true;
+                this.fire('page-loaded');
             },
 
             _updateScreen: function() {
                 this.updateStyles();
+            },
+
+            _onCustomersLoaded: function() {
+                this._onPageLoaded();
+            },
+
+            _onCustomersEmptyLoad: function() {
+                this._onPageLoaded();
             }
 
         });

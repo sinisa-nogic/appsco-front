@@ -231,6 +231,13 @@
                 font-size:12px;
                 margin-right: 10px;
             }
+            :host .cancel-subscription-action {
+                color: var(--secondary-text-color);
+                margin-top: 30px;
+                font-size: 12px;
+                font-weight: 400;
+                text-decoration: underline;
+            }
 
         </style>
 
@@ -354,6 +361,12 @@
             </div>
 
             <div content>
+
+                <template is="dom-if" if="[[ _subscriptionCanceled ]]">
+                    <div class="subscription-info">
+                        Current subscription is canceled. It will remain active until subscription period end.
+                    </div>
+                </template>
 
                 <template is="dom-if" if="[[ _isPaidByCC ]]">
                     <template is="dom-if" if="[[ _paymentMethodInfo ]]">
@@ -513,6 +526,11 @@
                             <p class="message">There are no invoices yet.</p>
                         </template>
                     </div>
+                </template>
+
+                <template is="dom-if" if="[[ _cancelSubscription ]]">
+                    <paper-button class="cancel-subscription-action"
+                                  on-tap="_onCancelSubscription" >Cancel subscription</paper-button>
                 </template>
 
             </div>
@@ -760,6 +778,17 @@
                     value: false
                 },
 
+                _subscriptionCanceled: {
+                    type: Boolean,
+                    computed: '_computeSubscriptionCanceled(_subscription)',
+                    observer: '_toggleCancelSubscriptionAction'
+                },
+
+                _cancelSubscription: {
+                    type: Boolean,
+                    value: false
+                },
+
                 lastInvoice: {
                     type: Object,
                     value: function() {
@@ -848,6 +877,7 @@
                 this._numberOfAvailableLicences = '0';
                 this._numberOfDistributedLicences = '0';
                 this._numberOfRemainingLicences = '0';
+                this._cancelSubscription = false;
                 this._onCloseInfoAction();
             },
 
@@ -873,6 +903,21 @@
                     this._loadInvoiceList();
                     return false;
                 }
+            },
+
+            _toggleCancelSubscriptionAction: function() {
+
+                if (this._subscription.status && !this._subscriptionCanceled) {
+
+                    setTimeout(function() {
+                        this._cancelSubscription = true;
+                    }.bind(this), 1000);
+
+                }
+                else {
+                    this._cancelSubscription = false;
+                }
+
             },
 
             _loadUpcomingInvoice: function() {
@@ -993,6 +1038,10 @@
                 return companyApi && subscription && subscription.id ? companyApi + '/billing/invoice/list/' + subscription.id : '';
             },
 
+            _computeSubscriptionCanceled: function(subscription) {
+                return subscription.status === 'canceled';
+            },
+
             _handleCCResponse: function(event) {
                 var response = event.detail.response;
                 this.set('_cc', {});
@@ -1009,16 +1058,23 @@
             },
 
             _handleSubscriptionResponse: function(e) {
-                this.set('_subscription', {});
                 if(null == e.detail.response) {
                     return;
                 }
-                var subscriptions = e.detail.response;
-                subscriptions.forEach(function(subscription) {
-                    if (subscription.type == 'distribution') {
-                        this._subscription = subscription;
+
+                var subscriptions = e.detail.response,
+                        activeSubscription = '';
+
+                subscriptions.forEach(function(element) {
+                    if (element.type === 'distribution' && element.status === 'active') {
+                        this._subscription = activeSubscription = element;
                     }
-                }, this);
+                }.bind(this));
+
+                if (!activeSubscription) {
+                    this._subscription = {};
+                    this._cancelSubscription = false;
+                }
 
                 this._subscriptionLoader = false;
             },
@@ -1057,6 +1113,7 @@
 
                             if (index === response.length - 1) {
                                 this._invoiceListLoader = false;
+                                this._toggleCancelSubscriptionAction();
                             }
 
                         }.bind(this), (index + 1) * 30);
@@ -1065,6 +1122,7 @@
                 }
                 else {
                     this._invoiceListLoader = false;
+                    this._toggleCancelSubscriptionAction();
                 }
             },
 
@@ -1121,7 +1179,13 @@
                     invoice: this._selectedInvoice,
                     subscription: this._subscription
                 });
-            }
+            },
+
+            _onCancelSubscription: function() {
+                this.fire('cancel-subscription', {
+                    'subscription': this._subscription
+                });
+            },
 
         });
     </script>

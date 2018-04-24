@@ -1,0 +1,233 @@
+<link rel="import" href="../../../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../../../bower_components/iron-flex-layout/iron-flex-layout.html">
+<link rel="import" href="../../../../bower_components/paper-button/paper-button.html">
+<link rel="import" href="../../../../bower_components/iron-ajax/iron-request.html">
+<link rel="import" href="../../../../bower_components/paper-dialog/paper-dialog.html">
+<link rel="import" href="../../../../bower_components/paper-dialog-scrollable/paper-dialog-scrollable.html">
+<link rel="import" href="../../../../bower_components/neon-animation/animations/scale-up-animation.html">
+<link rel="import" href="../../../../bower_components/neon-animation/animations/fade-out-animation.html">
+<link rel="import" href="../../../../bower_components/iron-a11y-keys/iron-a11y-keys.html">
+
+<link rel="import" href="../../../components/components/appsco-loader.html">
+<link rel="import" href="appsco-company-resource-settings.html">
+
+<dom-module id="appsco-company-resource-settings-dialog">
+    <template>
+        <style>
+            :host {
+                display: block;
+                position: relative;
+            }
+            :host paper-dialog {
+                width: 670px;
+                top: 10vh;
+                @apply(--appsco-paper-dialog);
+            }
+            :host paper-dialog-scrollable > * {
+                @apply(--paper-dialog-scrollable-child);
+            }
+            :host appsco-loader {
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+            :host .buttons paper-button {
+                @apply(--paper-dialog-button);
+            }
+            :host .buttons paper-button[dialog-dismiss] {
+                @apply(--paper-dialog-dismiss-button);
+            }
+            appsco-application-settings {
+                --form-action: {
+                    display: none;
+                };
+            }
+        </style>
+
+        <paper-dialog id="dialog"
+                      with-backdrop
+                      entry-animation="scale-up-animation"
+                      exit-animation="fade-out-animation"
+                      on-iron-overlay-closed="_onDialogClosed">
+
+            <h2>Manage</h2>
+
+            <appsco-loader active="[[ _loader ]]"
+                           loader-alt="Appsco is processing request"
+                           multi-color></appsco-loader>
+
+            <paper-dialog-scrollable>
+                <div class="dialog-container">
+                    <div>
+                        <appsco-company-resource-settings
+                                id="appscoCompanyResourceSettings"
+                                resource="[[ companyApplication ]]"
+                                authorization-token="[[ authorizationToken ]]"
+                                api-errors="[[ apiErrors ]]"
+                                domain="[[ domain ]]"
+                                is-dialog="0"
+                        ></appsco-company-resource-settings>
+                    </div>
+                </div>
+            </paper-dialog-scrollable>
+
+            <div class="buttons">
+                <paper-button dialog-dismiss>Cancel</paper-button>
+                <paper-button autofocus on-tap="_onSave">Save</paper-button>
+            </div>
+
+        </paper-dialog>
+
+
+    </template>
+    <script>
+        Polymer({
+
+            is: 'appsco-company-resource-settings-dialog',
+
+            properties: {
+
+                account: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    }
+                },
+
+                apiErrors: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    }
+                },
+
+                domain: {
+                    type: String
+                },
+
+                _applicationSettings: {
+                    type: Boolean,
+                    value: false
+                },
+
+                application: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    }
+                },
+
+                companyApplication: {
+                    type: Object,
+                    value: function() {
+                        return {};
+                    }
+                },
+
+                /**
+                 * Authorization token.
+                 */
+                authorizationToken: {
+                    type: String
+                },
+
+                /**
+                 * Computed headers.
+                 * It contains authorization token.
+                 */
+                _headers: {
+                    type: Object,
+                    computed: '_computeHeaders(authorizationToken)'
+                },
+
+                _loader: {
+                    type: Boolean,
+                    value: false
+                }
+
+            },
+
+            /**
+             * Computes authorization headers.
+             *
+             * @param {Object} authorizationToken
+             * @returns {{ Authorization: string }}
+             * @private
+             */
+            _computeHeaders: function (authorizationToken) {
+                return {
+                    'Authorization': 'token ' + authorizationToken,
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                }
+            },
+
+            setApplication: function(application) {
+                this._loadCompanyApplication(application);
+                this.application = application;
+            },
+
+            /**
+             * Toggles add applications dialog.
+             */
+            toggle: function() {
+                this.$.dialog.toggle();
+            },
+
+            /**
+             * Called after dialog has been closed.
+             *
+             * @private
+             */
+            _onDialogClosed: function() {
+                this._loader = false;
+            },
+
+            _onSave: function() {
+                var _self = this;
+                this.$.appscoCompanyResourceSettings.save(function() {
+                    _self.toggle();
+                    _self.fire('company-resource-edited');
+                });
+            },
+
+            _onApplicationsSettingsSaved: function() {
+                this._hideLoader();
+                this.toggle();
+            },
+
+            _onFormError: function() {
+                this._hideLoader();
+            },
+
+            _showLoader: function() {
+                this._loader = true;
+            },
+
+            _hideLoader: function() {
+                this._loader = false;
+            },
+
+            _loadCompanyApplication: function(application) {
+                var request = document.createElement('iron-request'),
+                        options = {
+                            url: application.application.meta.company_self,
+                            method: 'GET',
+                            handleAs: 'json',
+                            headers: this._headers
+                        };
+
+                this._showLoader();
+
+                request.send(options).then(function() {
+                    if (200 === request.status) {
+                        var resource = request.response;
+                        this.set('companyApplication', resource);
+                        this._hideLoader();
+                    }
+
+                }.bind(this), function() {
+                    this._showError(this.apiErrors.getError(request.error.code));
+                }.bind(this));
+            }
+        });
+    </script>
+</dom-module>

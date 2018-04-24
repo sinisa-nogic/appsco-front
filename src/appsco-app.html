@@ -53,6 +53,7 @@
 <link rel="import" href="components/application/company/appsco-company-application-remove.html">
 <link rel="import" href="components/application/company/appsco-application-assignee-claims.html">
 <link rel="import" href="components/application/company/appsco-application-assignee-revoke.html">
+<link rel="import" href="components/application/company/appsco-company-resource-settings-dialog.html">
 <link rel="import" href="components/application/appsco-import-resources.html">
 <link rel="import" href="components/application/appsco-import-personal-resources.html">
 <link rel="import" href="components/application/appsco-application-remove-group.html">
@@ -809,6 +810,7 @@
                             folders-api="[[ api.foldersApi ]]"
                             on-loaded="_onLoadedPage"
                             on-edit-application="_onEditApplication"
+                            on-edit-shared-application="_onEditSharedApplication"
                             on-info-edit-application="_onInfoEditApplication"
                             on-share-application="_onShareApplication"
                             on-revoke-application="_onRevokeApplication"
@@ -918,6 +920,7 @@
                             on-open-remove-folder-dialog="_onOpenRemoveFolderDialog"
                             on-revoke-application="_onRevokeApplication"
                             on-folder-tapped="_onFolderTapped"
+                            on-edit-shared-application="_onEditSharedApplication"
                     ></appsco-company-home-page>
 
                     <appsco-contact-home-page
@@ -1323,7 +1326,9 @@
                             on-loaded="_onLoadedPage"
                             on-revoke-application="_onRevokeApplication"
                             on-open-move-to-folder-dialog="_onOpenMoveToFolderDialog"
-                            on-show-page="_onShowPage"></appsco-dashboard-folder-page>
+                            on-show-page="_onShowPage"
+                            on-edit-shared-application="_onEditSharedApplication"
+                    ></appsco-dashboard-folder-page>
 
                     <appsco-saml-authn-request-invalid-page
                             id="appscoSamlAuthnRequestInvalidPage"
@@ -1372,6 +1377,15 @@
                 application="[[ application ]]"
                 on-application-settings-saved="_onApplicationCredentialsChanged"
         ></appsco-application-settings-dialog>
+
+        <appsco-company-resource-settings-dialog
+                id="appscoCompanyResourceSettingsDialog"
+                account="[[ account ]]"
+                authorization-token="[[ authorizationToken ]]"
+                application="[[ application ]]"
+                domain="[[ domain ]]"
+                on-company-resource-edited="_onCompanyResourceEdited"
+        ></appsco-company-resource-settings-dialog>
 
         <appsco-application-remove
                 id="appscoApplicationRemove"
@@ -3580,6 +3594,11 @@
                 this._showManagePage('resource/' + this.application.alias);
             },
 
+            _onEditSharedApplication: function(event) {
+                this.$.appscoCompanyResourceSettingsDialog.setApplication(event.detail.application);
+                this.$.appscoCompanyResourceSettingsDialog.toggle();
+            },
+
             _onInfoEditApplication: function() {
                 this._onEditApplication();
             },
@@ -3719,6 +3738,21 @@
                     message = 'You successfully changed ' + application.title + ' credentials.';
 
                 this._notify(message);
+            },
+
+            _onCompanyResourceEdited: function(event) {
+                if (this.$.appscoHomePage.$) {
+                    this.$.appscoHomePage.reloadApplications();
+                }
+                if (this.$.appscoCompanyHomePage.$) {
+                    this.$.appscoCompanyHomePage.reloadApplications();
+                }
+                if (this.$.appscoContactHomePage.$) {
+                    this.$.appscoContactHomePage.reloadApplications();
+                }
+                if (this.$.appscoDashboardFolderPage.$) {
+                    this.$.appscoDashboardFolderPage.reloadApplications();
+                }
             },
 
             _onRemoveApplication: function() {

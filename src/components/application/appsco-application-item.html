@@ -183,7 +183,7 @@ Custom property | Description | Default
                 </template>
 
                 <paper-button on-tap="_onEdit"
-                              disabled$="[[ _shared ]]">Edit</paper-button>
+                              disabled$="[[ !_editable ]]">Edit</paper-button>
             </div>
         </div>
     </template>
@@ -242,6 +242,11 @@ Custom property | Description | Default
                 _shared: {
                     type: Boolean,
                     computed: '_computeApplicationShared(company, application)'
+                },
+
+                _editable: {
+                    type: Boolean,
+                    computed: '_computeApplicationEditable(_shared, application)'
                 },
 
                 /**
@@ -358,6 +363,10 @@ Custom property | Description | Default
                 return (!company && !application.owner);
             },
 
+            _computeApplicationEditable: function(shared, application) {
+                return !shared || application.application.user_can_edit;
+            },
+
             _onInfo: function (event) {
                 event.stopPropagation();
 
@@ -376,16 +385,29 @@ Custom property | Description | Default
             _onEdit: function (event) {
                 event.stopPropagation();
 
-                /**
-                 * Fired when `edit` is tapped.
-                 *
-                 * @event edit
-                 * @param {Object} application [Application](https://developers.appsco.com/api/dashboard/id/icons/id)
-                 *                              for which event is fired
-                 */
-                this.fire('edit', {
-                    application: this.application
-                });
+                if (this._shared) {
+                    /**
+                     * Fired when `edit` is tapped on a shared application.
+                     *
+                     * @event edit
+                     * @param {Object} application [Application](https://developers.appsco.com/api/dashboard/id/icons/id)
+                     *                              for which event is fired
+                     */
+                    this.fire('edit-shared-application', {
+                        application: this.application
+                    });
+                } else {
+                    /**
+                     * Fired when `edit` is tapped.
+                     *
+                     * @event edit
+                     * @param {Object} application [Application](https://developers.appsco.com/api/dashboard/id/icons/id)
+                     *                              for which event is fired
+                     */
+                    this.fire('edit', {
+                        application: this.application
+                    });
+                }
             },
 
             _onApplicationAction: function() {
